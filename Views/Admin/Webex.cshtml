@@ -1,0 +1,134 @@
+﻿<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">folder</span>Webex設定
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <button @@click="webex.getVM()" class="btn btn-primary">新增Webex</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-responsive">
+                    <caption>Webex列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th>名稱</th>
+                            <th>效期(Access_token)</th>
+                            <th>刷新效期(Refresh_token)</th>
+                            <th>啟用</th>
+                            <th>建立日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in webex.list" @@dblclick="webex.getVM(item.Id)" :key="item.Id">
+                            <td>{{item.Name}}</td>
+                            <td>{{new Date(item.Expires).format()}}</td>
+                            <td>{{new Date(item.Refresh_token_expires).format()}}</td>
+                            <td>{{item.IsEnabled?'V':''}}</td>
+                            <td>{{item.CreateAt.format()}}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button @@click="webex.getVM(item.Id)" class="btn btn-sm btn-secondary">編輯</button>
+                                    <button @@click="webex.getToken(item)" class="btn btn-sm btn-secondary">GetToken</button>
+                                    <button @@click="webex.delete(item.Id)" class="btn btn-sm btn-danger">刪除</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot v-if="webex.list.length==0">
+                        <tr>
+                            <td colspan="6" class="text-center">查無資料</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<offcanvas ref="webexoffcanvas">
+    <template #header>
+        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+            <span class="material-icons">folder</span>Webex管理
+        </div>
+    </template>
+    <template #footer>
+        <button @@click="webex.save()" class="btn btn-branding text-white">
+            確認修改
+        </button>
+    </template>
+    <ol class="activity-checkout mb-0 px-4 mt-3">
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">edit</span>
+                </div>
+            </div>
+            <div class="feed-item-list">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">名稱</label>
+                    </div>
+                    <div class="col-12">
+                        <input v-model="webex.vm.Name" type="text" class="form-control" placeholder="名稱" />
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">Client_id</label>
+                    </div>
+                    <div class="col-12">
+                        <input v-model="webex.vm.Client_id" type="text" class="form-control" placeholder="Client_id" />
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">Client_secret</label>
+                    </div>
+                    <div class="col-12">
+                        <input v-model="webex.vm.Client_secret" type="text" class="form-control" placeholder="Client_secret" />
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">Access_token</label>
+                    </div>
+                    <div class="col-12">
+                        <input v-model="webex.vm.Access_token" type="text" class="form-control" placeholder="Access_token" />
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">Refresh_token</label>
+                    </div>
+                    <div class="col-12">
+                        <input v-model="webex.vm.Refresh_token" type="text" class="form-control" placeholder="Refresh_token" />
+                    </div>
+                </div>
+            </div>
+        </li>        
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">check</span>
+                </div>
+            </div>
+            <div class="feed-item-list">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">啟用</label>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-check">
+                            <input v-model="webex.vm.IsEnabled" class="form-check-input" type="checkbox" :value="true">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ol>
+</offcanvas>

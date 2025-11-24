@@ -1,0 +1,374 @@
+﻿@{
+    var w = ViewBag.IsTemplate ? "50" : "75";
+}
+<offcanvas ref="conferenceoffcanvas" class="offcanvas offcanvas-end w-@w" tabindex="-1">
+    <template #header>
+        <span class="offcanvas-title text-branding d-flex align-items-center">
+            <span class="material-icons font-size-26">assignment</span>管理會議內容
+        </span>
+    </template>
+    <template #footer>
+        <button @@click="conference.save()" class="btn btn-branding text-white ps-4 pe-4 me-3">
+            送出
+        </button>
+        @if (!ViewBag.IsTemplate)
+        {
+            <button @@click="template.save()" class="btn btn-branding text-white ps-4 pe-4">
+                存為範本
+            </button>
+        }
+    </template>
+    @if (!ViewBag.IsTemplate)
+    {
+        <select v-model="template.select.value" @@change="template.clone" class="form-select">
+            <option value="" disabled>範本</option>
+            <option v-for="item in template.list" :value="item.Id">{{item.Name}}</option>
+        </select>
+    }
+    <ol class="activity-checkout mb-0 px-4 mt-3">
+        @if (!ViewBag.IsTemplate)
+        {
+            <li class="checkout-item">
+                <div class="avatar checkout-icon p-1">
+                    <div class="avatar-title rounded-circle bg-primary">
+                        <span class="material-icons font-size-20">emoji_people</span>
+                    </div>
+                </div>
+                <div class="feed-item-list">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">發起會議者</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            {{conference.vm.CreateBy}}
+                        </div>
+                    </div>
+                </div>
+            </li>
+        }
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">edit</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">會議類型</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <div class="form-check form-check-inline">
+                            <label class="form-check-label">
+                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio" value="1" />
+                                實體會議
+                            </label>
+                        </div>
+                        <div v-if="mcu.list.length>0" class="form-check form-check-inline">
+                            <label class="form-check-label">
+                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio" value="2" />
+                                視訊會議
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <template v-if="conference.vm.UsageType==2">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="text-danger ol-form-label pe-3">連線選項</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <select v-model="conference.vm.MCU" class="form-select">
+                                <option value="7">Webex</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">自動錄製</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio" :value="true" />
+                                    開啟
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio" :value="false" />
+                                    關閉
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div class="form-floating">
+                    <input v-model="conference.vm.Name" type="text" class="form-control" placeholder="會議名稱" />
+                    <label class="text-danger">會議名稱</label>
+                </div>
+                <div class="form-floating">
+                    <textarea v-model="conference.vm.Description" class="form-control" style="height: 180px" placeholder="會議內容"></textarea>
+                    <label>會議內容</label>
+                </div>
+                @if (!ViewBag.IsTemplate)
+                {
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="text-danger col-form-label pe-3">會議日期</label>
+                        </div>
+                        <div v-if="!conference.vm.StartNow" class="col-sm-12 col-xl-auto">
+                            <input v-model="conference.vm.StartTime" @@change="schedule.getList(1)" type="datetime-local" class="form-control" placeholder="會議日期" />
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <label class="mb-0">
+                                <input v-model="conference.vm.StartNow" @@change="schedule.getList(1)" type="checkbox">
+                                立即開始
+                            </label>
+                        </div>
+                    </div>
+                }
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="text-danger col-form-label pe-3">持續時間</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <div class="input-group">
+                            <input v-model="conference.vm.DurationHH" type="number" class="form-control" placeholder="持續時間(小時)" />
+                            <div class="input-group-text">小時</div>
+                            <input v-model="conference.vm.DurationSS" type="number" class="form-control" placeholder="持續時間(分鐘)" />
+                            <div class="input-group-text">分鐘</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">location_on</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label :class="[{'text-danger':conference.vm.UsageType=='1'},'col-form-label','pe-3']">與會地點</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <div v-for="{Id,Name} in room.list" class="form-check form-check-inline">
+                            <label class="form-check-label">
+                                <input v-model="conference.vm.Room" class="form-check-input" type="checkbox" :value="Id" />
+                                {{Name}}
+                            </label>
+                        </div>
+                    </div>
+                    <template v-for="room in room.list.filter(x=>x.Ecs.length>0)">
+                        <div v-if="conference.ecsShow(room.Id)" class="alert alert-success">
+                            <p>{{room.Name}}</p>
+                            <div v-for="ecs in room.Ecs" class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input v-model="conference.vm.Ecs" class="form-check-input" type="checkbox" :value="ecs.Id" />
+                                    {{ecs.Name}}
+                                </label>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">add_circle</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">與會人員</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <div class="input-group mb-1">
+                            <select v-model="schedule.query.DepartmentId" @@change="schedule.getList(1)" class="form-select">
+                                <option :value="null">單位</option>
+                                <option v-for="{Id,Name} in department.list" :value="Id">{{Name}}</option>
+                            </select>
+                            <input v-model="schedule.query.Keyword" @@blur="schedule.getList(1)" @@keyup.enter="schedule.getList(1)" type="text" class="form-control" placeholder="關鍵字" />
+                            <button @@click="schedule.getList(1)" class="btn btn-outline-secondary">查詢</button>
+                        </div>
+                    </div>
+                    @if (!ViewBag.IsTemplate)
+                    {
+                        <div class="col-sm-12 col-xl-auto">
+                            <label class="d-inline">
+                                <input v-model="conference.vm.User" @@change="schedule.getList(1)" type="checkbox" :value="me.vm.Id" />
+                                發起者為與會者
+                            </label>
+                        </div>
+                    }
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-12">
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <div @@click="schedule.query.Contains=null;schedule.getList(1);" role="button" :class="['nav-link',{'active':schedule.query.Contains==null}]">全部</div>
+                            </li>
+                            <li class="nav-item">
+                                <div @@click="schedule.query.Contains=true;schedule.getList(1);" role="button" :class="['nav-link',{'active':schedule.query.Contains==true}]">已選擇</div>
+                            </li>
+                        </ul>
+                        <table class="table mb-1">
+                            <caption>與會人員</caption>
+                            <thead>
+                                <tr class="table-primary">
+                                    <th width="300px">姓名</th>
+                                    <th width="80px">與會</th>
+                                    <th width="100px">
+                                        <label class="mb-0" style="font-weight:bold;">
+                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio" :value="null" />無主席
+                                        </label>
+
+                                    </th>
+                                    <th width="100px">
+                                        <label class="mb-0" style="font-weight:bold;">
+                                            <input v-model="conference.vm.Recorder" class="form-check-input" type="radio" :value="null" />無紀錄
+                                        </label>
+                                    </th>
+                                    @if (!ViewBag.IsTemplate)
+                                    {
+                                        <th>忙碌時段</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="{Id,DepartmentName,Name,Email,BusyTime} in schedule.list" :key="Id">
+                                    <td>{{DepartmentName}} {{Name}} ({{Email}})</td>
+                                    <td>
+                                        <label class="w-100 h-100">
+                                            <input v-model="conference.vm.User" class="form-check-input" type="checkbox" :value="Id" />
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <label class="w-100 h-100">
+                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio" :value="Id" />
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <label class="w-100 h-100">
+                                            <input v-model="conference.vm.Recorder" class="form-check-input" type="radio" :value="Id" />
+                                        </label>
+                                    </td>
+                                    @if (!ViewBag.IsTemplate)
+                                    {
+                                        <td>
+                                            {{schedule.format(BusyTime)}}
+                                        </td>
+                                    }
+                                </tr>
+                            </tbody>
+                        </table>
+                        <page ref="schedulepage" @@reload="schedule.getList()"></page>
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">groups</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">承辦單位</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <ul class="list-group">
+                            <li v-for="{Id,Name,Children} in department.tree" class="form-check form-check-inline">
+                                <label class="form-check-label">
+                                    <input v-model="conference.vm.Department" class="form-check-input" type="checkbox" :value="Id" />
+                                    {{Name}}
+                                </label>
+                                <ul class="list-group">
+                                    <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
+                                        <label class="form-check-label">
+                                            <input v-model="conference.vm.Department" class="form-check-input" type="checkbox" :value="Id" />
+                                            {{Name}}
+                                        </label>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ol>
+    @* <li class="checkout-item">
+                <div class="avatar checkout-icon p-1">
+                    <div class="avatar-title rounded-circle bg-primary">
+                        <span class="material-icons font-size-20">replay</span>
+                    </div>
+                </div>
+                <div class="feed-item-list vstack gap-3">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">會議循環</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <select v-model="r.option.freq" class="form-select">
+                                <option v-for="{text,value} in r.freq" :value="value">{{text}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <template v-if="r.option.freq">
+                        <div class="row align-items-center">
+                            <div class="col-sm-12 col-xl-auto pe-0">
+                                <label class="col-form-label pe-3">間隔</label>
+                            </div>
+                            <div class="col-sm-12 col-xl-auto">
+                                <input v-model="r.option.interval" type="number" min="1" class="form-control" />
+                            </div>
+                        </div>
+                        <div v-if="r.option.freq===r.WEEKLY" class="row align-items-center">
+                            <div class="col-sm-12 col-xl-auto pe-0">
+                                <label class="col-form-label pe-3">指定星期</label>
+                            </div>
+                            <div class="col-sm-12 col-xl-auto">
+                                <div v-for="{text,value} in r.weekdays" class="form-check form-check-inline">
+                                    <label class="form-check-label">
+                                        <input v-model="r.option.byweekday" type="checkbox" :value="value" class="form-check-input" />
+                                        {{text}}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="r.option.freq===r.MONTHLY" class="row align-items-center">
+                            <div class="col-sm-12 col-xl-auto pe-0">
+                                <label class="col-form-label pe-3">指定日期(-1:最後一天)</label>
+                            </div>
+                            <div class="col-sm-12 col-xl-auto">
+                                <input v-model="r.option.bymonthday" type="number" min="1" max="31" class="form-control" />
+                            </div>
+                        </div>
+                        <div v-if="r.option.until==''" class="row align-items-center">
+                            <div class="col-sm-12 col-xl-auto pe-0">
+                                <label class="col-form-label pe-3">次數</label>
+                            </div>
+                            <div class="col-sm-12 col-xl-auto">
+                                <input v-model="r.option.count" type="number" min="1" class="form-control" />
+                            </div>
+                        </div>
+                        <div v-if="r.option.count==''" class="row align-items-center">
+                            <div class="col-sm-12 col-xl-auto pe-0">
+                                <label class="col-form-label pe-3">結束日期</label>
+                            </div>
+                            <div class="col-sm-12 col-xl-auto">
+                                <input v-model="r.option.until" type="date" class="form-control" />
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </li> *@
+</offcanvas>

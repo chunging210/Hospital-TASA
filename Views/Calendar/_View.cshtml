@@ -1,0 +1,198 @@
+﻿<offcanvas ref="calendaroffcanvas" class="offcanvas offcanvas-end w-25" tabindex="-1">
+    <template #header>
+        <span class="offcanvas-title text-branding d-flex align-items-center">
+            <span class="material-icons font-size-26">assignment</span>會議內容
+        </span>
+    </template>
+    <template #footer>
+        <div class="btn-group btn-group-sm" role="group">
+            <button v-if="calendar.vm.CanEdit" @@click="conference.getVM(calendar.vm.Id)" class="btn btn-primary">編輯</button>
+            <button @@click="conference.copy(calendar.vm.Id)" type="button" class="btn btn-primary">複製</button>
+            <button @@click="conference.delete(calendar.vm.Id)" class="btn btn-danger">刪除</button>
+        </div>
+    </template>
+    <ol class="activity-checkout mb-0 px-4 mt-3">
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">emoji_people</span>
+                </div>
+            </div>
+            <div class="feed-item-list">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">發起會議者</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.CreateBy}}
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">edit</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">會議類型</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <span v-if="calendar.vm.UsageType==1">實體會議</span>
+                        <span v-if="calendar.vm.UsageType==2">視訊會議</span>
+                    </div>
+                </div>
+                <template v-if="calendar.vm.UsageType==2">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="text-danger ol-form-label pe-3">連線選項</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <span v-if="calendar.vm.MCU==7">Webex</span>
+                        </div>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">自動錄製</label>
+                        </div>
+                        <div class="col-sm-12 col-xl-auto">
+                            <span v-if="calendar.vm.Recording">開啟</span>
+                            <span v-if="!calendar.vm.Recording">關閉</span>
+                        </div>
+                    </div>
+                </template>
+                <div class="form-floating">
+                    <input v-model="calendar.vm.Name" type="text" class="form-control" placeholder="會議名稱" disabled />
+                    <label>會議名稱</label>
+                </div>
+                <div class="form-floating">
+                    <textarea v-model="calendar.vm.Description" class="form-control" style="height: 180px" placeholder="會議內容" disabled></textarea>
+                    <label>會議內容</label>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">開始時間</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.StartTime.format('yyyy-mm-dd HH:MM')}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">結束時間</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.EndTime.format('yyyy-mm-dd HH:MM')}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">持續時間</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.DurationHH}}小時{{calendar.vm.DurationSS}}分鐘
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">location_on</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">與會地點</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.Room.map(x=>x.Name).join()}}
+                    </div>
+                </div>
+                <div v-for="room in calendar.vm.Room.filter(x=>x.Ecs.length>0)" class="alert alert-success">
+                    <p>{{room.Name}}</p>
+                    <span v-for="ecs in room.Ecs">{{ecs.Name}}</span>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">add_circle</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">與會人員</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.User.map(x=>x.Name).join()}}
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">groups</span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">承辦單位</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.Department.map(x=>x.Name).join()}}
+                    </div>
+                </div>
+            </div>
+        </li>
+        <li v-if="calendar.vm.Webex" class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20"></span>
+                </div>
+            </div>
+            <div class="feed-item-list vstack gap-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">會議號</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.Webex.MeetingNumber}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">密碼</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.Webex.Password}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">主持人金鑰</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        {{calendar.vm.Webex.HostKey}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">會議連結</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <a :href="calendar.vm.Webex.WebLink" target="_blank">{{calendar.vm.Webex.WebLink}}</a>
+                    </div>
+                </div>
+            </div>
+        </li>
+    </ol>
+</offcanvas>

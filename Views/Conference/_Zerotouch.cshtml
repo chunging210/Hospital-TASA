@@ -1,0 +1,43 @@
+﻿<div ref="zerotouchoffcanvas" class="offcanvas offcanvas-end w-50" tabindex="-1">
+    <div class="offcanvas-header bg-secondary text-white">
+        <span class="offcanvas-title fs-3">Zero Touch</span>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body vstack gap-3">
+        <div v-for="item in zerotouch.list" class="bg-light p-3" style="word-break: break-all;">
+            <h2>{{item.Name}}</h2>
+            <button v-for="eq in item.RoomsEquipment" @@click ="zerotouch.call(eq.Id,$event)" class="btn btn-secondary me-3">
+                {{eq.Name}}
+            </button>
+        </div>
+        <div class="bg-light p-3">
+            <h1>臨時設備</h1>
+            <div class="row">
+                <div class="col-12 col-lg-3">
+                    連線方式<select v-model="zerotouch.vm.type" class="form-select">
+                        <option value="1">XT</option>
+                        <option value="2">SX</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-3">
+                    IP<input type="text" class="form-control" />
+                </div>
+                <div v-if="zerotouch.vm.type==1" class="col-12 col-lg-3">
+                    Post<input type="text" class="form-control" />
+                </div>
+                <div v-if="zerotouch.vm.type==2" class="col-12 col-lg-3">
+                    Account<input type="text" class="form-control" />
+                </div>
+                <div v-if="zerotouch.vm.type==2" class="col-12 col-lg-3">
+                    Password<input type="text" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="offcanvas-footer">
+        <div v-if="showlog" style="height:300px;overflow-y:scroll">
+            <div v-for="item in zerotouch.log">{{item}}</div>
+        </div>
+        <label><input v-model="showlog" type="checkbox" :value="true" />顯示LOG</label>
+    </div>
+</div>

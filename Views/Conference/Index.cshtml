@@ -1,0 +1,112 @@
+﻿<!--Conference-->
+<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">folder</span>會議總覽
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <div class="form-floating">
+                            <input v-model="conference.query.Start" @@change="conference.getList" type="date" class="form-control" placeholder="會議時間(起)">
+                            <label>會議時間(起)</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <div class="form-floating">
+                            <input v-model="conference.query.End" @@change="conference.getList" type="date" class="form-control" placeholder="會議時間(訖)">
+                            <label>會議時間(訖)</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <div class="form-floating">
+                            <select v-model="conference.query.RoomId" @@change="conference.getList" class="form-select">
+                                <option value="">請選擇</option>
+                                <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
+                            </select>
+                            <label>與會地點</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <div class="form-floating">
+                            <select v-model="conference.query.DepartmentId" @@change="conference.getList" class="form-select">
+                                <option value="">請選擇</option>
+                                <option v-for="{Id,Name} in department.list" :value="Id">{{Name}}</option>
+                            </select>
+                            <label>承辦單位</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <div class="form-floating">
+                            <select v-model="conference.query.UserId" @@change="conference.getList" class="form-select">
+                                <option value="">請選擇</option>
+                                <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
+                            </select>
+                            <label>發起會議者</label>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-2">
+                        <div class="input-group">
+                            <div class="form-floating">
+                                <input v-model="conference.query.keyword" @@blur="conference.getList" type="text" class="form-control" placeholder="關鍵字">
+                                <label>關鍵字</label>
+                            </div>
+                            <button @@click="conference.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                        </div>
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <button @@click="conference.getVM()" class="btn btn-primary">新增會議</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-responsive">
+                    <caption>會議列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th>會議名稱</th>
+                            <th>會議時間</th>
+                            <th>持續時間</th>
+                            <th>與會地點</th>
+                            <th>會議主席</th>
+                            <th>承辦單位</th>
+                            <th>發起會議者</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in conference.list" :key="item.Id">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.StartTime.format('yyyy-mm-dd HH:MM')}}</td>
+                            <td>{{item.DurationHH}}小時{{item.DurationSS}}分鐘</td>
+                            <td>{{item.Room.join(',')}}</td>
+                            <td>{{item.Host}}</td>
+                            <td>{{item.Department.join(',')}}</td>
+                            <td>{{item.CreateByName}}</td>
+                            <td class="hstack gap-3">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button v-if="item.CanEdit" @@click="conference.getVM(item.Id)" class="btn btn-primary">編輯</button>
+                                    <button v-if="item.Recording7" @@click="recording.get(item.Id)" class="btn btn-primary">錄製檔</button>
+                                    <button @@click="conference.copy(item.Id)" class="btn btn-primary">複製</button>
+                                    <button @@click="conference.delete(item.Id)" class="btn btn-danger">刪除</button>
+                                </div>
+                                <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)" class="btn btn-sm btn-secondary">ZeroTouch</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot v-if="conference.list.length==0">
+                        <tr>
+                            <td colspan="7" class="text-center">查無資料</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    ViewBag.IsTemplate = false;
+}
+<partial name="_Edit" />

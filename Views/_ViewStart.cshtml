@@ -1,0 +1,6 @@
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    Layout = "_Authenticated";
+    ViewBag.HeadTitle = Configuration["Title"];
+}

@@ -1,0 +1,642 @@
+body, html {
+    width: 100vw;
+    height: 100vh;
+}
+
+body {
+    font-family: Arial, sans-serif,"Microsoft JhengHei", "Microsoft YaHei", "LiHei Pro Medium", "SimHei";
+    background-position: center center; /*background-repeat: no-repeat;*/
+    background-image: url('/images/panel-b-bg.jpg');
+    position: relative;
+}
+
+    body > div {
+        width: 100vw;
+        height: 95%;
+        display: table;
+        margin: auto;
+    }
+
+        body > div > div {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+            body > div > div > div {
+                width: 650px;
+                margin: auto;
+                min-height: 410px;
+                background-image: url('/images/panel-b-bg.jpg');
+                background-position: center 50px;
+                background-repeat: no-repeat;
+                position: relative;
+            }
+
+                body > div > div > div::after {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: url(../images/login-line.png) bottom center no-repeat;
+                    height: 134px;
+                    mix-blend-mode: screen;
+                }
+
+@media screen and (min-width: 1921px) {
+    body {
+        background: fixed;
+        background-position: bottom center;
+        background-repeat: no-repeat;
+        -moz-background-size: cover;
+        -webkit-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+        background-image: url(../images/login-bg.jpg);
+    }
+}
+
+@media screen and (max-width: 570px) and (orientation: landscape) {
+    body > div > div > div {
+        width: 100%;
+    }
+}
+
+@media screen and (max-width: 660px) and (orientation: portrait) {
+    body > div > div > div {
+        width: 350px;
+        background-size: 400px;
+        background-position: -35px 180px;
+    }
+
+        body > div > div > div::after {
+            background-size: 400px;
+            bottom: 30px;
+        }
+}
+
+@media screen and (max-width: 320px) and (orientation: portrait) {
+    body > div > div > div {
+        width: 300px;
+        background-size: 350px;
+    }
+
+        body > div > div > div::after {
+            background-size: 350px;
+            bottom: 30px;
+        }
+}
+
+.logo {
+    width: 300px;
+    margin: 0 auto 30px;
+    text-align: center;
+}
+
+    .logo img {
+        -webkit-filter: drop-shadow(0 0 10px #23aaf3);
+        filter: drop-shadow(0 0 10px #23aaf3);
+    }
+
+    .logo p {
+        width: 100%;
+        display: block;
+        color: #fff;
+        font-size: 18px;
+        padding-top: 5px;
+    }
+
+ul {
+    width: 300px;
+    margin: auto;
+    position: relative;
+    z-index: 999;
+}
+
+li {
+    width: 102%;
+    float: left;
+    margin: 15px 0;
+    border: 1px solid #154c9c;
+    background: rgba(255, 255, 255, 0.4);
+    padding: 10px 15px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+}
+
+    li:last-child {
+        background: none;
+        border: 0;
+        text-align: center;
+        padding-top: 60px;
+    }
+
+    li label {
+        display: inline-block;
+        font-size: 22px;
+        padding-right: 10px;
+        color: #6b6b6b;
+        vertical-align: middle;
+    }
+
+    li input {
+        background: none;
+        border: 0;
+        font-size: 16px;
+        color: #6b6b6b;
+        width: 80%;
+        padding: 5px;
+    }
+
+    li a {
+        color: #fff;
+    }
+
+        li a:hover {
+            color: #ec665c;
+            text-decoration: none;
+        }
+
+    li input[type="submit"] {
+        -moz-border-radius: 100%;
+        -webkit-border-radius: 100%;
+        border-radius: 100%;
+        width: 100px;
+        height: 100px;
+        line-height: 95px;
+        padding: 0;
+        color: #fff;
+        background: #cd3930;
+        font-size: 22px;
+        border: 6px solid #c1362d;
+        -webkit-box-shadow: 0 3px 5px rgba(0, 0, 0, 0.75);
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.75);
+        text-align: center;
+        cursor: pointer;
+    }
+
+        li input[type="submit"]:hover {
+            background: #e44e46;
+            border: 6px solid #ec665c;
+        }
+
+@media screen and (max-width: 767px) and (orientation: landscape) {
+    .logo {
+        padding-top: 30px;
+    }
+}
+
+@media screen and (max-width: 660px) and (orientation: portrait) {
+    li:last-child {
+        padding-top: 50px;
+    }
+}
+
+@media screen and (max-width: 320px) and (orientation: portrait) {
+    li:last-child {
+        padding-top: 20px;
+    }
+}
+
+footer {
+    height: 5%;
+    width: 100vw;
+    margin: auto;
+    text-align: center;
+    font-size: 12px;
+    color: #82b6cf;
+}
+
+    footer p {
+        width: 100vw;
+        float: left;
+        padding: 10px 0;
+    }
+
+body > div.kanban {
+    height: 100vh;
+    min-height: 100vh;
+}
+
+    body > div.kanban > div {
+        width: 97vw;
+        height: 95vh;
+        margin: 3vh 1.5vw;
+        display: inline-block;
+    }
+
+        body > div.kanban > div > div {
+            background-image: none;
+            width: 100%;
+            min-height: 10px;
+            margin: auto;
+            display: table;
+        }
+
+            body > div.kanban > div > div > div {
+                display: table-cell;
+                vertical-align: middle;
+                text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            }
+
+            body > div.kanban > div > div:first-child {
+                height: 44vh;
+            }
+
+                body > div.kanban > div > div:first-child > div {
+                    text-align: center;
+                    color: #fff;
+                }
+
+                    body > div.kanban > div > div:first-child > div h1 {
+                        font-size: 5.5vw;
+                        width: 100%;
+                        display: block;
+                        color: #faf06b;
+                    }
+
+                    body > div.kanban > div > div:first-child > div .time {
+                        font-size: 2vw;
+                    }
+
+                body > div.kanban > div > div:first-child .tag {
+                    text-align: center;
+                    padding-top: 3vh;
+                    text-shadow: 0 0 10px transparent;
+                }
+
+                    body > div.kanban > div > div:first-child .tag span {
+                        display: inline-block;
+                        padding: 8px 20px;
+                        margin: 0 8px;
+                        border-radius: 3px;
+                        background: #bbb;
+                        font-size: 1.5vw;
+                        color: #fff;
+                        opacity: .7;
+                    }
+
+                        body > div.kanban > div > div:first-child .tag span.start {
+                            color: #ffffff;
+                            background: #cd3930;
+                            border: 1px solid #801f19;
+                            border-top: 4px solid #801f19;
+                            opacity: 1;
+                        }
+
+            body > div.kanban > div > div:last-child, .last_50vw {
+                height: 50vh;
+                background-color: rgba(0, 0, 0, 0.25);
+                border: 1px dashed #2d4c7e;
+                border-top: 2px solid #2d4c7e;
+                padding: 1vh 0;
+                position: relative;
+                border-radius: 10px; /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#ffffff+0,ffffff+100&0.15+0,0+100 */
+            }
+
+.last_50vw {
+    border: 1px dashed #7e2c2c;
+}
+
+body > div.kanban > div > div:last-child .text, body > div.kanban > div > div:last-child .staff {
+    width: 100%;
+    display: block;
+    font-size: 1.5vw;
+    padding: 3vh 2vw;
+    letter-spacing: 1px;
+    color: #9fc5ff;
+}
+
+    /*.last_50vw .text, .last_50vw .staff { color: #ff9f9f; }*/
+
+    body > div.kanban > div > div:last-child .text span, body > div.kanban > div > div:last-child .staff span {
+        display: block;
+        padding: 1vh 0;
+        color: #fff;
+        font-size: 1.8vw;
+    }
+
+/*, .last_50vw .text span, .last_50vw .staff span { color: #fff; }*/
+
+body > div.kanban > div > div:last-child .staff {
+    border-top: 1px solid rgba(184, 241, 255, 0.15);
+    position: relative;
+}
+
+    /*.last_50vw .staff { border-top: 1px solid rgba(255, 184, 241, 0.15); }*/
+
+    body > div.kanban > div > div:last-child .staff::after, .last_50vw .staff::after {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: rgba(17, 22, 83, 0.9);
+    }
+
+.last_50vw .staff::after {
+    background: rgba(83, 17, 22, 0.9);
+}
+
+.signin, .agenda {
+    text-align: center;
+}
+
+span.signin {
+    color: #fff;
+    background: #cd3930;
+}
+
+div.signin {
+    padding: 1vw;
+    font-size: 1.3vw;
+}
+
+table.signin {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+    table.signin > thead > tr > td {
+        min-width: 130px;
+        border-bottom: 3px #FFD382 solid;
+    }
+
+    table.signin > tbody > tr > td {
+        padding: 5px 10px;
+    }
+
+body > div.kanban > div > div::after {
+    background-image: none;
+    height: auto;
+}
+
+@media screen and (max-width: 900px) and (orientation: portrait) {
+    body > div.kanban > div > div:first-child {
+        height: 35vh;
+    }
+
+    body > div.kanban > div > div:last-child, .last_50vw {
+        height: 59vh;
+    }
+
+        body > div.kanban > div > div:first-child > div h1, .last_50vw > div h1 {
+            font-size: 9vw;
+        }
+
+        body > div.kanban > div > div:last-child .text span, body > div.kanban > div > div:last-child .staff span, .last_50vw .text span, .last_50vw .staff span {
+            font-size: 4vw;
+        }
+
+        body > div.kanban > div > div:first-child > div .time, body > div.kanban > div > div:last-child .text, body > div.kanban > div > div:last-child .staff, .last_50vw .text, .last_50vw .staff {
+            font-size: 3vw;
+        }
+
+    body > div.kanban > div > div:first-child .tag span {
+        font-size: 3vw;
+    }
+
+    body > div.kanban > div > div:last-child .text, body > div.kanban > div > div:last-child .staff, .last_50vw .text, .last_50vw .staff {
+        padding: 3vh 4vw;
+    }
+}
+
+@media screen and (max-width: 470px) and (orientation: portrait) {
+    body > div.kanban > div > div:first-child > div h1 {
+        font-size: 11vw;
+    }
+
+    body > div.kanban > div > div:last-child .text span, body > div.kanban > div > div:last-child .staff span, .last_50vw .text span, .last_50vw .staff span {
+        font-size: 6vw;
+    }
+
+    body > div.kanban > div > div:first-child > div .time, body > div.kanban > div > div:last-child .text, body > div.kanban > div > div:last-child .staff, .last_50vw .text, .last_50vw .staff {
+        font-size: 4.5vw;
+    }
+
+    body > div.kanban > div > div:first-child .tag span {
+        font-size: 3.5vw;
+    }
+
+    body > div.kanban > div > div:last-child .text, body > div.kanban > div > div:last-child .staff, .last_50vw .text, .last_50vw .staff {
+        padding: 3vh 4vw;
+    }
+}
+
+body > div.kanban01 {
+    height: 100vh;
+    min-height: 100vh;
+}
+
+    body > div.kanban01 > div {
+        width: 100vw;
+        height: 100vh;
+        margin: auto;
+        display: inline-block;
+    }
+
+        body > div.kanban01 > div > div {
+            background-image: none;
+            width: 100%;
+            min-height: 10px;
+            margin: auto;
+            display: table;
+            float: left;
+            height: 100vh;
+        }
+
+            body > div.kanban01 > div > div > div, .attendance {
+                display: table-cell;
+                vertical-align: middle;
+                text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            }
+
+            body > div.kanban01 > div > div:nth-child(odd) {
+                width: 50vw;
+            }
+
+                body > div.kanban01 > div > div:nth-child(odd) > div, .attendance {
+                    text-align: center;
+                    color: #fff;
+                    padding: 0 3vw;
+                }
+
+                    body > div.kanban01 > div > div:nth-child(odd) > div h1, .attendance, .agenda {
+                        font-size: 5.5vw;
+                        width: 100%;
+                        display: block;
+                        color: #faf06b;
+                    }
+
+                    body > div.kanban01 > div > div:nth-child(odd) > div .time, .attendance {
+                        font-size: 2vw;
+                    }
+
+                        body > div.kanban01 > div > div:nth-child(odd) > div .time span {
+                            font-size: 1.3vw;
+                            display: block;
+                        }
+
+                    body > div.kanban01 > div > div:nth-child(odd) > div .text {
+                        padding: 1vw;
+                        font-size: 1.3vw;
+                    }
+
+            body > div.kanban01 > div > div:nth-child(even), body > div.kanban01 > div > div.last_50vw {
+                width: 50vw;
+                background-color: rgba(0, 0, 0, 0.15);
+                border-left: 1px dashed #1f304b;
+                padding: 1vh 0;
+                position: relative;
+                border-radius: 10px;
+            }
+
+                body > div.kanban01 > div > div:nth-child(even) .end, .last_50vw .end {
+                    opacity: .5;
+                    padding: 3vh 2vw;
+                }
+
+                body > div.kanban01 > div > div:nth-child(even) .time, .last_50vw .time {
+                    width: 100%;
+                    display: block;
+                    font-size: 1.3vw;
+                    padding: 1.5vh 0;
+                    letter-spacing: 1px;
+                    color: #cbdffd;
+                }
+
+                body > div.kanban01 > div > div:nth-child(even) h2, .last_50vw h2 {
+                    width: auto;
+                    display: inline-block;
+                    font-size: 1.3vw;
+                    letter-spacing: 1px;
+                    color: #cbdffd;
+                    padding-left: 1vw;
+                }
+
+.last_50vw .time, .last_50vw h2 {
+    color: #fdcbcb;
+}
+
+body > div.kanban01 > div > div:last-child .start, .last_50vw .start {
+    width: 100%;
+    display: block;
+    font-size: 2vw;
+    padding: 3vh 2vw;
+    letter-spacing: 1px;
+    color: #fff;
+    border-top: 1px solid rgba(184, 241, 255, 0.1);
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.last_50vw .start {
+    border-top: 1px solid rgba(255, 184, 241, 0.1);
+}
+
+    body > div.kanban01 > div > div:last-child .start::after, .last_50vw .start::after {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: rgba(27, 33, 117, 0.8);
+    }
+
+    .last_50vw .start::after {
+        background: rgba(117, 27, 33, 0.8);
+    }
+
+    body > div.kanban01 > div > div:last-child .start .time, body > div.kanban01 > div > div:last-child .start h2, .last_50vw .start .time, .last_50vw .start h2 {
+        font-size: 2vw;
+        color: #fff;
+    }
+
+        body > div.kanban01 > div > div:last-child .start .time h2, .last_50vw .start .time h2 {
+            padding-top: 5px;
+            padding-left: 0vw;
+        }
+
+    body > div.kanban01 > div > div:last-child .start .staff, .last_50vw .start .staff {
+        width: 100%;
+        display: block;
+        font-size: 1.3vw;
+        padding-bottom: 1.5vh;
+    }
+
+        body > div.kanban01 > div > div:last-child .start .staff span, .last_50vw .start .staff span {
+            display: inline-block;
+            padding-right: 1vw;
+        }
+
+body > div.kanban01 > div > div:last-child .not-start, .last_50vw .not-start {
+    width: 100%;
+    display: block;
+    font-size: 1.5vw;
+    padding: 3vh 2vw;
+    letter-spacing: 1px;
+    color: #cbdffd;
+    border-top: 1px solid rgba(184, 241, 255, 0.1);
+    position: relative;
+    opacity: .8;
+}
+
+.last_50vw .not-start {
+    color: #fdcbcb;
+    border-top: 1px solid rgba(255, 184, 241, 0.1);
+}
+
+    body > div.kanban01 > div > div:last-child .not-start::after, .last_50vw .not-start::after {
+        position: absolute;
+        top: -3px;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: rgba(27, 33, 117, 0.8);
+    }
+
+    .last_50vw .not-start::after {
+        background: rgba(117, 27, 33, 0.8);
+    }
+
+body > div.kanban01 > div > div.last_50vw {
+    border-left: 1px dashed #4b1f1f;
+}
+
+body > div.kanban01 > div > div::after {
+    background-image: none;
+    height: auto;
+}
+
+@media screen and (max-width: 900px) {
+    body > div.kanban01 > div > div:first-child > div h1 {
+        font-size: 7vw;
+    }
+
+    body > div.kanban01 > div > div:first-child > div .time {
+        font-size: 2.5vw;
+    }
+
+        body > div.kanban01 > div > div:first-child > div .time span, body > div.kanban01 > div > div:first-child > div .text, body > div.kanban01 > div > div:last-child .time, body > div.kanban01 > div > div:last-child h2, body > div.kanban01 > div > div:last-child .start .staff span, body > div.kanban01 > div > div:last-child .start .staff, .last_50vw .time, .last_50vw h2, .last_50vw .start .staff span, .last_50vw .start .staff {
+            font-size: 2vw;
+        }
+}
+
+@media screen and (max-width: 767px) {
+    body > div.kanban01 > div > div:last-child h2, .last_50vw h2 {
+        display: block;
+        padding-left: 0;
+    }
+}
+
+@media screen and (max-width: 470px) and (orientation: portrait) {
+    body > div.kanban01 > div > div:first-child > div h1 {
+        font-size: 7vw;
+    }
+}
+
+.qrcode {
+    background-color: #fff;
+}

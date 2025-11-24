@@ -1,0 +1,109 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using TASA.Extensions
+@model int
+@inject TASAContext db
+@{
+    Layout = "";
+    var start = DateTime.Now.Date.ToUniversalTime();
+    var end = start.AddDays(1);
+    var data = db.Conference
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .WhereEnabled()
+        .Where(x => x.Room.Any(y => y.No == Model) && start <= x.StartTime && x.StartTime <= end)
+        .OrderBy(x => x.StartTime)
+        .Select(x => new
+        {
+            x.Name,
+            StartTime=  x.StartTime.ToLocalTime(),
+            EndTime = x.EndTime.ToLocalTime(),
+            x.Status
+        })
+        .ToList();
+    var notstartdata = data.Where(x => x.Status == 1);
+    var startdata = data.Where(x => x.Status == 3);
+    var enddata = data.Where(x => x.Status == 4);
+    var background = $"/images/panel-{(startdata.Count() > 0 ? "r" : "b")}-bg.jpg";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>會議室日程</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
+    <meta http-equiv="refresh" content="30" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta charset="utf-8">
+    <meta name='description' content='' />
+    <meta name='keywords' content='' />
+    <meta name='google' content='notranslate' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+    <link rel='stylesheet' href='/css/panel/rest.css' type='text/css' />
+    <link rel='stylesheet' href='/css/panel/login.css' type='text/css' />
+</head>
+<body>
+    <div class="kanban01">
+        <div style="background-image:url(@background)">
+            @if (data.Count == 0)
+            {
+                <div style="width:100vw;">
+                    <div>
+                        <h1>無進行中會議</h1>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div>
+                    @foreach (var item in startdata)
+                    {
+                        <div>
+                            <h1>@item.Name</h1>
+                            <div class="time">
+                                <span>@item.StartTime.ToString("yyyy-MM-dd")</span>
+                                @item.StartTime.ToString("HH:mm") ~ @item.EndTime.ToString("HH:mm")
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="last_50vw">
+                    <div>
+                        <div class="end">
+                            @foreach (var item in enddata)
+                            {
+                                <div class="time">
+                                    @item.StartTime.ToString("yyyy-MM-dd HH:mm") ~ @item.EndTime.ToString("HH:mm")
+                                    <h2>@item.Name</h2>
+                                </div>
+                            }
+                        </div>
+                        @if (startdata.Count() > 0)
+                        {
+                            <div class="start">
+                                @foreach (var item in startdata)
+                                {
+                                    <div class="time">
+                                        @item.StartTime.ToString("yyyy-MM-dd HH:mm") ~ @item.EndTime.ToString("HH:mm")
+                                        <div>
+                                            <h2>@item.Name</h2>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        <div class="not-start">
+                            @foreach (var item in notstartdata)
+                            {
+                                <div class="time">
+                                    @item.StartTime.ToString("yyyy-MM-dd HH:mm") ~ @item.EndTime.ToString("HH:mm")
+                                    <h2>@item.Name</h2>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</body>
+</html>

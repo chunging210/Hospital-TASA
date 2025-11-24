@@ -1,0 +1,195 @@
+/*
+File: Main Css File
+*/
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap");
+
+.btn-branding {
+    background-image: linear-gradient(to top left, #3b76e1, #36e4cd) !important;
+    border-radius: 0.5rem;
+    padding: 0.65rem;
+    border: none;
+    font-weight: 700;
+}
+
+    .btn-branding:hover {
+        background-image: linear-gradient(to top left, #36e4cd, #3b76e1) !important;
+    }
+
+.vertical-menu {
+    border-right: 0px !important;
+}
+
+.bg-light {
+    background-color: #BDEBFB !important;
+}
+
+.display-7 {
+    font-size: 1.1rem;
+    line-height: inherit;
+}
+
+.text-branding {
+    background: linear-gradient(to top, #3b76e1, #36e4cd);
+    background-clip: text;
+    color: transparent;
+    font-size: 1.53125rem;
+    font-weight: 500;
+    font-family: "Work Sans", sans-serif;
+    display: inline-block;
+    white-space: wrap;
+}
+
+.table .table-light {
+    border-radius: 10px 0 10px 0 !important;
+}
+
+.activity-checkout .checkout-item:first-child {
+    border-color: #eff0f2 !important;
+}
+
+/* 手機模式 */
+@media (max-width: 767.98px) {
+    .df-box01 {
+        text-align: left;
+        margin-top: 0.6rem;
+    }
+
+    .df-box01-1 {
+        text-align: center;
+        margin-top: 0.6rem;
+    }
+
+    .df-box02 {
+        padding-left: 0.75rem !important;
+    }
+
+    .df-box05 {
+        margin-top: 1rem !important;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        width: 100%;
+    }
+
+    .df-box03 {
+        -webkit-box-pack: center !important;
+        -ms-flex-pack: center !important;
+        justify-content: center !important;
+    }
+
+    .df-box06 {
+        display: none;
+    }
+}
+
+/* 平板跟電腦模式 */
+@media (min-width: 768px) {
+    .df-box01 {
+        text-align: right;
+        padding-right: 0.25rem !important;
+    }
+
+    .df-box01-1 {
+        text-align: right;
+        padding-right: 0.25rem !important;
+    }
+
+    .df-box02 {
+        padding-left: 0.85rem !important;
+    }
+
+    .df-box03 {
+        -webkit-box-pack: end !important;
+        -ms-flex-pack: end !important;
+        justify-content: flex-end !important;
+        padding-right: 2.5rem;
+    }
+
+    .df-box07 {
+        display: none;
+    }
+}
+
+.df-block {
+    height: 32px; /* 設定區塊高度 */
+    width: auto; /* 設定區塊款度 */
+    display: flex;
+    justify-content: center; /* 水平置中 */
+    align-items: center; /* 垂直置中 */
+    border: 0px solid #000; /* 邊框 */
+    margin: 3 0px; /* 區塊間距 */
+    background-color: rgba(0,0,0,0);
+}
+
+.df-box04 {
+    float: right; /* 區塊右對齊 */
+    width: 880px; /* 設定寬度 */
+}
+
+.df-block-100px {
+    width: 100px; /* 設定區塊款度 */
+}
+
+.df-block-70px {
+    width: 70px; /* 設定區塊款度 */
+}
+
+.df-block-auto {
+    width: auto; /* 設定區塊款度 */
+    white-space: nowrap;
+}
+
+.df-noti-icon {
+    position: relative;
+}
+
+.df-noti-dot {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    height: 14px;
+    width: 14px;
+    box-shadow: 0 0 0 3px var(--#{$prefix}body-bg);
+    color: $white;
+    line-height: 14px;
+    font-weight: 500;
+    font-size: 10px;
+}
+
+.df-badge {
+    position: absolute;
+    top: 12px;
+    right: 6px;
+    border: 2px solid var(--#{$prefix}body-bg);
+}
+
+.fc-event-title {
+    white-space: normal !important;
+}
+
+.fc-day {
+    cursor: cell;
+}
+
+.fc-event {
+    cursor: pointer;
+}
+
+.fc-daygrid-event-dot {
+    display: none;
+}
+
+.fc-event-title {
+    text-align: left;
+}
+
+.fc-event-main-frame {
+    display: block !important;
+}
+
+.form-control, .form-select, .form-check-input {
+    border-color: #d1d1d1;
+}
+
+.fc-timegrid-slot {
+    height: 50px !important;
+}

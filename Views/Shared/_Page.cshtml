@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="environment" content="dev" />
+    <title>@ViewBag.HeadTitle</title>
+    <link rel="shortcut icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="/css/index.css">
+    @RenderSection("head", false)
+</head>
+<body data-layout="horizontal" data-topbar="light">
+    <globalalert></globalalert>
+    @RenderBody()
+    <div>
+        <script src="/js/importmap.js"></script>
+        @RenderSection("script", required: false)
+        @{
+            var controller = ViewContext.RouteData.Values["controller"] as string;
+            var action = System.IO.Path.GetFileName(ViewContext.View.Path);
+            var scriptPath = $"/views/{controller}/{action}.js";
+        }
+        <script type="module" src="/global.js"></script>
+        <script type="module" src="@scriptPath" asp-append-version="true"></script>
+        <script type="module" src="/js/createApp.js"></script>
+    </div>
+</body>
+</html>

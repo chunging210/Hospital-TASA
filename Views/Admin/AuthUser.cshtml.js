@@ -1,0 +1,103 @@
+﻿// Admin/AuthUser.cshtml
+import global from '/global.js';
+const { ref, reactive, onMounted, computed } = Vue;
+
+class VM {
+    Id = null;
+    Name = '';
+    Account = '';
+    Email = '';
+    Role = [];
+    IsEnabled = true;
+}
+
+const tabs = new function () {
+    this.select = ref('IsAdmin');
+    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '一般使用者', value: 'IsNormal' }];
+    this.click = (value) => {
+        this.select.value = value;
+    }
+}
+
+const department = new function () {
+    this.tree = reactive([]);
+    this.gettree = () => {
+        global.api.select.departmenttree()
+            .then((response) => {
+                copy(this.tree, response.data);
+            });
+    }
+}
+
+const role = new function () {
+    this.list = reactive([]);
+    this.getList = () => {
+        global.api.select.role()
+            .then((response) => {
+                copy(this.list, response.data);
+            });
+    }
+}
+
+const authuser = new function () {
+    this.query = reactive({ keyword: '' });
+    this.list = reactive([]);
+    this.getList = () => {
+        global.api.admin.userlist({ body: this.query })
+            .then((response) => {
+                copy(this.list, response.data);
+            })
+            .catch(error => {
+                addAlert('取得資料失敗', { type: 'danger', click: error.download });
+            });
+    }
+    this.offcanvas = {}
+    this.vm = reactive(new VM());
+    this.getVM = (id) => {
+        if (id) {
+            global.api.admin.userdetail({ body: { id } })
+                .then((response) => {
+                    copy(this.vm, response.data);
+                    this.offcanvas.show();
+                })
+                .catch(error => {
+                    addAlert('取得資料失敗', { type: 'danger', click: error.download });
+                });
+        } else {
+            copy(this.vm, new VM());
+            this.offcanvas.show();
+        }
+    }
+    this.save = () => {
+        const method = this.vm.Id ? global.api.admin.userupdate : global.api.admin.userinsert;
+        method({ body: this.vm })
+            .then((response) => {
+                addAlert('操作成功');
+                this.getList();
+                this.offcanvas.hide();
+            })
+            .catch(error => {
+                addAlert(error.details, { type: 'danger', click: error.download });
+            });
+    }
+}
+
+window.$config = {
+    setup: () => new function () {
+        this.tabs = tabs;
+        this.department = department;
+        this.role = role;
+        this.authuser = authuser;
+        this.authuseroffcanvas = ref(null);
+
+        this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
+
+        onMounted(() => {
+            department.gettree();
+            role.getList();
+            authuser.getList();
+            authuser.offcanvas = this.authuseroffcanvas.value;
+            //window.addEventListener('ctrls', () => authuser.save());
+        });
+    }
+}

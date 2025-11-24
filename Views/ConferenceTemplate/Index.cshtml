@@ -1,0 +1,57 @@
+﻿<!--conferencestemplate-->
+<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">folder</span>會議範本
+                    </div>
+                    <div class="col-auto d-flex align-items-center">
+                        <button @@click="conference.getVM()" class="btn btn-primary">新增範本</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-responsive">
+                    <caption>會議列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th>會議名稱</th>
+                            <th>持續時間</th>
+                            <th>與會地點</th>
+                            <th>會議主席</th>
+                            <th>承辦單位</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in conference.list" @@dblclick="conference.detail(item.Id)" :key="item.Id">
+                            <td>{{item.Name}}</td>
+                            <td>{{item.DurationHH}}小時{{item.DurationSS}}分鐘</td>
+                            <td>{{item.Room.join(',')}}</td>
+                            <td>{{item.Host}}</td>
+                            <td>{{item.Department.join(',')}}</td>
+                            <td class="hstack gap-3">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button @@click="conference.getVM(item.Id)" class="btn btn-primary">編輯</button>
+                                    <button @@click="conference.delete(item.Id)" class="btn btn-danger">刪除</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot v-if="conference.list.length==0">
+                        <tr>
+                            <td colspan="6" class="text-center">查無資料</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    ViewBag.IsTemplate = true;
+}
+<partial name="~/Views/Conference/_Edit.cshtml" />

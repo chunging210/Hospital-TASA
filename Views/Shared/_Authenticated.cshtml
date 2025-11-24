@@ -1,0 +1,17 @@
+﻿@{
+    Layout = "_Page";
+    var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
+}
+
+@section head {
+    @RenderSection("head", false)
+}
+
+@section script {
+    @RenderSection("script", false)
+}
+
+<partial name="_Navbar"></partial>
+<section id="app">
+    @RenderBody()
+</section>

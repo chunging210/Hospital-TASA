@@ -1,0 +1,158 @@
+﻿{
+   "CodeGenerationMode": 4,
+   "ContextClassName": "TASAContext",
+   "ContextNamespace": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "MinimumProductVersion": "2.6.1186",
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Models",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "TASA",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 2,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "AuthForget",
+         "ObjectType": 0
+      },
+      {
+         "Name": "AuthRole",
+         "ObjectType": 0
+      },
+      {
+         "Name": "AuthRoleMenu",
+         "ObjectType": 0
+      },
+      {
+         "Name": "AuthUser",
+         "ObjectType": 0
+      },
+      {
+         "Name": "AuthUserRole",
+         "ObjectType": 0
+      },
+      {
+         "Name": "Conference",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceDepartment",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceEcs",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceRoom",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceStatus",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceTemplate",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceTemplateDepartment",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceTemplateRoom",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceTemplateUser",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceUser",
+         "ObjectType": 0
+      },
+      {
+         "Name": "ConferenceWebex",
+         "ObjectType": 0
+      },
+      {
+         "Name": "Ecs",
+         "ObjectType": 0
+      },
+      {
+         "Name": "EcsEquipment",
+         "ObjectType": 0
+      },
+      {
+         "Name": "Equipment",
+         "ObjectType": 0
+      },
+      {
+         "Name": "EquipmentType",
+         "ObjectType": 0
+      },
+      {
+         "Name": "LogBackground",
+         "ObjectType": 0
+      },
+      {
+         "Name": "LogMail",
+         "ObjectType": 0
+      },
+      {
+         "Name": "LogSys",
+         "ObjectType": 0
+      },
+      {
+         "Name": "LogWebex",
+         "ObjectType": 0
+      },
+      {
+         "Name": "SysDepartment",
+         "ObjectType": 0
+      },
+      {
+         "Name": "SysMenu",
+         "ObjectType": 0
+      },
+      {
+         "Name": "SysRoom",
+         "ObjectType": 0
+      },
+      {
+         "Name": "Webex",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": null,
+   "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": true,
+   "UseDatabaseNamesForRoutines": true,
+   "UseDateOnlyTimeOnly": true,
+   "UseDbContextSplitting": true,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": false,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": false,
+   "UseInternalAccessModifiersForSprocsAndFunctions": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false,
+   "UseT4Split": false
+}

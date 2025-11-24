@@ -1,0 +1,79 @@
+﻿<div class="page-content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header mx-4 mt-3">
+                <div class="row align-items-center">
+                    <div class="col-xl-9 col-sm-12 text-branding align-middle">
+                        <i class="mdi mdi-account-settings"></i> 我的個人資料管理
+                    </div>
+                    <div class="col-xl-3 col-sm-12 df-box01">
+                        <div class="d-flex align-items-center me-3"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- end card header -->
+            <div class="card-body">
+                <div>
+                    <h5 class="font-size-16 mb-4"></h5>
+                    <ol class="activity-checkout mb-0 px-4 mt-3">
+                        <li class="checkout-item">
+                            <div class="avatar checkout-icon p-1">
+                                <div class="avatar-title rounded-circle bg-primary">
+                                    <i class="bx bxs-pencil text-white font-size-20"></i>
+                                </div>
+                            </div>
+                            <div class="feed-item-list">
+                                <div class="row mb-4">
+                                    <label class="col-md-1 col-form-label">姓名</label>
+                                    <div class="col-md-11">
+                                        <input v-model="personal.vm.Name" type="text" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="row mb-4">
+                                    <label class="col-md-1 col-form-label">Email</label>
+                                    <div class="col-md-11">
+                                        <input v-model="personal.vm.Email" type="email" class="form-control" />
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="checkout-item">
+                            <div class="avatar checkout-icon p-1">
+                                <div class="avatar-title rounded-circle bg-primary">
+                                    <i class="mdi mdi-form-textbox-password text-white font-size-20"></i>
+                                </div>
+                            </div>
+                            <div class="feed-item-list">
+                                <div class="row mb-4">
+                                    <label class="col-md-1 col-form-label">修改密碼</label>
+                                    <div class="col-md-11">
+                                        <input v-model="personal.vm.Password" type="password" class="form-control" placeholder="如不修改密碼請留空" />
+                                    </div>
+                                </div>
+                                <div class="row mb-4">
+                                    <label class="col-md-1 col-form-label">確認密碼</label>
+                                    <div class="col-md-11">
+                                        <input v-model="personal.vm.Password2" type="password" class="form-control" placeholder="請再次輸入新密碼" />
+                                    </div>
+                                </div>
+                                <div class="row mb-4 text-danger">
+                                    密碼須符合最少十位、至少包含一個大寫，一個小寫，一個數字，一個符號(@@$!%*?&)
+                                </div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
+                    <button @@click="personal.save()" class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
+                        確認修改(<u>S</u>)
+                    </button>
+                    <button @@click="personal.resetPassword()" class="btn btn-secondary px-4 py-2 mt-4 mb-3 ms-2 font-size-14">
+                        清空密碼
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div style="clear:both"></div>
+    </div>
+    <!-- container-fluid -->
+</div>

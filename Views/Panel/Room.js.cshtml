@@ -1,0 +1,101 @@
+﻿@{
+    Layout = "";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>會議室日程</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta charset="utf-8">
+    <meta name='description' content='' />
+    <meta name='keywords' content='' />
+    <meta name='google' content='notranslate' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' />
+    <link rel='stylesheet' href='/css/panel/rest.css' type='text/css' />
+    <link rel='stylesheet' href='/css/panel/login.css' type='text/css' />
+</head>
+<body>
+    <div class="kanban01">
+        <div :style="{'background-image':'url(/images/panel-'+background+'-bg.jpg)'}">
+            <template v-if="data.length==0">
+                <div style="width:100vw;">
+                    <div>
+                        <h1>無進行中會議</h1>
+                    </div>
+                </div>
+            </template>
+            <template v-if="data.length>0">
+                <div>
+                    <div v-for="item in start">
+                        <h1>{{item.Name}}</h1>
+                        <div class="time">
+                            <span>{{new Date(item.StartTime).format('yyyy-mm-dd')}}</span>
+                            {{new Date(item.StartTime).format('HH:MM')}} ~ {{new Date(item.EndTime).format('HH:MM')}}
+                        </div>
+                    </div>
+                </div>
+                <div class="last_50vw">
+                    <div>
+                        <div class="end">
+                            <div v-for="item in end" class="time">
+                                {{new Date(item.StartTime).format()}} ~ {{new Date(item.EndTime).format('HH:MM')}}
+                                <h2>{{item.Name}}</h2>
+                            </div>
+                        </div>
+                        <div v-if="start.length>0" class="start">
+                            <div v-for="item in start" class="time">
+                                {{new Date(item.StartTime).format()}} ~ {{new Date(item.EndTime).format('HH:MM')}}
+                                <div>
+                                    <h2>{{item.Name}}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="not-start">
+                            <div v-for="item in notstart" class="time">
+                                {{new Date(item.StartTime).format()}} ~ {{new Date(item.EndTime).format('HH:MM')}}
+                                <h2>{{item.Name}}</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+    <script src="/js/vue/vue.global.js"></script>
+    <script type="text/javascript">
+        Date.prototype.format = function (pattern = 'yyyy-mm-dd HH:MM') {
+            const year = this.getFullYear().toString();
+            const month = (this.getMonth() + 1).toString().padStart(2, '0');
+            const day = this.getDate().toString().padStart(2, '0');
+            const hour = this.getHours().toString().padStart(2, '0');
+            const minute = this.getMinutes().toString().padStart(2, '0');
+            const replacements = { 'yyyy': year, 'mm': month, 'dd': day, 'HH': hour, 'MM': minute, }
+            let formattedString = pattern;
+            for (const placeholder in replacements) {
+                formattedString = formattedString.replace(new RegExp(placeholder, 'g'), replacements[placeholder]);
+            }
+            return formattedString;
+        }
+        const { createApp, ref, computed } = Vue;
+        createApp({
+            setup: () => {
+                const data = ref([]);
+                const get = () => {
+                    var search = new URLSearchParams(location.search);
+                    fetch(`/panel/conference?no=${search.get('no')}`)
+                        .then(response => response.json())
+                        .then((response) => data.value = response);
+                }
+                const notstart = computed(() => data.value.filter(x => x.Status == 1));
+                const start = computed(() => data.value.filter(x => x.Status == 3));
+                const end = computed(() => data.value.filter(x => x.Status == 4));
+                const background = computed(() => data.value.filter(x => x.Status == 3).length > 0 ? 'r' : 'b');
+                get(); setInterval(() => get(), 10000);
+                return {data, notstart, start, end, background }
+            }
+        }).mount('.kanban01');
+    </script>
+</body>
+</html>

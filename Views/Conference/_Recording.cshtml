@@ -1,0 +1,15 @@
+﻿<div ref="recordingoffcanvas" class="offcanvas offcanvas-end w-50" tabindex="-1">
+    <div class="offcanvas-header bg-secondary text-white">
+        <span class="offcanvas-title fs-3">錄製檔</span>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body vstack gap-3">
+        <div v-for="item in recording.list" class="bg-light p-3" style="word-break: break-all;">
+            <div>密碼：{{item.Password}}</div>
+            <a :href="item.DownloadUrl" target="_blank">{{item.DownloadUrl}}</a>
+        </div>
+        <div v-if="recording.list.length==0" class="bg-light p-3" style="word-break: break-all;">
+            尚無錄製檔
+        </div>
+    </div>
+</div>
