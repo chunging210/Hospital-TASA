@@ -54,7 +54,7 @@ namespace TASA.Controllers.API
         /// <summary>
         /// 上傳 Logo 圖片
         /// </summary>
-        [HttpPost("upload-logo")]
+        [HttpPost("uploadlogo")]
         public async Task<IActionResult> UploadLogo([FromForm] IFormFile file)
         {
             if (file == null || file.Length == 0)

@@ -44,6 +44,27 @@ const download = (filename, content) => {
 const api = async (method, url, options = {}) => {
     Object.assign(options, { method });
     options.headers = options.headers || {}
+
+    // ⚠️ 如果是 FormData，就不要處理，直接送出
+    if (options.body instanceof FormData) {
+        return fetch(url, options)
+            .then(async response => {
+                if (response.ok) {
+                    response.data = await responseParser(response);
+                    return Promise.resolve(response);
+                } else {
+                    try {
+                        response = await response.json();
+                    } catch {
+                        response = { message: '', details: {} }
+                    }
+                    response.download = () => download('api error', { url, options, response });
+                    return Promise.reject(response);
+                }
+            });
+    }
+
+
     if (options.body && typeof options.body === 'object') {
         let bodyCopy = '';
         if (Array.isArray(options.body)) {

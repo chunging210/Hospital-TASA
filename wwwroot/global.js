@@ -59,7 +59,7 @@ const global = new function () {
             list: GET,
             detail: GET,
             save: POST,
-            'upload-logo': POST,
+            uploadlogo: POST,
             delete: POST,
         }),
         admin: apiMethods('/api/admin', {
