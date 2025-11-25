@@ -1,0 +1,180 @@
+<div class="page-content">
+    <div class="container-fluid py-4">
+        <!-- 標題 -->
+        <div class="row">
+            <div class="col-12">
+                <h2 class="mb-4 text-center">
+                    <i class="bi bi-gear-fill me-2"></i>電子桌牌設定
+                </h2>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- 左側：設定區 -->
+            <div class="col-lg-8 col-xl-7">
+                <!-- Logo 上傳區 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-image me-2"></i>Logo設定
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Logo 預覽 -->
+                        <div v-if="settings.logoPath" class="text-center mb-3">
+                            <img :src="settings.logoPath" alt="Logo預覽" class="img-thumbnail"
+                                style="max-width: 250px; max-height: 250px;" />
+                            <div class="mt-2">
+                                <button type="button" @@click="deleteLogo" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash me-1"></i>刪除Logo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 上傳按鈕 -->
+                        <div class="mb-3">
+                            <input type="file" ref="fileInput" @@change="handleFileUpload"
+                                accept="image/png,image/jpeg,image/jpg,image/gif" class="d-none" />
+                            <button type="button" @@click="$refs.fileInput.click()" class="btn btn-primary w-100">
+                                <i class="bi bi-upload me-2"></i>
+                                {{ settings.logoPath ? '更換Logo' : '上傳Logo' }}
+                            </button>
+                            <small class="form-text text-muted d-block mt-1">
+                                支援 PNG、JPG、JPEG、GIF 格式,檔案大小不超過 5MB
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 字體大小設定 -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-fonts me-2"></i>字體大小設定
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- 小字體 -->
+                        <div class="mb-3">
+                            <label class="form-label d-flex justify-content-between">
+                                <span>小字體大小</span>
+                                <strong>{{ settings.fontSizeSmall }}px</strong>
+                            </label>
+                            <input type="range" v-model.number="settings.fontSizeSmall" class="form-range" min="8"
+                                max="100" step="1" />
+                        </div>
+
+                        <!-- 中字體 -->
+                        <div class="mb-3">
+                            <label class="form-label d-flex justify-content-between">
+                                <span>中字體大小</span>
+                                <strong>{{ settings.fontSizeMedium }}px</strong>
+                            </label>
+                            <input type="range" v-model.number="settings.fontSizeMedium" class="form-range" min="8"
+                                max="100" step="1" />
+                        </div>
+
+                        <!-- 大字體 -->
+                        <div>
+                            <label class="form-label d-flex justify-content-between">
+                                <span>大字體大小</span>
+                                <strong>{{ settings.fontSizeLarge }}px</strong>
+                            </label>
+                            <input type="range" v-model.number="settings.fontSizeLarge" class="form-range" min="8"
+                                max="100" step="1" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 啟用開關 -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" v-model="settings.isEnabled" class="form-check-input"
+                                id="isEnabled" />
+                            <label class="form-check-label" for="isEnabled">啟用此設定</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側：說明區 -->
+            <div class="col-lg-4 col-xl-5">
+                <div class="position-sticky" style="top: 20px;">
+                    <!-- Logo 說明 -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>設定說明
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6><i class="bi bi-image me-2"></i>Logo設定</h6>
+                            <p class="mb-3 small text-muted">上傳的 Logo 將顯示在電子桌牌上方</p>
+
+                            <h6><i class="bi bi-fonts me-2"></i>字體大小</h6>
+                            <ul class="small text-muted mb-0 ps-3">
+                                <li><strong>小字體：</strong>適用於次要資訊,如部門、職稱等</li>
+                                <li><strong>中字體：</strong>適用於一般內容,如與會者姓名</li>
+                                <li><strong>大字體：</strong>適用於主要資訊,如主持人姓名</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 目前設定摘要 -->
+                    <div class="card">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="bi bi-list-check me-2"></i>目前設定
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted">Logo：</td>
+                                        <td class="text-end">
+                                            <span :class="settings.logoPath ? 'text-success' : 'text-secondary'">
+                                                {{ settings.logoPath ? '已上傳' : '未上傳' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">小字體：</td>
+                                        <td class="text-end">{{ settings.fontSizeSmall }}px</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">中字體：</td>
+                                        <td class="text-end">{{ settings.fontSizeMedium }}px</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">大字體：</td>
+                                        <td class="text-end">{{ settings.fontSizeLarge }}px</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">狀態：</td>
+                                        <td class="text-end">
+                                            <span :class="settings.isEnabled ? 'text-success' : 'text-danger'">
+                                                {{ settings.isEnabled ? '已啟用' : '未啟用' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按鈕 -->
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 my-5 text-center">
+            <button type="button" @@click="saveSettings" class="btn btn-success btn-lg px-5">
+                <i class="bi bi-check-circle me-2"></i>儲存設定
+            </button>
+            <button type="button" @@click="resetSettings" class="btn btn-warning btn-lg px-5">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>重設為預設值
+            </button>
+        </div>
+    </div>
+</div>

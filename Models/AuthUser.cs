@@ -106,6 +106,10 @@ public partial class AuthUser
     [InverseProperty("User")]
     public virtual ICollection<ConferenceUser> ConferenceUser { get; set; } = new List<ConferenceUser>();
 
+    // ✅ 加入這行
+    [InverseProperty("CreateByNavigation")]
+    public virtual ICollection<SeatSettings> SeatSetting { get; set; } = new List<SeatSettings>();
+
     [ForeignKey("DepartmentId")]
     [InverseProperty("AuthUser")]
     public virtual SysDepartment Department { get; set; }

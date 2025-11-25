@@ -55,6 +55,13 @@ const global = new function () {
             update: POST,
             delete: DELETE,
         }),
+        seatsetting: apiMethods('/api/seatsetting', {
+            list: GET,
+            detail: GET,
+            save: POST,
+            'upload-logo': POST,
+            delete: POST,
+        }),
         admin: apiMethods('/api/admin', {
             userlist: GET,
             userdetail: GET,

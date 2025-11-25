@@ -33,5 +33,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult Seatsetting()
+        {
+            return View();
+        }
     }
 }

@@ -17,7 +17,8 @@
                     </span>
                 </a>
             </div>
-            <div class="btn btn-sm header-item px-3 font-size-16 d-lg-none icon-text-container" data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
+            <div class="btn btn-sm header-item px-3 font-size-16 d-lg-none icon-text-container"
+                data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
                 <span class="material-icons">menu</span>
             </div>
             <div class="d-none d-sm-block ms-2 align-self-center">
@@ -26,7 +27,8 @@
         </div>
         <div class="d-flex">
             <div class="dropdown d-inline-block">
-                <div class="btn header-item user text-start icon-text-container" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="btn header-item user text-start icon-text-container" data-bs-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
                     <img class="rounded-circle header-profile-user" src="/images/avatar.jpg" alt="Header Avatar">
                     <h6 class="mb-0">歡迎, {{name}}</h6>
                 </div>
@@ -85,6 +87,14 @@
                                     <span class="text">會議室總覽</span>
                                 </a>
                             </li>
+
+                            <li class="nav-item">
+                                <a href="/admin/seatsetting" class="nav-link icon-text-container">
+                                    <span class="material-icons font-size-16">badge</span>
+                                    <span class="text">電子桌牌設定</span>
+                                </a>
+                            </li>
+
                             @if (service.SettingServices.GetSettings().UCNS.Ecs)
                             {
                                 <li class="nav-item">

@@ -83,7 +83,7 @@ namespace TASA.Services.AuthModule
             var authUser = UserClaimsService.ToAuthUser(user?.Claims);
             if (authUser != null)
             {
-                return "/calendar";
+                return "/Auth/Profiles";
             }
             else
             {
