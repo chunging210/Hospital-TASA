@@ -62,6 +62,14 @@ const global = new function () {
             uploadlogo: POST,
             delete: POST,
         }),
+        visitor: apiMethods('/api/visitor', {
+            list: GET,
+            detail: GET,
+            insert: POST,
+            update: POST,
+            delete: DELETE,
+        }),
+
         admin: apiMethods('/api/admin', {
             userlist: GET,
             userdetail: GET,

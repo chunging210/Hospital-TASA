@@ -58,6 +58,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<SeatSettings> SeatSettings { get; set; }
 
+    public virtual DbSet<Visitor> Visitor { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -86,6 +88,8 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.WebexConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SeatSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.VisitorConfiguration());
+
         OnModelCreatingPartial(modelBuilder);
     }
 

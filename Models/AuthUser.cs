@@ -110,6 +110,10 @@ public partial class AuthUser
     [InverseProperty("CreateByNavigation")]
     public virtual ICollection<SeatSettings> SeatSetting { get; set; } = new List<SeatSettings>();
 
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<Visitor> VisitorCreatedBy { get; set; } = new List<Visitor>();
+
+
     [ForeignKey("DepartmentId")]
     [InverseProperty("AuthUser")]
     public virtual SysDepartment Department { get; set; }

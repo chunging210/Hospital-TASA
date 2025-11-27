@@ -1,0 +1,114 @@
+<!--visitor-->
+<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">people</span>訪客總覽
+                    </div>
+
+                    <div class="col-xl-4 col-sm-12">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 rounded-start-pill">
+                                <span class="material-icons text-muted">search</span>
+                            </span>
+                            <input v-model="visitor.query.Keyword" @@keyup.enter="visitor.getList(true)"
+                                class="form-control border-start-0 rounded-end-pill" placeholder="搜尋訪客" />
+                            <button v-if="visitor.query.Keyword" @@click="clearSearch()"
+                                class="btn btn-outline-secondary border-start-0" type="button">
+                                <span class="material-icons">clear</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-auto col-sm-12">
+                        <button @@click="visitor.getList(true)"
+                            class="btn btn-outline-primary me-2 d-flex align-items-center">
+                            <span class="material-icons">search</span> 搜尋
+                        </button>
+                    </div>
+
+                    <div class="col-xl-2 col-sm-12">
+                        <select v-model="visitor.query.CarType" @@change="visitor.getList(true)" class="form-select">
+                            <option value="">請選擇</option>
+                            <option value="motorcycle">機車</option>
+                            <option value="car">汽車</option>
+                            <option value="truck_bus">貨車/大客車</option>
+                            <option value="other">其他車種</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xl-auto col-sm-12 text-end">
+                        <button type="button" @@click="visitor.getVM()"
+                            class="btn btn-primary waves-effect waves-light px-4 d-flex align-items-center">
+                            <span class="material-icons me-1">person_add</span> 新增訪客
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 訪客列表 -->
+            <div class="card-body">
+                <div v-if="loading" class="text-center py-3">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div v-else-if="visitor.list.length === 0" class="text-center py-3 text-muted">
+                    查無資料
+                </div>
+
+                <div v-else class="table-responsive">
+                    <table class="table table-hover">
+                        <caption>訪客列表</caption>
+                        <thead>
+                            <tr class="table-light">
+                                <th>中文名</th>
+                                <th>英文名</th>
+                                <th>公司名稱</th>
+                                <th>職稱</th>
+                                <th>電話</th>
+                                <th>信箱</th>
+                                <th>車牌號碼</th>
+                                <th>車種</th>
+                                <th>參加次數</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in visitor.list" :key="item.Id">
+                                <td>{{item.CName}}</td>
+                                <td>{{item.EName}}</td>
+                                <td>{{item.CompanyName}}</td>
+                                <td>{{item.JobTitle}}</td>
+                                <td>{{item.Phone}}</td>
+                                <td>{{item.Email}}</td>
+                                <td>{{item.LicensePlate}}</td>
+                                <td>{{getCarType(item.CarType)}}</td>
+                                <td>{{item.MeetingCount}}</td>
+                                <td>
+                                    <button @@click="visitor.getVM(item.Id)" class="btn btn-sm btn-outline-primary me-1"
+                                        title="編輯">
+                                        <span class="material-icons">edit</span>
+                                    </button>
+                                    <button @@click="visitor.delete(item.Id)" class="btn btn-sm btn-outline-danger"
+                                        title="刪除">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <page ref="visitorpage" @@reload="visitor.getList(true)"></page>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    ViewBag.IsTemplate = false;
+}
+<partial name="_VisitorEdit" />

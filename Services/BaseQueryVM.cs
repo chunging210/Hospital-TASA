@@ -43,5 +43,20 @@
         /// 關鍵字
         /// </summary>
         public string? Keyword { get; set; }
+
+        /// <summary>
+        /// 頁碼（從 1 開始）
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// 每頁筆數
+        /// </summary>
+        public int PageSize { get; set; } = 5;
+
+        /// <summary>
+        /// 總筆數（由 Service 設定）
+        /// </summary>
+        public int Total { get; set; } = 0;
     }
 }

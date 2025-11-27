@@ -8,6 +8,7 @@ using TASA.Services.EquipmentModule;
 using TASA.Services.MailModule;
 using TASA.Services.RoomModule;
 using TASA.Services.SeatSettingModule;
+using TASA.Services.VisitorModule;
 using TASA.Services.WebexModule;
 
 namespace TASA.Services
@@ -42,7 +43,9 @@ namespace TASA.Services
 
         Lazy<WebexService> webexService,
         Lazy<WebexMeetingService> webexMeetingService,
-        Lazy<SeatSettingService> seatSettingService
+        Lazy<SeatSettingService> seatSettingService,
+        Lazy<VisitorService> visitorService
+
     )
     {
         public IWebHostEnvironment Environment => environment.Value;
@@ -76,5 +79,7 @@ namespace TASA.Services
         public WebexMeetingService WebexMeetingService => webexMeetingService.Value;
 
         public SeatSettingService SeatSettingService => seatSettingService.Value;
+
+        public VisitorService VisitorService => visitorService.Value;
     }
 }
