@@ -49,6 +49,109 @@ export const createby = new function () {
     }
 }
 
+export const visitor = new function () {
+    this.query = reactive({ Keyword: '', CarType: '' });
+    this.list = reactive([]);
+    this.page = {};
+    this.modal = {};
+    this.vm = reactive({});
+    this.loading = ref(false);
+    this.submitting = ref(false);
+    this.manual = reactive([]);
+    this.new = reactive({ CName: '', Email: '', CompanyName: '', Phone: '' });
+
+    // ✅ 簡化 getList，就像 createby 那樣
+    this.getList = (page) => {
+        const queryParams = {};
+        if (this.query.Keyword?.trim()) {
+            queryParams.keyword = this.query.Keyword.trim();
+        }
+        if (this.query.CarType) {
+            queryParams.carType = this.query.CarType;
+        }
+
+        // ✅ 只在需要時才加 List 和 Contains
+        if (this.query.Contains === true) {
+            // 「已選擇」時，傳送已選的訪客 ID
+            queryParams.List = conference.vm.Guests;
+            queryParams.Contains = true;
+        }
+
+        this.loading.value = true;
+
+        if (page) {
+            this.page.data.page = page;
+        } else if (!this.page.data.page) {
+            this.page.data.page = 1;
+        }
+
+        global.api.visitor.list(this.page.setHeaders({ body: queryParams }))
+            .then(this.page.setTotal)
+            .then((response) => {
+                copy(this.list, response.data);
+            })
+            .catch(err => {
+                addAlert({ message: `${err.status ?? ''} ${err.message ?? err}`, type: 'danger' });
+            })
+            .finally(() => {
+                this.loading.value = false;
+            });
+    };
+
+    this.addManual = () => {
+        if (!this.new.CName?.trim()) {
+            addAlert({ message: '請輸入姓名', type: 'warning' });
+            return;
+        }
+        if (!this.new.Email?.trim()) {
+            addAlert({ message: '請輸入 Email', type: 'warning' });
+            return;
+        }
+        if (!this.new.CompanyName?.trim()) {
+            addAlert({ message: '請輸入公司名稱', type: 'warning' });
+            return;
+        }
+        if (!this.new.Phone?.trim()) {
+            addAlert({ message: '請輸入電話', type: 'warning' });
+            return;
+        }
+
+        if (!/^\d{10}$/.test(this.new.Phone)) {
+            addAlert({ message: '電話需為 10 碼數字', type: 'warning' });
+            return;
+        }
+        if (!/@/.test(this.new.Email)) {
+            addAlert({ message: 'Email 格式不正確', type: 'warning' });
+            return;
+        }
+
+        const guest = {
+            CName: this.new.CName.trim(),
+            Email: this.new.Email.trim(),
+            CompanyName: this.new.CompanyName.trim(),
+            Phone: this.new.Phone.trim()
+        };
+        this.manual.push(guest);
+        conference.vm.GuestsManual.push(guest);
+
+        Object.assign(this.new, {
+            CName: '',
+            Email: '',
+            CompanyName: '',
+            Phone: ''
+        });
+
+        this.getList(1);
+        addAlert({ message: '新增成功', type: 'success' });
+    };
+
+    this.removeManual = (idx) => {
+        const g = this.manual[idx];
+        this.manual.splice(idx, 1);
+        conference.vm.GuestsManual = conference.vm.GuestsManual.filter(x => x.Email !== g.Email);
+    };
+}
+
 class VM {
     Id = null;
     Name = '';
@@ -68,6 +171,8 @@ class VM {
     Department = [];
     Host = null;
     Recorder = null;
+    Guests = [];  // ✅ 選中的訪客 IDs
+    GuestsManual = [];  // ✅ 臨時訪客
 }
 
 const toVM = (entity) => {
@@ -87,6 +192,14 @@ const toVM = (entity) => {
     if (entity.Department) {
         entity.Department = entity.Department.map(x => x.Id);
     }
+    if (entity.Visitor) {
+        entity.Guests = entity.Visitor.map(x => x.Id);
+    }
+
+    if (!entity.GuestsManual) {
+        entity.GuestsManual = [];
+    }
+
     return entity;
 }
 
@@ -177,6 +290,7 @@ export const conference = new function () {
     }
     this.getVM = (id) => {
         template.getList();
+        visitor.manual.length = 0;
         if (id) {
             global.api.conference.detail({ body: { id } })
                 .then((response) => {
@@ -184,6 +298,7 @@ export const conference = new function () {
                         addAlert('會議已開始，無法編輯', { type: 'danger' });
                     } else {
                         copy(this.vm, toVM(response.data));
+                        visitor.getList(1);
                         this.show();
                     }
                 })
@@ -194,6 +309,7 @@ export const conference = new function () {
             copy(this.vm, new VM());
             this.vm.CreateBy = me.vm.Name;
             this.vm.User.push(me.vm.Id);
+            visitor.getList(1);
             this.show();
         }
     }
@@ -207,6 +323,7 @@ export const conference = new function () {
             .then((response) => {
                 addAlert('操作成功');
                 this.getList();
+                visitor.manual.length = 0;
                 this.offcanvas.hide();
             })
             .then(this.saved)
@@ -256,6 +373,9 @@ window.$config = {
         this.mcu = mcu;
         this.schedule = schedule;
         this.schedulepage = ref(null);
+        this.visitor = visitor;
+        this.visitorpage = ref(null);
+
 
         onMounted(() => {
             me.getVM();
@@ -264,8 +384,13 @@ window.$config = {
             department.getTree();
             createby.getList();
             conference.getList();
+
+
             conference.offcanvas = this.conferenceoffcanvas.value;
             schedule.page = this.schedulepage.value;
+            visitor.page = this.visitorpage.value;
+
+            visitor.getList();
         });
     }
 }

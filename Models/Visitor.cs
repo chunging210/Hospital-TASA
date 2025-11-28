@@ -124,4 +124,7 @@ public partial class Visitor
     [ForeignKey("CreatedBy")]
     [InverseProperty("VisitorCreatedBy")]
     public virtual AuthUser? CreatedByNavigation { get; set; }
+
+    [InverseProperty("Visitor")]
+    public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
 }

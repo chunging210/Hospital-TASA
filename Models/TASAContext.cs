@@ -32,6 +32,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<ConferenceWebex> ConferenceWebex { get; set; }
 
+    public virtual DbSet<ConferenceVisitor> ConferenceVisitor { get; set; }
+
     public virtual DbSet<Ecs> Ecs { get; set; }
 
     public virtual DbSet<EcsEquipment> EcsEquipment { get; set; }
@@ -89,7 +91,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.WebexConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SeatSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.VisitorConfiguration());
-
+        modelBuilder.ApplyConfiguration(new Configurations.ConferenceVisitorConfiguration());
         OnModelCreatingPartial(modelBuilder);
     }
 

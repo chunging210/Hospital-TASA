@@ -60,13 +60,15 @@
                     <div class="col-sm-12 col-xl-auto">
                         <div class="form-check form-check-inline">
                             <label class="form-check-label">
-                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio" value="1" />
+                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio"
+                                    value="1" />
                                 實體會議
                             </label>
                         </div>
                         <div v-if="mcu.list.length>0" class="form-check form-check-inline">
                             <label class="form-check-label">
-                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio" value="2" />
+                                <input v-model="conference.vm.UsageType" class="form-check-input" type="radio"
+                                    value="2" />
                                 視訊會議
                             </label>
                         </div>
@@ -90,13 +92,15 @@
                         <div class="col-sm-12 col-xl-auto">
                             <div class="form-check form-check-inline">
                                 <label class="form-check-label">
-                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio" :value="true" />
+                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio"
+                                        :value="true" />
                                     開啟
                                 </label>
                             </div>
                             <div class="form-check form-check-inline">
                                 <label class="form-check-label">
-                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio" :value="false" />
+                                    <input v-model="conference.vm.Recording" class="form-check-input" type="radio"
+                                        :value="false" />
                                     關閉
                                 </label>
                             </div>
@@ -108,7 +112,8 @@
                     <label class="text-danger">會議名稱</label>
                 </div>
                 <div class="form-floating">
-                    <textarea v-model="conference.vm.Description" class="form-control" style="height: 180px" placeholder="會議內容"></textarea>
+                    <textarea v-model="conference.vm.Description" class="form-control" style="height: 180px"
+                        placeholder="會議內容"></textarea>
                     <label>會議內容</label>
                 </div>
                 @if (!ViewBag.IsTemplate)
@@ -118,7 +123,8 @@
                             <label class="text-danger col-form-label pe-3">會議日期</label>
                         </div>
                         <div v-if="!conference.vm.StartNow" class="col-sm-12 col-xl-auto">
-                            <input v-model="conference.vm.StartTime" @@change="schedule.getList(1)" type="datetime-local" class="form-control" placeholder="會議日期" />
+                            <input v-model="conference.vm.StartTime" @@change="schedule.getList(1)" type="datetime-local"
+                                class="form-control" placeholder="會議日期" />
                         </div>
                         <div class="col-sm-12 col-xl-auto">
                             <label class="mb-0">
@@ -134,9 +140,11 @@
                     </div>
                     <div class="col-sm-12 col-xl-auto">
                         <div class="input-group">
-                            <input v-model="conference.vm.DurationHH" type="number" class="form-control" placeholder="持續時間(小時)" />
+                            <input v-model="conference.vm.DurationHH" type="number" class="form-control"
+                                placeholder="持續時間(小時)" />
                             <div class="input-group-text">小時</div>
-                            <input v-model="conference.vm.DurationSS" type="number" class="form-control" placeholder="持續時間(分鐘)" />
+                            <input v-model="conference.vm.DurationSS" type="number" class="form-control"
+                                placeholder="持續時間(分鐘)" />
                             <div class="input-group-text">分鐘</div>
                         </div>
                     </div>
@@ -152,12 +160,14 @@
             <div class="feed-item-list vstack gap-3">
                 <div class="row align-items-center">
                     <div class="col-sm-12 col-xl-auto pe-0">
-                        <label :class="[{'text-danger':conference.vm.UsageType=='1'},'col-form-label','pe-3']">與會地點</label>
+                        <label
+                            :class="[{'text-danger':conference.vm.UsageType=='1'},'col-form-label','pe-3']">與會地點</label>
                     </div>
                     <div class="col-sm-12 col-xl-auto">
                         <div v-for="{Id,Name} in room.list" class="form-check form-check-inline">
                             <label class="form-check-label">
-                                <input v-model="conference.vm.Room" class="form-check-input" type="checkbox" :value="Id" />
+                                <input v-model="conference.vm.Room" class="form-check-input" type="checkbox"
+                                    :value="Id" />
                                 {{Name}}
                             </label>
                         </div>
@@ -167,7 +177,8 @@
                             <p>{{room.Name}}</p>
                             <div v-for="ecs in room.Ecs" class="form-check form-check-inline">
                                 <label class="form-check-label">
-                                    <input v-model="conference.vm.Ecs" class="form-check-input" type="checkbox" :value="ecs.Id" />
+                                    <input v-model="conference.vm.Ecs" class="form-check-input" type="checkbox"
+                                        :value="ecs.Id" />
                                     {{ecs.Name}}
                                 </label>
                             </div>
@@ -189,11 +200,14 @@
                     </div>
                     <div class="col-sm-12 col-xl-auto">
                         <div class="input-group mb-1">
-                            <select v-model="schedule.query.DepartmentId" @@change="schedule.getList(1)" class="form-select">
+                            <select v-model="schedule.query.DepartmentId" @@change="schedule.getList(1)"
+                                class="form-select">
                                 <option :value="null">單位</option>
                                 <option v-for="{Id,Name} in department.list" :value="Id">{{Name}}</option>
                             </select>
-                            <input v-model="schedule.query.Keyword" @@blur="schedule.getList(1)" @@keyup.enter="schedule.getList(1)" type="text" class="form-control" placeholder="關鍵字" />
+                            <input v-model="schedule.query.Keyword" @@blur="schedule.getList(1)"
+                                @@keyup.enter="schedule.getList(1)" type="text" class="form-control"
+                                placeholder="關鍵字" />
                             <button @@click="schedule.getList(1)" class="btn btn-outline-secondary">查詢</button>
                         </div>
                     </div>
@@ -201,7 +215,8 @@
                     {
                         <div class="col-sm-12 col-xl-auto">
                             <label class="d-inline">
-                                <input v-model="conference.vm.User" @@change="schedule.getList(1)" type="checkbox" :value="me.vm.Id" />
+                                <input v-model="conference.vm.User" @@change="schedule.getList(1)" type="checkbox"
+                                    :value="me.vm.Id" />
                                 發起者為與會者
                             </label>
                         </div>
@@ -211,10 +226,12 @@
                     <div class="col-12">
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <div @@click="schedule.query.Contains=null;schedule.getList(1);" role="button" :class="['nav-link',{'active':schedule.query.Contains==null}]">全部</div>
+                                <div @@click="schedule.query.Contains=null;schedule.getList(1);" role="button"
+                                    :class="['nav-link',{'active':schedule.query.Contains==null}]">全部</div>
                             </li>
                             <li class="nav-item">
-                                <div @@click="schedule.query.Contains=true;schedule.getList(1);" role="button" :class="['nav-link',{'active':schedule.query.Contains==true}]">已選擇</div>
+                                <div @@click="schedule.query.Contains=true;schedule.getList(1);" role="button"
+                                    :class="['nav-link',{'active':schedule.query.Contains==true}]">已選擇</div>
                             </li>
                         </ul>
                         <table class="table mb-1">
@@ -225,13 +242,15 @@
                                     <th width="80px">與會</th>
                                     <th width="100px">
                                         <label class="mb-0" style="font-weight:bold;">
-                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio" :value="null" />無主席
+                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio"
+                                                :value="null" />無主席
                                         </label>
 
                                     </th>
                                     <th width="100px">
                                         <label class="mb-0" style="font-weight:bold;">
-                                            <input v-model="conference.vm.Recorder" class="form-check-input" type="radio" :value="null" />無紀錄
+                                            <input v-model="conference.vm.Recorder" class="form-check-input"
+                                                type="radio" :value="null" />無紀錄
                                         </label>
                                     </th>
                                     @if (!ViewBag.IsTemplate)
@@ -245,17 +264,20 @@
                                     <td>{{DepartmentName}} {{Name}} ({{Email}})</td>
                                     <td>
                                         <label class="w-100 h-100">
-                                            <input v-model="conference.vm.User" class="form-check-input" type="checkbox" :value="Id" />
+                                            <input v-model="conference.vm.User" class="form-check-input" type="checkbox"
+                                                :value="Id" />
                                         </label>
                                     </td>
                                     <td>
                                         <label class="w-100 h-100">
-                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio" :value="Id" />
+                                            <input v-model="conference.vm.Host" class="form-check-input" type="radio"
+                                                :value="Id" />
                                         </label>
                                     </td>
                                     <td>
                                         <label class="w-100 h-100">
-                                            <input v-model="conference.vm.Recorder" class="form-check-input" type="radio" :value="Id" />
+                                            <input v-model="conference.vm.Recorder" class="form-check-input"
+                                                type="radio" :value="Id" />
                                         </label>
                                     </td>
                                     @if (!ViewBag.IsTemplate)
@@ -272,6 +294,133 @@
                 </div>
             </div>
         </li>
+
+        <li class="checkout-item">
+            <div class="avatar checkout-icon p-1">
+                <div class="avatar-title rounded-circle bg-primary">
+                    <span class="material-icons font-size-20">person_add</span>
+                </div>
+            </div>
+
+            <div class="feed-item-list vstack gap-3">
+                <!-- 查詢區 -->
+                <div class="row align-items-center">
+                    <div class="col-sm-12 col-xl-auto pe-0">
+                        <label class="col-form-label pe-3">訪客人員</label>
+                    </div>
+                    <div class="col-sm-12 col-xl-auto">
+                        <div class="input-group mb-1">
+                            <input v-model="visitor.query.Keyword" @@keyup.enter="visitor.getList()" type="text"
+                                class="form-control" placeholder="姓名/Email 關鍵字" />
+                            <button @@click="visitor.getList()" class="btn btn-outline-secondary">查詢</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新增臨時訪客區 -->
+                <div class="card border-primary mb-3">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0">新增臨時訪客</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-12 col-lg-2">
+                                <input v-model="visitor.new.CName" type="text" class="form-control"
+                                    placeholder="訪客姓名" />
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <input v-model="visitor.new.Email" type="email" class="form-control"
+                                    placeholder="Email" />
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <input v-model="visitor.new.CompanyName" type="text" class="form-control"
+                                    placeholder="公司名稱" />
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <input v-model="visitor.new.Phone" type="tel" class="form-control" placeholder="電話" />
+                            </div>
+                            <div class="col-12 col-lg-2">
+                                <button @@click="visitor.addManual" class="btn btn-primary w-100">
+                                    新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已新增的臨時訪客 -->
+                <div v-if="visitor.manual.length > 0" class="card border-success mb-3">
+                    <div class="card-header bg-success bg-opacity-10">
+                        <h6 class="mb-0">已新增臨時訪客 ({{ visitor.manual.length }})</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table">
+                            <thead>
+                                <tr class="table-success">
+                                    <th>姓名</th>
+                                    <th>Email</th>
+                                    <th>公司名稱</th>
+                                    <th>電話</th>
+                                    <th style="width: 100px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(v,idx) in visitor.manual" :key="'manual'+idx">
+                                    <td>{{v.CName}}</td>
+                                    <td>{{v.Email}}</td>
+                                    <td>{{v.CompanyName}}</td>
+                                    <td>{{v.Phone}}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                            @@click="visitor.removeManual(idx)">移除</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 訪客清單 - 有分頁 -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">訪客清單</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table mb-0">
+                                <thead class="sticky-top bg-white">
+                                    <tr class="table-primary">
+                                        <th>姓名</th>
+                                        <th>Email</th>
+                                        <th>公司名稱</th>
+                                        <th>電話</th>
+                                        <th style="width: 80px;">與會</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="{Id,CName,Email,CompanyName,Phone} in visitor.list" :key="Id">
+                                        <td>{{CName}}</td>
+                                        <td>{{Email}}</td>
+                                        <td>{{CompanyName}}</td>
+                                        <td>{{Phone}}</td>
+                                        <td class="text-center">
+                                            <input v-model="conference.vm.Guests" class="form-check-input"
+                                                type="checkbox" :value="Id" />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分頁元件 -->
+                        <div class="border-top p-2">
+                            <page ref="visitorpage" @@reload="visitor.getList()"></page>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
+
         <li class="checkout-item">
             <div class="avatar checkout-icon p-1">
                 <div class="avatar-title rounded-circle bg-primary">
@@ -287,13 +436,15 @@
                         <ul class="list-group">
                             <li v-for="{Id,Name,Children} in department.tree" class="form-check form-check-inline">
                                 <label class="form-check-label">
-                                    <input v-model="conference.vm.Department" class="form-check-input" type="checkbox" :value="Id" />
+                                    <input v-model="conference.vm.Department" class="form-check-input" type="checkbox"
+                                        :value="Id" />
                                     {{Name}}
                                 </label>
                                 <ul class="list-group">
                                     <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
                                         <label class="form-check-label">
-                                            <input v-model="conference.vm.Department" class="form-check-input" type="checkbox" :value="Id" />
+                                            <input v-model="conference.vm.Department" class="form-check-input"
+                                                type="checkbox" :value="Id" />
                                             {{Name}}
                                         </label>
                                     </li>

@@ -169,4 +169,7 @@ public partial class Conference
     [ForeignKey("ConferenceId")]
     [InverseProperty("Conference")]
     public virtual ICollection<SysRoom> Room { get; set; } = new List<SysRoom>();
+
+    [InverseProperty("Conference")]
+    public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
 }

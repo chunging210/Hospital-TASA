@@ -31,6 +31,7 @@ namespace TASA.Services.VisitorModule
         /// </summary>
         public IQueryable<ListVM> List(VisitorQueryVM query)
         {
+
             var queryBase = db.Visitor
                 .AsNoTracking()
                 .WhereNotDeleted();
@@ -57,34 +58,25 @@ namespace TASA.Services.VisitorModule
                 queryBase = queryBase.Where(x => x.CarType == query.CarType);
             }
 
-            // ✅ 先計算總數（用於分頁）
-            var total = queryBase.Count();
-
-            // ✅ 分頁：Skip 和 Take
-            var paged = queryBase
+            return queryBase
                 .OrderByDescending(x => x.CreatedAt)
-                .Skip((query.PageNumber - 1) * query.PageSize)
-                .Take(query.PageSize);
-
-            // ✅ 把總數存到 query，方便 Controller 取用
-            query.Total = total;
-
-            return paged.Mapping(x => new ListVM
-            {
-                No = x.No,
-                Id = x.Id,
-                CName = x.CName ?? string.Empty,
-                EName = x.EName ?? string.Empty,
-                CompanyName = x.CompanyName ?? string.Empty,
-                JobTitle = x.JobTitle ?? string.Empty,
-                Phone = x.Phone ?? string.Empty,
-                Email = x.Email ?? string.Empty,
-                LicensePlate = x.LicensePlate ?? string.Empty,
-                CarType = x.CarType ?? string.Empty,
-                CreatedAt = x.CreatedAt,
-                MeetingCount = 0
-            });
+                .Select(x => new ListVM
+                {
+                    No = x.No,
+                    Id = x.Id,
+                    CName = x.CName ?? string.Empty,
+                    EName = x.EName ?? string.Empty,
+                    CompanyName = x.CompanyName ?? string.Empty,
+                    JobTitle = x.JobTitle ?? string.Empty,
+                    Phone = x.Phone ?? string.Empty,
+                    Email = x.Email ?? string.Empty,
+                    LicensePlate = x.LicensePlate ?? string.Empty,
+                    CarType = x.CarType ?? string.Empty,
+                    CreatedAt = x.CreatedAt,
+                    MeetingCount = 0
+                });
         }
+
         public record DetailVM
         {
             public ulong No { get; set; }
