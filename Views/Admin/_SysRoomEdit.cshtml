@@ -1,0 +1,240 @@
+<!-- 右側邊欄：新增/編輯會議室 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRoomEdit" ref="offcanvas"
+    aria-labelledby="offcanvasRoomEditLabel" style="width: 880px;">
+    <div class="offcanvas-header border-bottom bg-white">
+        <h5 id="offcanvasRoomEditLabel" class="mb-0 fw-bold">
+            <i class="mdi mdi-home-plus text-primary"></i> {{room.vm.id ? '編輯會議室' : '新增會議室'}}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body bg-white">
+        <form id="roomEditForm" class="needs-validation" novalidate>
+
+            <!-- 基本資訊區塊 -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom ps-4 py-3">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="mdi mdi-information-outline text-primary me-2"></i>基本資訊
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-600 text-dark">會議室名稱</label>
+                        <input v-model="room.vm.name" type="text" class="form-control border rounded-3"
+                            placeholder="請輸入會議室名稱" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600 text-dark">大樓名稱</label>
+                        <input v-model="room.vm.building" type="text" class="form-control border rounded-3"
+                            placeholder="請輸入大樓名稱" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600 text-dark">樓層</label>
+                        <select v-model="room.vm.floor" class="form-select border rounded-3" required>
+                            <option value="">請選擇樓層</option>
+                            <option value="B2">B2 地下二樓</option>
+                            <option value="B1">B1 地下一樓</option>
+                            <option value="1">1樓</option>
+                            <option value="2">2樓</option>
+                            <option value="3">3樓</option>
+                            <option value="4">4樓</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600 text-dark">房間編號</label>
+                        <input v-model="room.vm.number" type="text" class="form-control border rounded-3"
+                            placeholder="如：EDU-201" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-600 text-dark">會議室說明</label>
+                        <textarea v-model="room.vm.description" class="form-control border rounded-3" rows="4"
+                            placeholder="請輸入會議室簡介、用途或特色..." required></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-600 text-dark">容量（人）</label>
+                            <input v-model.number="room.vm.capacity" type="number" class="form-control border rounded-3"
+                                min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-600 text-dark">面積（㎡）</label>
+                            <input v-model.number="room.vm.area" type="number" class="form-control border rounded-3"
+                                min="1" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 收費設定區塊 -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom ps-4 py-3">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="mdi mdi-currency-twd text-primary me-2"></i>收費設定
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="refundEnabled" checked>
+                            <label class="form-check-label fw-600" for="refundEnabled">啟用退費機制</label>
+                        </div>
+                        <small class="text-muted d-block mt-2">開啟後允許使用者在規定時間內申請退費</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-600 text-dark">收費方式</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input v-model="room.vm.pricingType" class="form-check-input" type="radio"
+                                        value="hourly" id="feeHourly">
+                                    <label class="form-check-label fw-600" for="feeHourly">小時制</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input v-model="room.vm.pricingType" class="form-check-input" type="radio"
+                                        value="period" id="feePeriod">
+                                    <label class="form-check-label fw-600" for="feePeriod">時段制</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 小時制設定 -->
+                    <div v-if="room.vm.pricingType === 'hourly'" class="alert alert-info border-0 rounded-3">
+                        <h6 class="alert-heading fw-bold mb-3">
+                            <i class="mdi mdi-clock-outline me-2"></i>小時制收費
+                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-dark">設定每個時段的收費和開放狀態：</span>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-success me-2"
+                                    @@click="room.selectAllHours()">
+                                    全選
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    @@click="room.deselectAllHours()">
+                                    全不選
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-3 p-3" style="max-height: 400px; overflow-y: auto;">
+                            <!-- 由 JS 動態生成時段 -->
+                            <div id="hourlySlotContainer"></div>
+                        </div>
+                    </div>
+
+                    <!-- 時段制設定 -->
+                    <div v-if="room.vm.pricingType === 'period'" class="alert alert-info border-0 rounded-3">
+                        <h6 class="alert-heading fw-bold mb-3">
+                            <i class="mdi mdi-calendar-clock-outline me-2"></i>時段制收費
+                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-dark">設定各個時段的收費：</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" @@click="room.addTimeSlot()">
+                                <i class="mdi mdi-plus me-1"></i>新增時段
+                            </button>
+                        </div>
+                        <div class="bg-white rounded-3 p-3" style="max-height: 500px; overflow-y: auto;">
+                            <!-- 預設時段 -->
+                            <div id="timeSlotContainer" class="d-flex flex-column gap-3">
+                                <!-- 由 JS 動態生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 媒體資料區塊 -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom ps-4 py-3">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="mdi mdi-file-media-outline text-primary me-2"></i>會議室媒體資料
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <label class="form-label fw-600 text-dark mb-3">上傳圖片/影片</label>
+                    <div class="border-2 border-dashed border-light rounded-3 p-5 text-center bg-white"
+                        style="cursor: pointer; min-height: 180px; display: flex; align-items: center; justify-content: center;"
+                        @@click="$refs.mediaUpload.click()">
+                        <div class="text-muted">
+                            <p class="mb-0">請上傳圖片/影片</p>
+                        </div>
+                    </div>
+                    <input type="file" ref="mediaUpload" multiple accept="image/*,video/*" style="display: none;"
+                        @@change="handleMediaUpload">
+                </div>
+            </div>
+
+            <!-- 租借權限設定區塊 -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom ps-4 py-3">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="mdi mdi-lock-open-outline text-primary me-2"></i>租借權限設定
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- 對內 -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="border-2 rounded-3 p-3 text-center cursor-pointer" :class="room.vm.bookingSettings?.type === 'internal' 
+                                    ? 'border-primary bg-primary bg-opacity-10' 
+                                    : 'border-secondary border-opacity-25'"
+                                @@click="room.vm.bookingSettings = {type: 'internal'}" style="transition: all 0.3s;">
+                                <i class="mdi mdi-building text-primary" style="font-size: 32px;"></i>
+                                <h6 class="mt-2 fw-bold mb-1">對內</h6>
+                                <small class="text-muted">僅限公司內部使用</small>
+                            </div>
+                        </div>
+                        <!-- 對內外 -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="border-2 rounded-3 p-3 text-center cursor-pointer" :class="room.vm.bookingSettings?.type === 'external' 
+                                    ? 'border-success bg-success bg-opacity-10' 
+                                    : 'border-secondary border-opacity-25'"
+                                @@click="room.vm.bookingSettings = {type: 'external'}" style="transition: all 0.3s;">
+                                <i class="mdi mdi-account-multiple text-success" style="font-size: 32px;"></i>
+                                <h6 class="mt-2 fw-bold mb-1">對內外</h6>
+                                <small class="text-muted">內部及外部客戶可租借</small>
+                            </div>
+                        </div>
+                        <!-- 不開放 -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="border-2 rounded-3 p-3 text-center cursor-pointer" :class="room.vm.bookingSettings?.type === 'restricted' 
+                                    ? 'border-danger bg-danger bg-opacity-10' 
+                                    : 'border-secondary border-opacity-25'"
+                                @@click="room.vm.bookingSettings = {type: 'restricted'}" style="transition: all 0.3s;">
+                                <i class="mdi mdi-block-helper text-danger" style="font-size: 32px;"></i>
+                                <h6 class="mt-2 fw-bold mb-1">不開放</h6>
+                                <small class="text-muted">暫不開放租借</small>
+                            </div>
+                        </div>
+                        <!-- 免費開放 -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="border-2 rounded-3 p-3 text-center cursor-pointer" :class="room.vm.bookingSettings?.type === 'free' 
+                                    ? 'border-info bg-info bg-opacity-10' 
+                                    : 'border-secondary border-opacity-25'"
+                                @@click="room.vm.bookingSettings = {type: 'free'}" style="transition: all 0.3s;">
+                                <i class="mdi mdi-gift text-info" style="font-size: 32px;"></i>
+                                <h6 class="mt-2 fw-bold mb-1">免費開放</h6>
+                                <small class="text-muted">免費提供使用</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- 固定底部按鈕 -->
+    <div class="position-sticky bottom-0 start-0 end-0 bg-white border-top p-3 d-grid gap-2">
+        <button type="button" class="btn btn-primary btn-lg fw-bold rounded-3" @@click="room.save()">
+            <i class="mdi mdi-content-save me-2"></i>送出
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-lg fw-bold rounded-3" data-bs-dismiss="offcanvas">
+            <i class="mdi mdi-close me-2"></i>取消
+        </button>
+    </div>
+</div>

@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace TASA.Models;
 
 [Index("Id", Name = "Id", IsUnique = true)]
+[Index("Id", Name = "Id", IsUnique = true)]
 public partial class SysRoom
 {
     /// <summary>
@@ -31,31 +32,21 @@ public partial class SysRoom
     public string Name { get; set; }
 
     /// <summary>
-    /// 類型 (1:實體 2:虛擬)
+    /// 樓棟名稱
     /// </summary>
-    [Column(TypeName = "tinyint(1) unsigned")]
-    public byte Type { get; set; }
+    [StringLength(100)]
+    public string Building { get; set; }
 
     /// <summary>
     /// 樓層
     /// </summary>
-    public bool? Floor { get; set; }
+    public byte? Floor { get; set; }
 
     /// <summary>
     /// 描述
     /// </summary>
     [Column(TypeName = "text")]
     public string Description { get; set; }
-
-    /// <summary>
-    /// 是否啟用實體座位
-    /// </summary>
-    public bool? RealSeat { get; set; }
-
-    /// <summary>
-    /// 是否啟用虛擬座位
-    /// </summary>
-    public bool? VirtualSeat { get; set; }
 
     /// <summary>
     /// 啟用
@@ -79,6 +70,48 @@ public partial class SysRoom
     [Column(TypeName = "datetime")]
     public DateTime? DeleteAt { get; set; }
 
+    /// <summary>
+    /// 容納人數
+    /// </summary>
+    [Column(TypeName = "int(10) unsigned")]
+    public uint Capacity { get; set; }
+
+    /// <summary>
+    /// 面積(平方公尺)
+    /// </summary>
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal Area { get; set; }
+
+    /// <summary>
+    /// 房間編號
+    /// </summary>
+    [StringLength(50)]
+    public string Number { get; set; }
+
+    /// <summary>
+    /// 會議室圖片URL
+    /// </summary>
+    [StringLength(500)]
+    public string Image { get; set; }
+
+    /// <summary>
+    /// 使用狀態(available/occupied/maintenance)
+    /// </summary>
+    [StringLength(20)]
+    public string Status { get; set; }
+
+    /// <summary>
+    /// 收費方式(hourly/period)
+    /// </summary>
+    [StringLength(20)]
+    public string PricingType { get; set; }
+
+    /// <summary>
+    /// 租借權限設定
+    /// </summary>
+    [Column(TypeName = "json")]
+    public string BookingSettings { get; set; }
+
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
 
@@ -89,4 +122,10 @@ public partial class SysRoom
     [ForeignKey("RoomId")]
     [InverseProperty("Room")]
     public virtual ICollection<ConferenceTemplate> ConferenceNavigation { get; set; } = new List<ConferenceTemplate>();
+
+    [InverseProperty("Room")]
+    public virtual ICollection<SysRoomPriceHourly> SysRoomPriceHourly { get; set; } = new List<SysRoomPriceHourly>();
+
+    [InverseProperty("Room")]
+    public virtual ICollection<SysRoomPricePeriod> SysRoomPricePeriod { get; set; } = new List<SysRoomPricePeriod>();
 }

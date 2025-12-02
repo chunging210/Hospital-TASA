@@ -14,25 +14,34 @@ namespace TASA.Models.Configurations
             entity.HasKey(e => e.No).HasName("PRIMARY");
 
             entity.Property(e => e.No).HasComment("流水號");
+            entity.Property(e => e.Id).HasComment("會議室ID");
+            entity.Property(e => e.Name).HasComment("名稱");
+            entity.Property(e => e.Building).HasComment("樓棟名稱");
+            entity.Property(e => e.Floor).HasComment("樓層");
+            entity.Property(e => e.Description).HasComment("描述");
+            entity.Property(e => e.IsEnabled).HasComment("啟用");
             entity.Property(e => e.CreateAt).HasComment("建立時間");
             entity.Property(e => e.CreateBy).HasComment("建立者");
             entity.Property(e => e.DeleteAt).HasComment("刪除");
-            entity.Property(e => e.Description).HasComment("描述");
-            entity.Property(e => e.Floor).HasComment("樓層");
-            entity.Property(e => e.Id).HasComment("會議室ID");
-            entity.Property(e => e.IsEnabled).HasComment("啟用");
-            entity.Property(e => e.Name).HasComment("名稱");
-            entity.Property(e => e.RealSeat)
-                .HasDefaultValueSql("'0'")
-                .HasComment("是否啟用實體座位");
-            entity.Property(e => e.Type).HasComment("類型 (1:實體 2:虛擬)");
-            entity.Property(e => e.VirtualSeat)
-                .HasDefaultValueSql("'0'")
-                .HasComment("是否啟用虛擬座位");
+
+            entity.Property(e => e.Capacity)
+                .HasDefaultValue(0)
+                .HasComment("容納人數");
+            entity.Property(e => e.Area)
+                .HasDefaultValue(0)
+                .HasComment("面積(平方公尺)");
+            entity.Property(e => e.Number).HasComment("房間編號");
+            entity.Property(e => e.Image).HasComment("會議室圖片URL");
+            entity.Property(e => e.Status)
+                .HasDefaultValue("available")
+                .HasComment("使用狀態(available/occupied/maintenance)");
+            entity.Property(e => e.PricingType)
+                .HasDefaultValue("hourly")
+                .HasComment("收費方式(hourly/period)");
+            entity.Property(e => e.BookingSettings).HasComment("租借權限設定");
 
             OnConfigurePartial(entity);
         }
-
         partial void OnConfigurePartial(EntityTypeBuilder<SysRoom> entity);
     }
 }

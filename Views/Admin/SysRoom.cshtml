@@ -1,116 +1,128 @@
-﻿<div class="page-content">
-    <div class="container-fluid vstack gap-3">
-        <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-                        <span class="material-icons">folder</span>會議室總覽
-                    </div>
-                    <div class="col-12 col-lg-2">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="room.query.keyword" @@blur="room.getList" type="text" class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+﻿@{
+    ViewData["Title"] = "會議室管理";
+}
+
+<div id="app" class="page-content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header mx-4 mt-3">
+                        <div class="row align-items-center">
+                            <div class="col-xl-auto col-sm-12 text-branding align-middle">
+                                <i class="mdi mdi-home-city"></i> 會議室管理
                             </div>
-                            <button @@click="room.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                            <div class="col-xl-6 col-sm-12 df-box05 me-4">
+                                <div class="search-box">
+                                    <div class="position-relative">
+                                        <input v-model="room.query.keyword" @@keyup.enter="room.getList" type="text"
+                                            class="form-control border-1" placeholder="搜尋會議室名稱...">
+                                        <i class="search-icon mdi mdi-magnify" @@click="room.getList"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-sm-12 df-box01">
+                                <button type="button" class="btn btn-lg btn-outline-primary btn-rounded"
+                                    @@click="room.getVM()" style="font-size: 14px;">
+                                    <i class="mdi mdi-plus"></i> 新增會議室
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <button @@click="room.getVM()" class="btn btn-primary">新增會議室</button>
+
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div v-for="item in room.list" :key="item.Id" class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                <div class="card h-100">
+                                    <div class="card-header bg-primary text-white text-center py-3">
+                                        <h5 class="mb-2">{{item.Name}}</h5>
+                                        <small>{{item.Building}} {{item.Floor}}樓 | {{item.Number}}</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3"
+                                            style="height: 180px; background: #f8f9fa; border-radius: 6px; background-size: cover; background-position: center;"
+                                            :style="item.Image ? {backgroundImage: `url('${item.Image}')`} : {}">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="fw-bold">容量</span>
+                                                <span>{{item.Capacity}} 人</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="fw-bold">面積</span>
+                                                <span>{{item.Area}} ㎡</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span class="fw-bold">狀態</span>
+                                                <span class="badge"
+                                                    :class="item.Status === 'available' ? 'bg-info' : item.Status === 'occupied' ? 'bg-danger' : 'bg-warning'">
+                                                    {{item.Status === 'maintenance' ? '維修中' : item.Status === 'occupied'
+                                                    ? '使用中' : '可預約'}}
+                                                </span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-bold">建立日期</span>
+                                                <span>{{new Date(item.CreateAt).toLocaleDateString('zh-TW')}}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-white">
+                                        <div class="d-grid gap-2">
+                                            <button class="btn btn-primary btn-sm" @@click="room.getVM(item.Id)">
+                                                <i class="mdi mdi-pencil"></i> 編輯
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="room.list.length === 0" class="col-12">
+                                <div class="alert alert-info text-center">查無資料</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row align-items-center px-4 py-3 border-top">
+                        <div class="col-auto">
+                            <span class="text-muted">共 {{room.total}} 筆</span>
+                        </div>
+                        <div class="col-auto ms-auto">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item" :class="{disabled: room.query.pageIndex <= 1}">
+                                        <a class="page-link" href="javascript:void(0);" @@click="room.previousPage">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <span class="page-link">第 {{room.query.pageIndex}} 頁</span>
+                                    </li>
+                                    <li class="page-item" :class="{disabled: !room.hasNextPage}">
+                                        <a class="page-link" href="javascript:void(0);" @@click="room.nextPage">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="card-body">
-                <table class="table table-hover table-responsive">
-                    <caption>會議室列表</caption>
-                    <thead>
-                        <tr class="table-light">
-                            <th>代碼</th>
-                            <th>名稱</th>
-                            <th>啟用</th>
-                            <th>建立日期</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in room.list" @@dblclick="room.getVM(item.Id)" :key="item.Id">
-                            <td>{{item.No}}</td>
-                            <td>{{item.Name}}</td>
-                            <td>{{item.IsEnabled?'V':''}}</td>
-                            <td>{{item.CreateAt.format()}}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button @@click="room.getVM(item.Id)" class="btn btn-sm btn-secondary">編輯</button>
-                                    <button @@click="room.delete(item.Id)" class="btn btn-sm btn-danger">刪除</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot v-if="room.list.length==0">
-                        <tr>
-                            <td colspan="4" class="text-center">查無資料</td>
-                        </tr>
-                    </tfoot>
-                </table>
             </div>
         </div>
     </div>
 </div>
-<offcanvas ref="roomoffcanvas">
-    <template #header>
-        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-            <span class="material-icons">folder</span>會議室管理
-        </div>
-    </template>
-    <template #footer>
-        <button @@click="room.save()" class="btn btn-branding text-white">
-            確認修改
-        </button>
-    </template>
-    <ol class="activity-checkout mb-0 px-4 mt-3">
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">edit</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">名稱</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="room.vm.Name" type="text" class="form-control" placeholder="名稱" />
-                    </div>
-                </div>
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">描述</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="room.vm.Description" type="text" class="form-control" placeholder="描述" />
-                    </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">check</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">啟用</label>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check">
-                            <input v-model="room.vm.IsEnabled" class="form-check-input" type="checkbox" :value="true">
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </li>
-    </ol>
-</offcanvas>
+
+<partial name="_SysRoomEdit" />
+
+<script src="~/js/SysRoom.cshtml.js"></script>
+<script>
+    const app = Vue.createApp(window.$config.setup());
+    app.mount('#app');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            room.getList();
+        }, 200);
+    });
+</script>
