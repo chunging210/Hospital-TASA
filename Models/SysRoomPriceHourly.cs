@@ -12,12 +12,6 @@ namespace TASA.Models;
 [Index("RoomId", Name = "RoomId")]
 public partial class SysRoomPriceHourly
 {
-    /// <summary>
-    /// 流水號
-    /// </summary>
-    [Key]
-    [Column(TypeName = "int(10) unsigned")]
-    public uint No { get; set; }
 
     /// <summary>
     /// 記錄ID

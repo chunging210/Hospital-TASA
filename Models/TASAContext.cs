@@ -66,6 +66,9 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<SysRoomPricePeriod> SysRoomPricePeriod { get; set; }
 
+    public virtual DbSet<SysRoomImage> SysRoomImage { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -98,6 +101,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceVisitorConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPriceHourlyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPricePeriodConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.SysRoomImageConfiguration());
         OnModelCreatingPartial(modelBuilder);
     }
 

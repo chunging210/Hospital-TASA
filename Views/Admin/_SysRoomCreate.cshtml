@@ -1,0 +1,271 @@
+<!-- 右側邊欄：新增會議室 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRoomCreate" aria-labelledby="offcanvasRoomCreateLabel"
+    style="width: 880px;">
+    <div class="offcanvas-header border-bottom">
+        <h5 id="offcanvasRoomCreateLabel" class="mb-0">
+            <i class="mdi mdi-home-plus"></i> 新增會議室
+        </h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body">
+        <form id="createRoomForm" class="needs-validation" novalidate>
+
+            <!-- 基本資訊區塊 -->
+            <div
+                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <h6 style="margin: 0 0 12px; font-weight: 600;">基本資訊</h6>
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">會議室名稱</label>
+                    <input type="text" class="form-control" id="create-name" placeholder="請輸入會議室名稱" required>
+                    <div class="invalid-feedback">請輸入會議室名稱</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">大樓名稱</label>
+                    <input type="text" class="form-control" id="create-building" placeholder="請輸入大樓名稱" required>
+                    <div class="invalid-feedback">請輸入大樓名稱</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">樓層</label>
+                    <select class="form-control" id="create-floor" required>
+                        <option value="">請選擇樓層</option>
+                        <option value="B2">B2 地下二樓</option>
+                        <option value="B1">B1 地下一樓</option>
+                        <option value="1">1樓</option>
+                        <option value="2">2樓</option>
+                        <option value="3">3樓</option>
+                        <option value="4">4樓</option>
+                        <option value="5">5樓</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">房間編號</label>
+                    <input type="text" class="form-control" id="create-room-number" placeholder="如：EDU-201" required>
+                    <div class="invalid-feedback">請輸入房間編號</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">會議室說明</label>
+                    <textarea class="form-control" id="create-room-description" rows="4" placeholder="請輸入會議室簡介、用途或特色..."
+                        required></textarea>
+                    <div class="invalid-feedback">請輸入會議室說明</div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-weight: 500; color: #495057;">容量（人）</label>
+                        <input type="number" class="form-control" id="create-capacity" min="1" value="10" required>
+                        <div class="invalid-feedback">請輸入容量</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" style="font-weight: 500; color: #495057;">面積（㎡）</label>
+                        <input type="number" class="form-control" id="create-area" min="1" value="20" required>
+                        <div class="invalid-feedback">請輸入面積</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 收費設定區塊 -->
+            <div
+                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <h6 style="margin: 0 0 12px; font-weight: 600;">收費設定</h6>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="refundEnabled" checked>
+                        <label class="form-check-label" style="font-weight: 500;" for="refundEnabled">啟用退費機制</label>
+                    </div>
+                    <small class="text-muted"
+                        style="display: block; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff; font-size: 13px;">
+                        開啟後允許使用者在規定時間內申請退費
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">收費方式</label>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="feeType" id="feeHourly"
+                                    value="hourly" onchange="room.toggleFeeOptions()" checked>
+                                <label class="form-check-label" for="feeHourly">小時制</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="feeType" id="feeSlot" value="slot"
+                                    onchange="room.toggleFeeOptions()">
+                                <label class="form-check-label" for="feeSlot">時段制</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 小時制設定 -->
+                <div id="hourlyOptions" style="display: block;">
+                    <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">小時制收費</h6>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span style="font-size: 14px;">設定每個時段的收費和開放狀態：</span>
+                            <div>
+                                <button type="button" class="btn btn-outline-success btn-sm me-2"
+                                    onclick="room.selectAllHours()">全選</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="room.deselectAllHours()">全不選</button>
+                            </div>
+                        </div>
+                        <div class="hourly-slot-container" id="hourlySlotContainer"
+                            style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px;">
+                            <!-- 由 JS 動態生成時段 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 時段制設定 -->
+                <div id="slotOptions" style="display: none;">
+                    <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">時段制收費</h6>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span style="font-size: 14px;">設定各個時段的收費：</span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="room.addTimeSlot()">
+                                <i class="bx bx-plus"></i> 新增時段
+                            </button>
+                        </div>
+                        <div class="slot-container" style="max-height: 500px; overflow-y: auto;">
+                            <div class="time-slot-container" id="timeSlotContainer">
+                                <!-- 預設時段 -->
+                                <div class="time-slot-item" data-slot-id="morning">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="morning" checked>
+                                        <label class="form-check-label" for="morning">開放</label>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm slot-name-input" value="上午時段"
+                                        placeholder="時段名稱" style="width: 80px; max-width: 150px;">
+                                    <input type="time" class="form-control form-control-sm time-input" value="09:00"
+                                        style="width: 110px;">
+                                    <span>-</span>
+                                    <input type="time" class="form-control form-control-sm time-input" value="12:00"
+                                        style="width: 110px;">
+                                    <div class="input-group" style="width: 180px;">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control form-control-sm fee-input"
+                                            placeholder="1000" min="0">
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                        onclick="room.removeTimeSlot(this)">刪除</button>
+                                </div>
+
+                                <div class="time-slot-item" data-slot-id="afternoon">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="afternoon">
+                                        <label class="form-check-label" for="afternoon">開放</label>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm slot-name-input" value="下午時段"
+                                        placeholder="時段名稱" style="width: 80px; max-width: 150px;">
+                                    <input type="time" class="form-control form-control-sm time-input" value="13:00"
+                                        style="width: 110px;">
+                                    <span>-</span>
+                                    <input type="time" class="form-control form-control-sm time-input" value="17:00"
+                                        style="width: 110px;">
+                                    <div class="input-group" style="width: 180px;">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control form-control-sm fee-input"
+                                            placeholder="1200" min="0">
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                        onclick="room.removeTimeSlot(this)">刪除</button>
+                                </div>
+
+                                <div class="time-slot-item" data-slot-id="evening">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="evening">
+                                        <label class="form-check-label" for="evening">開放</label>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm slot-name-input" value="晚上時段"
+                                        placeholder="時段名稱" style="width: 80px; max-width: 150px;">
+                                    <input type="time" class="form-control form-control-sm time-input" value="18:00"
+                                        style="width: 110px;">
+                                    <span>-</span>
+                                    <input type="time" class="form-control form-control-sm time-input" value="21:00"
+                                        style="width: 110px;">
+                                    <div class="input-group" style="width: 180px;">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control form-control-sm fee-input"
+                                            placeholder="800" min="0">
+                                        <span class="input-group-text">元</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                        onclick="room.removeTimeSlot(this)">刪除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 媒體資料區塊 -->
+            <div
+                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <h6 style="margin: 0 0 12px; font-weight: 600;">會議室媒體資料</h6>
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 500; color: #495057;">上傳圖片/影片</label>
+                    <div class="image-upload-container" id="mediaGrid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                        <div class="upload-item" onclick="document.getElementById('mediaUpload').click()"
+                            style="height: 120px; border: 2px dashed #cfe2ff; border-radius: 12px; background: #f8faff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;">
+                            請上傳圖片/影片
+                        </div>
+                        <input type="file" id="mediaUpload" accept="image/*,video/*" style=" display: none;"
+                            onchange="room.handleMediaUpload(event)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 租借權限設定區塊 -->
+            <div
+                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <h6 style="margin: 0 0 12px; font-weight: 600;">租借權限設定</h6>
+                <input type="hidden" id="create-rental-type" name="RentalType" value="internal">
+                <div class="rental-options" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                    <div class="rental-option selected" onclick="room.selectRentalOption(this, 'in')"
+                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;">
+                        <i class="bx bx-building" style="font-size: 2em; color: #007bff;"></i>
+                        <h6 class="mt-2">對內</h6>
+                        <small class="text-muted">僅限公司內部使用</small>
+                    </div>
+                    <div class="rental-option" onclick="room.selectRentalOption(this, 'out')"
+                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;">
+                        <i class="bx bx-group" style="font-size: 2em; color: #28a745;"></i>
+                        <h6 class="mt-2">對內外</h6>
+                        <small class="text-muted">內部及外部客戶可租借</small>
+                    </div>
+                    <div class="rental-option" onclick="room.selectRentalOption(this, 'closed')"
+                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;">
+                        <i class="bx bx-block" style="font-size: 2em; color: #dc3545;"></i>
+                        <h6 class="mt-2">不開放</h6>
+                        <small class="text-muted">暫不開放租借</small>
+                    </div>
+                    <div class="rental-option" onclick="room.selectRentalOption(this, 'free')"
+                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;">
+                        <i class="bx bx-gift" style="font-size: 2em; color: #17a2b8;"></i>
+                        <h6 class="mt-2">免費開放</h6>
+                        <small class="text-muted">免費提供使用</small>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- 固定底部按鈕 -->
+    <div class="d-grid gap-2 mt-4"
+        style="position: sticky; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 12px 20px; margin: 0;">
+        <button type="button" class="btn btn-primary" onclick="room.save()">送出</button>
+        <button type="button" class="btn btn-light" data-bs-dismiss="offcanvas">取消</button>
+    </div>
+</div>

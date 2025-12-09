@@ -14,7 +14,7 @@ namespace TASA.Services.RoomModule
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string? Building { get; set; }
-            public byte? Floor { get; set; }
+            public string? Floor { get; set; }
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public string? Status { get; set; }
@@ -40,17 +40,27 @@ namespace TASA.Services.RoomModule
             public Guid? Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string? Building { get; set; }
-            public byte? Floor { get; set; }
+            public string? Floor { get; set; }
             public string? Number { get; set; }
             public string? Description { get; set; }
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
-            public string? Image { get; set; }
             public string? Status { get; set; }
             public string? PricingType { get; set; } // "hourly" 或 "period"
             public bool IsEnabled { get; set; }
-            public object? BookingSettings { get; set; } // JSON 格式
-            public List<PricingDetailVM>? PricingDetails { get; set; } // 收費詳情
+            public string? BookingSettings { get; set; }
+
+            public List<RoomImageInput>? Images { get; set; }
+            public List<PricingDetailVM>? PricingDetails { get; set; }
+
+        }
+
+        public class RoomImageInput
+        {
+            public string Type { get; set; }     // "image" 或 "video"
+            public string Src { get; set; }      // base64 資料
+            public int FileSize { get; set; }
+            public int SortOrder { get; set; }
         }
 
         public record PricingDetailVM
@@ -81,13 +91,10 @@ namespace TASA.Services.RoomModule
                 Description = room.Description,
                 Capacity = room.Capacity,
                 Area = room.Area,
-                Image = room.Image,
                 Status = room.Status,
                 PricingType = room.PricingType,
                 IsEnabled = room.IsEnabled,
-                BookingSettings = room.BookingSettings != null
-                    ? JsonSerializer.Deserialize<object>(room.BookingSettings)
-                    : null,
+                BookingSettings = room.BookingSettings,
                 PricingDetails = new List<PricingDetailVM>()
             };
 
@@ -150,19 +157,42 @@ namespace TASA.Services.RoomModule
                 Description = vm.Description,
                 Capacity = vm.Capacity,
                 Area = vm.Area,
-                Image = vm.Image,
                 Status = vm.Status ?? "available",
                 PricingType = vm.PricingType ?? "hourly",
-                BookingSettings = vm.BookingSettings != null
-                    ? JsonSerializer.Serialize(vm.BookingSettings)
-                    : null,
+                BookingSettings = vm.BookingSettings,
                 IsEnabled = vm.IsEnabled,
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
             };
 
+
             db.SysRoom.Add(newSysRoom);
             db.SaveChanges();
+
+            if (vm.Images != null && vm.Images.Count > 0)  // ✅ 用 vm
+            {
+                foreach (var image in vm.Images)
+                {
+                    string imageUrl = SaveImage(image.Src, image.Type);  // ✅ 同步方法
+
+                    var roomImage = new SysRoomImage
+                    {
+                        Id = Guid.NewGuid(),
+                        RoomId = newSysRoom.Id,  // ✅ 用 newSysRoom.Id
+                        ImagePath = imageUrl,
+                        ImageName = Path.GetFileName(imageUrl),
+                        FileType = image.Type,
+                        FileSize = image.FileSize,
+                        SortOrder = image.SortOrder,
+                        CreateAt = DateTime.Now,
+                        CreateBy = userid!.Value  // ✅ 用 userid
+                    };
+
+                    db.SysRoomImage.Add(roomImage);  // ✅ 用 db
+                }
+                db.SaveChanges();  // ✅ 保存圖片
+            }
+
 
             // 新增收費設定
             SavePricingDetails(newSysRoom.Id, vm.PricingType, vm.PricingDetails);
@@ -170,6 +200,36 @@ namespace TASA.Services.RoomModule
             _ = service.LogServices.LogAsync("會議室新增",
                 $"{newSysRoom.Name}({newSysRoom.Id}) IsEnabled:{newSysRoom.IsEnabled} PricingType:{newSysRoom.PricingType}");
         }
+
+        private string SaveImage(string base64Data, string fileType)
+        {
+            try
+            {
+                var base64String = base64Data.Contains(",")
+                    ? base64Data.Split(",")[1]
+                    : base64Data;
+
+                byte[] imageBytes = Convert.FromBase64String(base64String);
+                string extension = fileType == "video" ? ".mp4" : ".png";
+                string fileName = $"{Guid.NewGuid()}{extension}";
+
+                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "room-images");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                string filePath = Path.Combine(uploadsFolder, fileName);
+                File.WriteAllBytes(filePath, imageBytes);
+
+                return $"/uploads/room-images/{fileName}";
+            }
+            catch (Exception ex)
+            {
+                throw new HttpException($"保存圖片失敗: {ex.Message}");
+            }
+        }
+
 
         public void Update(DetailVM vm)
         {
@@ -186,12 +246,9 @@ namespace TASA.Services.RoomModule
                 data.Description = vm.Description;
                 data.Capacity = vm.Capacity;
                 data.Area = vm.Area;
-                data.Image = vm.Image;
                 data.Status = vm.Status ?? "available";
                 data.PricingType = vm.PricingType ?? "hourly";
-                data.BookingSettings = vm.BookingSettings != null
-                    ? JsonSerializer.Serialize(vm.BookingSettings)
-                    : null;
+                data.BookingSettings = vm.BookingSettings;
                 data.IsEnabled = vm.IsEnabled;
 
                 db.SaveChanges();

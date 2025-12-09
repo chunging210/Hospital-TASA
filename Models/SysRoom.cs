@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 namespace TASA.Models;
 
 [Index("Id", Name = "Id", IsUnique = true)]
-[Index("Id", Name = "Id", IsUnique = true)]
 public partial class SysRoom
 {
     /// <summary>
@@ -40,7 +39,7 @@ public partial class SysRoom
     /// <summary>
     /// 樓層
     /// </summary>
-    public byte? Floor { get; set; }
+    public string Floor { get; set; }
 
     /// <summary>
     /// 描述
@@ -88,11 +87,6 @@ public partial class SysRoom
     [StringLength(50)]
     public string Number { get; set; }
 
-    /// <summary>
-    /// 會議室圖片URL
-    /// </summary>
-    [StringLength(500)]
-    public string Image { get; set; }
 
     /// <summary>
     /// 使用狀態(available/occupied/maintenance)
@@ -128,4 +122,7 @@ public partial class SysRoom
 
     [InverseProperty("Room")]
     public virtual ICollection<SysRoomPricePeriod> SysRoomPricePeriod { get; set; } = new List<SysRoomPricePeriod>();
+
+    public virtual ICollection<SysRoomImage> Images { get; set; } = new List<SysRoomImage>();
+
 }

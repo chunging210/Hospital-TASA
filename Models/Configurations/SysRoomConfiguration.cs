@@ -11,10 +11,18 @@ namespace TASA.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<SysRoom> entity)
         {
-            entity.HasKey(e => e.No).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.Property(e => e.No).HasComment("流水號");
-            entity.Property(e => e.Id).HasComment("會議室ID");
+            entity.HasIndex(e => e.No, "No");  // No 改成普通索引
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd()
+                .HasComment("會議室ID");
+
+            entity.Property(e => e.No)
+                .ValueGeneratedOnAdd()
+                .HasComment("流水號");
+
             entity.Property(e => e.Name).HasComment("名稱");
             entity.Property(e => e.Building).HasComment("樓棟名稱");
             entity.Property(e => e.Floor).HasComment("樓層");
@@ -31,7 +39,6 @@ namespace TASA.Models.Configurations
                 .HasDefaultValue(0)
                 .HasComment("面積(平方公尺)");
             entity.Property(e => e.Number).HasComment("房間編號");
-            entity.Property(e => e.Image).HasComment("會議室圖片URL");
             entity.Property(e => e.Status)
                 .HasDefaultValue("available")
                 .HasComment("使用狀態(available/occupied/maintenance)");

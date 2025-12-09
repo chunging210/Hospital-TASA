@@ -11,13 +11,14 @@ namespace TASA.Models.Configurations
     {
         public void Configure(EntityTypeBuilder<SysRoomPricePeriod> entity)
         {
-            entity.HasKey(e => e.No).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PRIMARY");  // ✅ 改成用 Id 當主鍵
 
-            entity.HasIndex(e => e.Id, "Id").IsUnique();
             entity.HasIndex(e => e.RoomId, "RoomId");
 
-            entity.Property(e => e.No).HasComment("流水號");
-            entity.Property(e => e.Id).HasComment("記錄ID");
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd()  // ✅ Id 自動產生
+                .HasComment("記錄ID");
+
             entity.Property(e => e.RoomId).HasComment("會議室ID");
             entity.Property(e => e.Name).HasComment("時段名稱");
             entity.Property(e => e.StartTime).HasComment("開始時間");
@@ -35,7 +36,6 @@ namespace TASA.Models.Configurations
             entity.HasOne(d => d.Room)
                 .WithMany(p => p.SysRoomPricePeriod)
                 .HasForeignKey(d => d.RoomId)
-                .HasPrincipalKey(p => p.Id)  // ← 新增這行，指向 Id 而不是 No
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_SysRoomPricePeriod_SysRoom");
 

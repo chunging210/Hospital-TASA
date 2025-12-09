@@ -1,0 +1,169 @@
+<!-- 會議室詳情模態視窗 -->
+<div class="modal fade" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roomDetailModalLabel">
+                    <i class="mdi mdi-home-city"></i> 會議室詳細資訊 - <span id="modal-room-name">201演講廳</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-6" style="display: flex; align-items: center;">
+                        <div class="room-image-carousel">
+                            <div id="roomImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                                <!-- 輪播指示器 -->
+                                <div class="carousel-indicators" id="carouselIndicators">
+                                    <!-- 由JavaScript動態生成 -->
+                                </div>
+
+                                <!-- 輪播內容 -->
+                                <div class="carousel-inner" id="carouselInner">
+                                    <!-- 由JavaScript動態生成 -->
+                                </div>
+
+                                <!-- 左右箭頭 -->
+                                <button class="carousel-control-prev" type="button" data-bs-target="#roomImageCarousel"
+                                    data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#roomImageCarousel"
+                                    data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <!-- Tab 導覽 -->
+                        <ul class="nav nav-tabs" id="roomDetailTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info"
+                                    type="button" role="tab" aria-controls="info" aria-selected="true">
+                                    <i class="mdi mdi-cog"></i> 基本資訊
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment"
+                                    type="button" role="tab" aria-controls="equipment" aria-selected="false">
+                                    <i class="mdi mdi-tools"></i> 設備狀態
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule"
+                                    type="button" role="tab" aria-controls="schedule" aria-selected="false">
+                                    <i class="mdi mdi-calendar-clock"></i> 今日時程
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing"
+                                    type="button" role="tab" aria-controls="pricing" aria-selected="false">
+                                    <i class="mdi mdi-currency-twd"></i> 收費標準
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab 內容 -->
+                        <div class="tab-content" id="roomDetailTabContent">
+                            <!-- 基本資訊 -->
+                            <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+                                <div class="info-item room-feature-section">
+                                    <div class="room-feature-content">
+                                        <div class="info-label">會議室說明</div>
+                                        <div class="info-value" id="modal-feature">會議室特色描述內容...</div>
+                                    </div>
+                                </div>
+
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-icon">
+                                            <i class="mdi mdi-account-group"></i>
+                                        </div>
+                                        <div class="info-label">容量</div>
+                                        <div class="info-value" id="modal-capacity">50人</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-icon">
+                                            <i class="mdi mdi-floor-plan"></i>
+                                        </div>
+                                        <div class="info-label">面積</div>
+                                        <div class="info-value" id="modal-area">80㎡</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-icon">
+                                            <i class="mdi mdi-door"></i>
+                                        </div>
+                                        <div class="info-label">房間編號</div>
+                                        <div class="info-value" id="modal-room-number">EDU-201</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-icon">
+                                            <i class="mdi mdi-map-marker"></i>
+                                        </div>
+                                        <div class="info-label">位置</div>
+                                        <div class="info-value" id="modal-location">教育大樓 2樓</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 設備頁 -->
+                            <div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
+                                <div class="equipment-status">
+                                    <h6 class="mb-3">
+                                        <i class="mdi mdi-tools text-warning"></i> 設備狀態
+                                    </h6>
+                                    <div class="equipment-list" id="modal-equipment-list">
+                                        <!-- 設備項目將由 JavaScript 生成 -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 時程頁 -->
+                            <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
+                                <div class="schedule-section">
+                                    <h6 class="mb-3">
+                                        <i class="mdi mdi-calendar-clock text-info"></i> 今日使用時程
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>時間</th>
+                                                    <th>會議名稱</th>
+                                                    <th>主辦單位</th>
+                                                    <th>狀態</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="modal-schedule-list">
+                                                <!-- 時程項目將由 JavaScript 生成 -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 收費頁 -->
+                            <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+                                <div class="pricing-section">
+                                    <div>
+                                        <span class="badge bg-primary" id="modal-pricing-type">小時制</span>
+                                        <span id="modal-booking-type"></span>
+                                        <span id="modal-booking-details"></span>
+                                    </div>
+
+                                    <div id="modal-pricing-list">
+                                        <!-- 收費項目由 JavaScript 生成 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
