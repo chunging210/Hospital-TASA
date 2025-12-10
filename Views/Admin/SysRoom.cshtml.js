@@ -15,6 +15,36 @@ const room = {
     editModal: null,
     detailModal: null,
 
+    carouselIndex: {},
+    prevImage: function (btn, roomId) {
+        const card = btn.closest('.room-card');
+        const roomItem = this.list.find(r => r.Id === roomId);
+        if (!roomItem || roomItem.Images.length <= 1) return;
+
+        this.carouselIndex[roomId] = this.carouselIndex[roomId] || 0;
+        this.carouselIndex[roomId]--;
+        if (this.carouselIndex[roomId] < 0) {
+            this.carouselIndex[roomId] = roomItem.Images.length - 1;
+        }
+
+        const preview = card.querySelector('.room-carousel > div');
+        preview.style.backgroundImage = `url('${roomItem.Images[this.carouselIndex[roomId]]}')`;
+    },
+
+    nextImage: function (btn, roomId) {
+        const card = btn.closest('.room-card');
+        const roomItem = this.list.find(r => r.Id === roomId);
+        if (!roomItem || roomItem.Images.length <= 1) return;
+
+        this.carouselIndex[roomId] = this.carouselIndex[roomId] || 0;
+        this.carouselIndex[roomId]++;
+        if (this.carouselIndex[roomId] >= roomItem.Images.length) {
+            this.carouselIndex[roomId] = 0;
+        }
+
+        const preview = card.querySelector('.room-carousel > div');
+        preview.style.backgroundImage = `url('${roomItem.Images[this.carouselIndex[roomId]]}')`;
+    },
     // 取得會議室列表
     getList: function () {
         console.log('getList 執行中...');
@@ -64,6 +94,9 @@ const room = {
 
     // ===== 渲染卡片網格 =====
     renderRoomGrid: function () {
+
+        console.log('第一筆資料:', this.list[0]);
+
         const roomGrid = document.getElementById('room-grid');
         roomGrid.innerHTML = '';
 
@@ -87,7 +120,17 @@ const room = {
                     <div class="room-info">${roomItem.Building} ${roomItem.Floor}樓 | ${roomItem.Number}</div>
                 </div>
                 <div class="room-card-body">
-                    <div class="room-preview" style="${roomItem.Image ? `background-image: url('${roomItem.Image}')` : ''}"></div>
+                    <div class="room-carousel" style="position: relative; width: 100%; height: 180px; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
+                    <div style="width: 100%; height: 100%; background-image: url('${roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[0] : ''}'); background-size: cover; background-position: center;"></div>
+                    ${roomItem.Images && roomItem.Images.length > 1 ? `
+                        <button class="carousel-btn prev" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 10;" onclick="room.prevImage(this, '${roomItem.Id}')">
+                            <i class="mdi mdi-chevron-left"></i>
+                        </button>
+                        <button class="carousel-btn next" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 10;" onclick="room.nextImage(this, '${roomItem.Id}')">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </button>
+                    ` : ''}
+                </div>
                     <div class="room-details">
                         <div class="detail-row">
                             <span class="detail-label">容量</span>
@@ -163,6 +206,7 @@ const room = {
 
     // 填入編輯表單
     populateEditForm: function (data) {
+
         document.getElementById('roomEditForm').dataset.roomId = data.Id;
         document.getElementById('edit-name').value = data.Name || '';
         document.getElementById('edit-building').value = data.Building || '';
@@ -193,11 +237,11 @@ const room = {
         if (!feeType) return;
 
         hourlyOptions.style.display = feeType.value === 'hourly' ? 'block' : 'none';
-        slotOptions.style.display = feeType.value === 'slot' ? 'block' : 'none';
+        slotOptions.style.display = feeType.value === 'period' ? 'block' : 'none';
 
         if (feeType.value === 'hourly') {
             this.generateHourlySlots();
-        } else if (feeType.value === 'slot') {
+        } else if (feeType.value === 'period') {
 
             this.clearTimeSlotContainer();
             this.generateCreateTimeSlotDefaults();  // 生成預設三個時段
@@ -584,14 +628,26 @@ const room = {
 
     // ===== 詳情檢視 =====
     viewRoomDetail: function (roomId) {
-        console.log('viewRoomDetail called with ID:', roomId);
+        console.log('🔥 viewRoomDetail called with ID:', roomId);
         global.api.admin.roomdetail({ body: { id: roomId } })
             .then((response) => {
+                console.log('🔥 API 回應物件:', response);
+                console.log('🔥 response.data:', response.data);
+                console.log('🔥 response.data.Images:', response.data.Images);
+                console.log('🔥 response.data.Images 的長度:', response.data.Images?.length);
+
+                // 檢查 Images 內容
+                if (response.data.Images && Array.isArray(response.data.Images)) {
+                    response.data.Images.forEach((img, i) => {
+                        console.log(`  [${i}] Type: ${img.Type}, Src: ${img.Src}`);
+                    });
+                }
+
                 this.populateDetailModal(response.data);
                 this.detailModal.show();
             })
             .catch(error => {
-                console.error('取得資料失敗:', error);
+                console.error('❌ 取得資料失敗:', error);
                 alert('取得資料失敗');
             });
     },
@@ -648,40 +704,74 @@ const room = {
 
         const pricingList = document.getElementById('modal-pricing-list');
         pricingList.innerHTML = '';
-        if (data.Pricing && data.Pricing.length > 0) {
-            data.Pricing.forEach(price => {
+
+        console.log('🔥 PricingDetails:', data.PricingDetails);  // ← 加 debug
+
+        if (data.PricingDetails && data.PricingDetails.length > 0) {
+            data.PricingDetails.forEach(price => {
+                console.log(`  → Name: ${price.Name}, Price: ${price.Price}`);  // ← 加 debug
+
                 const priceItem = document.createElement('div');
                 priceItem.className = 'time-slot-item';
                 priceItem.innerHTML = `
-                    <span><i class="mdi mdi-clock-outline me-2"></i>${price.Time || price.StartTime + '-' + price.EndTime}</span>
-                    <span class="fw-bold text-primary">$${price.Price || price.Fee} 元</span>
-                `;
+            <span><i class="mdi mdi-clock-outline me-2"></i>${price.Name || price.StartTime + ' - ' + price.EndTime}</span>
+            <span class="fw-bold text-primary">$${price.Price} 元</span>
+        `;
                 pricingList.appendChild(priceItem);
             });
+            console.log('✅ 收費項目渲染完成');
+        } else {
+            console.warn('⚠️ 沒有收費詳情');
         }
     },
 
     generateImageCarousel: function (data) {
+        console.log('🔥 generateImageCarousel 開始執行');
+        console.log('🔥 data.Images:', data.Images);
+
         const carouselInner = document.getElementById('carouselInner');
         const carouselIndicators = document.getElementById('carouselIndicators');
+
+        if (!carouselInner || !carouselIndicators) {
+            console.error('❌ 找不到輪播容器!');
+            return;
+        }
 
         carouselInner.innerHTML = '';
         carouselIndicators.innerHTML = '';
 
-        const mediaList = data.Media && data.Media.length > 0 ? data.Media : [{ Type: 'image', Src: data.Image }];
+        const mediaList = (data.Images && Array.isArray(data.Images) && data.Images.length > 0)
+            ? data.Images
+            : [];
 
+        console.log('🔥 mediaList:', mediaList);
+
+        if (mediaList.length === 0) {
+            console.warn('⚠️ 沒有圖片');
+            carouselInner.innerHTML = '<div class="carousel-item active"><div style="width: 100%; height: 400px; background: #e9ecef; display: flex; align-items: center; justify-content: center; color: #999;">暫無圖片</div></div>';
+            return;
+        }
+
+        // 遍歷每張圖片
         mediaList.forEach((media, index) => {
+            console.log(`🔥 第 ${index} 張: type=${media.type}, src=${media.src}`);
+
             const carouselItem = document.createElement('div');
             carouselItem.className = `carousel-item ${index === 0 ? 'active' : ''}`;
 
-            if (media.Type === 'video') {
-                carouselItem.innerHTML = `<video class="d-block w-100" controls style="height: 400px; object-fit: cover;"><source src="${media.Src}" type="video/mp4">您的瀏覽器不支援影片播放。</video>`;
+            // ✅ 用小寫屬性名 (media.type, media.src)
+            if ((media.type === 'video') || (media.Type === 'video')) {
+                const src = media.src || media.Src;
+                carouselItem.innerHTML = `<video class="d-block w-100" controls style="height: 400px; object-fit: cover;"><source src="${src}" type="video/mp4">您的瀏覽器不支援影片播放。</video>`;
             } else {
-                carouselItem.innerHTML = `<img src="${media.Src || media.Image}" class="d-block w-100" alt="會議室媒體" style="height: 400px; object-fit: cover;">`;
+                const src = media.src || media.Src;
+                console.log(`  → 圖片，src=${src}`);
+                carouselItem.innerHTML = `<img src="${src}" class="d-block w-100" alt="會議室媒體" style="height: 400px; object-fit: cover;">`;
             }
 
             carouselInner.appendChild(carouselItem);
 
+            // 添加指示器
             const indicator = document.createElement('button');
             indicator.type = 'button';
             indicator.setAttribute('data-bs-target', '#roomImageCarousel');
@@ -692,6 +782,17 @@ const room = {
             }
             carouselIndicators.appendChild(indicator);
         });
+
+        // ✅ 延遲初始化 Carousel
+        setTimeout(() => {
+            const carouselEl = document.getElementById('roomImageCarousel');
+            if (carouselEl) {
+                const carousel = new bootstrap.Carousel(carouselEl);
+                console.log('✅ Carousel 初始化完成');
+            }
+        }, 100);
+
+        console.log('✅ 輪播生成完成');
     },
 
     getScheduleStatusBadge: function (status) {
@@ -731,7 +832,8 @@ const room = {
                 this.editModal.show();
             })
             .catch(error => {
-                console.error('取得資料失敗:', error);
+                console.error('❌ 取得資料失敗:', error);
+                console.error('❌ 錯誤詳情:', error.response || error.message);
                 alert('取得資料失敗');
             });
     },
@@ -759,7 +861,7 @@ const room = {
                     });
                 }
             }
-        } else if (feeType.value === 'slot') {
+        } else if (feeType.value === 'period') {
             // 時段制
             const slotItems = document.querySelectorAll('#timeSlotContainer [data-slot-id]');
             slotItems.forEach(item => {
@@ -839,7 +941,7 @@ const room = {
                     });
                 }
             }
-        } else if (feeType.value === 'slot') {
+        } else if (feeType.value === 'period') {
             // 時段制
             const slotItems = document.querySelectorAll('#timeSlotContainer [data-slot-id]');
             slotItems.forEach(item => {
@@ -879,8 +981,8 @@ const room = {
 
         };
 
-        console.log('【新增】傳送給後端的資料:', formData);
-
+        console.log('【新增】傳送的 Images:', formData.Images);  // ← 加這行
+        console.log('【新增】完整 formData:', formData);
         // 發送新增
         global.api.admin.roominsert({ body: formData })
             .then((response) => {

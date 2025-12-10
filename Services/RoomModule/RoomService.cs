@@ -2,7 +2,7 @@
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TASA.Services.RoomModule
 {
@@ -14,25 +14,46 @@ namespace TASA.Services.RoomModule
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string? Building { get; set; }
-            public string? Floor { get; set; }
+            public string Floor { get; set; } = string.Empty;
+            public string? Number { get; set; }
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public string? Status { get; set; }
             public bool IsEnabled { get; set; }
+
+            public List<string> Images { get; set; } = new();
             public DateTime CreateAt { get; set; }
         }
 
-        /// <summary>
-        /// 列表
-        /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
+
+
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereIf(query.IsEnabled.HasValue, x => x.IsEnabled == query.IsEnabled)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .Mapping<ListVM>();
+                .Select(x => new ListVM
+                {
+                    No = x.No,
+                    Id = x.Id,
+                    Name = x.Name,
+                    Building = x.Building,
+                    Floor = x.Floor,
+                    Number = x.Number,
+                    Capacity = x.Capacity,
+                    Area = x.Area,
+                    Status = x.Status,
+                    IsEnabled = x.IsEnabled,
+                    CreateAt = x.CreateAt,
+                    Images = x.Images
+                        .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+                        .OrderBy(img => img.SortOrder)
+                        .Select(img => img.ImagePath)
+                        .ToList()
+                });
+
         }
 
         public record DetailVM
@@ -46,20 +67,26 @@ namespace TASA.Services.RoomModule
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public string? Status { get; set; }
-            public string? PricingType { get; set; } // "hourly" 或 "period"
+            public string? PricingType { get; set; }
             public bool IsEnabled { get; set; }
             public string? BookingSettings { get; set; }
-
             public List<RoomImageInput>? Images { get; set; }
             public List<PricingDetailVM>? PricingDetails { get; set; }
-
         }
 
+        [Serializable]
         public class RoomImageInput
         {
-            public string Type { get; set; }     // "image" 或 "video"
-            public string Src { get; set; }      // base64 資料
+            [JsonPropertyName("type")]
+            public string? Type { get; set; }
+
+            [JsonPropertyName("src")]
+            public string? Src { get; set; }
+
+            [JsonPropertyName("fileSize")]
             public int FileSize { get; set; }
+
+            [JsonPropertyName("sortOrder")]
             public int SortOrder { get; set; }
         }
 
@@ -76,6 +103,9 @@ namespace TASA.Services.RoomModule
         {
             var room = db.SysRoom
                 .AsNoTracking()
+                .Include(x => x.Images)
+                .Include(x => x.SysRoomPriceHourly)
+                .Include(x => x.SysRoomPricePeriod)
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == id);
 
@@ -95,15 +125,25 @@ namespace TASA.Services.RoomModule
                 PricingType = room.PricingType,
                 IsEnabled = room.IsEnabled,
                 BookingSettings = room.BookingSettings,
-                PricingDetails = new List<PricingDetailVM>()
+                PricingDetails = new List<PricingDetailVM>(),
+                Images = room.Images
+                    .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+                    .OrderBy(img => img.SortOrder)
+                    .Select(img => new RoomImageInput
+                    {
+                        Type = img.FileType,
+                        Src = img.ImagePath,
+                        FileSize = img.FileSize,
+                        SortOrder = img.SortOrder
+                    })
+                    .ToList()
             };
 
             // 取得收費詳情
             if (room.PricingType == "hourly")
             {
-                var hourlyPricing = db.SysRoomPriceHourly
-                    .AsNoTracking()
-                    .Where(x => x.RoomId == room.Id)
+                var hourlyPricing = room.SysRoomPriceHourly
+                    .Where(x => x.DeleteAt == null)
                     .OrderBy(x => x.StartTime)
                     .Select(x => new PricingDetailVM
                     {
@@ -119,9 +159,8 @@ namespace TASA.Services.RoomModule
             }
             else if (room.PricingType == "period")
             {
-                var periodPricing = db.SysRoomPricePeriod
-                    .AsNoTracking()
-                    .Where(x => x.RoomId == room.Id)
+                var periodPricing = room.SysRoomPricePeriod
+                    .Where(x => x.DeleteAt == null)
                     .OrderBy(x => x.StartTime)
                     .Select(x => new PricingDetailVM
                     {
@@ -136,15 +175,31 @@ namespace TASA.Services.RoomModule
                 detailVM.PricingDetails = periodPricing;
             }
 
+            // Console.WriteLine($"[DEBUG] Room {room.Id} has {room.Images.Count} images");
+            // foreach (var img in detailVM.Images ?? new())
+            // {
+            //     Console.WriteLine($"  - Type: {img.Type}, Src: {img.Src}");
+            // }
+
             return detailVM;
         }
 
         public void Insert(DetailVM vm)
         {
             var userid = service.UserClaimsService.Me()?.Id;
-            if (db.SysRoom.WhereNotDeleted().Any(x => x.Name == vm.Name))
+            if (db.SysRoom.WhereNotDeleted().Any(x =>
+                x.Name == vm.Name &&
+                x.Building == vm.Building &&
+                x.Floor == vm.Floor))
             {
-                throw new HttpException("會議室已存在");
+                throw new HttpException("此樓層已存在相同名稱的會議室");
+            }
+
+
+            string status = vm.Status ?? "available";
+            if (vm.BookingSettings == "closed")
+            {
+                status = "unavailable";
             }
 
             var newSysRoom = new SysRoom()
@@ -157,7 +212,7 @@ namespace TASA.Services.RoomModule
                 Description = vm.Description,
                 Capacity = vm.Capacity,
                 Area = vm.Area,
-                Status = vm.Status ?? "available",
+                Status = status,
                 PricingType = vm.PricingType ?? "hourly",
                 BookingSettings = vm.BookingSettings,
                 IsEnabled = vm.IsEnabled,
@@ -165,43 +220,44 @@ namespace TASA.Services.RoomModule
                 CreateBy = userid!.Value
             };
 
-
             db.SysRoom.Add(newSysRoom);
             db.SaveChanges();
 
-            if (vm.Images != null && vm.Images.Count > 0)  // ✅ 用 vm
+            // 處理圖片
+            if (vm.Images != null && vm.Images.Count > 0)
             {
-                foreach (var image in vm.Images)
+                int sortOrder = 0;
+                foreach (var imageInput in vm.Images)
                 {
-                    string imageUrl = SaveImage(image.Src, image.Type);  // ✅ 同步方法
+                    string imagePath = imageInput.Src!.StartsWith("data:")
+                        ? SaveImage(imageInput.Src, imageInput.Type)
+                        : imageInput.Src;
 
                     var roomImage = new SysRoomImage
                     {
                         Id = Guid.NewGuid(),
-                        RoomId = newSysRoom.Id,  // ✅ 用 newSysRoom.Id
-                        ImagePath = imageUrl,
-                        ImageName = Path.GetFileName(imageUrl),
-                        FileType = image.Type,
-                        FileSize = image.FileSize,
-                        SortOrder = image.SortOrder,
+                        RoomId = newSysRoom.Id,
+                        ImagePath = imagePath,
+                        ImageName = Path.GetFileName(imagePath),
+                        FileType = imageInput.Type ?? "image",
+                        FileSize = imageInput.FileSize,
+                        SortOrder = sortOrder++,
                         CreateAt = DateTime.Now,
-                        CreateBy = userid!.Value  // ✅ 用 userid
+                        CreateBy = userid!.Value
                     };
 
-                    db.SysRoomImage.Add(roomImage);  // ✅ 用 db
+                    db.SysRoomImage.Add(roomImage);
                 }
-                db.SaveChanges();  // ✅ 保存圖片
+                db.SaveChanges();
             }
 
-
-            // 新增收費設定
             SavePricingDetails(newSysRoom.Id, vm.PricingType, vm.PricingDetails);
 
             _ = service.LogServices.LogAsync("會議室新增",
                 $"{newSysRoom.Name}({newSysRoom.Id}) IsEnabled:{newSysRoom.IsEnabled} PricingType:{newSysRoom.PricingType}");
         }
 
-        private string SaveImage(string base64Data, string fileType)
+        private string SaveImage(string base64Data, string? fileType)
         {
             try
             {
@@ -230,12 +286,12 @@ namespace TASA.Services.RoomModule
             }
         }
 
-
         public void Update(DetailVM vm)
         {
             var data = db.SysRoom
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);
+
 
             if (data != null)
             {
@@ -246,14 +302,21 @@ namespace TASA.Services.RoomModule
                 data.Description = vm.Description;
                 data.Capacity = vm.Capacity;
                 data.Area = vm.Area;
-                data.Status = vm.Status ?? "available";
                 data.PricingType = vm.PricingType ?? "hourly";
                 data.BookingSettings = vm.BookingSettings;
                 data.IsEnabled = vm.IsEnabled;
 
+                if (vm.BookingSettings == "closed")
+                {
+                    data.Status = "unavailable";
+                }
+                else
+                {
+                    data.Status = vm.Status ?? "available";
+                }
+
                 db.SaveChanges();
 
-                // 更新收費設定（先刪除再新增）
                 DeletePricingDetails(data.Id, data.PricingType);
                 SavePricingDetails(data.Id, vm.PricingType, vm.PricingDetails);
 
@@ -273,7 +336,6 @@ namespace TASA.Services.RoomModule
                 data.DeleteAt = DateTime.UtcNow;
                 db.SaveChanges();
 
-                // 軟刪除關聯的收費設定
                 var hourlyPrices = db.SysRoomPriceHourly
                     .Where(x => x.RoomId == data.Id)
                     .ToList();
@@ -295,9 +357,6 @@ namespace TASA.Services.RoomModule
             }
         }
 
-        /// <summary>
-        /// 保存收費設定
-        /// </summary>
         private void SavePricingDetails(Guid roomId, string? pricingType, List<PricingDetailVM>? pricingDetails)
         {
             if (string.IsNullOrEmpty(pricingType) || pricingDetails == null || pricingDetails.Count == 0)
@@ -305,58 +364,125 @@ namespace TASA.Services.RoomModule
 
             var userid = service.UserClaimsService.Me()?.Id;
 
+            // ✅ 檢核共同項目（hourly 和 period 都需要）
+            var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
+
+            foreach (var pricing in enabledPricings)
+            {
+                // 1. 檢核：時間格式是否正確
+                if (!TimeSpan.TryParse(pricing.StartTime, out var startTime) ||
+                    !TimeSpan.TryParse(pricing.EndTime, out var endTime))
+                {
+                    throw new HttpException($"時間格式錯誤: {pricing.StartTime} 或 {pricing.EndTime}");
+                }
+
+                // 2. 檢核：開始時間 >= 結束時間
+                if (startTime >= endTime)
+                {
+                    throw new HttpException($"開始時間必須早於結束時間: {pricing.StartTime} - {pricing.EndTime}");
+                }
+
+                // 3. 檢核：價格必須 > 0
+                if (pricing.Price <= 0)
+                {
+                    throw new HttpException($"價格必須大於 0，目前: {pricing.Price}");
+                }
+            }
+
             if (pricingType == "hourly")
             {
-                foreach (var pricing in pricingDetails.Where(p => p.Enabled))
+                foreach (var pricing in enabledPricings)
                 {
-                    if (TimeSpan.TryParse(pricing.StartTime, out var startTime) &&
-                        TimeSpan.TryParse(pricing.EndTime, out var endTime))
+                    TimeSpan.TryParse(pricing.StartTime, out var startTime);
+                    TimeSpan.TryParse(pricing.EndTime, out var endTime);
+
+                    var hourlyPrice = new SysRoomPriceHourly
                     {
-                        var hourlyPrice = new SysRoomPriceHourly
-                        {
-                            Id = Guid.NewGuid(),
-                            RoomId = roomId,
-                            StartTime = startTime,
-                            EndTime = endTime,
-                            Price = pricing.Price,
-                            IsEnabled = pricing.Enabled,
-                            CreateAt = DateTime.Now,
-                            CreateBy = userid!.Value
-                        };
-                        db.SysRoomPriceHourly.Add(hourlyPrice);
-                    }
+                        Id = Guid.NewGuid(),
+                        RoomId = roomId,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        Price = pricing.Price,
+                        IsEnabled = pricing.Enabled,
+                        CreateAt = DateTime.Now,
+                        CreateBy = userid!.Value
+                    };
+                    db.SysRoomPriceHourly.Add(hourlyPrice);
                 }
             }
             else if (pricingType == "period")
             {
-                foreach (var pricing in pricingDetails.Where(p => p.Enabled))
+                // ✅ 時段制檢核：檢查時段名稱
+                foreach (var pricing in enabledPricings)
                 {
-                    if (TimeSpan.TryParse(pricing.StartTime, out var startTime) &&
-                        TimeSpan.TryParse(pricing.EndTime, out var endTime))
+                    if (string.IsNullOrWhiteSpace(pricing.Name))
                     {
-                        var periodPrice = new SysRoomPricePeriod
-                        {
-                            Id = Guid.NewGuid(),
-                            RoomId = roomId,
-                            Name = pricing.Name ?? "未命名時段",
-                            StartTime = startTime,
-                            EndTime = endTime,
-                            Price = pricing.Price,
-                            IsEnabled = pricing.Enabled,
-                            CreateAt = DateTime.Now,
-                            CreateBy = userid!.Value
-                        };
-                        db.SysRoomPricePeriod.Add(periodPrice);
+                        throw new HttpException("時段名稱不能為空");
                     }
+                }
+
+                // ✅ 檢核：時段是否重疊或重複
+                var enabledList = enabledPricings
+                    .Select(p => new
+                    {
+                        Name = p.Name,
+                        StartTime = TimeSpan.Parse(p.StartTime),
+                        EndTime = TimeSpan.Parse(p.EndTime),
+                        Price = p.Price
+                    })
+                    .ToList();
+
+                for (int i = 0; i < enabledList.Count; i++)
+                {
+                    for (int j = i + 1; j < enabledList.Count; j++)
+                    {
+                        var current = enabledList[i];
+                        var next = enabledList[j];
+
+                        // 檢查是否重疊：
+                        // 重疊條件：current.Start < next.End AND next.Start < current.End
+                        if (current.StartTime < next.EndTime && next.StartTime < current.EndTime)
+                        {
+                            throw new HttpException(
+                                $"時段衝突: \"{current.Name}\" ({current.StartTime:hh\\:mm}-{current.EndTime:hh\\:mm}) " +
+                                $"與 \"{next.Name}\" ({next.StartTime:hh\\:mm}-{next.EndTime:hh\\:mm}) 重疊"
+                            );
+                        }
+
+                        // 檢查是否完全相同
+                        if (current.StartTime == next.StartTime && current.EndTime == next.EndTime)
+                        {
+                            throw new HttpException(
+                                $"時段重複: \"{current.Name}\" 和 \"{next.Name}\" 的時間完全相同"
+                            );
+                        }
+                    }
+                }
+
+                foreach (var pricing in enabledPricings)
+                {
+                    TimeSpan.TryParse(pricing.StartTime, out var startTime);
+                    TimeSpan.TryParse(pricing.EndTime, out var endTime);
+
+                    var periodPrice = new SysRoomPricePeriod
+                    {
+                        Id = Guid.NewGuid(),
+                        RoomId = roomId,
+                        Name = pricing.Name,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        Price = pricing.Price,
+                        IsEnabled = pricing.Enabled,
+                        CreateAt = DateTime.Now,
+                        CreateBy = userid!.Value
+                    };
+                    db.SysRoomPricePeriod.Add(periodPrice);
                 }
             }
 
             db.SaveChanges();
         }
 
-        /// <summary>
-        /// 刪除收費設定
-        /// </summary>
         private void DeletePricingDetails(Guid roomId, string? pricingType)
         {
             if (pricingType == "hourly")
