@@ -199,7 +199,7 @@ namespace TASA.Services.RoomModule
             string status = vm.Status ?? "available";
             if (vm.BookingSettings == "closed")
             {
-                status = "unavailable";
+                status = "maintenance";
             }
 
             var newSysRoom = new SysRoom()
@@ -308,7 +308,7 @@ namespace TASA.Services.RoomModule
 
                 if (vm.BookingSettings == "closed")
                 {
-                    data.Status = "unavailable";
+                    data.Status = "maintenance";
                 }
                 else
                 {

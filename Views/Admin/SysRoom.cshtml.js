@@ -1,258 +1,173 @@
-﻿import global from '/global.js';
+﻿// Admin/SysRoom
+import global from '/global.js';
+const { ref, reactive, onMounted, computed } = Vue;
 
-// 模擬舊版的 room 物件結構
-const room = {
-    // 查詢參數
-    query: {
-        keyword: '',
-        pageIndex: 1,
-        pageSize: 6
-    },
-    list: [],
-    total: 0,
-    hasNextPage: false,
-    offcanvas: null,
-    editModal: null,
-    detailModal: null,
+class VM {
+    Id = null;
+    Name = '';
+    Description = '';
+    IsEnabled = true;
+}
 
-    carouselIndex: {},
-    prevImage: function (btn, roomId) {
-        const card = btn.closest('.room-card');
-        const roomItem = this.list.find(r => r.Id === roomId);
-        if (!roomItem || roomItem.Images.length <= 1) return;
+const getStatusText = (status) => {
+    const statusMap = {
+        'available': '可用',
+        'occupied': '使用中',
+        'maintenance': '維護中'
+    };
+    return statusMap[status] || status;
+};
 
-        this.carouselIndex[roomId] = this.carouselIndex[roomId] || 0;
-        this.carouselIndex[roomId]--;
-        if (this.carouselIndex[roomId] < 0) {
-            this.carouselIndex[roomId] = roomItem.Images.length - 1;
-        }
+const getStatusClass = (status) => {
+    const classMap = {
+        'available': 'status-available',
+        'occupied': 'status-occupied',
+        'maintenance': 'status-maintenance'
+    };
+    return classMap[status] || '';
+};
 
-        const preview = card.querySelector('.room-carousel > div');
-        preview.style.backgroundImage = `url('${roomItem.Images[this.carouselIndex[roomId]]}')`;
-    },
+let imageIndices = reactive({});
 
-    nextImage: function (btn, roomId) {
-        const card = btn.closest('.room-card');
-        const roomItem = this.list.find(r => r.Id === roomId);
-        if (!roomItem || roomItem.Images.length <= 1) return;
+const room = new function () {
+    this.query = reactive({ keyword: '' });
+    this.list = reactive([]);
+    this.form = reactive({
+        name: '',
+        building: '',
+        floor: '',
+        roomNumber: '',
+        description: '',
+        capacity: null,
+        area: null,
+        refundEnabled: true,
+        feeType: 'hourly',
+        rentalType: 'in'
+    });
 
-        this.carouselIndex[roomId] = this.carouselIndex[roomId] || 0;
-        this.carouselIndex[roomId]++;
-        if (this.carouselIndex[roomId] >= roomItem.Images.length) {
-            this.carouselIndex[roomId] = 0;
-        }
+    this.mediaFiles = reactive([]);
+    this.timeSlots = reactive([]);
+    this.hourlySlots = ref([]);
 
-        const preview = card.querySelector('.room-carousel > div');
-        preview.style.backgroundImage = `url('${roomItem.Images[this.carouselIndex[roomId]]}')`;
-    },
-    // 取得會議室列表
-    getList: function () {
-        console.log('getList 執行中...');
+    this.getList = () => {
         global.api.admin.roomlist({ body: this.query })
             .then((response) => {
-                console.log('API 回傳:', response);
-                this.list = response.data?.items || response.data || [];
-                this.total = response.data?.total || this.list.length;
-                this.hasNextPage = (this.query.pageIndex * this.query.pageSize) < this.total;
-
-                // 更新分頁UI
-                document.getElementById('totalCount').textContent = this.total;
-                document.getElementById('pageIndex').textContent = this.query.pageIndex;
-                document.getElementById('prevPageBtn').classList.toggle('disabled', this.query.pageIndex <= 1);
-                document.getElementById('nextPageBtn').classList.toggle('disabled', !this.hasNextPage);
-
-                this.renderRoomGrid();
+                copy(this.list, response.data);
+                if (Array.isArray(response.data)) {
+                    response.data.forEach(item => {
+                        if (!imageIndices[item.Id]) {
+                            imageIndices[item.Id] = 0;
+                        }
+                    });
+                }
             })
             .catch(error => {
-                console.error('getList 錯誤:', error);
-                alert('取得資料失敗');
+                addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
-    },
+    }
 
-    // 搜尋
-    search: function () {
-        this.query.keyword = document.getElementById('searchKeyword').value;
-        this.query.pageIndex = 1;
-        this.getList();
-    },
+    this.offcanvas = null;
+    this.vm = reactive(new VM());
 
-    // 前一頁
-    previousPage: function () {
-        if (this.query.pageIndex > 1) {
-            this.query.pageIndex--;
-            this.getList();
-        }
-    },
+    this.getVM = (id) => {
 
-    // 下一頁
-    nextPage: function () {
-        if (this.hasNextPage) {
-            this.query.pageIndex++;
-            this.getList();
-        }
-    },
+        this.mediaFiles.splice(0);
+        this.timeSlots.splice(0);
+        this.generateHourlySlots();
 
-    // ===== 渲染卡片網格 =====
-    renderRoomGrid: function () {
-
-        console.log('第一筆資料:', this.list[0]);
-
-        const roomGrid = document.getElementById('room-grid');
-        roomGrid.innerHTML = '';
-
-        if (this.list.length === 0) {
-            roomGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #999;">查無資料</div>';
-            return;
-        }
-
-        this.list.forEach(roomItem => {
-            const card = document.createElement('div');
-            card.className = 'room-card';
-
-            const statusClass = roomItem.Status === 'available' ? 'status-available' :
-                roomItem.Status === 'occupied' ? 'status-occupied' : 'status-maintenance';
-            const statusText = roomItem.Status === 'available' ? '可預約' :
-                roomItem.Status === 'occupied' ? '使用中' : '維修中';
-
-            card.innerHTML = `
-                <div class="room-card-header">
-                    <div class="room-name">${roomItem.Name}</div>
-                    <div class="room-info">${roomItem.Building} ${roomItem.Floor}樓 | ${roomItem.Number}</div>
-                </div>
-                <div class="room-card-body">
-                    <div class="room-carousel" style="position: relative; width: 100%; height: 180px; border-radius: 6px; overflow: hidden; margin-bottom: 15px;">
-                    <div style="width: 100%; height: 100%; background-image: url('${roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[0] : ''}'); background-size: cover; background-position: center;"></div>
-                    ${roomItem.Images && roomItem.Images.length > 1 ? `
-                        <button class="carousel-btn prev" style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 10;" onclick="room.prevImage(this, '${roomItem.Id}')">
-                            <i class="mdi mdi-chevron-left"></i>
-                        </button>
-                        <button class="carousel-btn next" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; z-index: 10;" onclick="room.nextImage(this, '${roomItem.Id}')">
-                            <i class="mdi mdi-chevron-right"></i>
-                        </button>
-                    ` : ''}
-                </div>
-                    <div class="room-details">
-                        <div class="detail-row">
-                            <span class="detail-label">容量</span>
-                            <span class="detail-value">${roomItem.Capacity} 人</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">面積</span>
-                            <span class="detail-value">${roomItem.Area} ㎡</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">使用狀態</span>
-                            <span class="status-badge ${statusClass}">${statusText}</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">設備數量</span>
-                            <span class="detail-value">${roomItem.EquipmentCount || 0} 項設備</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">異常設備</span>
-                            <span class="detail-value ${roomItem.ErrorCount > 0 ? 'text-danger' : 'text-success'}">
-                                ${roomItem.ErrorCount || 0} 項
-                            </span>
-                        </div>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-view" onclick="room.viewRoomDetail('${roomItem.Id}')">
-                            <i class="mdi mdi-eye"></i> 檢視
-                        </button>
-                        <button class="btn btn-edit" onclick="room.editRoom('${roomItem.Id}')">
-                            <i class="mdi mdi-pencil"></i> 編輯
-                        </button>
-                        <button class="btn btn-danger" onclick="room.deleteRoom('${roomItem.Id}')">
-                            <i class="mdi mdi-trash-can"></i> 刪除
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            roomGrid.appendChild(card);
-        });
-    },
-
-    // ===== 新增/編輯會議室 =====
-    getVM: function (id) {
         if (id) {
-            // 編輯模式
             global.api.admin.roomdetail({ body: { id } })
                 .then((response) => {
-                    this.populateEditForm(response.data);
-                    this.editModal.show();
+                    copy(this.form, response.data);
+                    this.offcanvas.show();
                 })
                 .catch(error => {
-                    console.error('取得資料失敗:', error);
-                    alert('取得資料失敗');
+                    addAlert('取得資料失敗', { type: 'danger', click: error.download });
                 });
         } else {
-            // 新增模式
-            this.clearCreateForm();
-            this.toggleFeeOptions();
+            // 清空新增表單
+            this.form.name = '';
+            this.form.building = '';
+            this.form.floor = '';
+            this.form.roomNumber = '';
+            this.form.description = '';
+            this.form.capacity = null;
+            this.form.area = null;
+            this.form.refundEnabled = true;
+            this.form.feeType = 'hourly';
+            this.form.rentalType = 'in';
+            this.generateCreateTimeSlotDefaults();
             this.offcanvas.show();
         }
-    },
 
-    // 清空新增表單
-    clearCreateForm: function () {
-        document.getElementById('createRoomForm').reset();
-        document.getElementById('create-capacity').value = '10';
-        document.getElementById('create-area').value = '20';
-        document.querySelector('input[name="feeType"][value="hourly"]').checked = true;
-        this.generateHourlySlots();
-        this.clearTimeSlotContainer();
-    },
+        console.log(this);
+    }
 
-    // 填入編輯表單
-    populateEditForm: function (data) {
+    this.save = () => {
+        const method = this.form.Id ? global.api.admin.roomupdate : global.api.admin.roominsert;
 
-        document.getElementById('roomEditForm').dataset.roomId = data.Id;
-        document.getElementById('edit-name').value = data.Name || '';
-        document.getElementById('edit-building').value = data.Building || '';
-        document.getElementById('edit-floor').value = data.Floor || '';
-        document.getElementById('edit-room-number').value = data.Number || '';
-        document.getElementById('edit-status').value = data.Status || 'available';
-        document.getElementById('edit-capacity').value = data.Capacity || '';
-        document.getElementById('edit-area').value = data.Area || '';
-        document.getElementById('edit-room-description').value = data.Description || '';
-
-        // 設定收費方式
-        const pricingType = data.PricingType || 'hourly';
-        document.querySelector(`input[name="editFeeType"][value="${pricingType}"]`).checked = true;
-
-        // 清空動態容器
-        document.getElementById('editHourlySlotContainer').innerHTML = '';
-        document.getElementById('editTimeSlotContainer').innerHTML = '';
-
-        this.toggleEditFeeOptions();
-    },
-
-    // 切換收費方式（新增）
-    toggleFeeOptions: function () {
-        const hourlyOptions = document.getElementById('hourlyOptions');
-        const slotOptions = document.getElementById('slotOptions');
-        const feeType = document.querySelector('input[name="feeType"]:checked');
-
-        if (!feeType) return;
-
-        hourlyOptions.style.display = feeType.value === 'hourly' ? 'block' : 'none';
-        slotOptions.style.display = feeType.value === 'period' ? 'block' : 'none';
-
-        if (feeType.value === 'hourly') {
-            this.generateHourlySlots();
-        } else if (feeType.value === 'period') {
-
-            this.clearTimeSlotContainer();
-            this.generateCreateTimeSlotDefaults();  // 生成預設三個時段
-
+        // ✅ 根據 rentalType 判斷 Status
+        let status = 'available';
+        if (this.form.rentalType === 'closed') {
+            status = 'maintenance';
         }
-    },
 
-    generateCreateTimeSlotDefaults: function () {
-        const container = document.getElementById('timeSlotContainer');
-        if (!container) return;
+        const body = {
+            Id: this.form.Id,
+            Name: this.form.name,
+            Building: this.form.building,
+            Floor: this.form.floor,
+            Number: this.form.roomNumber,
+            Description: this.form.description,
+            Capacity: this.form.capacity,
+            Area: this.form.area,
+            Status: status,  // ✅ 根據 rentalType 動態設定
+            PricingType: this.form.feeType,
+            IsEnabled: this.form.refundEnabled,
+            BookingSettings: this.form.rentalType,
+            Images: this.mediaFiles,
+            PricingDetails: this.getPricingDetails()
+        };
 
+        console.log('🔍 [SAVE] Saving body:', body);
+
+        method({ body })
+            .then((response) => {
+                addAlert('操作成功');
+                this.getList();
+                this.offcanvas.hide();
+            })
+            .catch(error => {
+                addAlert(error.details || '操作失敗', { type: 'danger', click: error.download });
+            });
+    }
+
+    this.deleteRoom = (id) => {
+        if (confirm('確認刪除?')) {
+            global.api.admin.roomdelete({ body: { id } })
+                .then((response) => {
+                    addAlert('操作成功');
+                    this.getList();
+                })
+                .catch(error => {
+                    addAlert(getMessage(error), { type: 'danger', click: error.download });
+                });
+        }
+    }
+
+    // ===== 切換收費方式 =====
+    this.toggleFeeOptions = () => {
+        if (this.form.feeType === 'hourly') {
+            this.generateHourlySlots();
+            this.timeSlots.splice(0);
+        } else if (this.form.feeType === 'period') {
+            this.timeSlots.splice(0);
+            this.generateCreateTimeSlotDefaults();
+        }
+    }
+
+    // ===== 生成預設時段 =====
+    this.generateCreateTimeSlotDefaults = () => {
         const defaultSlots = [
             { name: '上午場', startTime: '09:00', endTime: '12:00', fee: 1000 },
             { name: '午餐場', startTime: '12:00', endTime: '14:00', fee: 800 },
@@ -260,244 +175,66 @@ const room = {
         ];
 
         defaultSlots.forEach((slot) => {
-            const timestamp = Date.now() + Math.random();
-            const newSlot = document.createElement('div');
-            newSlot.className = 'time-slot-item';
-            newSlot.setAttribute('data-slot-id', `custom_${timestamp}`);
-            newSlot.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #e9ecef; border-radius: 8px;';
-
-            // ✅ 建立完整的時段 HTML
-            newSlot.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="custom_${timestamp}" checked>
-                <label class="form-check-label" for="custom_${timestamp}">開放</label>
-            </div>
-            <input type="text" class="form-control form-control-sm slot-name-input" 
-                   value="${slot.name}" placeholder="時段名稱" style="width: 80px; max-width: 150px;">
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="${slot.startTime}" style="width: 110px;">
-            <span>-</span>
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="${slot.endTime}" style="width: 110px;">
-            <div class="input-group" style="width: 180px;">
-                <span class="input-group-text">$</span>
-                <input type="number" class="form-control form-control-sm fee-input" 
-                       value="${slot.fee}" placeholder="費用" min="0">
-                <span class="input-group-text">元</span>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                    onclick="room.removeTimeSlot(this)">刪除</button>
-        `;
-
-            container.appendChild(newSlot);
+            this.timeSlots.push({
+                id: `default_${Date.now()}_${Math.random()}`,
+                name: slot.name,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                fee: slot.fee,
+                enabled: true
+            });
         });
-    },
+    }
 
-    // 切換收費方式（編輯）
-    toggleEditFeeOptions: function () {
-        const hourlyOptions = document.getElementById('editHourlyOptions');
-        const slotOptions = document.getElementById('editSlotOptions');
-        const feeType = document.querySelector('input[name="editFeeType"]:checked');
+    // ===== 小時制相關 =====
+    this.generateHourlySlots = () => {
+        this.hourlySlots.value = Array.from({ length: 12 }, (_, i) => ({
+            hour: i + 8,
+            checked: false,
+            fee: 500
+        }));
+    }
 
-        if (!feeType) return;
-
-        hourlyOptions.style.display = feeType.value === 'hourly' ? 'block' : 'none';
-        slotOptions.style.display = feeType.value === 'period' ? 'block' : 'none';
-
-        if (feeType.value === 'hourly') {
-            this.generateHourlySlotsEdit();
-        }
-    },
-
-    // ===== 小時制相關函數 =====
-    generateHourlySlots: function () {
-        const container = document.getElementById('hourlySlotContainer');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        for (let hour = 8; hour < 20; hour++) {
-            const startTime = `${hour.toString().padStart(2, '0')}:00`;
-            const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-
-            const slotDiv = document.createElement('div');
-            slotDiv.className = 'mb-2';
-            slotDiv.innerHTML = `
-                <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2">
-                    <div class="form-check">
-                        <input class="form-check-input hourly-checkbox" type="checkbox" 
-                               id="hour_${hour}" name="hourlySlots" value="${hour}">
-                        <label class="form-check-label fw-600" for="hour_${hour}">
-                            ${startTime} - ${endTime}
-                        </label>
-                    </div>
-                    <div class="input-group ms-auto" style="width: 150px;">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control form-control-sm" 
-                               value="500" name="hourly_fee_${hour}" min="0">
-                        <span class="input-group-text">元</span>
-                    </div>
-                </div>
-            `;
-            container.appendChild(slotDiv);
-        }
-    },
-
-    generateHourlySlotsEdit: function () {
-        const container = document.getElementById('editHourlySlotContainer');
-        if (!container) return;
-
-        container.innerHTML = '';
-
-        for (let hour = 8; hour < 20; hour++) {
-            const startTime = `${hour.toString().padStart(2, '0')}:00`;
-            const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-
-            const slotDiv = document.createElement('div');
-            slotDiv.className = 'mb-2';
-            slotDiv.innerHTML = `
-                <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2">
-                    <div class="form-check">
-                        <input class="form-check-input hourly-checkbox" type="checkbox" 
-                               id="edit_hour_${hour}" name="edit_hourlySlots" value="${hour}">
-                        <label class="form-check-label fw-600" for="edit_hour_${hour}">
-                            ${startTime} - ${endTime}
-                        </label>
-                    </div>
-                    <div class="input-group ms-auto" style="width: 150px;">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control form-control-sm" 
-                               value="500" name="edit_hourly_fee_${hour}" min="0">
-                        <span class="input-group-text">元</span>
-                    </div>
-                </div>
-            `;
-            container.appendChild(slotDiv);
-        }
-    },
-
-    selectAllHours: function () {
-        document.querySelectorAll('#hourlySlotContainer input[name="hourlySlots"]').forEach(cb => cb.checked = true);
-    },
-
-    deselectAllHours: function () {
-        document.querySelectorAll('#hourlySlotContainer input[name="hourlySlots"]').forEach(cb => cb.checked = false);
-    },
-
-    selectAllHoursEdit: function () {
-        document.querySelectorAll('#editHourlySlotContainer input[name="edit_hourlySlots"]').forEach(cb => cb.checked = true);
-    },
-
-    deselectAllHoursEdit: function () {
-        document.querySelectorAll('#editHourlySlotContainer input[name="edit_hourlySlots"]').forEach(cb => cb.checked = false);
-    },
-
-    // ===== 時段制相關函數 =====
-    addTimeSlot: function () {
-        const container = document.getElementById('timeSlotContainer');
-        if (!container) return;
-
-        const timestamp = Date.now();
-        const newSlot = document.createElement('div');
-        newSlot.className = 'time-slot-item';
-        newSlot.setAttribute('data-slot-id', `custom_${timestamp}`);
-
-        newSlot.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="custom_${timestamp}" checked>
-                <label class="form-check-label" for="custom_${timestamp}">開放</label>
-            </div>
-            <input type="text" class="form-control form-control-sm slot-name-input" 
-                   value="自訂時段" placeholder="時段名稱" style="width: 80px; max-width: 150px;">
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="22:00" style="width: 110px;">
-            <span>-</span>
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="23:00" style="width: 110px;">
-            <div class="input-group" style="width: 180px;">
-                <span class="input-group-text">$</span>
-                <input type="number" class="form-control form-control-sm fee-input" 
-                       placeholder="費用" min="0">
-                <span class="input-group-text">元</span>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                    onclick="room.removeTimeSlot(this)">刪除</button>
-        `;
-
-        container.appendChild(newSlot);
-    },
-
-    addTimeSlotEdit: function () {
-        const container = document.getElementById('editTimeSlotContainer');
-        if (!container) return;
-
-        const timestamp = Date.now();
-        const newSlot = document.createElement('div');
-        newSlot.className = 'time-slot-item';
-        newSlot.setAttribute('data-slot-id', `edit_custom_${timestamp}`);
-
-        newSlot.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="edit_custom_${timestamp}" checked>
-                <label class="form-check-label" for="edit_custom_${timestamp}">開放</label>
-            </div>
-            <input type="text" class="form-control form-control-sm slot-name-input" 
-                   value="自訂時段" placeholder="時段名稱" style="width: 80px; max-width: 150px;">
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="22:00" style="width: 110px;">
-            <span>-</span>
-            <input type="time" class="form-control form-control-sm time-input" 
-                   value="23:00" style="width: 110px;">
-            <div class="input-group" style="width: 180px;">
-                <span class="input-group-text">$</span>
-                <input type="number" class="form-control form-control-sm fee-input" 
-                       placeholder="費用" min="0">
-                <span class="input-group-text">元</span>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                    onclick="room.removeTimeSlot(this)">刪除</button>
-        `;
-
-        container.appendChild(newSlot);
-    },
-
-    removeTimeSlot: function (button) {
-        const slotItem = button.closest('.time-slot-item');
-        if (confirm('確認要刪除這個時段嗎？')) {
-            slotItem.remove();
-        }
-    },
-
-    clearTimeSlotContainer: function () {
-        const container = document.getElementById('timeSlotContainer');
-        if (container) container.innerHTML = '';
-    },
-
-    getTimeSlotSettings: function () {
-        const slotItems = document.querySelectorAll('#timeSlotContainer [data-slot-id]');
-        const settings = [];
-
-        slotItems.forEach(item => {
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            const nameInput = item.querySelector('.slot-name-input');
-            const timeInputs = item.querySelectorAll('.time-input');
-            const feeInput = item.querySelector('.fee-input');
-
-            const setting = {
-                name: nameInput ? nameInput.value || '未命名時段' : '未命名時段',
-                startTime: timeInputs[0] ? timeInputs[0].value : '',
-                endTime: timeInputs[1] ? timeInputs[1].value : '',
-                fee: parseInt(feeInput ? feeInput.value : 0) || 0,
-                enabled: checkbox ? checkbox.checked : false
-            };
-
-            settings.push(setting);
+    this.selectAllHours = () => {
+        this.hourlySlots.value.forEach(slot => {
+            slot.checked = true;
         });
+    }
 
-        return settings;
-    },
+    this.deselectAllHours = () => {
+        this.hourlySlots.value.forEach(slot => {
+            slot.checked = false;
+        });
+    }
 
-    validateTimeSlots: function () {
+    // ===== 時段制相關 =====
+    this.addTimeSlot = () => {
+        const timestamp = Date.now();
+        this.timeSlots.push({
+            id: `custom_${timestamp}`,
+            name: '自訂時段',
+            startTime: '22:00',
+            endTime: '23:00',
+            fee: 0,
+            enabled: true
+        });
+    }
+
+    this.removeTimeSlot = (index) => {
+        this.timeSlots.splice(index, 1);
+    }
+
+    this.getTimeSlotSettings = () => {
+        return this.timeSlots.map(slot => ({
+            name: slot.name || '未命名時段',
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            fee: parseInt(slot.fee) || 0,
+            enabled: slot.enabled
+        }));
+    }
+
+    this.validateTimeSlots = () => {
         const settings = this.getTimeSlotSettings();
         const errors = [];
 
@@ -516,533 +253,152 @@ const room = {
         });
 
         return errors;
-    },
+    }
+
+    // ===== 收費詳情 =====
+    this.getPricingDetails = () => {
+        const details = [];
+
+        if (this.form.feeType === 'hourly') {
+            // ✅ 改成用 forEach 而不是 for loop
+            this.hourlySlots.value.forEach(slot => {
+                if (slot.checked) {
+                    details.push({
+                        name: `${slot.hour}:00 - ${slot.hour + 1}:00`,
+                        startTime: `${slot.hour}:00`,
+                        endTime: `${slot.hour + 1}:00`,
+                        price: slot.fee,
+                        enabled: true
+                    });
+                }
+            });
+        } else if (this.form.feeType === 'period') {
+            this.timeSlots.forEach(slot => {
+                if (slot.enabled) {
+                    details.push({
+                        name: slot.name,
+                        startTime: slot.startTime,
+                        endTime: slot.endTime,
+                        price: slot.fee,
+                        enabled: true
+                    });
+                }
+            });
+        }
+
+        return details;
+    }
 
     // ===== 租借權限 =====
-    selectRentalOption: function (element, type) {
-        const container = element.closest('.rental-options');
-        if (container) {
-            container.querySelectorAll('.rental-option').forEach(opt => {
-                opt.style.border = '1px solid #e9ecef';
-                opt.style.background = '#fff';
-            });
-        }
-        element.style.border = '2px solid #007bff';
-        element.style.background = '#f0f7ff';
-        const input = document.getElementById('create-rental-type');
-        if (input) input.value = type;
-    },
-
-    selectEditRentalOption: function (element, type) {
-        const container = element.closest('.rental-options');
-        if (container) {
-            container.querySelectorAll('.rental-option').forEach(opt => {
-                opt.style.border = '1px solid #e9ecef';
-                opt.style.background = '#fff';
-            });
-        }
-        element.style.border = '2px solid #007bff';
-        element.style.background = '#f0f7ff';
-        const input = document.getElementById('edit-rental-type');
-        if (input) input.value = type;
-    },
+    this.selectRentalOption = (type) => {
+        this.form.rentalType = type;
+    }
 
     // ===== 媒體上傳 =====
-    handleMediaUpload: function (event) {
+    this.handleMediaUpload = (event) => {
         const files = event.target.files;
-        const container = document.getElementById('mediaGrid');
-        if (!container || files.length === 0) return;
+        if (!files || files.length === 0) return;
 
-        const file = files[0];  // 只取第一個
+        const file = files[0];
         const reader = new FileReader();
 
-        reader.onload = function (e) {
-            const mediaItem = document.createElement('div');
-            mediaItem.className = 'media-item';
-            mediaItem.style.cssText = 'position: relative; height: 120px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff;';
-
-            // 媒體內容
-            if (file.type.startsWith('image/')) {
-                mediaItem.innerHTML = `<img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">`;
-            } else if (file.type.startsWith('video/')) {
-                mediaItem.innerHTML = `<video style="width: 100%; height: 100%; object-fit: cover;"><source src="${e.target.result}" type="${file.type}"></video>`;
-            }
-
-            // 刪除按鈕
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.style.cssText = 'position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; z-index: 10; font-size: 18px; padding: 0;';
-
-            // 重點：事件綁定正確做法
-            deleteBtn.onclick = function (e) {
-                e.stopPropagation();
-                mediaItem.remove();
-                document.getElementById('mediaUpload').value = '';
+        reader.onload = (e) => {
+            const mediaItem = {
+                id: Date.now(),
+                type: file.type.startsWith('image/') ? 'image' : 'video',
+                src: e.target.result,
+                name: file.name
             };
-
-            mediaItem.appendChild(deleteBtn);
-
-            // 在上傳按鈕前插入（保留舊檔案）
-            const uploadItem = container.querySelector('.upload-item');
-            if (uploadItem) {
-                container.insertBefore(mediaItem, uploadItem);
-            } else {
-                container.appendChild(mediaItem);
-            }
-
+            this.mediaFiles.push(mediaItem);
             event.target.value = '';
         };
 
         reader.readAsDataURL(file);
-    },
+    }
 
-    getMediaInfo: function () {
-        const container = document.getElementById('mediaGrid');
-        if (!container) return [];
-        const mediaItems = container.querySelectorAll('.media-item');
-        const mediaInfo = [];
-        mediaItems.forEach((item, index) => {
-            const img = item.querySelector('img');
-            const video = item.querySelector('video');
-            const source = item.querySelector('source');
-            if (img) {
-                mediaInfo.push({
-                    type: 'image',
-                    src: img.src,
-                    fileSize: img.src.length,
-                    sortOrder: index
-                });
-            } else if (video && source) {
-                mediaInfo.push({
-                    type: 'video',
-                    src: source.src,
-                    fileSize: source.src.length,
-                    sortOrder: index
-                });
-            }
-        });
-        return mediaInfo;
-    },
+    this.removeMedia = (id) => {
+        const index = this.mediaFiles.findIndex(m => m.id === id);
+        if (index > -1) {
+            this.mediaFiles.splice(index, 1);
+        }
+    }
 
+    this.getMediaInfo = () => {
+        return this.mediaFiles.map((item, index) => ({
+            type: item.type,
+            src: item.src,
+            fileSize: item.src.length,
+            sortOrder: index
+        }));
+    }
 
-    // ===== 詳情檢視 =====
-    viewRoomDetail: function (roomId) {
-        console.log('🔥 viewRoomDetail called with ID:', roomId);
-        global.api.admin.roomdetail({ body: { id: roomId } })
+    this.triggerMediaUpload = () => {
+        document.getElementById('mediaUpload').click();
+    }
+
+    this.viewRoom = (id) => {
+        global.api.admin.roomdetail({ body: { id } })
             .then((response) => {
-                console.log('🔥 API 回應物件:', response);
-                console.log('🔥 response.data:', response.data);
-                console.log('🔥 response.data.Images:', response.data.Images);
-                console.log('🔥 response.data.Images 的長度:', response.data.Images?.length);
+                // ✅ 存起詳細資料到全局
+                window.$vueInstance = window.$vueInstance || {};
+                window.$vueInstance.detailRoom = response.data;
 
-                // 檢查 Images 內容
-                if (response.data.Images && Array.isArray(response.data.Images)) {
-                    response.data.Images.forEach((img, i) => {
-                        console.log(`  [${i}] Type: ${img.Type}, Src: ${img.Src}`);
-                    });
-                }
+                document.getElementById('modal-room-name').textContent = response.data.Name;
+                document.getElementById('modal-capacity').textContent = response.data.Capacity + '人';
+                document.getElementById('modal-area').textContent = response.data.Area + '㎡';
+                document.getElementById('modal-room-number').textContent = response.data.Number;
+                document.getElementById('modal-location').textContent = (response.data.Building || '') + ' ' + (response.data.Floor || '') + '樓';
+                document.getElementById('modal-feature').textContent = response.data.Description || '無';
 
-                this.populateDetailModal(response.data);
-                this.detailModal.show();
+                const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
+                modal.show();
             })
             .catch(error => {
-                console.error('❌ 取得資料失敗:', error);
-                alert('取得資料失敗');
+                addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
-    },
+    }
+}
 
-    populateDetailModal: function (data) {
-        document.getElementById('modal-room-name').textContent = data.Name || '';
-        document.getElementById('modal-feature').textContent = data.Description || '';
-        document.getElementById('modal-capacity').textContent = (data.Capacity || 0) + '人';
-        document.getElementById('modal-area').textContent = (data.Area || 0) + '㎡';
-        document.getElementById('modal-room-number').textContent = data.Number || '';
-        document.getElementById('modal-location').textContent = `${data.Building || ''} ${data.Floor || ''}樓`;
-
-        // 生成輪播
-        this.generateImageCarousel(data);
-
-        // 設備清單
-        const equipmentList = document.getElementById('modal-equipment-list');
-        equipmentList.innerHTML = '';
-        if (data.Equipment && data.Equipment.length > 0) {
-            data.Equipment.forEach(equipment => {
-                const statusColor = equipment.Status === 'normal' ? 'text-success' : 'text-danger';
-                const equipmentItem = document.createElement('div');
-                equipmentItem.className = 'equipment-item';
-                equipmentItem.innerHTML = `
-                    <i class="mdi ${equipment.Icon || 'mdi-tools'} equipment-icon ${statusColor}"></i>
-                    <div>
-                        <div class="equipment-name">${equipment.Name || '設備'}</div>
-                        <small class="${statusColor}">${equipment.Status === 'normal' ? '運作正常' : '異常'}</small>
-                    </div>
-                `;
-                equipmentList.appendChild(equipmentItem);
-            });
-        }
-
-        // 時程
-        const scheduleList = document.getElementById('modal-schedule-list');
-        scheduleList.innerHTML = '';
-        if (data.Schedule && data.Schedule.length > 0) {
-            data.Schedule.forEach(schedule => {
-                const row = document.createElement('tr');
-                const statusBadge = this.getScheduleStatusBadge(schedule.Status);
-                row.innerHTML = `
-                    <td>${schedule.Time || ''}</td>
-                    <td>${schedule.MeetingName || ''}</td>
-                    <td>${schedule.Organizer || ''}</td>
-                    <td>${statusBadge}</td>
-                `;
-                scheduleList.appendChild(row);
-            });
-        }
-
-        // 收費
-        document.getElementById('modal-pricing-type').textContent = data.PricingType === 'hourly' ? '小時制' : '時段制';
-
-        const pricingList = document.getElementById('modal-pricing-list');
-        pricingList.innerHTML = '';
-
-        console.log('🔥 PricingDetails:', data.PricingDetails);  // ← 加 debug
-
-        if (data.PricingDetails && data.PricingDetails.length > 0) {
-            data.PricingDetails.forEach(price => {
-                console.log(`  → Name: ${price.Name}, Price: ${price.Price}`);  // ← 加 debug
-
-                const priceItem = document.createElement('div');
-                priceItem.className = 'time-slot-item';
-                priceItem.innerHTML = `
-            <span><i class="mdi mdi-clock-outline me-2"></i>${price.Name || price.StartTime + ' - ' + price.EndTime}</span>
-            <span class="fw-bold text-primary">$${price.Price} 元</span>
-        `;
-                pricingList.appendChild(priceItem);
-            });
-            console.log('✅ 收費項目渲染完成');
-        } else {
-            console.warn('⚠️ 沒有收費詳情');
-        }
-    },
-
-    generateImageCarousel: function (data) {
-        console.log('🔥 generateImageCarousel 開始執行');
-        console.log('🔥 data.Images:', data.Images);
-
-        const carouselInner = document.getElementById('carouselInner');
-        const carouselIndicators = document.getElementById('carouselIndicators');
-
-        if (!carouselInner || !carouselIndicators) {
-            console.error('❌ 找不到輪播容器!');
-            return;
-        }
-
-        carouselInner.innerHTML = '';
-        carouselIndicators.innerHTML = '';
-
-        const mediaList = (data.Images && Array.isArray(data.Images) && data.Images.length > 0)
-            ? data.Images
-            : [];
-
-        console.log('🔥 mediaList:', mediaList);
-
-        if (mediaList.length === 0) {
-            console.warn('⚠️ 沒有圖片');
-            carouselInner.innerHTML = '<div class="carousel-item active"><div style="width: 100%; height: 400px; background: #e9ecef; display: flex; align-items: center; justify-content: center; color: #999;">暫無圖片</div></div>';
-            return;
-        }
-
-        // 遍歷每張圖片
-        mediaList.forEach((media, index) => {
-            console.log(`🔥 第 ${index} 張: type=${media.type}, src=${media.src}`);
-
-            const carouselItem = document.createElement('div');
-            carouselItem.className = `carousel-item ${index === 0 ? 'active' : ''}`;
-
-            // ✅ 用小寫屬性名 (media.type, media.src)
-            if ((media.type === 'video') || (media.Type === 'video')) {
-                const src = media.src || media.Src;
-                carouselItem.innerHTML = `<video class="d-block w-100" controls style="height: 400px; object-fit: cover;"><source src="${src}" type="video/mp4">您的瀏覽器不支援影片播放。</video>`;
-            } else {
-                const src = media.src || media.Src;
-                console.log(`  → 圖片，src=${src}`);
-                carouselItem.innerHTML = `<img src="${src}" class="d-block w-100" alt="會議室媒體" style="height: 400px; object-fit: cover;">`;
+window.$config = {
+    setup: () => new function () {
+        this.room = room;
+        this.roomoffcanvas = ref(null);
+        this.getStatusText = getStatusText;
+        this.getStatusClass = getStatusClass;
+        this.form = room.form;
+        this.imageIndices = imageIndices;
+        this.hourlySlots = computed(() => room.hourlySlots.value);
+        this.timeSlots = room.timeSlots;
+        this.mediaFiles = room.mediaFiles;
+        // 圖片輪播
+        this.prevImage = (roomId) => {
+            if (!imageIndices[roomId]) imageIndices[roomId] = 0;
+            const roomData = room.list.find(r => r.Id === roomId);
+            if (roomData && roomData.Images && roomData.Images.length > 0) {
+                imageIndices[roomId] = (imageIndices[roomId] - 1 + roomData.Images.length) % roomData.Images.length;
             }
-
-            carouselInner.appendChild(carouselItem);
-
-            // 添加指示器
-            const indicator = document.createElement('button');
-            indicator.type = 'button';
-            indicator.setAttribute('data-bs-target', '#roomImageCarousel');
-            indicator.setAttribute('data-bs-slide-to', index);
-            if (index === 0) {
-                indicator.className = 'active';
-                indicator.setAttribute('aria-current', 'true');
-            }
-            carouselIndicators.appendChild(indicator);
-        });
-
-        // ✅ 延遲初始化 Carousel
-        setTimeout(() => {
-            const carouselEl = document.getElementById('roomImageCarousel');
-            if (carouselEl) {
-                const carousel = new bootstrap.Carousel(carouselEl);
-                console.log('✅ Carousel 初始化完成');
-            }
-        }, 100);
-
-        console.log('✅ 輪播生成完成');
-    },
-
-    getScheduleStatusBadge: function (status) {
-        const badgeMap = {
-            'completed': '<span class="badge bg-success">已完成</span>',
-            'ongoing': '<span class="badge bg-danger">進行中</span>',
-            'pending': '<span class="badge bg-warning">待開始</span>',
-            'available': '<span class="badge bg-info">可預約</span>',
-            'maintenance': '<span class="badge bg-secondary">維修中</span>'
-        };
-        return badgeMap[status] || status;
-    },
-
-    // ===== 刪除會議室 =====
-    deleteRoom: function (roomId) {
-        if (!confirm('確認要刪除這個會議室嗎？此操作無法復原。')) {
-            return;
-        }
-
-        global.api.admin.roomdelete({ body: { id: roomId } })
-            .then((response) => {
-                alert('刪除成功');
-                this.getList();
-            })
-            .catch(error => {
-                console.error('刪除失敗:', error);
-                alert('刪除失敗，請稍後再試');
-            });
-    },
-
-    // ===== 編輯會議室 =====
-    editRoom: function (roomId) {
-        console.log('editRoom called with ID:', roomId);
-        global.api.admin.roomdetail({ body: { id: roomId } })
-            .then((response) => {
-                this.populateEditForm(response.data);
-                this.editModal.show();
-            })
-            .catch(error => {
-                console.error('❌ 取得資料失敗:', error);
-                console.error('❌ 錯誤詳情:', error.response || error.message);
-                alert('取得資料失敗');
-            });
-    },
-
-    saveEditRoomChanges: function () {
-
-        const feeType = document.querySelector('input[name="feeType"]:checked');
-
-        // 收集收費詳情
-        let pricingDetails = [];
-
-        if (feeType.value === 'hourly') {
-            // 小時制
-            for (let hour = 8; hour < 20; hour++) {
-                const checkbox = document.getElementById(`hour_${hour}`);
-                const feeInput = document.querySelector(`input[name="hourly_fee_${hour}"]`);
-
-                if (checkbox.checked) {
-                    pricingDetails.push({
-                        name: `${hour}:00 - ${hour + 1}:00`,
-                        startTime: `${hour}:00`,
-                        endTime: `${hour + 1}:00`,
-                        price: parseFloat(feeInput.value) || 0,
-                        enabled: true
-                    });
-                }
-            }
-        } else if (feeType.value === 'period') {
-            // 時段制
-            const slotItems = document.querySelectorAll('#timeSlotContainer [data-slot-id]');
-            slotItems.forEach(item => {
-                const checkbox = item.querySelector('input[type="checkbox"]');
-                const nameInput = item.querySelector('.slot-name-input');
-                const timeInputs = item.querySelectorAll('.time-input');
-                const feeInput = item.querySelector('.fee-input');
-
-                if (checkbox.checked) {
-                    pricingDetails.push({
-                        name: nameInput.value || '未命名時段',
-                        startTime: timeInputs[0].value,
-                        endTime: timeInputs[1].value,
-                        price: parseFloat(feeInput.value) || 0,
-                        enabled: true
-                    });
-                }
-            });
-        }
-
-        const form = document.getElementById('roomEditForm');
-
-
-        // 收集表單資料
-        const formData = {
-            Id: form.dataset.roomId,
-            Name: document.getElementById('edit-name').value,
-            Building: document.getElementById('edit-building').value,
-            Floor: document.getElementById('edit-floor').value,
-            Number: document.getElementById('edit-room-number').value,
-            Capacity: parseInt(document.getElementById('edit-capacity').value),
-            Area: parseFloat(document.getElementById('edit-area').value),
-            Description: document.getElementById('edit-room-description').value,
-            PricingType: feeType ? feeType.value : 'hourly',
-            IsEnabled: document.getElementById('editRefundEnabled') ? document.getElementById('editRefundEnabled').checked : true,
-            Images: this.getMediaInfo(),
-            Status: document.getElementById('edit-status').value,
-            BookingSettings: document.getElementById('edit-rental-type').value
-
         };
 
-        // 發送更新
-        global.api.admin.roomupdate({ body: formData })
-            .then((response) => {
-                alert('更新成功');
-                this.editModal.hide();
-                this.getList();
-            })
-            .catch(error => {
-                alert('更新失敗');
-                console.error(error);
-            });
-    },
-
-    // ===== 新增會議室 =====
-    save: function () {
-        // 驗證收費設定
-        const feeType = document.querySelector('input[name="feeType"]:checked');
-
-        // 收集收費詳情
-        let pricingDetails = [];
-        const imageFiles = Array.from(document.getElementById('mediaUpload').files);
-
-        if (feeType.value === 'hourly') {
-            // 小時制
-            for (let hour = 8; hour < 20; hour++) {
-                const checkbox = document.getElementById(`hour_${hour}`);
-                const feeInput = document.querySelector(`input[name="hourly_fee_${hour}"]`);
-
-                if (checkbox.checked) {
-                    pricingDetails.push({
-                        name: `${hour}:00 - ${hour + 1}:00`,
-                        startTime: `${hour}:00`,
-                        endTime: `${hour + 1}:00`,
-                        price: parseFloat(feeInput.value) || 0,
-                        enabled: true
-                    });
-                }
+        this.nextImage = (roomId) => {
+            if (!imageIndices[roomId]) imageIndices[roomId] = 0;
+            const roomData = room.list.find(r => r.Id === roomId);
+            if (roomData && roomData.Images && roomData.Images.length > 0) {
+                imageIndices[roomId] = (imageIndices[roomId] + 1) % roomData.Images.length;
             }
-        } else if (feeType.value === 'period') {
-            // 時段制
-            const slotItems = document.querySelectorAll('#timeSlotContainer [data-slot-id]');
-            slotItems.forEach(item => {
-                const checkbox = item.querySelector('input[type="checkbox"]');
-                const nameInput = item.querySelector('.slot-name-input');
-                const timeInputs = item.querySelectorAll('.time-input');
-                const feeInput = item.querySelector('.fee-input');
-
-                if (checkbox.checked) {
-                    pricingDetails.push({
-                        name: nameInput.value || '未命名時段',
-                        startTime: timeInputs[0].value,
-                        endTime: timeInputs[1].value,
-                        price: parseFloat(feeInput.value) || 0,
-                        enabled: true
-                    });
-                }
-            });
-        }
-
-
-        // 收集表單資料
-        const formData = {
-            Name: document.getElementById('create-name').value,
-            Building: document.getElementById('create-building').value,
-            Floor: document.getElementById('create-floor').value,
-            Number: document.getElementById('create-room-number').value,
-            Capacity: parseInt(document.getElementById('create-capacity').value),
-            Area: parseFloat(document.getElementById('create-area').value),
-            Description: document.getElementById('create-room-description').value,
-            PricingType: feeType ? feeType.value : 'hourly',
-            IsEnabled: document.getElementById('refundEnabled') ? document.getElementById('refundEnabled').checked : true,
-            Images: this.getMediaInfo(),
-            Status: 'available',
-            BookingSettings: document.getElementById('create-rental-type').value || 'in',
-            PricingDetails: pricingDetails
-
         };
 
-        console.log('【新增】傳送的 Images:', formData.Images);  // ← 加這行
-        console.log('【新增】完整 formData:', formData);
-        // 發送新增
-        global.api.admin.roominsert({ body: formData })
-            .then((response) => {
-                console.log('【新增】後端回應:', response);
-                alert('新增成功');
-                this.offcanvas.hide();
-                this.getList();
-            })
-            .catch(error => {
-                alert('新增失敗');
-                console.log('【新增】錯誤:', error);
-                console.error(error);
-            });
-    }
-};
+        // 搜尋功能
+        this.clearSearch = () => {
+            room.query.keyword = '';
+            room.getList();
+        };
 
-// 初始化
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOMContentLoaded - 初始化開始');
+        onMounted(() => {
+            room.getList();
 
-    // 初始化 Bootstrap 元件
-    const offcanvasEl = document.getElementById('offcanvasRoomCreate');
-    const editModalEl = document.getElementById('roomEditModal');
-    const detailModalEl = document.getElementById('roomDetailModal');
+            room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
 
-    if (offcanvasEl) {
-        room.offcanvas = new bootstrap.Offcanvas(offcanvasEl);
-        console.log('Offcanvas 已初始化');
-    } else {
-        console.error('找不到 offcanvasRoomCreate 元素');
-    }
-
-    if (editModalEl) {
-        room.editModal = new bootstrap.Modal(editModalEl);
-        console.log('Edit Modal 已初始化');
-    } else {
-        console.error('找不到 roomEditModal 元素');
-    }
-
-    if (detailModalEl) {
-        room.detailModal = new bootstrap.Modal(detailModalEl);
-        console.log('Detail Modal 已初始化');
-    } else {
-        console.error('找不到 roomDetailModal 元素');
-    }
-
-    // 搜尋功能
-    const searchInput = document.getElementById('searchKeyword');
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function (e) {
-            if (e.key === 'Enter') {
-                room.search();
-            }
+            window.$vueInstance = { detailRoom: this.detailRoom };
         });
     }
-
-    // 載入列表
-    room.getList();
-    console.log('初始化完成');
-});
-
-// 暴露到全局
-window.room = room;
+}
