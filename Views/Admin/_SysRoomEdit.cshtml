@@ -2,6 +2,17 @@
 <div class="modal fade" id="roomEditModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
+
+            @* <div style="background: #fff3cd; padding: 15px; margin: 10px;">
+                <strong>🔍 編輯 Modal 調試：</strong>
+                <div><code>room.vm.Id: {{ room.vm.Id }}</code></div>
+                <div><code>room.vm.Name: {{ room.vm.Name }}</code></div>
+                <div><code>room.vm.Images: {{ room.vm.Images }}</code></div>
+                <div><code>room.vm.Images?.length: {{ room.vm.Images?.length }}</code></div>
+                <div><code>room.vm.PricingType: {{ room.vm.PricingType }}</code></div>
+                <div><code>room.vm.PricingDetails: {{ room.vm.PricingDetails }}</code></div>
+            </div> *@
+
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center gap-2">
                     <span class="material-icons">edit</span>編輯會議室
@@ -55,17 +66,20 @@
 
                     <div class="mb-3 mt-2">
                         <label class="form-label">會議室說明</label>
-                        <textarea v-model="room.vm.Description" class="form-control form-control-sm" rows="3"></textarea>
+                        <textarea v-model="room.vm.Description" class="form-control form-control-sm"
+                            rows="3"></textarea>
                     </div>
 
                     <div class="row g-2">
                         <div class="col-md-6">
                             <label class="form-label">容量（人） <span class="text-danger">*</span></label>
-                            <input v-model.number="room.vm.Capacity" type="number" class="form-control form-control-sm" min="1">
+                            <input v-model.number="room.vm.Capacity" type="number" class="form-control form-control-sm"
+                                min="1">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">面積（㎡） <span class="text-danger">*</span></label>
-                            <input v-model.number="room.vm.Area" type="number" class="form-control form-control-sm" min="1" step="0.01">
+                            <input v-model.number="room.vm.Area" type="number" class="form-control form-control-sm"
+                                min="1" step="0.01">
                         </div>
                     </div>
                 </div>
@@ -77,13 +91,13 @@
                     <div class="mb-3">
                         <label class="form-label">收費方式 <span class="text-danger">*</span></label>
                         <div class="form-check">
-                            <input v-model="room.vm.PricingType" type="radio" class="form-check-input" 
-                                   id="editHourly" value="hourly" @@change="room.generateHourlySlots">
+                            <input v-model="room.vm.PricingType" type="radio" class="form-check-input" id="editHourly"
+                                value="hourly" @@change="room.generateHourlySlots">
                             <label class="form-check-label" for="editHourly">小時制</label>
                         </div>
                         <div class="form-check">
-                            <input v-model="room.vm.PricingType" type="radio" class="form-check-input" 
-                                   id="editPeriod" value="period">
+                            <input v-model="room.vm.PricingType" type="radio" class="form-check-input" id="editPeriod"
+                                value="period">
                             <label class="form-check-label" for="editPeriod">時段制</label>
                         </div>
                     </div>
@@ -92,19 +106,18 @@
                     <div v-if="room.vm.PricingType === 'hourly'" class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span style="font-size: 13px; font-weight: 500;">設定每個時段的收費</span>
-                            <div>
-                                <button type="button" class="btn btn-outline-success btn-sm me-1" @@click="room.selectAllHours">全選</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" @@click="room.deselectAllHours">全不選</button>
-                            </div>
                         </div>
-                        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px;">
+                        <div
+                            style="max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px;">
                             <div v-for="(pricing, idx) in room.vm.PricingDetails" :key="idx" class="mb-2">
                                 <div class="d-flex align-items-center gap-2">
-                                    <input v-model="pricing.Enabled" type="checkbox" class="form-check-input" style="margin: 0;">
+                                    <input v-model="pricing.Enabled" type="checkbox" class="form-check-input"
+                                        style="margin: 0;">
                                     <label style="flex: 1; margin: 0; font-size: 12px;">{{ pricing.Name }}</label>
                                     <div class="input-group input-group-sm" style="width: 100px;">
                                         <span class="input-group-text">$</span>
-                                        <input v-model.number="pricing.Price" type="number" class="form-control form-control-sm" min="0">
+                                        <input v-model.number="pricing.Price" type="number"
+                                            class="form-control form-control-sm" min="0">
                                     </div>
                                 </div>
                             </div>
@@ -120,36 +133,42 @@
                             </button>
                         </div>
                         <div style="max-height: 250px; overflow-y: auto;">
-                            <div v-for="(pricing, idx) in room.vm.PricingDetails" :key="idx" 
-                                 class="mb-2 p-2 bg-white border rounded" style="font-size: 12px;">
+                            <div v-for="(pricing, idx) in room.vm.PricingDetails" :key="idx"
+                                class="mb-2 p-2 bg-white border rounded" style="font-size: 12px;">
                                 <div class="row g-2 mb-2">
                                     <div class="col-12">
-                                        <input v-model="pricing.Name" type="text" class="form-control form-control-sm" placeholder="時段名稱">
+                                        <input v-model="pricing.Name" type="text" class="form-control form-control-sm"
+                                            placeholder="時段名稱">
                                     </div>
                                 </div>
                                 <div class="row g-2 align-items-end mb-2">
                                     <div class="col-5">
-                                        <input v-model="pricing.StartTime" type="time" class="form-control form-control-sm">
+                                        <input v-model="pricing.StartTime" type="time"
+                                            class="form-control form-control-sm">
                                     </div>
                                     <div class="col-2 text-center">-</div>
                                     <div class="col-5">
-                                        <input v-model="pricing.EndTime" type="time" class="form-control form-control-sm">
+                                        <input v-model="pricing.EndTime" type="time"
+                                            class="form-control form-control-sm">
                                     </div>
                                 </div>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-8">
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">$</span>
-                                            <input v-model.number="pricing.Price" type="number" class="form-control form-control-sm" min="0">
+                                            <input v-model.number="pricing.Price" type="number"
+                                                class="form-control form-control-sm" min="0">
                                             <span class="input-group-text">元</span>
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <button type="button" class="btn btn-outline-danger btn-sm w-100" @@click="room.removeTimeSlot(idx)">刪除</button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm w-100"
+                                            @@click="room.removeTimeSlot(idx)">刪除</button>
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    <input v-model="pricing.Enabled" type="checkbox" class="form-check-input" style="margin: 0;">
+                                    <input v-model="pricing.Enabled" type="checkbox" class="form-check-input"
+                                        style="margin: 0;">
                                     <label class="form-check-label ms-2" style="font-size: 12px;">開放</label>
                                 </div>
                             </div>
@@ -163,16 +182,19 @@
 
                     <div class="mb-3">
                         <label class="form-label">上傳圖片/影片</label>
-                        <input type="file" class="form-control form-control-sm" accept="image/*,video/*" multiple @@change="room.handleMediaUpload">
+                        <input type="file" class="form-control form-control-sm" accept="image/*,video/*" multiple
+                            @@change="room.handleMediaUpload">
                     </div>
 
-                    <div v-if="room.vm.Images.length > 0" class="mb-3">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
-                            <div v-for="(img, idx) in room.vm.Images" :key="idx" 
-                                 style="position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: #f0f0f0;">
-                                <img v-if="img.Type === 'image'" :src="img.Src" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div v-if="room.vm.Images && room.vm.Images.length > 0" class="mb-3">
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
+                            <div v-for="(img, idx) in room.vm.Images" :key="idx"
+                                style="position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: #f0f0f0;">
+                                <img v-if="img.Type === 'image'" :src="img.Src"
+                                    style="width: 100%; height: 100%; object-fit: cover;">
                                 <button type="button" @@click="room.removeImage(idx)"
-                                        style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; padding: 0; line-height: 20px;">
+                                    style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; padding: 0; line-height: 20px;">
                                     ×
                                 </button>
                             </div>
@@ -194,7 +216,8 @@
                             <span class="form-check-label">對內外</span>
                         </label>
                         <label class="form-check">
-                            <input v-model="room.vm.BookingSettings" type="radio" class="form-check-input" value="closed">
+                            <input v-model="room.vm.BookingSettings" type="radio" class="form-check-input"
+                                value="closed">
                             <span class="form-check-label">不開放</span>
                         </label>
                         <label class="form-check">

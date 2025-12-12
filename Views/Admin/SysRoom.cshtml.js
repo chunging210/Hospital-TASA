@@ -49,6 +49,10 @@ const room = new function () {
     this.timeSlots = reactive([]);
     this.hourlySlots = ref([]);
 
+    // ✅ 詳情資料改成 ref（Vue 響應式）
+    this.detailRoom = ref(null);
+    this.detailRoomCarouselIndex = ref(0);
+
     this.getList = () => {
         global.api.admin.roomlist({ body: this.query })
             .then((response) => {
@@ -260,7 +264,6 @@ const room = new function () {
         const details = [];
 
         if (this.form.feeType === 'hourly') {
-            // ✅ 改成用 forEach 而不是 for loop
             this.hourlySlots.value.forEach(slot => {
                 if (slot.checked) {
                     details.push({
@@ -336,26 +339,41 @@ const room = new function () {
         document.getElementById('mediaUpload').click();
     }
 
+    // ✅ 改成 Vue 響應式
     this.viewRoom = (id) => {
         global.api.admin.roomdetail({ body: { id } })
             .then((response) => {
-                // ✅ 存起詳細資料到全局
-                window.$vueInstance = window.$vueInstance || {};
-                window.$vueInstance.detailRoom = response.data;
 
-                document.getElementById('modal-room-name').textContent = response.data.Name;
-                document.getElementById('modal-capacity').textContent = response.data.Capacity + '人';
-                document.getElementById('modal-area').textContent = response.data.Area + '㎡';
-                document.getElementById('modal-room-number').textContent = response.data.Number;
-                document.getElementById('modal-location').textContent = (response.data.Building || '') + ' ' + (response.data.Floor || '') + '樓';
-                document.getElementById('modal-feature').textContent = response.data.Description || '無';
+                console.log('🔍 [viewRoom] 完整回應:', response);
+                console.log('🔍 [viewRoom] response.data:', response.data);
+                console.log('🔍 [viewRoom] Images 陣列:', response.data.Images);
+                console.log('🔍 [viewRoom] Images 長度:', response.data.Images?.length);
 
+
+                // 直接設定到 ref
+                this.detailRoom.value = response.data;
+                this.detailRoomCarouselIndex.value = 0;
+
+                // 顯示 Modal
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
             })
             .catch(error => {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
+    }
+
+    // ✅ 圖片輪播控制
+    this.prevDetailImage = () => {
+        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+        const length = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value - 1 + length) % length;
+    }
+
+    this.nextDetailImage = () => {
+        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+        const length = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value + 1) % length;
     }
 }
 
@@ -370,6 +388,26 @@ window.$config = {
         this.hourlySlots = computed(() => room.hourlySlots.value);
         this.timeSlots = room.timeSlots;
         this.mediaFiles = room.mediaFiles;
+
+        // ✅ 暴露詳情資料
+        this.detailRoom = room.detailRoom;
+        this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
+
+        // ✅ Computed 計算當前圖片
+        this.currentDetailImage = computed(() => {
+            if (!room.detailRoom.value || !room.detailRoom.value.Images) {
+                return null;
+            }
+            return room.detailRoom.value.Images[room.detailRoomCarouselIndex.value];
+        });
+
+        // ✅ Computed 計算是否有圖片
+        this.hasDetailImages = computed(() => {
+            return room.detailRoom.value &&
+                room.detailRoom.value.Images &&
+                room.detailRoom.value.Images.length > 0;
+        });
+
         // 圖片輪播
         this.prevImage = (roomId) => {
             if (!imageIndices[roomId]) imageIndices[roomId] = 0;
@@ -397,8 +435,6 @@ window.$config = {
             room.getList();
 
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
-
-            window.$vueInstance = { detailRoom: this.detailRoom };
         });
     }
 }

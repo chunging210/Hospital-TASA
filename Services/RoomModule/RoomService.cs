@@ -27,8 +27,6 @@ namespace TASA.Services.RoomModule
 
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
-
-
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
@@ -53,9 +51,9 @@ namespace TASA.Services.RoomModule
                         .Select(img => img.ImagePath)
                         .ToList()
                 });
-
         }
 
+        // ✅ 查詢用：Images 只返回路徑字串
         public record DetailVM
         {
             public Guid? Id { get; set; }
@@ -70,7 +68,26 @@ namespace TASA.Services.RoomModule
             public string? PricingType { get; set; }
             public bool IsEnabled { get; set; }
             public string? BookingSettings { get; set; }
-            public List<RoomImageInput>? Images { get; set; }
+            public List<string>? Images { get; set; }  // ✅ 改成字串陣列
+            public List<PricingDetailVM>? PricingDetails { get; set; }
+        }
+
+        // ✅ 新增/編輯用：接收完整的圖片物件
+        public record InsertVM
+        {
+            public Guid? Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public string? Number { get; set; }
+            public string? Description { get; set; }
+            public uint Capacity { get; set; }
+            public decimal Area { get; set; }
+            public string? Status { get; set; }
+            public string? PricingType { get; set; }
+            public bool IsEnabled { get; set; }
+            public string? BookingSettings { get; set; }
+            public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
         }
 
@@ -99,6 +116,7 @@ namespace TASA.Services.RoomModule
             public bool Enabled { get; set; }
         }
 
+        // ✅ 改成回傳 DetailVM（Images 是字串陣列）
         public DetailVM? Detail(Guid id)
         {
             var room = db.SysRoom
@@ -126,16 +144,11 @@ namespace TASA.Services.RoomModule
                 IsEnabled = room.IsEnabled,
                 BookingSettings = room.BookingSettings,
                 PricingDetails = new List<PricingDetailVM>(),
+                // ✅ 只提取路徑字串
                 Images = room.Images
                     .Where(img => !string.IsNullOrEmpty(img.ImagePath))
                     .OrderBy(img => img.SortOrder)
-                    .Select(img => new RoomImageInput
-                    {
-                        Type = img.FileType,
-                        Src = img.ImagePath,
-                        FileSize = img.FileSize,
-                        SortOrder = img.SortOrder
-                    })
+                    .Select(img => img.ImagePath)
                     .ToList()
             };
 
@@ -175,16 +188,11 @@ namespace TASA.Services.RoomModule
                 detailVM.PricingDetails = periodPricing;
             }
 
-            // Console.WriteLine($"[DEBUG] Room {room.Id} has {room.Images.Count} images");
-            // foreach (var img in detailVM.Images ?? new())
-            // {
-            //     Console.WriteLine($"  - Type: {img.Type}, Src: {img.Src}");
-            // }
-
             return detailVM;
         }
 
-        public void Insert(DetailVM vm)
+        // ✅ 改成接收 InsertVM（Images 是完整物件）
+        public void Insert(InsertVM vm)
         {
             var userid = service.UserClaimsService.Me()?.Id;
             if (db.SysRoom.WhereNotDeleted().Any(x =>
@@ -194,7 +202,6 @@ namespace TASA.Services.RoomModule
             {
                 throw new HttpException("此樓層已存在相同名稱的會議室");
             }
-
 
             string status = vm.Status ?? "available";
             if (vm.BookingSettings == "closed")
@@ -286,12 +293,12 @@ namespace TASA.Services.RoomModule
             }
         }
 
-        public void Update(DetailVM vm)
+        // ✅ 改成接收 InsertVM（Images 是完整物件）
+        public void Update(InsertVM vm)
         {
             var data = db.SysRoom
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);
-
 
             if (data != null)
             {
@@ -364,25 +371,21 @@ namespace TASA.Services.RoomModule
 
             var userid = service.UserClaimsService.Me()?.Id;
 
-            // ✅ 檢核共同項目（hourly 和 period 都需要）
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
             foreach (var pricing in enabledPricings)
             {
-                // 1. 檢核：時間格式是否正確
                 if (!TimeSpan.TryParse(pricing.StartTime, out var startTime) ||
                     !TimeSpan.TryParse(pricing.EndTime, out var endTime))
                 {
                     throw new HttpException($"時間格式錯誤: {pricing.StartTime} 或 {pricing.EndTime}");
                 }
 
-                // 2. 檢核：開始時間 >= 結束時間
                 if (startTime >= endTime)
                 {
                     throw new HttpException($"開始時間必須早於結束時間: {pricing.StartTime} - {pricing.EndTime}");
                 }
 
-                // 3. 檢核：價格必須 > 0
                 if (pricing.Price <= 0)
                 {
                     throw new HttpException($"價格必須大於 0，目前: {pricing.Price}");
@@ -412,7 +415,6 @@ namespace TASA.Services.RoomModule
             }
             else if (pricingType == "period")
             {
-                // ✅ 時段制檢核：檢查時段名稱
                 foreach (var pricing in enabledPricings)
                 {
                     if (string.IsNullOrWhiteSpace(pricing.Name))
@@ -421,7 +423,6 @@ namespace TASA.Services.RoomModule
                     }
                 }
 
-                // ✅ 檢核：時段是否重疊或重複
                 var enabledList = enabledPricings
                     .Select(p => new
                     {
@@ -439,8 +440,6 @@ namespace TASA.Services.RoomModule
                         var current = enabledList[i];
                         var next = enabledList[j];
 
-                        // 檢查是否重疊：
-                        // 重疊條件：current.Start < next.End AND next.Start < current.End
                         if (current.StartTime < next.EndTime && next.StartTime < current.EndTime)
                         {
                             throw new HttpException(
@@ -449,7 +448,6 @@ namespace TASA.Services.RoomModule
                             );
                         }
 
-                        // 檢查是否完全相同
                         if (current.StartTime == next.StartTime && current.EndTime == next.EndTime)
                         {
                             throw new HttpException(

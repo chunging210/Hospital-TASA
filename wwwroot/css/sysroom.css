@@ -481,11 +481,11 @@ body {
 .carousel-btn {
     position: absolute;
     top: 50%;
+    border-radius: 50px;
     transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.5);
+    background: rgb(145 145 145 / 50%);
     color: white;
     border: none;
-    padding: 10px;
     cursor: pointer;
     z-index: 10;
 }
@@ -496,4 +496,28 @@ body {
 
 .carousel-btn.next {
     right: 10px;
+}
+
+.pricing-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.pricing-item {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+}
+
+.pricing-item:last-child {
+    border-bottom: none;
+}
+
+.room-feature-content .info-value {
+    word-break: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }

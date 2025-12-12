@@ -88,14 +88,14 @@ namespace TASA.Controllers.API
         }
 
         [HttpPost("roominsert")]
-        public IActionResult RoomInsert(RoomService.DetailVM vm)
+        public IActionResult RoomInsert(RoomService.InsertVM vm)
         {
             service.RoomService.Insert(vm);
             return Ok();
         }
 
         [HttpPost("roomupdate")]
-        public IActionResult RoomUpdate(RoomService.DetailVM vm)
+        public IActionResult RoomUpdate(RoomService.InsertVM vm)
         {
             service.RoomService.Update(vm);
             return Ok();

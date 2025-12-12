@@ -2,54 +2,63 @@
 <div class="modal fade" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
+
+            @* <div style="background: #fff3cd; padding: 15px; margin: 10px;">
+                <strong>🔍 詳細調試：</strong>
+                <div><code>detailRoom: {{ detailRoom }}</code></div>
+                <div><code>detailRoomCarouselIndex: {{ detailRoomCarouselIndex }}</code></div>
+            </div> *@
+
             <div class="modal-header">
                 <h5 class="modal-title" id="roomDetailModalLabel">
-                    <i class="mdi mdi-home-city"></i> 會議室詳細資訊 - <span id="modal-room-name">201演講廳</span>
+                    <i class="mdi mdi-home-city"></i> 會議室詳細資訊 - <span>{{ detailRoom?.Name || '未知' }}</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
+                    <!-- 左側：圖片輪播 -->
                     <div class="col-lg-6" style="display: flex; align-items: center;">
-                        <div class="room-image-carousel">
-                            <div id="roomImageCarousel" class="carousel slide" data-bs-ride="carousel">
-                                <!-- 輪播指示器 -->
-                                <div class="carousel-indicators" id="carouselIndicators">
-                                    <!-- 由JavaScript動態生成 -->
-                                </div>
+                        <div class="room-image-carousel" style="width: 100%;">
+                            <!-- 圖片區域 -->
+                            <div
+                                style="position: relative; height: 400px; background: #f0f0f0; border-radius: 8px; overflow: hidden;">
+                                <!-- 有圖片的情況 -->
+                                <img v-if="hasDetailImages && currentDetailImage" :src="currentDetailImage"
+                                    class="d-block w-100 h-100" alt="會議室圖片" style="object-fit: cover;">
 
-                                <!-- 輪播內容 -->
-                                <div class="carousel-inner" id="carouselInner">
-                                    <div v-if="detailRoom && detailRoom.Images && detailRoom.Images.length > 0">
-                                        <div v-for="(image, index) in detailRoom.Images" :key="index"
-                                            :class="['carousel-item', { active: index === 0 }]">
-                                            <img :src="image" class="d-block w-100" alt="會議室圖片"
-                                                style="height: 400px; object-fit: cover;">
-                                        </div>
-                                    </div>
-                                    <div v-else class="carousel-item active">
-                                        <div class="bg-light d-flex align-items-center justify-content-center"
-                                            style="height: 400px;">
-                                            <span class="text-muted">暫無圖片</span>
-                                        </div>
-                                    </div>
+                                <!-- 無圖片的情況 -->
+                                <div v-else class="d-flex align-items-center justify-content-center h-100">
+                                    <span class="text-muted">暫無圖片</span>
                                 </div>
 
                                 <!-- 左右箭頭 -->
-                                <button class="carousel-control-prev" type="button" data-bs-target="#roomImageCarousel"
-                                    data-bs-slide="prev">
-                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                    <span class="visually-hidden">Previous</span>
+                                <button v-if="hasDetailImages" class="carousel-btn prev"
+                                    @@click="room.prevDetailImage()">
+                                    &lt;
                                 </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#roomImageCarousel"
-                                    data-bs-slide="next">
-                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                    <span class="visually-hidden">Next</span>
+                                <button v-if="hasDetailImages" class="carousel-btn next"
+                                    @@click="room.nextDetailImage()">
+                                    &gt;
                                 </button>
+
+                                <!-- 圖片指示器 -->
+                                <div v-if="hasDetailImages"
+                                    style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;">
+                                    <span v-for="(_, index) in detailRoom.Images" :key="index" :style="{ 
+                                            width: '8px', 
+                                            height: '8px', 
+                                            borderRadius: '50%',
+                                            backgroundColor: index === detailRoomCarouselIndex ? '#007bff' : '#ccc',
+                                            cursor: 'pointer'
+                                        }" @@click="detailRoomCarouselIndex = index">
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- 右側：詳細資訊 Tab -->
                     <div class="col-lg-6">
                         <!-- Tab 導覽 -->
                         <ul class="nav nav-tabs" id="roomDetailTabs" role="tablist">
@@ -89,7 +98,10 @@
                                 <div class="info-item room-feature-section">
                                     <div class="room-feature-content">
                                         <div class="info-label">會議室說明</div>
-                                        <div class="info-value" id="modal-feature">會議室特色描述內容...</div>
+                                        <div class="info-value"
+                                            style="max-height: 200px; overflow-y: auto; word-break: break-word; white-space: normal; overflow-wrap: break-word; border-top: 1px solid #e0e0e0; padding: 10px;">
+                                            {{ detailRoom?.Description || '無' }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -99,28 +111,29 @@
                                             <i class="mdi mdi-account-group"></i>
                                         </div>
                                         <div class="info-label">容量</div>
-                                        <div class="info-value" id="modal-capacity">50人</div>
+                                        <div class="info-value">{{ detailRoom?.Capacity || '-' }}人</div>
                                     </div>
                                     <div class="info-item">
                                         <div class="info-icon">
                                             <i class="mdi mdi-floor-plan"></i>
                                         </div>
                                         <div class="info-label">面積</div>
-                                        <div class="info-value" id="modal-area">80㎡</div>
+                                        <div class="info-value">{{ detailRoom?.Area || '-' }}㎡</div>
                                     </div>
                                     <div class="info-item">
                                         <div class="info-icon">
                                             <i class="mdi mdi-door"></i>
                                         </div>
                                         <div class="info-label">房間編號</div>
-                                        <div class="info-value" id="modal-room-number">EDU-201</div>
+                                        <div class="info-value">{{ detailRoom?.Number || '-' }}</div>
                                     </div>
                                     <div class="info-item">
                                         <div class="info-icon">
                                             <i class="mdi mdi-map-marker"></i>
                                         </div>
                                         <div class="info-label">位置</div>
-                                        <div class="info-value" id="modal-location">教育大樓 2樓</div>
+                                        <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor
+                                            || '') }}樓</div>
                                     </div>
                                 </div>
                             </div>
@@ -131,8 +144,21 @@
                                     <h6 class="mb-3">
                                         <i class="mdi mdi-tools text-warning"></i> 設備狀態
                                     </h6>
-                                    <div class="equipment-list" id="modal-equipment-list">
-                                        <!-- 設備項目將由 JavaScript 生成 -->
+                                    <div class="equipment-list">
+                                        <!-- 如果有設備資料就顯示，沒有就顯示提示 -->
+                                        <div v-if="detailRoom?.Equipment && detailRoom.Equipment.length > 0">
+                                            <div v-for="equipment in detailRoom.Equipment" :key="equipment.id"
+                                                class="equipment-item d-flex justify-content-between align-items-center mb-2">
+                                                <span>{{ equipment.name }}</span>
+                                                <span
+                                                    :class="['badge', equipment.status === 'working' ? 'bg-success' : 'bg-danger']">
+                                                    {{ equipment.status === 'working' ? '正常' : '異常' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div v-else class="text-muted">
+                                            暫無設備資訊
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -153,8 +179,17 @@
                                                     <th>狀態</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id="modal-schedule-list">
-                                                <!-- 時程項目將由 JavaScript 生成 -->
+                                            <tbody>
+                                                <tr v-if="detailRoom?.Schedule && detailRoom.Schedule.length > 0"
+                                                    v-for="schedule in detailRoom.Schedule" :key="schedule.id">
+                                                    <td>{{ schedule.time }}</td>
+                                                    <td>{{ schedule.name }}</td>
+                                                    <td>{{ schedule.organizer }}</td>
+                                                    <td><span class="badge bg-info">{{ schedule.status }}</span></td>
+                                                </tr>
+                                                <tr v-else>
+                                                    <td colspan="4" class="text-center text-muted">今日無安排</td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -164,14 +199,25 @@
                             <!-- 收費頁 -->
                             <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
                                 <div class="pricing-section">
-                                    <div>
-                                        <span class="badge bg-primary" id="modal-pricing-type">小時制</span>
-                                        <span id="modal-booking-type"></span>
-                                        <span id="modal-booking-details"></span>
+                                    <div class="mb-3">
+                                        <span class="badge bg-primary">{{ detailRoom?.PricingType === 'hourly' ? '小時制' :
+                                            '時段制' }}</span>
                                     </div>
 
-                                    <div id="modal-pricing-list">
-                                        <!-- 收費項目由 JavaScript 生成 -->
+                                    <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"
+                                        class="pricing-list">
+                                        <div v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name"
+                                            class="pricing-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>{{ pricing.Name }}</span>
+                                                <strong class="text-primary">NT$ {{ pricing.Price }}</strong>
+                                            </div>
+                                            <small class="text-muted">{{ pricing.StartTime }} - {{ pricing.EndTime
+                                                }}</small>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-muted">
+                                        暫無收費資訊
                                     </div>
                                 </div>
                             </div>

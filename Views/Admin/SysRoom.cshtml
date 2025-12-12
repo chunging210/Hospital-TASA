@@ -65,11 +65,11 @@
                                 :style="{ backgroundImage: `url('${roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[imageIndices[roomItem.Id] || 0] : ''}')` }">
                                 <button v-if="roomItem.Images && roomItem.Images.length > 1"
                                     @@click="prevImage(roomItem.Id)" class="carousel-btn prev">
-                                    <i class="mdi mdi-chevron-left"></i>
+                                    &lt;
                                 </button>
                                 <button v-if="roomItem.Images && roomItem.Images.length > 1"
                                     @@click="nextImage(roomItem.Id)" class="carousel-btn next">
-                                    <i class="mdi mdi-chevron-right"></i>
+                                    &gt;
                                 </button>
                             </div>
 
@@ -107,6 +107,9 @@
                                 <button class="btn btn-primary" @@click="room.viewRoom(roomItem.Id)">
                                     <i class="mdi mdi-eye"></i> 檢視
                                 </button>
+                                <button class="btn btn-warning" @@click="room.getVM(roomItem.Id)">
+                                    <i class="mdi mdi-pencil"></i> 編輯
+                                </button>
                                 <button class="btn btn-danger" @@click="room.deleteRoom(roomItem.Id)">
                                     <i class="mdi mdi-trash-can"></i> 刪除
                                 </button>
@@ -122,3 +125,4 @@
 
 <partial name="_SysRoomCreate" />
 <partial name="_SysRoomDetail" />
+<partial name="_SysRoomEdit" />
