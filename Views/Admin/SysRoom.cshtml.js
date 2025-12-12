@@ -74,22 +74,48 @@ const room = new function () {
     this.vm = reactive(new VM());
 
     this.getVM = (id) => {
-
         this.mediaFiles.splice(0);
         this.timeSlots.splice(0);
         this.generateHourlySlots();
 
         if (id) {
+            // ✅ 編輯模式 - 打開編輯 Modal
             global.api.admin.roomdetail({ body: { id } })
                 .then((response) => {
-                    copy(this.form, response.data);
-                    this.offcanvas.show();
+                    this.vm.Id = response.data.Id;
+                    this.vm.Name = response.data.Name;
+                    this.vm.Building = response.data.Building;
+                    this.vm.Floor = response.data.Floor;
+                    this.vm.Number = response.data.Number;
+                    this.vm.Description = response.data.Description;
+                    this.vm.Capacity = response.data.Capacity;
+                    this.vm.Area = response.data.Area;
+                    this.vm.Status = response.data.Status;
+                    this.vm.PricingType = response.data.PricingType;
+                    this.vm.IsEnabled = response.data.IsEnabled;
+                    this.vm.BookingSettings = response.data.BookingSettings;
+
+                    if (response.data.Images && Array.isArray(response.data.Images)) {
+                        this.vm.Images = response.data.Images.map((imgPath, idx) => ({
+                            id: Date.now() + idx,
+                            Type: 'image',
+                            Src: imgPath
+                        }));
+                    } else {
+                        this.vm.Images = [];
+                    }
+
+                    this.vm.PricingDetails = response.data.PricingDetails || [];
+
+                    // ✅ 打開編輯 Modal
+                    const modal = new bootstrap.Modal(document.getElementById('roomEditModal'));
+                    modal.show();
                 })
                 .catch(error => {
                     addAlert('取得資料失敗', { type: 'danger', click: error.download });
                 });
         } else {
-            // 清空新增表單
+            // ✅ 新增模式 - 打開新增 Offcanvas
             this.form.name = '';
             this.form.building = '';
             this.form.floor = '';
@@ -101,12 +127,11 @@ const room = new function () {
             this.form.feeType = 'hourly';
             this.form.rentalType = 'in';
             this.generateCreateTimeSlotDefaults();
+
+            // ✅ 打開新增 Offcanvas
             this.offcanvas.show();
         }
-
-        console.log(this);
     }
-
     this.save = () => {
         const method = this.form.Id ? global.api.admin.roomupdate : global.api.admin.roominsert;
 
