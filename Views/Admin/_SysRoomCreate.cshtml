@@ -126,19 +126,19 @@
                         <div class="hourly-slot-container" id="hourlySlotContainer"
                             style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px;">
 
-                            <!-- ✅ 改成這樣 - 使用 slot.hour 而不是 hour 變數 -->
-                            <div v-for="slot in hourlySlots" :key="slot.hour" class="mb-2">
+                            <!-- ✅ 改成這樣 - 使用 slot.Hour 而不是 hour 變數 -->
+                            <div v-for="slot in hourlySlots" :key="slot.Hour" class="mb-2">
                                 <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2">
                                     <div class="form-check">
-                                        <input v-model="slot.checked" type="checkbox" class="form-check-input"
-                                            :id="`hour_${slot.hour}`">
-                                        <label class="form-check-label fw-600" :for="`hour_${slot.hour}`">
-                                            {{ slot.hour }}:00 - {{ slot.hour + 1 }}:00
+                                        <input v-model="slot.Checked" type="checkbox" class="form-check-input"
+                                            :id="`hour_${slot.Hour}`">
+                                        <label class="form-check-label fw-600" :for="`hour_${slot.Hour}`">
+                                            {{ slot.Hour }}:00 - {{ slot.Hour + 1 }}:00
                                         </label>
                                     </div>
                                     <div class="input-group ms-auto" style="width: 150px;">
                                         <span class="input-group-text">$</span>
-                                        <input v-model.number="slot.fee" type="number"
+                                        <input v-model.number="slot.Fee" type="number"
                                             class="form-control form-control-sm" min="0">
                                         <span class="input-group-text">元</span>
                                     </div>
@@ -160,23 +160,23 @@
                         </div>
                         <div class="slot-container" style="max-height: 500px; overflow-y: auto;">
                             <div class="time-slot-container" id="timeSlotContainer">
-                                <div v-for="(slot, index) in room.timeSlots" :key="slot.id" class="time-slot-item"
+                                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="time-slot-item"
                                     style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #e9ecef; border-radius: 8px;">
                                     <div class="form-check">
-                                        <input v-model="slot.enabled" type="checkbox" class="form-check-input"
-                                            :id="`slot_${slot.id}`">
-                                        <label class="form-check-label" :for="`slot_${slot.id}`">開放</label>
+                                        <input v-model="slot.Enabled" type="checkbox" class="form-check-input"
+                                            :id="`slot_${slot.Id}`">
+                                        <label class="form-check-label" :for="`slot_${slot.Id}`">開放</label>
                                     </div>
-                                    <input v-model="slot.name" type="text" class="form-control form-control-sm"
+                                    <input v-model="slot.Name" type="text" class="form-control form-control-sm"
                                         placeholder="時段名稱" style="width: 80px; max-width: 150px;">
-                                    <input v-model="slot.startTime" type="time" class="form-control form-control-sm"
+                                    <input v-model="slot.StartTime" type="time" class="form-control form-control-sm"
                                         style="width: 110px;">
                                     <span>-</span>
-                                    <input v-model="slot.endTime" type="time" class="form-control form-control-sm"
+                                    <input v-model="slot.EndTime" type="time" class="form-control form-control-sm"
                                         style="width: 110px;">
                                     <div class="input-group" style="width: 180px;">
                                         <span class="input-group-text">$</span>
-                                        <input v-model.number="slot.fee" type="number"
+                                        <input v-model.number="slot.Fee" type="number"
                                             class="form-control form-control-sm" placeholder="費用" min="0">
                                         <span class="input-group-text">元</span>
                                     </div>
@@ -197,7 +197,7 @@
                     <label class="form-label" style="font-weight: 500; color: #495057;">上傳圖片/影片</label>
                     <div class="image-upload-container" id="mediaGrid"
                         style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
-                        <div v-for="media in room.mediaFiles" :key="media.id" class="media-item"
+                        <div v-for="media in room.mediaFiles" :key="media.Id" class="media-item"
                             style="position: relative; height: 120px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff;">
                             <img v-if="media.type === 'image'" :src="media.src"
                                 style="width: 100%; height: 100%; object-fit: cover;">
@@ -206,7 +206,7 @@
                             </video>
                             <button type="button" class="btn btn-sm"
                                 style="position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; z-index: 10; font-size: 18px; padding: 0;"
-                                @@click="room.removeMedia(media.id)">&times;</button>
+                                @@click="room.removeMedia(media.Id)">&times;</button>
                         </div>
                         <div class="upload-item" @@click="room.triggerMediaUpload()"
                             style="height: 120px; border: 2px dashed #cfe2ff; border-radius: 12px; background: #f8faff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;">
