@@ -67,7 +67,7 @@
                     <div class="col-md-6">
                         <label class="form-label" style="font-weight: 500; color: #495057;">面積（㎡）</label>
                         <input v-model.number="form.area" type="number" class="form-control" placeholder="請輸入面積" min="1"
-                            step="0.01" required> <!-- ✅ 加這個 -->
+                            step="0.01" required>
                         <div class="invalid-feedback">請輸入面積（㎡）</div>
                     </div>
                 </div>
@@ -94,14 +94,14 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-check">
-                                <input v-model="form.feeType" type="radio" name="feeType" id="feeHourly" value="hourly"
+                                <input v-model.number="form.feeType" type="radio" name="feeType" id="feeHourly" :value="0"
                                     class="form-check-input" @@change="room.toggleFeeOptions()">
                                 <label class="form-check-label" for="feeHourly">小時制</label>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-check">
-                                <input v-model="form.feeType" type="radio" name="feeType" id="feeSlot" value="period"
+                                <input v-model.number="form.feeType" type="radio" name="feeType" id="feeSlot" :value="1"
                                     class="form-check-input" @@change="room.toggleFeeOptions()">
                                 <label class="form-check-label" for="feeSlot">時段制</label>
                             </div>
@@ -110,7 +110,7 @@
                 </div>
 
                 <!-- 小時制設定 -->
-                <div v-if="form.feeType === 'hourly'">
+                <div v-if="form.feeType === 0">
 
                     <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">小時制收費</h6>
                     <div class="mb-3">
@@ -149,7 +149,7 @@
                 </div>
 
                 <!-- 時段制設定 -->
-                <div v-else-if="form.feeType === 'period'">
+                <div v-else-if="form.feeType === 1">
                     <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">時段制收費</h6>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -176,7 +176,7 @@
                                         style="width: 110px;">
                                     <div class="input-group" style="width: 180px;">
                                         <span class="input-group-text">$</span>
-                                        <input v-model.number="slot.Fee" type="number"
+                                        <input v-model.number="slot.Price" type="number"
                                             class="form-control form-control-sm" placeholder="費用" min="0">
                                         <span class="input-group-text">元</span>
                                     </div>
@@ -223,30 +223,30 @@
                 style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
                 <h6 style="margin: 0 0 12px; font-weight: 600;">租借權限設定</h6>
                 <div class="rental-options" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                    <div @@click="room.selectRentalOption('in')"
+                    <div @@click="room.selectRentalOption(0)"
                         style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 'in' ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 'in' ? '#f0f7ff' : '#fff' }">
+                        :style="{ border: form.rentalType === 0 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 0 ? '#f0f7ff' : '#fff' }">
                         <i class="bx bx-building" style="font-size: 2em; color: #007bff;"></i>
                         <h6 class="mt-2">對內</h6>
                         <small class="text-muted">僅限公司內部使用</small>
                     </div>
-                    <div @@click="room.selectRentalOption('out')"
+                    <div @@click="room.selectRentalOption(1)"
                         style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 'out' ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 'out' ? '#f0f7ff' : '#fff' }">
+                        :style="{ border: form.rentalType === 1 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 1 ? '#f0f7ff' : '#fff' }">
                         <i class="bx bx-group" style="font-size: 2em; color: #28a745;"></i>
                         <h6 class="mt-2">對內外</h6>
                         <small class="text-muted">內部及外部客戶可租借</small>
                     </div>
-                    <div @@click="room.selectRentalOption('closed')"
+                    <div @@click="room.selectRentalOption(2)"
                         style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 'closed' ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 'closed' ? '#f0f7ff' : '#fff' }">
+                        :style="{ border: form.rentalType === 2 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 2 ? '#f0f7ff' : '#fff' }">
                         <i class="bx bx-block" style="font-size: 2em; color: #dc3545;"></i>
                         <h6 class="mt-2">不開放</h6>
                         <small class="text-muted">暫不開放租借</small>
                     </div>
-                    <div @@click="room.selectRentalOption('free')"
+                    <div @@click="room.selectRentalOption(3)"
                         style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 'free' ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 'free' ? '#f0f7ff' : '#fff' }">
+                        :style="{ border: form.rentalType === 3 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 3 ? '#f0f7ff' : '#fff' }">
                         <i class="bx bx-gift" style="font-size: 2em; color: #17a2b8;"></i>
                         <h6 class="mt-2">免費開放</h6>
                         <small class="text-muted">免費提供使用</small>

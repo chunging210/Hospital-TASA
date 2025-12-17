@@ -22,7 +22,7 @@ namespace TASA.Services
             public string? Number { get; set; }
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
-            public string? Status { get; set; }
+            public RoomStatus Status { get; set; }
 
             public IEnumerable<string>? Images { get; set; }
         }
@@ -44,7 +44,7 @@ namespace TASA.Services
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
-                .Where(x => x.Status != "maintenance");
+                .Where(x => x.Status != RoomStatus.Maintenance);
 
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {

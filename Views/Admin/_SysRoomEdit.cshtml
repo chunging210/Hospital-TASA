@@ -3,17 +3,6 @@
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
 
-            @* <div style="background: #fff3cd; padding: 15px; margin: 10px;">
-                <strong>🔍 編輯 Modal 調試：</strong>
-                <div><code>room.vm.Id: {{ room.vm.Id }}</code></div>
-                <div><code>room.vm.Name: {{ room.vm.Name }}</code></div>
-                <div><code>room.vm.Images: {{ room.vm.Images }}</code></div>
-                <div><code>room.vm.Images?.length: {{ room.vm.Images?.length }}</code></div>
-                <div><code>room.vm.PricingType: {{ room.vm.PricingType }}</code></div>
-                <div><code>room.vm.PricingDetails: {{ room.vm.PricingDetails }}</code></div>
-            </div> *@
-
-
             <div class="modal-header">
                 <h5 class="modal-title d-flex align-items-center gap-2">
                     <span class="material-icons">edit</span>編輯會議室
@@ -59,10 +48,9 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">使用狀態</label>
-                            <select v-model="room.vm.Status" class="form-select form-select-sm">
-                                <option value="available">可預約</option>
-                                <option value="occupied">使用中</option>
-                                <option value="maintenance">維修中</option>
+                            <select v-model.number="room.vm.Status" class="form-select form-select-sm">
+                                <option value="0">可預約</option>
+                                <option value="1">維修中</option>
                             </select>
                         </div>
                     </div>
@@ -102,28 +90,28 @@
                         <label class="form-label d-block">收費方式 <span class="text-danger">*</span></label>
 
                         <div class="form-check form-check-inline">
-                            <input v-model="room.vm.PricingType" type="radio" value="hourly"
+                            <input v-model.number="room.vm.PricingType" type="radio" id="editHourly" :value="0"
                                 @@change="room.onPricingTypeChange">
                             <label class="form-check-label" for="editHourly">小時制</label>
                         </div>
 
                         <div class="form-check form-check-inline">
-                            <input v-model="room.vm.PricingType" type="radio" value="period"
+                            <input v-model.number="room.vm.PricingType" type="radio" id="editPeriod" :value="1"
                                 @@change="room.onPricingTypeChange">
                             <label class="form-check-label" for="editPeriod">時段制</label>
                         </div>
                     </div>
 
-                    <div v-if="room.vm.PricingType === 'hourly'" class="mb-3">
+                    <div v-if="room.vm.PricingType === 0" class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span style="font-size: 13px; font-weight: 500;">設定每個時段的收費</span>
                             <div>
                                 <button type="button" class="btn btn-outline-success btn-sm"
-                                    @@click="room.selectAllHours">
+                                    @@click="room.selectAllHours()">
                                     全選
                                 </button>
                                 <button type="button" class="btn btn-outline-danger btn-sm ms-2"
-                                    @@click="room.deselectAllHours">
+                                    @@click="room.deselectAllHours()">
                                     全不選
                                 </button>
                             </div>
@@ -132,55 +120,61 @@
 
                         <div
                             style="max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px;">
-                            @* 【重點】使用 room.hourlySlots *@
-                            <div>
+                            <div v-for="slot in room.hourlySlots.value" :key="slot.Hour" class="mb-2">
+                                <div class="d-flex align-items-center gap-2">
 
-                                <div v-for="slot in room.hourlySlots.value" :key="slot.Hour" class="mb-2">
-                                    <div class="d-flex align-items-center gap-2">
+                                    <!-- 複選框 -->
+                                    <input v-model="slot.Checked" type="checkbox" class="form-check-input"
+                                        style="margin: 0; cursor: pointer;">
 
-                                        <!-- 複選框 -->
-                                        <input v-model="slot.Checked" type="checkbox" class="form-check-input"
-                                            style="margin: 0; cursor: pointer;">
+                                    <!-- 時段標籤 -->
+                                    <label style="flex: 1; margin: 0; font-size: 12px; cursor: pointer;">
+                                        {{ String(slot.Hour).padStart(2, '0') }}:00 -
+                                        {{ String(slot.Hour + 1).padStart(2, '0') }}:00
+                                    </label>
 
-                                        <!-- 時段標籤 -->
-                                        <label style="flex: 1; margin: 0; font-size: 12px; cursor: pointer;">
-                                            {{ String(slot.Hour).padStart(2, '0') }}:00 -
-                                            {{ String(slot.Hour + 1).padStart(2, '0') }}:00
-                                        </label>
-
-                                        <!-- 價格輸入框 -->
-                                        <div class="input-group input-group-sm" style="width: 120px;">
-                                            <span class="input-group-text">$</span>
-                                            <input v-model.number="slot.Fee" type="number"
-                                                class="form-control form-control-sm" min="0" :disabled="!slot.Checked"
-                                                placeholder="500">
-                                            <span class="input-group-text">元</span>
-                                        </div>
-
+                                    <!-- 價格輸入框 -->
+                                    <div class="input-group input-group-sm" style="width: 120px;">
+                                        <span class="input-group-text">$</span>
+                                        <input v-model.number="slot.Fee" type="number"
+                                            class="form-control form-control-sm" min="0" :disabled="!slot.Checked"
+                                            placeholder="500">
+                                        <span class="input-group-text">元</span>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    @* 時段制 *@
-                    <div v-if="room.vm.PricingType === 'period'">
-                        <div class="d-flex justify-content-between mb-2"> <span>設定各個時段的收費</span> <button type="button"
-                                class="btn btn-outline-primary btn-sm" @@click="room.addTimeSlot()"> 新增時段 </button>
+                    <!-- 時段制 -->
+                    <div v-if="room.vm.PricingType === 1">
+                        <div class="d-flex justify-content-between mb-2"> 
+                            <span>設定各個時段的收費</span> 
+                            <button type="button" class="btn btn-outline-primary btn-sm" @@click="room.addTimeSlot()"> 
+                                新增時段 
+                            </button>
                         </div>
                         <div class="time-slot-container">
                             <div v-for="(slot, index) in room.timeSlots" :key="slot.Id"
-                                class="time-slot-item d-flex align-items-center gap-2"> <input v-model="slot.Enabled"
-                                    type="checkbox"> <input v-model="slot.Name" class="form-control form-control-sm"
-                                    placeholder="時段名稱" style="width:120px"> <input v-model="slot.StartTime" type="time"
-                                    class="form-control form-control-sm" style="width:120px"> <span>-</span> <input
-                                    v-model="slot.EndTime" type="time" class="form-control form-control-sm"
+                                class="time-slot-item d-flex align-items-center gap-2"> 
+                                <input v-model="slot.Enabled" type="checkbox"> 
+                                <input v-model="slot.Name" class="form-control form-control-sm"
+                                    placeholder="時段名稱" style="width:120px"> 
+                                <input v-model="slot.StartTime" type="time"
+                                    class="form-control form-control-sm" style="width:120px"> 
+                                <span>-</span> 
+                                <input v-model="slot.EndTime" type="time" class="form-control form-control-sm"
                                     style="width:120px">
-                                <div class="input-group input-group-sm" style="width:150px"> <span
-                                        class="input-group-text">$</span> <input v-model.number="slot.Price"
-                                        type="number" class="form-control"> <span class="input-group-text">元</span>
-                                </div> <button class="btn btn-outline-danger btn-sm"
-                                    @@click="room.removeTimeSlot(index)"> 刪除 </button>
+                                <div class="input-group input-group-sm" style="width:150px"> 
+                                    <span class="input-group-text">$</span> 
+                                    <input v-model.number="slot.Price" type="number" class="form-control"> 
+                                    <span class="input-group-text">元</span>
+                                </div> 
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                    @@click="room.removeTimeSlot(index)"> 
+                                    刪除 
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -216,13 +210,13 @@
                     <h6 style="margin:0 0 12px;font-weight:600;">租借權限設定</h6>
 
                     <div class="rental-options" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-                        <!-- 對內 -->
-                        <div @@click="room.vm.BookingSettings = 'in'"
+                        <!-- 對內 (InternalOnly = 0) -->
+                        <div @@click="room.vm.BookingSettings = 0"
                             style="border-radius:12px;padding:10px;text-align:center;cursor:pointer;" :style="{
-        border: room.vm.BookingSettings === 'in'
+        border: room.vm.BookingSettings === 0
           ? '2px solid #007bff'
           : '1px solid #e9ecef',
-        background: room.vm.BookingSettings === 'in'
+        background: room.vm.BookingSettings === 0
           ? '#f0f7ff'
           : '#fff'
       }">
@@ -231,13 +225,13 @@
                             <small class="text-muted">僅限公司內部使用</small>
                         </div>
 
-                        <!-- 對內外 -->
-                        <div @@click="room.vm.BookingSettings = 'out'"
+                        <!-- 對內外 (InternalAndExternal = 1) -->
+                        <div @@click="room.vm.BookingSettings = 1"
                             style="border-radius:12px;padding:10px;text-align:center;cursor:pointer;" :style="{
-        border: room.vm.BookingSettings === 'out'
+        border: room.vm.BookingSettings === 1
           ? '2px solid #007bff'
           : '1px solid #e9ecef',
-        background: room.vm.BookingSettings === 'out'
+        background: room.vm.BookingSettings === 1
           ? '#f0f7ff'
           : '#fff'
       }">
@@ -246,13 +240,13 @@
                             <small class="text-muted">內部及外部客戶可租借</small>
                         </div>
 
-                        <!-- 不開放 -->
-                        <div @@click="room.vm.BookingSettings = 'closed'"
+                        <!-- 不開放 (Closed = 2) -->
+                        <div @@click="room.vm.BookingSettings = 2"
                             style="border-radius:12px;padding:10px;text-align:center;cursor:pointer;" :style="{
-        border: room.vm.BookingSettings === 'closed'
+        border: room.vm.BookingSettings === 2
           ? '2px solid #007bff'
           : '1px solid #e9ecef',
-        background: room.vm.BookingSettings === 'closed'
+        background: room.vm.BookingSettings === 2
           ? '#f0f7ff'
           : '#fff'
       }">
@@ -261,13 +255,13 @@
                             <small class="text-muted">暫不開放租借</small>
                         </div>
 
-                        <!-- 免費 -->
-                        <div @@click="room.vm.BookingSettings = 'free'"
+                        <!-- 免費 (Free = 3) -->
+                        <div @@click="room.vm.BookingSettings = 3"
                             style="border-radius:12px;padding:10px;text-align:center;cursor:pointer;" :style="{
-        border: room.vm.BookingSettings === 'free'
+        border: room.vm.BookingSettings === 3
           ? '2px solid #007bff'
           : '1px solid #e9ecef',
-        background: room.vm.BookingSettings === 'free'
+        background: room.vm.BookingSettings === 3
           ? '#f0f7ff'
           : '#fff'
       }">

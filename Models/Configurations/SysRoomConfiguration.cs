@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
 using TASA.Models;
+using TASA.Models.Enums;
 
 namespace TASA.Models.Configurations
 {
@@ -40,12 +41,14 @@ namespace TASA.Models.Configurations
                 .HasComment("面積(平方公尺)");
             entity.Property(e => e.Number).HasComment("房間編號");
             entity.Property(e => e.Status)
-                .HasDefaultValue("available")
-                .HasComment("使用狀態(available/occupied/maintenance)");
+                .HasDefaultValue(RoomStatus.Available)
+                .HasComment("使用狀態(available/maintenance)");
             entity.Property(e => e.PricingType)
-                .HasDefaultValue("hourly")
+                .HasDefaultValue(PricingType.Hourly)
                 .HasComment("收費方式(hourly/period)");
-            entity.Property(e => e.BookingSettings).HasComment("租借權限設定");
+            entity.Property(e => e.BookingSettings)
+                .HasDefaultValue(BookingSettings.InternalOnly)
+                .HasComment("租借權限設定");
 
             OnConfigurePartial(entity);
         }

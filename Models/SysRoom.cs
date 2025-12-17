@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using TASA.Models.Enums;
 
 namespace TASA.Models;
 
@@ -89,22 +90,19 @@ public partial class SysRoom
 
 
     /// <summary>
-    /// 使用狀態(available/occupied/maintenance)
+    /// 使用狀態(available/maintenance)
     /// </summary>
-    [StringLength(20)]
-    public string Status { get; set; }
+    public RoomStatus Status { get; set; }
 
     /// <summary>
     /// 收費方式(hourly/period)
     /// </summary>
-    [StringLength(20)]
-    public string PricingType { get; set; }
+    public PricingType PricingType { get; set; }
 
     /// <summary>
     /// 租借權限設定
     /// </summary>
-    [Column(TypeName = "json")]
-    public string BookingSettings { get; set; }
+    public BookingSettings BookingSettings { get; set; }
 
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();

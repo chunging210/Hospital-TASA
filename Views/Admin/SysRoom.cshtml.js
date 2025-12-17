@@ -9,22 +9,56 @@ class VM {
     IsEnabled = true;
 }
 
+// ✅ Enum 定義（與後端對應）
+const RoomStatus = {
+    Available: 0,
+    Maintenance: 1
+};
+
+const PricingType = {
+    Hourly: 0,
+    Period: 1
+};
+
+const BookingSettings = {
+    InternalOnly: 0,
+    InternalAndExternal: 1,
+    Closed: 2,
+    Free: 3
+};
+
 const getStatusText = (status) => {
     const statusMap = {
-        'available': '可用',
-        'occupied': '使用中',
-        'maintenance': '維護中'
+        [RoomStatus.Available]: '可用',
+        [RoomStatus.Maintenance]: '維護中'
     };
-    return statusMap[status] || status;
+    return statusMap[status] || String(status);
 };
 
 const getStatusClass = (status) => {
     const classMap = {
-        'available': 'status-available',
-        'occupied': 'status-occupied',
-        'maintenance': 'status-maintenance'
+        [RoomStatus.Available]: 'status-available',
+        [RoomStatus.Maintenance]: 'status-maintenance'
     };
     return classMap[status] || '';
+};
+
+const getPricingTypeText = (pricingType) => {
+    const typeMap = {
+        [PricingType.Hourly]: '時租',
+        [PricingType.Period]: '時段'
+    };
+    return typeMap[pricingType] || String(pricingType);
+};
+
+const getBookingSettingsText = (bookingSettings) => {
+    const settingsMap = {
+        [BookingSettings.InternalOnly]: '僅限內部',
+        [BookingSettings.InternalAndExternal]: '內外皆可',
+        [BookingSettings.Closed]: '不開放租借',
+        [BookingSettings.Free]: '免費使用'
+    };
+    return settingsMap[bookingSettings] || String(bookingSettings);
 };
 
 let imageIndices = reactive({});
@@ -41,8 +75,8 @@ const room = new function () {
         capacity: null,
         area: null,
         refundEnabled: true,
-        feeType: 'hourly',
-        rentalType: 'in'
+        feeType: PricingType.Hourly,
+        rentalType: BookingSettings.InternalOnly
     });
 
     this.editModal = null;
@@ -51,16 +85,15 @@ const room = new function () {
     this.timeSlots = reactive([]);
     this.hourlySlots = ref([]);
 
-    // ✅ 詳情資料改成 ref（Vue 響應式）
     this.detailRoom = ref(null);
     this.detailRoomCarouselIndex = ref(0);
 
     this.createHourlySlot = (hour, data = {}) => {
         return {
-            Id: data.Id ?? null,              // DB Id（編輯時才有）
-            Hour: hour,                       // 8 ~ 19
-            Checked: data.Checked ?? false,   // 是否啟用
-            Fee: data.Fee ?? 500              // 預設費用
+            Id: data.Id ?? null,
+            Hour: hour,
+            Checked: data.Checked ?? false,
+            Fee: data.Fee ?? 500
         };
     };
 
@@ -76,7 +109,6 @@ const room = new function () {
     };
 
     this.getList = (page) => {
-
         if (typeof page === 'number') {
             this.page.data.page = page;
         } else if (!this.page.data.page) {
@@ -95,7 +127,6 @@ const room = new function () {
             });
     };
 
-
     this.offcanvas = null;
     this.vm = reactive(new VM());
 
@@ -105,10 +136,8 @@ const room = new function () {
         this.hourlySlots.value = [];
 
         if (Id) {
-            // ✅ 編輯模式 - 打開編輯 Modal
             global.api.admin.roomdetail({ body: { Id } })
                 .then((response) => {
-                    // ✅ 基本資料
                     this.vm.Id = response.data.Id;
                     this.vm.Name = response.data.Name;
                     this.vm.Building = response.data.Building;
@@ -122,7 +151,6 @@ const room = new function () {
                     this.vm.IsEnabled = response.data.IsEnabled;
                     this.vm.BookingSettings = response.data.BookingSettings;
 
-                    // ✅ 圖片格式轉換
                     (response.data.Images || []).forEach((imgPath, idx) => {
                         this.mediaFiles.push({
                             Id: Date.now() + idx,
@@ -132,14 +160,10 @@ const room = new function () {
                         });
                     });
 
-                    // ⚠️ 不再使用 vm.Images 畫畫面
                     this.vm.Images = [];
-
-                    // ✅ 收費詳情
                     this.vm.PricingDetails = response.data.PricingDetails || [];
 
-                    // ✅ 根據收費方式初始化
-                    if (response.data.PricingType === 'hourly') {
+                    if (response.data.PricingType === PricingType.Hourly) {
                         const dbPricingMap = {};
                         response.data.PricingDetails?.forEach(p => {
                             const hour = parseInt(p.StartTime.split(':')[0]);
@@ -154,23 +178,19 @@ const room = new function () {
                             { length: 12 },
                             (_, i) => this.createHourlySlot(i + 8, dbPricingMap[i + 8])
                         );
-                    } else if (response.data.PricingType === 'period') {
-                        // 時段制：載入時段資料
+                    } else if (response.data.PricingType === PricingType.Period) {
                         this.timeSlots.splice(0);
                         response.data.PricingDetails?.forEach(p => {
                             this.timeSlots.push(this.createPeriodSlot(p));
                         });
                     }
 
-                    // ✅ 打開編輯 Modal
                     this.editModal.show();
-
                 })
                 .catch(error => {
                     addAlert('取得資料失敗', { type: 'danger', click: error.download });
                 });
         } else {
-            // ✅ 新增模式 - 打開新增 Offcanvas
             this.form.name = '';
             this.form.building = '';
             this.form.floor = '';
@@ -179,14 +199,12 @@ const room = new function () {
             this.form.capacity = null;
             this.form.area = null;
             this.form.refundEnabled = true;
-            this.form.feeType = 'hourly';
-            this.vm.PricingType = 'hourly';
-            this.form.rentalType = 'in';
+            this.form.feeType = PricingType.Hourly;
+            this.vm.PricingType = PricingType.Hourly;
+            this.form.rentalType = BookingSettings.InternalOnly;
 
-            // ✅ 初始化新增模式的時段
             this.generateHourlySlots();
             this.timeSlots.splice(0);
-            // ✅ 打開新增 Offcanvas
             this.offcanvas.show();
         }
     }
@@ -203,9 +221,9 @@ const room = new function () {
             ? this.vm.PricingType
             : this.form.feeType;
 
-        let status = source.Status ?? 'available';
-        if (source.BookingSettings === 'closed') {
-            status = 'maintenance';
+        let status = source.Status ?? RoomStatus.Available;
+        if (source.BookingSettings === BookingSettings.Closed) {
+            status = RoomStatus.Maintenance;
         }
 
         const body = {
@@ -257,18 +275,16 @@ const room = new function () {
         }
     }
 
-    // ===== 切換收費方式 =====
     this.toggleFeeOptions = () => {
-        if (this.form.feeType === 'hourly') {
+        if (this.form.feeType === PricingType.Hourly) {
             this.generateHourlySlots();
             this.timeSlots.splice(0);
-        } else if (this.form.feeType === 'period') {
+        } else if (this.form.feeType === PricingType.Period) {
             this.timeSlots.splice(0);
             this.generateCreateTimeSlotDefaults();
         }
     }
 
-    // ===== 生成預設時段 =====
     this.generateCreateTimeSlotDefaults = () => {
         this.timeSlots.splice(0);
 
@@ -281,7 +297,6 @@ const room = new function () {
         });
     };
 
-    // ===== 小時制相關 =====
     this.generateHourlySlots = () => {
         this.hourlySlots.value = Array.from(
             { length: 12 },
@@ -301,7 +316,6 @@ const room = new function () {
         });
     }
 
-    // ===== 時段制相關 =====
     this.addTimeSlot = () => {
         this.timeSlots.push(this.createPeriodSlot());
     };
@@ -310,7 +324,6 @@ const room = new function () {
         this.timeSlots.splice(index, 1);
     }
 
-    // ===== 收費詳情 =====
     this.getPricingDetails = () => {
         const details = [];
 
@@ -318,8 +331,7 @@ const room = new function () {
             ? this.vm.PricingType
             : this.form.feeType;
 
-
-        if (pricingType === 'hourly') {
+        if (pricingType === PricingType.Hourly) {
             this.hourlySlots.value.forEach(slot => {
                 if (slot.Checked) {
                     details.push({
@@ -332,9 +344,9 @@ const room = new function () {
                     });
                 }
             });
-        } else if (pricingType === 'period') {
+        } else if (pricingType === PricingType.Period) {
             this.timeSlots.forEach(slot => {
-                if (slot.Enabled) {  // 只保存啟用的時段
+                if (slot.Enabled) {
                     details.push({
                         Id: slot.Id,
                         Name: slot.Name,
@@ -350,12 +362,10 @@ const room = new function () {
         return details;
     }
 
-    // ===== 租借權限 =====
     this.selectRentalOption = (type) => {
         this.form.rentalType = type;
     }
 
-    // ===== 媒體上傳 =====
     this.handleMediaUpload = (event) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
@@ -375,10 +385,8 @@ const room = new function () {
             reader.readAsDataURL(file);
         });
 
-        // 關鍵：清空 input，否則同檔案第二次選不到
         event.target.value = '';
     };
-
 
     this.removeMedia = (Id) => {
         const index = this.mediaFiles.findIndex(m => m.Id === Id);
@@ -400,22 +408,17 @@ const room = new function () {
         document.getElementById('mediaUpload').click();
     }
 
-    // ✅ 改成 Vue 響應式
     this.viewRoom = (Id) => {
         global.api.admin.roomdetail({ body: { Id } })
             .then((response) => {
-
                 console.log('🔍 [viewRoom] 完整回應:', response);
                 console.log('🔍 [viewRoom] response.data:', response.data);
                 console.log('🔍 [viewRoom] Images 陣列:', response.data.Images);
                 console.log('🔍 [viewRoom] Images 長度:', response.data.Images?.length);
 
-
-                // 直接設定到 ref
                 this.detailRoom.value = response.data;
                 this.detailRoomCarouselIndex.value = 0;
 
-                // 顯示 Modal
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
             })
@@ -424,7 +427,6 @@ const room = new function () {
             });
     }
 
-    // ✅ 圖片輪播控制
     this.prevDetailImage = () => {
         if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
         const length = this.detailRoom.value.Images.length;
@@ -438,27 +440,15 @@ const room = new function () {
     }
 
     this.onPricingTypeChange = () => {
-
-        // 切到小時制
-        if (this.vm.PricingType === 'hourly') {
-
-            // 小時制永遠顯示完整小時（未勾）
+        if (this.vm.PricingType === PricingType.Hourly) {
             this.generateHourlySlots();
-
-            // ❗ 不要清 timeSlots（那是 period 的 DB 資料）
             return;
         }
 
-        // 切到時段制
-        if (this.vm.PricingType === 'period') {
-
-            // 👉 如果 DB 有 SysRoomPricePeriod（已載入）
+        if (this.vm.PricingType === PricingType.Period) {
             if (this.timeSlots.length > 0) {
-                // 直接顯示，不要動
                 return;
             }
-
-            // 👉 DB 沒有 period 明細（代表原本是 hourly）
             this.generateCreateTimeSlotDefaults();
         }
     };
@@ -470,18 +460,17 @@ window.$config = {
         this.roomoffcanvas = ref(null);
         this.getStatusText = getStatusText;
         this.getStatusClass = getStatusClass;
+        this.getPricingTypeText = getPricingTypeText;
+        this.getBookingSettingsText = getBookingSettingsText;
         this.form = room.form;
         this.imageIndices = imageIndices;
         this.roompage = ref(null);
-        // this.hourlySlots = computed(() => room.hourlySlots.value);
         this.timeSlots = room.timeSlots;
         this.mediaFiles = room.mediaFiles;
         this.hourlySlots = room.hourlySlots;
-        // ✅ 暴露詳情資料
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
 
-        // ✅ Computed 計算當前圖片
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {
                 return null;
@@ -489,14 +478,12 @@ window.$config = {
             return room.detailRoom.value.Images[room.detailRoomCarouselIndex.value];
         });
 
-        // ✅ Computed 計算是否有圖片
         this.hasDetailImages = computed(() => {
             return room.detailRoom.value &&
                 room.detailRoom.value.Images &&
                 room.detailRoom.value.Images.length > 0;
         });
 
-        // 圖片輪播
         this.prevImage = (roomId) => {
             if (!imageIndices[roomId]) imageIndices[roomId] = 0;
             const roomData = room.list.find(r => r.Id === roomId);
@@ -513,13 +500,10 @@ window.$config = {
             }
         };
 
-        // 搜尋功能
         this.clearSearch = () => {
             room.query.keyword = '';
             room.getList();
         };
-
-
 
         onMounted(() => {
             room.page = this.roompage.value;
