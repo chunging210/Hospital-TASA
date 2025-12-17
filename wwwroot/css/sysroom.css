@@ -1,18 +1,58 @@
-.room-feature-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 20px 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    min-height: 200px;
-    flex: 2;
+/* ===== 全域樣式 ===== */
+body {
+    background-color: #f5f5f5;
+    font-family: 'Microsoft JhengHei', Arial, sans-serif;
 }
 
-.room-feature-section .info-value {
-    font-size: 16px;
-    line-height: 1.7;
-    padding: 15px 0;
+/* ===== 公共過渡效果 ===== */
+.carousel-btn,
+.rental-option,
+.edit-rental-option,
+.upload-item,
+.media-item .remove-btn,
+.edit-media-item .remove-btn,
+.image-indicator {
+    transition: all 0.2s, background-color 0.3s;
+}
+
+/* ===== 共用圖示樣式 ===== */
+.info-icon,
+.rental-option i,
+.edit-rental-option i {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.rental-option i,
+.edit-rental-option i {
+    font-size: 2em;
+}
+
+/* ===== 共用色彩 - 圖示顏色 ===== */
+.rental-option-internal i,
+.edit-rental-option-internal i {
+    color: #007bff;
+}
+
+.rental-option-external i,
+.edit-rental-option-external i {
+    color: #28a745;
+}
+
+.rental-option-closed i,
+.edit-rental-option-closed i {
+    color: #dc3545;
+}
+
+.rental-option-free i,
+.edit-rental-option-free i {
+    color: #17a2b8;
+}
+
+/* ===== 共用圖示容器 ===== */
+.info-icon {
+    color: #007bff;
 }
 
 .room-feature-section .info-icon {
@@ -29,37 +69,81 @@
     flex-shrink: 0;
 }
 
-.room-feature-section .info-item {
-    background: transparent;
-    padding: 0;
+/* ===== 共用移除按鈕 ===== */
+.media-item .remove-btn,
+.edit-media-item .remove-btn {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
     display: flex;
-    align-items: flex-start;
-    gap: 15px;
-    text-align: left;
+    align-items: center;
+    justify-content: center;
 }
 
-.room-feature-content {
-    flex: 1;
+.media-item .remove-btn {
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    padding: 0;
 }
 
-.room-feature-content .info-label {
-    font-size: 14px;
+.edit-media-item .remove-btn {
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 12px;
+}
+
+.media-item .remove-btn:hover,
+.edit-media-item .remove-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* ===== 共用租借選項 ===== */
+.rental-option,
+.edit-rental-option {
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.rental-option:hover,
+.edit-rental-option:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rental-option.active,
+.edit-rental-option.active {
+    border: 2px solid #007bff;
+    background: #f0f7ff;
+}
+
+.rental-option h6,
+.edit-rental-option h6 {
+    margin: 12px 0 8px;
     font-weight: 600;
-    color: #495057;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-.room-feature-content .info-value {
-    font-size: 16px;
-    line-height: 1.6;
+.rental-option small,
+.edit-rental-option small {
+    display: block;
     color: #6c757d;
-    padding: 8px;
-    margin: 0;
-    text-align: justify;
 }
 
+.rental-option small {
+    font-size: 12px;
+}
+
+/* ===== 房間卡片 ===== */
 .room-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -103,20 +187,11 @@
     padding: 15px;
 }
 
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    font-size: 14px;
-    border-bottom: 1px solid #eee;
-}
-
-.detail-row:last-child {
-    border-bottom: none;
-}
-
-
 .room-preview {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 6px;
     background: #f8f9fa;
     margin-bottom: 15px;
@@ -125,6 +200,28 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    pointer-events: auto;
+}
+
+.carousel-btn {
+    width: 25px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 50px;
+    background: rgb(145 145 145 / 50%);
+    color: white;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.carousel-btn.prev {
+    left: 10px;
+}
+
+.carousel-btn.next {
+    right: 10px;
 }
 
 .room-details {
@@ -179,65 +276,108 @@
     gap: 10px;
 }
 
-.btn-view,
-.btn-edit {
-    flex: 1;
-    border: none;
-    color: white;
-    padding: 10px;
-    border-radius: 6px;
+.action-buttons .btn {
+    width: 150px;
+    font-size: 15px;
     font-weight: 500;
-    transition: background 0.3s;
-}
-
-.btn-view {
-    background: #3b76e1;
-}
-
-.btn-view:hover {
-    background: #2c63c7;
-    color: white;
-}
-
-.btn-edit {
-    background: #3b76e1;
-}
-
-.btn-edit:hover {
-    background: #2c63c7;
-    color: white;
-}
-
-.carousel-control-next,
-.carousel-control-prev {
-    background: #6b6767ad;
-}
-
-.pagination {
-    display: flex;
+    border-radius: 10px;
     align-items: center;
+    justify-content: center;
     gap: 10px;
 }
 
-.page-item {
-    list-style: none;
+/* ===== 房間特性區塊 ===== */
+.room-feature-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    min-height: 200px;
+    flex: 2;
 }
 
-.page-link {
-    color: #3b76e1;
-    text-decoration: none;
-    padding: 6px 12px;
+.room-feature-section .info-item {
+    background: transparent;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    text-align: left;
 }
 
-.page-link:hover {
-    color: #2c63c7;
+.room-feature-section .info-value {
+    font-size: 16px;
+    line-height: 1.7;
+    padding: 15px 0;
+    word-break: break-word;
+    white-space: normal;
+    overflow-wrap: break-word;
+    max-width: 100%;
 }
 
-.page-item.disabled .page-link {
-    color: #ccc;
-    cursor: not-allowed;
+.room-feature-content {
+    flex: 1;
 }
 
+.room-feature-content .info-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.room-feature-content .info-value {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #6c757d;
+    padding: 8px;
+    margin: 0;
+    text-align: justify;
+}
+
+/* ===== 資訊網格 ===== */
+.info-grid {
+    flex: 1;
+    transition: all 2s;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10px, 1fr));
+    gap: 15px;
+}
+
+.info-item {
+    background: #f8f9fa;
+    padding: 4px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.info-item:not(.room-feature-section .info-item):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.info-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.modal-body .room-feature-section {
+    grid-column: 1 / -1;
+}
+
+/* ===== Modal 通用樣式 ===== */
 .modal-header {
     background: linear-gradient(135deg, #007bff, #0056b3);
     color: white;
@@ -254,73 +394,7 @@
     filter: brightness(0) invert(1);
 }
 
-.info-grid {
-    flex: 1;
-    transition: all 2s;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10px, 1fr));
-    gap: 15px;
-}
-
-.info-item {
-    background: #f8f9fa;
-    padding: 4px;
-    border-radius: 6px;
-    text-align: center;
-}
-
-.info-icon {
-    font-size: 24px;
-    color: #007bff;
-    margin-bottom: 8px;
-}
-
-.info-label {
-    font-size: 12px;
-    color: #6c757d;
-    margin-bottom: 4px;
-}
-
-.info-value {
-    font-size: 16px;
-    color: #495057;
-}
-
-.equipment-status h6 {
-    font-size: 16px;
-    margin-bottom: 15px;
-    color: #495057;
-}
-
-.equipment-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-}
-
-.equipment-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    gap: 10px;
-    border: 1px solid #e9ecef;
-}
-
-.equipment-icon {
-    font-size: 20px;
-}
-
-.equipment-name {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.schedule-table {
-    margin-top: 20px;
-}
-
+/* ===== Tab 頁籤 ===== */
 .nav-tabs {
     border-bottom: 1px solid #dee2e6;
     margin-bottom: 0;
@@ -359,23 +433,75 @@
     min-height: 280px;
 }
 
-.schedule-section h6 {
+/* ===== 設備狀態 ===== */
+.equipment-status h6 {
     font-size: 16px;
     margin-bottom: 15px;
     color: #495057;
+}
+
+.equipment-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.equipment-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    gap: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.equipment-icon {
+    font-size: 20px;
+}
+
+.equipment-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ===== 時程表 ===== */
+.schedule-section h6,
+.schedule-table {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: #495057;
+}
+
+.schedule-table {
+    margin-top: 20px;
 }
 
 .table-responsive {
     margin-top: 10px;
 }
 
-.modal-body .room-feature-section {
-    grid-column: 1 / -1;
-}
-
+/* ===== 收費標準 ===== */
 .pricing-section .badge {
     font-size: 13px;
     padding: 6px 12px;
+}
+
+.pricing-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.pricing-item {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+}
+
+.pricing-item:last-child {
+    border-bottom: none;
 }
 
 #modal-pricing-list {
@@ -384,30 +510,19 @@
     overflow-y: auto;
 }
 
-.info-grid .info-item:not(.room-feature-section .info-item):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.info-grid .info-icon {
-    color: #007bff;
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-.info-grid .info-label {
-    font-size: 12px;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+/* ===== 時間槽 ===== */
+.time-slot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
     margin-bottom: 5px;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
 }
 
-.info-grid .info-value {
-    font-size: 14px;
-    color: #6c757d;
-}
-
+/* ===== 租借權限徽章 ===== */
 #modal-booking-details {
     background: #e7e7e7;
     display: inline-block;
@@ -445,6 +560,7 @@
     color: #ef6c00;
 }
 
+/* ===== 圖片輪播 ===== */
 .room-image-carousel {
     height: 400px;
     border-radius: 8px;
@@ -468,82 +584,632 @@
     margin: 0 4px;
 }
 
-.time-slot-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: #f8f9fa;
-    margin-bottom: 5px;
-    border-radius: 6px;
-    border-left: 4px solid #007bff;
-}
-
-body {
-    background-color: #f5f5f5;
-    font-family: 'Microsoft JhengHei', Arial, sans-serif;
-}
-
-.room-preview {
-    pointer-events: auto;
-    position: relative;
+/* ===== 分頁 ===== */
+.pagination {
     display: flex;
     align-items: center;
-    justify-content: center;
-
-}
-
-.action-buttons .btn {
-    width: 150px;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 10px;
-    align-items: center;
-    justify-content: center;
     gap: 10px;
 }
 
-.carousel-btn {
-    width: 25px;
-    position: absolute;
-    top: 50%;
-    border-radius: 50px;
-    transform: translateY(-50%);
-    background: rgb(145 145 145 / 50%);
-    color: white;
+.page-item {
+    list-style: none;
+}
+
+.page-link {
+    color: #3b76e1;
+    text-decoration: none;
+    padding: 6px 12px;
+}
+
+.page-link:hover {
+    color: #2c63c7;
+}
+
+.page-item.disabled .page-link {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+/* ===== 廢棄的舊按鈕樣式 ===== */
+.btn-view,
+.btn-edit {
+    flex: 1;
     border: none;
-    cursor: pointer;
-    z-index: 10;
-}
-
-.carousel-btn.prev {
-    left: 10px;
-}
-
-.carousel-btn.next {
-    right: 10px;
-}
-
-.pricing-list {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    color: white;
     padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.3s;
 }
 
-.pricing-item {
-    margin-bottom: 8px;
-    padding-bottom: 8px;
+.btn-view,
+.btn-edit {
+    background: #3b76e1;
 }
 
-.pricing-item:last-child {
-    border-bottom: none;
+.btn-view:hover,
+.btn-edit:hover {
+    background: #2c63c7;
+    color: white;
 }
 
-.room-feature-content .info-value {
+.carousel-control-next,
+.carousel-control-prev {
+    background: #6b6767ad;
+}
+
+/* ===== Offcanvas 新增區塊 ===== */
+.offcanvas-create {
+    width: 880px !important;
+}
+
+.form-section {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.form-section h6 {
+    margin: 0 0 12px;
+    font-weight: 600;
+}
+
+.form-label-custom {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-hint {
+    display: block;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #007bff;
+    font-size: 13px;
+}
+
+/* ===== 時段選擇容器 ===== */
+.hourly-slot-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.hourly-slot-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    background: white;
+    border-radius: 4px;
+}
+
+.hourly-slot-item .form-check {
+    margin: 0;
+}
+
+.hourly-slot-item .input-group {
+    width: 150px;
+    margin-left: auto;
+}
+
+/* ===== 時段制容器 ===== */
+.slot-container {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.time-slot-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.time-slot-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.time-slot-wrapper .form-check {
+    margin: 0;
+}
+
+.time-slot-wrapper .time-input {
+    width: 110px;
+}
+
+.time-slot-wrapper .name-input {
+    width: 80px;
+    max-width: 150px;
+}
+
+.time-slot-wrapper .price-input {
+    width: 180px;
+}
+
+/* ===== 媒體上傳區塊 ===== */
+.image-upload-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.media-item {
+    position: relative;
+    height: 120px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.media-item img,
+.media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-item {
+    height: 120px;
+    border: 2px dashed #cfe2ff;
+    border-radius: 12px;
+    background: #f8faff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.upload-item:hover {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+/* ===== 租借權限選項 - 新增 ===== */
+.rental-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.rental-option {
+    border: 1px solid #e9ecef;
+    background: #fff;
+}
+
+.rental-option.active {
+    border: 2px solid #007bff;
+    background: #f0f7ff;
+}
+
+/* ===== 底部按鈕區塊 ===== */
+.offcanvas-footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #eee;
+    padding: 12px 20px;
+    margin: 0;
+    z-index: 1000;
+}
+
+.offcanvas-footer .d-grid {
+    display: grid;
+    gap: 2px;
+}
+
+.offcanvas-footer .btn {
+    padding: 10px 15px;
+    font-weight: 500;
+}
+
+/* ===== 費用類型標題 ===== */
+.fee-type-title {
+    margin-top: 15px;
+    margin-bottom: 12px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.fee-settings-header {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+/* ===== 詳情 Modal 容器 ===== */
+.room-detail-modal .modal-dialog {
+    max-width: 1040px;
+}
+
+.detail-image-column {
+    display: flex;
+    align-items: center;
+}
+
+.detail-image-wrapper {
+    width: 100%;
+}
+
+.detail-image-container {
+    position: relative;
+    height: 400px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.detail-image-container img {
+    object-fit: cover;
+}
+
+.detail-image-placeholder {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===== 圖片指示器 ===== */
+.image-indicators {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    z-index: 5;
+}
+
+.image-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ccc;
+    cursor: pointer;
+}
+
+.image-indicator.active {
+    background-color: #007bff;
+}
+
+.image-indicator:hover {
+    background-color: #0056b3;
+}
+
+/* ===== 描述文字區域 ===== */
+.description-wrapper {
+    margin-bottom: 20px;
+}
+
+.description-content {
+    max-height: 200px;
+    overflow-y: auto;
     word-break: break-word;
     white-space: normal;
     overflow-wrap: break-word;
-    max-width: 100%;
+    border-top: 1px solid #e0e0e0;
+    padding: 10px;
+    color: #6c757d;
+}
+
+/* ===== 收費項目樣式 ===== */
+.pricing-item-period {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 0;
+}
+
+.pricing-item-period-info {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 200px;
+}
+
+.pricing-item-period-info .pricing-name {
+    color: #495057;
+    font-weight: 600;
+}
+
+.pricing-item-period-info .pricing-time {
+    color: #999;
+    font-size: 12px;
+}
+
+.pricing-item-period-divider {
+    flex: 1;
+    border-bottom: 1px dashed #ccc;
+}
+
+.pricing-item-period-price {
+    color: #0066cc;
+    font-weight: 600;
+    margin-left: 10px;
+    white-space: nowrap;
+}
+
+.pricing-item-hourly {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.pricing-item-hourly:last-child {
+    border-bottom: none;
+}
+
+.pricing-item-hourly-time {
+    color: #495057;
+}
+
+.pricing-item-hourly-price {
+    color: #0066cc;
+    font-weight: 600;
+}
+
+/* ===== 編輯 Modal 區塊 ===== */
+.edit-form-section,
+.edit-media-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.edit-form-section h6,
+.edit-media-section h6 {
+    margin: 0 0 12px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.edit-media-section h6 {
+    color: inherit;
+}
+
+.media-upload-input {
+    margin-bottom: 12px;
+}
+
+.edit-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 80px);
+    gap: 8px;
+}
+
+.edit-media-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #eee;
+}
+
+.edit-media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ===== 編輯 Modal 租借權限 ===== */
+.edit-booking-section {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.edit-booking-section h6 {
+    margin: 0 0 12px;
+    font-weight: 600;
+}
+
+.edit-rental-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.edit-rental-option {
+    border: 1px solid #e9ecef;
+    background: #fff;
+}
+
+.edit-rental-option.active {
+    border: 2px solid #007bff;
+    background: #f0f7ff;
+}
+
+.edit-rental-option.inactive {
+    border: 1px solid #e9ecef;
+    background: #fff;
+}
+
+/* ===== 編輯 Modal 時段設定 ===== */
+.hourly-pricing-container {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.hourly-pricing-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.hourly-pricing-item:last-child {
+    margin-bottom: 0;
+}
+
+.hourly-pricing-checkbox {
+    margin: 0;
+    cursor: pointer;
+}
+
+.hourly-pricing-label {
+    flex: 1;
+    margin: 0;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.hourly-pricing-input {
+    width: 120px;
+}
+
+.period-pricing-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.period-pricing-item {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.period-pricing-item .name-input {
+    width: 120px;
+}
+
+.period-pricing-item .time-input {
+    width: 120px;
+}
+
+.period-pricing-item .price-input {
+    width: 150px;
+}
+
+.period-pricing-item .remove-btn {
+    margin-left: auto;
+}
+
+.pricing-control-bar {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ===== 響應式調整 ===== */
+@media (max-width: 992px) {
+    .detail-image-column {
+        margin-bottom: 20px;
+    }
+
+    .detail-image-container {
+        height: 300px;
+    }
+
+    .image-indicators {
+        bottom: 8px;
+    }
+
+    .image-indicator {
+        width: 6px;
+        height: 6px;
+    }
+
+    .edit-rental-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .period-pricing-item {
+        flex-wrap: wrap;
+    }
+
+    .period-pricing-item .name-input,
+    .period-pricing-item .time-input,
+    .period-pricing-item .price-input {
+        flex: 1;
+        min-width: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .offcanvas-create {
+        width: 100% !important;
+    }
+
+    .rental-options {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .time-slot-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .time-slot-wrapper .time-input,
+    .time-slot-wrapper .name-input,
+    .time-slot-wrapper .price-input {
+        width: 100%;
+    }
+
+    .room-detail-modal .modal-dialog {
+        max-width: 100%;
+    }
+
+    .detail-image-container {
+        height: 250px;
+    }
+
+    .pricing-item-period-info {
+        min-width: auto;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .pricing-item-period-divider {
+        display: none;
+    }
+
+    .pricing-item-period-price {
+        margin-left: 0;
+    }
+
+    .edit-rental-options {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-media-grid {
+        grid-template-columns: repeat(auto-fill, 60px);
+    }
+
+    .edit-media-item {
+        width: 60px;
+        height: 60px;
+    }
+
+    .period-pricing-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .period-pricing-item .name-input,
+    .period-pricing-item .time-input,
+    .period-pricing-item .price-input {
+        width: 100%;
+    }
 }

@@ -1,5 +1,5 @@
-<!-- 會議室詳情模態視窗 -->
-<div class="modal fade" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel" aria-hidden="true">
+
+<div class="modal fade room-detail-modal" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
 
@@ -9,44 +9,42 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
                 <div class="row">
                     <!-- 左側：圖片輪播 -->
-                    <div class="col-lg-6" style="display: flex; align-items: center;">
-                        <div class="room-image-carousel" style="width: 100%;">
-                            <!-- 圖片區域 -->
-                            <div
-                                style="position: relative; height: 400px; background: #f0f0f0; border-radius: 8px; overflow: hidden;">
-                                <!-- 有圖片的情況 -->
-                                <img v-if="hasDetailImages && currentDetailImage" :src="currentDetailImage"
-                                    class="d-block w-100 h-100" alt="會議室圖片" style="object-fit: cover;">
+                    <div class="col-lg-6 detail-image-column">
+                        <div class="detail-image-wrapper">
+                            <div class="room-image-carousel">
+                                <!-- 圖片區域 -->
+                                <div class="detail-image-container">
+                                    <!-- 有圖片的情況 -->
+                                    <img v-if="hasDetailImages && currentDetailImage" :src="currentDetailImage"
+                                        class="d-block w-100 h-100" alt="會議室圖片">
 
-                                <!-- 無圖片的情況 -->
-                                <div v-else class="d-flex align-items-center justify-content-center h-100">
-                                    <span class="text-muted">暫無圖片</span>
-                                </div>
+                                    <!-- 無圖片的情況 -->
+                                    <div v-else class="detail-image-placeholder">
+                                        <span class="text-muted">暫無圖片</span>
+                                    </div>
 
-                                <!-- 左右箭頭 -->
-                                <button v-if="hasDetailImages" class="carousel-btn prev"
-                                    @@click="room.prevDetailImage()">
-                                    &lt;
-                                </button>
-                                <button v-if="hasDetailImages" class="carousel-btn next"
-                                    @@click="room.nextDetailImage()">
-                                    &gt;
-                                </button>
+                                    <!-- 左右箭頭 -->
+                                    <button v-if="hasDetailImages" class="carousel-btn prev"
+                                        @@click="room.prevDetailImage()">
+                                        &lt;
+                                    </button>
+                                    <button v-if="hasDetailImages" class="carousel-btn next"
+                                        @@click="room.nextDetailImage()">
+                                        &gt;
+                                    </button>
 
-                                <!-- 圖片指示器 -->
-                                <div v-if="hasDetailImages"
-                                    style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px;">
-                                    <span v-for="(_, index) in detailRoom.Images" :key="index" :style="{ 
-                                            width: '8px', 
-                                            height: '8px', 
-                                            borderRadius: '50%',
-                                            backgroundColor: index === detailRoomCarouselIndex ? '#007bff' : '#ccc',
-                                            cursor: 'pointer'
-                                        }" @@click="detailRoomCarouselIndex = index">
-                                    </span>
+                                    <!-- 圖片指示器 -->
+                                    <div v-if="hasDetailImages" class="image-indicators">
+                                        <span v-for="(_, index) in detailRoom.Images" :key="index"
+                                            class="image-indicator"
+                                            :class="{ active: index === detailRoomCarouselIndex }"
+                                            @@click="detailRoomCarouselIndex = index">
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -89,11 +87,10 @@
                         <div class="tab-content" id="roomDetailTabContent">
                             <!-- 基本資訊 -->
                             <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
-                                <div class="info-item room-feature-section">
+                                <div class="info-item room-feature-section description-wrapper">
                                     <div class="room-feature-content">
                                         <div class="info-label">會議室說明</div>
-                                        <div class="info-value"
-                                            style="max-height: 200px; overflow-y: auto; word-break: break-word; white-space: normal; overflow-wrap: break-word; border-top: 1px solid #e0e0e0; padding: 10px;">
+                                        <div class="description-content">
                                             {{ detailRoom?.Description || '無' }}
                                         </div>
                                     </div>
@@ -126,8 +123,7 @@
                                             <i class="mdi mdi-map-marker"></i>
                                         </div>
                                         <div class="info-label">位置</div>
-                                        <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor
-                                            || '') }}樓</div>
+                                        <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor || '') }}樓</div>
                                     </div>
                                 </div>
                             </div>
@@ -194,41 +190,31 @@
                             <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
                                 <div class="pricing-section">
                                     <div class="mb-3">
-                                        <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' :
-                                            '時段制' }}</span>
+                                        <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' : '時段制' }}</span>
                                     </div>
 
                                     <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"
                                         class="pricing-list">
 
-                                        <!-- ✅ 時段制 - 時段名稱和時間同一行 -->
+                                        <!-- 時段制 - 時段名稱和時間同一行 -->
                                         <div v-if="detailRoom.PricingType === 1"
                                             v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
-                                            <div class="d-flex justify-content-between align-items-center gap-2"
-                                                style="padding: 10px 0;">
-                                                <div
-                                                    style="display: flex; gap: 8px; align-items: center; min-width: 200px;">
-                                                    <span style="color: #495057; font-weight: 600;">{{ pricing.Name
-                                                        }}</span>
-                                                    <span style="color: #999; font-size: 12px;">{{ pricing.StartTime }}
-                                                        - {{ pricing.EndTime }}</span>
+                                            <div class="pricing-item-period">
+                                                <div class="pricing-item-period-info">
+                                                    <span class="pricing-name">{{ pricing.Name }}</span>
+                                                    <span class="pricing-time">{{ pricing.StartTime }} - {{ pricing.EndTime }}</span>
                                                 </div>
-                                                <div style="flex: 1; border-bottom: 1px dashed #ccc;"></div>
-                                                <span
-                                                    style="color: #0066cc; font-weight: 600; margin-left: 10px; white-space: nowrap;">NT$
-                                                    {{ pricing.Price }}</span>
+                                                <div class="pricing-item-period-divider"></div>
+                                                <span class="pricing-item-period-price">NT$ {{ pricing.Price }}</span>
                                             </div>
                                         </div>
 
-                                        <!-- ✅ 小時制 - 只顯示時間 -->
+                                        <!-- 小時制 - 只顯示時間 -->
                                         <div v-else-if="detailRoom.PricingType === 0"
                                             v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
-                                            <div class="d-flex justify-content-between align-items-center"
-                                                style="padding: 10px 0; border-bottom: 1px solid #e0e0e0;">
-                                                <span style="color: #495057;">{{ pricing.StartTime }} - {{
-                                                    pricing.EndTime }}</span>
-                                                <span style="color: #0066cc; font-weight: 600;">NT$ {{ pricing.Price
-                                                    }}</span>
+                                            <div class="pricing-item-hourly">
+                                                <span class="pricing-item-hourly-time">{{ pricing.StartTime }} - {{ pricing.EndTime }}</span>
+                                                <span class="pricing-item-hourly-price">NT$ {{ pricing.Price }}</span>
                                             </div>
                                         </div>
                                     </div>

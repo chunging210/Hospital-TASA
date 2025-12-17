@@ -1,7 +1,8 @@
 <!-- 右側邊欄：新增會議室 -->
 <link rel="stylesheet" href="/css/sysroom.css">
-<div ref="roomoffcanvas" class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRoomCreate"
-    aria-labelledby="offcanvasRoomCreateLabel" style="width: 880px;">
+
+<div ref="roomoffcanvas" class="offcanvas offcanvas-end offcanvas-create" tabindex="-1" id="offcanvasRoomCreate"
+    aria-labelledby="offcanvasRoomCreateLabel">
     <div class="offcanvas-header border-bottom">
         <h5 id="offcanvasRoomCreateLabel" class="mb-0">
             <i class="mdi mdi-home-plus"></i> 新增會議室
@@ -13,24 +14,23 @@
         <form id="createRoomForm" class="needs-validation" novalidate>
 
             <!-- 基本資訊區塊 -->
-            <div
-                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <h6 style="margin: 0 0 12px; font-weight: 600;">基本資訊</h6>
+            <div class="form-section">
+                <h6>基本資訊</h6>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">會議室名稱</label>
+                    <label class="form-label form-label-custom">會議室名稱</label>
                     <input v-model="form.name" type="text" class="form-control" placeholder="請輸入會議室名稱" required>
                     <div class="invalid-feedback">請輸入會議室名稱</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">大樓名稱</label>
+                    <label class="form-label form-label-custom">大樓名稱</label>
                     <input v-model="form.building" type="text" class="form-control" placeholder="請輸入大樓名稱" required>
                     <div class="invalid-feedback">請輸入大樓名稱</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">樓層</label>
+                    <label class="form-label form-label-custom">樓層</label>
                     <select v-model="form.floor" class="form-control" required>
                         <option value="">請選擇樓層</option>
                         <option value="B2">B2 地下二樓</option>
@@ -45,13 +45,13 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">房間編號</label>
+                    <label class="form-label form-label-custom">房間編號</label>
                     <input v-model="form.roomNumber" type="text" class="form-control" placeholder="如：EDU-201" required>
                     <div class="invalid-feedback">請輸入房間編號</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">會議室說明</label>
+                    <label class="form-label form-label-custom">會議室說明</label>
                     <textarea v-model="form.description" class="form-control" rows="4" placeholder="請輸入會議室簡介、用途或特色..."
                         required></textarea>
                     <div class="invalid-feedback">請輸入會議室說明</div>
@@ -59,13 +59,13 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label" style="font-weight: 500; color: #495057;">人數</label>
+                        <label class="form-label form-label-custom">人數</label>
                         <input v-model.number="form.capacity" type="number" class="form-control" placeholder="請輸入人數"
                             min="1" step="1" required>
                         <div class="invalid-feedback">請輸入人數（最少 1 人）</div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label" style="font-weight: 500; color: #495057;">面積（㎡）</label>
+                        <label class="form-label form-label-custom">面積（㎡）</label>
                         <input v-model.number="form.area" type="number" class="form-control" placeholder="請輸入面積" min="1"
                             step="0.01" required>
                         <div class="invalid-feedback">請輸入面積（㎡）</div>
@@ -74,23 +74,21 @@
             </div>
 
             <!-- 收費設定區塊 -->
-            <div
-                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <h6 style="margin: 0 0 12px; font-weight: 600;">收費設定</h6>
+            <div class="form-section">
+                <h6>收費設定</h6>
 
                 <div class="mb-3">
                     <div class="form-check form-switch">
                         <input v-model="form.refundEnabled" class="form-check-input" type="checkbox" id="refundEnabled">
-                        <label class="form-check-label" style="font-weight: 500;" for="refundEnabled">啟用退費機制</label>
+                        <label class="form-check-label" for="refundEnabled">啟用退費機制</label>
                     </div>
-                    <small class="text-muted"
-                        style="display: block; padding: 8px 12px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff; font-size: 13px;">
+                    <small class="form-hint">
                         開啟後允許使用者在規定時間內申請退費
                     </small>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">收費方式</label>
+                    <label class="form-label form-label-custom">收費方式</label>
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-check">
@@ -111,11 +109,10 @@
 
                 <!-- 小時制設定 -->
                 <div v-if="form.feeType === 0">
-
-                    <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">小時制收費</h6>
+                    <h6 class="fee-type-title">小時制收費</h6>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span style="font-size: 14px;">設定每個時段的收費和開放狀態：</span>
+                            <span class="fee-settings-header">設定每個時段的收費和開放狀態：</span>
                             <div>
                                 <button type="button" class="btn btn-outline-success btn-sm me-2"
                                     @@click="room.selectAllHours()">全選</button>
@@ -123,12 +120,9 @@
                                     @@click="room.deselectAllHours()">全不選</button>
                             </div>
                         </div>
-                        <div class="hourly-slot-container" id="hourlySlotContainer"
-                            style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px;">
-
-                            <!-- ✅ 改成這樣 - 使用 slot.Hour 而不是 hour 變數 -->
+                        <div class="hourly-slot-container" id="hourlySlotContainer">
                             <div v-for="slot in hourlySlots" :key="slot.Hour" class="mb-2">
-                                <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-2">
+                                <div class="hourly-slot-item">
                                     <div class="form-check">
                                         <input v-model="slot.Checked" type="checkbox" class="form-check-input"
                                             :id="`hour_${slot.Hour}`">
@@ -136,7 +130,7 @@
                                             {{ slot.Hour }}:00 - {{ slot.Hour + 1 }}:00
                                         </label>
                                     </div>
-                                    <div class="input-group ms-auto" style="width: 150px;">
+                                    <div class="input-group ms-auto hourly-slot-item input-group">
                                         <span class="input-group-text">$</span>
                                         <input v-model.number="slot.Fee" type="number"
                                             class="form-control form-control-sm" min="0">
@@ -150,31 +144,28 @@
 
                 <!-- 時段制設定 -->
                 <div v-else-if="form.feeType === 1">
-                    <h6 style="margin-top: 15px; margin-bottom: 12px; font-weight: 500;">時段制收費</h6>
+                    <h6 class="fee-type-title">時段制收費</h6>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span style="font-size: 14px;">設定各個時段的收費：</span>
+                            <span class="fee-settings-header">設定各個時段的收費：</span>
                             <button type="button" class="btn btn-outline-primary btn-sm" @@click="room.addTimeSlot()">
                                 <i class="bx bx-plus"></i> 新增時段
                             </button>
                         </div>
-                        <div class="slot-container" style="max-height: 500px; overflow-y: auto;">
+                        <div class="slot-container">
                             <div class="time-slot-container" id="timeSlotContainer">
-                                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="time-slot-item"
-                                    style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #e9ecef; border-radius: 8px;">
+                                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="time-slot-wrapper">
                                     <div class="form-check">
                                         <input v-model="slot.Enabled" type="checkbox" class="form-check-input"
                                             :id="`slot_${slot.Id}`">
                                         <label class="form-check-label" :for="`slot_${slot.Id}`">開放</label>
                                     </div>
-                                    <input v-model="slot.Name" type="text" class="form-control form-control-sm"
-                                        placeholder="時段名稱" style="width: 80px; max-width: 150px;">
-                                    <input v-model="slot.StartTime" type="time" class="form-control form-control-sm"
-                                        style="width: 110px;">
+                                    <input v-model="slot.Name" type="text" class="form-control form-control-sm name-input"
+                                        placeholder="時段名稱">
+                                    <input v-model="slot.StartTime" type="time" class="form-control form-control-sm time-input">
                                     <span>-</span>
-                                    <input v-model="slot.EndTime" type="time" class="form-control form-control-sm"
-                                        style="width: 110px;">
-                                    <div class="input-group" style="width: 180px;">
+                                    <input v-model="slot.EndTime" type="time" class="form-control form-control-sm time-input">
+                                    <div class="input-group price-input">
                                         <span class="input-group-text">$</span>
                                         <input v-model.number="slot.Price" type="number"
                                             class="form-control form-control-sm" placeholder="費用" min="0">
@@ -190,66 +181,62 @@
             </div>
 
             <!-- 媒體資料區塊 -->
-            <div
-                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <h6 style="margin: 0 0 12px; font-weight: 600;">會議室媒體資料</h6>
+            <div class="form-section">
+                <h6>會議室媒體資料</h6>
                 <div class="mb-3">
-                    <label class="form-label" style="font-weight: 500; color: #495057;">上傳圖片/影片</label>
-                    <div class="image-upload-container" id="mediaGrid"
-                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
-                        <div v-for="media in room.mediaFiles" :key="media.Id" class="media-item"
-                            style="position: relative; height: 120px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff;">
-                            <img v-if="media.type === 'image'" :src="media.src"
-                                style="width: 100%; height: 100%; object-fit: cover;">
-                            <video v-else style="width: 100%; height: 100%; object-fit: cover;">
+                    <label class="form-label form-label-custom">上傳圖片/影片</label>
+                    <div class="image-upload-container" id="mediaGrid">
+                        <div v-for="media in room.mediaFiles" :key="media.Id" class="media-item">
+                            <img v-if="media.type === 'image'" :src="media.src" alt="媒體預覽">
+                            <video v-else>
                                 <source :src="media.src">
                             </video>
-                            <button type="button" class="btn btn-sm"
-                                style="position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; z-index: 10; font-size: 18px; padding: 0;"
-                                @@click="room.removeMedia(media.Id)">&times;</button>
+                            <button type="button" class="btn btn-sm remove-btn"
+                                @@click="room.removeMedia(media.Id)">×</button>
                         </div>
-                        <div class="upload-item" @@click="room.triggerMediaUpload()"
-                            style="height: 120px; border: 2px dashed #cfe2ff; border-radius: 12px; background: #f8faff; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;">
+                        <div class="upload-item" @@click="room.triggerMediaUpload()">
                             請上傳圖片/影片
                         </div>
-                        <input type="file" id="mediaUpload" accept="image/*,video/*" style="display: none;"
-                            @@change="room.handleMediaUpload">
+                        <input type="file" id="mediaUpload" accept="image/*,video/*"
+                            @@change="room.handleMediaUpload" style="display: none;">
                     </div>
                 </div>
             </div>
 
             <!-- 租借權限設定區塊 -->
-            <div
-                style="background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <h6 style="margin: 0 0 12px; font-weight: 600;">租借權限設定</h6>
-                <div class="rental-options" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                    <div @@click="room.selectRentalOption(0)"
-                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 0 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 0 ? '#f0f7ff' : '#fff' }">
-                        <i class="bx bx-building" style="font-size: 2em; color: #007bff;"></i>
-                        <h6 class="mt-2">對內</h6>
-                        <small class="text-muted">僅限公司內部使用</small>
+            <div class="form-section">
+                <h6>租借權限設定</h6>
+                <div class="rental-options">
+                    <!-- 對內 -->
+                    <div class="rental-option rental-option-internal" @@click="room.selectRentalOption(0)"
+                        :class="{ active: form.rentalType === 0 }">
+                        <i class="bx bx-building"></i>
+                        <h6>對內</h6>
+                        <small>僅限公司內部使用</small>
                     </div>
-                    <div @@click="room.selectRentalOption(1)"
-                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 1 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 1 ? '#f0f7ff' : '#fff' }">
-                        <i class="bx bx-group" style="font-size: 2em; color: #28a745;"></i>
-                        <h6 class="mt-2">對內外</h6>
-                        <small class="text-muted">內部及外部客戶可租借</small>
+
+                    <!-- 對內外 -->
+                    <div class="rental-option rental-option-external" @@click="room.selectRentalOption(1)"
+                        :class="{ active: form.rentalType === 1 }">
+                        <i class="bx bx-group"></i>
+                        <h6>對內外</h6>
+                        <small>內部及外部客戶可租借</small>
                     </div>
-                    <div @@click="room.selectRentalOption(2)"
-                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 2 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 2 ? '#f0f7ff' : '#fff' }">
-                        <i class="bx bx-block" style="font-size: 2em; color: #dc3545;"></i>
-                        <h6 class="mt-2">不開放</h6>
-                        <small class="text-muted">暫不開放租借</small>
+
+                    <!-- 不開放 -->
+                    <div class="rental-option rental-option-closed" @@click="room.selectRentalOption(2)"
+                        :class="{ active: form.rentalType === 2 }">
+                        <i class="bx bx-block"></i>
+                        <h6>不開放</h6>
+                        <small>暫不開放租借</small>
                     </div>
-                    <div @@click="room.selectRentalOption(3)"
-                        style="border: 1px solid #e9ecef; border-radius: 12px; padding: 10px; text-align: center; background: #fff; cursor: pointer; transition: box-shadow .2s, border-color .2s;"
-                        :style="{ border: form.rentalType === 3 ? '2px solid #007bff' : '1px solid #e9ecef', background: form.rentalType === 3 ? '#f0f7ff' : '#fff' }">
-                        <i class="bx bx-gift" style="font-size: 2em; color: #17a2b8;"></i>
-                        <h6 class="mt-2">免費開放</h6>
-                        <small class="text-muted">免費提供使用</small>
+
+                    <!-- 免費開放 -->
+                    <div class="rental-option rental-option-free" @@click="room.selectRentalOption(3)"
+                        :class="{ active: form.rentalType === 3 }">
+                        <i class="bx bx-gift"></i>
+                        <h6>免費開放</h6>
+                        <small>免費提供使用</small>
                     </div>
                 </div>
             </div>
@@ -258,8 +245,7 @@
     </div>
 
     <!-- 固定底部按鈕 -->
-    <div class="d-grid gap-2 mt-4"
-        style="position: sticky; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 12px 20px; margin: 0;">
+    <div class="offcanvas-footer d-grid gap-2 mt-4">
         <button type="button" class="btn btn-primary" @@click="room.save()">送出</button>
         <button type="button" class="btn btn-light" data-bs-dismiss="offcanvas">取消</button>
     </div>
