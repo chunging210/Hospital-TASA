@@ -1,12 +1,83 @@
-﻿<!--calendar-->
+﻿<!-- calendar -->
+<link rel="stylesheet" href="/css/sysroom.css">
+
 <div class="page-content">
     <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding align-middle">
+                        <i class="mdi mdi-home-city"></i> 會議室總覽
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <!-- 無資料 -->
+                <div v-if="room.list.length === 0" class="text-center py-3 text-muted">
+                    查無資料
+                </div>
+
+                <!-- 會議室卡片 -->
+                <div v-else class="room-grid">
+                    <div v-for="item in room.list" :key="item.Id" class="room-card">
+
+                        <!-- Header -->
+                        <div class="room-card-header">
+                            <div class="room-name">{{ item.Name }}</div>
+                            <div class="room-info">
+                                {{ item.Building }} {{ item.Floor }} 樓 | {{ item.Number }}
+                            </div>
+                        </div>
+
+                        <!-- 圖片 -->
+                        <div class="room-preview"
+                            :style="{ backgroundImage: `url('${item.Images?.[item._imgIndex || 0]}')` }">
+
+                            <button v-if="item.Images?.length > 1" class="carousel-btn prev"
+                                @@click.stop="room.prevCardImage(item)">
+                                ‹
+                            </button>
+
+                            <button v-if="item.Images?.length > 1" class="carousel-btn next"
+                                @@click.stop="room.nextCardImage(item)">
+                                ›
+                            </button>
+                        </div>
+
+                        <!-- 內容 -->
+                        <div class="room-card-body">
+                            <div class="room-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">容量</span>
+                                    <span class="detail-value">{{ item.Capacity ?? '-' }} 人</span>
+                                </div>
+
+                                <div class="detail-row">
+                                    <span class="detail-label">面積</span>
+                                    <span class="detail-value">{{ item.Area ?? '-' }} ㎡</span>
+                                </div>
+                            </div>
+
+                            <!-- 操作 -->
+                            <div class="action-buttons mt-3">
+                                <button class="btn btn-primary" @@click.stop="room.openDetail(item.Id)">
+                                    <i class="mdi mdi-eye-outline"></i>
+                                    了解更多
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分頁 -->
+                <page ref="roompage" :per-page="6" :per-page-option="[6,9,12,18]" @@reload="room.getList">
+                </page>
+            </div>
+        </div>
     </div>
 </div>
 
-<partial name="_View" />
-
-@{
-    ViewBag.IsTemplate = false;
-}
-<partial name="~/Views/Conference/_Edit.cshtml" />
+<!-- 詳細 Modal（沿用你現有那份，Vue 已可正常吃到資料） -->
+<partial name="_SysRoomDetail" />

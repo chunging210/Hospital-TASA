@@ -27,6 +27,7 @@ const global = new function () {
         }),
         select: apiMethods('/api/select', {
             room: GET,
+            roomlist:GET,
             role: GET,
             user: GET,
             userschedule: POST,

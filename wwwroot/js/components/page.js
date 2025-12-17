@@ -5,7 +5,7 @@ export default {
     emits: ['reload'],
     setup: (props, { emit }) => new function () {
         this.total = ref(0);
-        this.data = reactive({ page: 1, perPage: 5 });
+        this.data = reactive({ page: 1, perPage: props.perPage || 5 });
         this.maxPage = computed(() => Math.max(1, Math.ceil(this.total.value / this.data.perPage)));
 
         const reload = () => {

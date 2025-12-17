@@ -3,6 +3,7 @@ using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using System.Text.Json.Serialization;
+using TASA.Models.Enums;
 
 namespace TASA.Services.RoomModule
 {
@@ -30,7 +31,6 @@ namespace TASA.Services.RoomModule
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .WhereIf(query.IsEnabled.HasValue, x => x.IsEnabled == query.IsEnabled)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .Select(x => new ListVM
                 {
@@ -300,36 +300,78 @@ namespace TASA.Services.RoomModule
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);
 
-            if (data != null)
+            if (data == null) return;
+
+            var userid = service.UserClaimsService.Me()?.Id;
+
+            // 🔹 記住舊的 PricingType（切換用）
+            var oldPricingType = data.PricingType;
+
+            // ===== 基本資料 =====
+            data.Name = vm.Name;
+            data.Building = vm.Building;
+            data.Floor = vm.Floor;
+            data.Number = vm.Number;
+            data.Description = vm.Description;
+            data.Capacity = vm.Capacity;
+            data.Area = vm.Area;
+            data.PricingType = vm.PricingType ?? "hourly";
+            data.BookingSettings = vm.BookingSettings;
+            data.IsEnabled = vm.IsEnabled;
+
+            if (vm.BookingSettings == "closed")
             {
-                data.Name = vm.Name;
-                data.Building = vm.Building;
-                data.Floor = vm.Floor;
-                data.Number = vm.Number;
-                data.Description = vm.Description;
-                data.Capacity = vm.Capacity;
-                data.Area = vm.Area;
-                data.PricingType = vm.PricingType ?? "hourly";
-                data.BookingSettings = vm.BookingSettings;
-                data.IsEnabled = vm.IsEnabled;
-
-                if (vm.BookingSettings == "closed")
-                {
-                    data.Status = "maintenance";
-                }
-                else
-                {
-                    data.Status = vm.Status ?? "available";
-                }
-
-                db.SaveChanges();
-
-                DeletePricingDetails(data.Id, data.PricingType);
-                SavePricingDetails(data.Id, vm.PricingType, vm.PricingDetails);
-
-                _ = service.LogServices.LogAsync("會議室編輯",
-                    $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled} PricingType:{data.PricingType}");
+                data.Status = "maintenance";
             }
+            else
+            {
+                data.Status = vm.Status ?? "available";
+            }
+
+            // ===== 圖片（實體刪除 + 重建）=====
+            if (vm.Images != null)
+            {
+                var oldImages = db.SysRoomImage
+                    .Where(x => x.RoomId == data.Id)
+                    .ToList();
+
+                db.SysRoomImage.RemoveRange(oldImages);
+
+                int sortOrder = 0;
+                foreach (var imageInput in vm.Images)
+                {
+                    if (string.IsNullOrWhiteSpace(imageInput.Src)) continue;
+
+                    string imagePath = imageInput.Src.StartsWith("data:")
+                        ? SaveImage(imageInput.Src, imageInput.Type)
+                        : imageInput.Src;
+
+                    db.SysRoomImage.Add(new SysRoomImage
+                    {
+                        Id = Guid.NewGuid(),
+                        RoomId = data.Id,
+                        ImagePath = imagePath,
+                        ImageName = Path.GetFileName(imagePath),
+                        FileType = imageInput.Type ?? "image",
+                        FileSize = imageInput.FileSize,
+                        SortOrder = sortOrder++,
+                        CreateAt = DateTime.Now,
+                        CreateBy = userid!.Value
+                    });
+                }
+            }
+
+            // ===== 收費 =====
+            DeletePricingDetails(data.Id, oldPricingType);
+            SavePricingDetails(data.Id, vm.PricingType, vm.PricingDetails);
+
+            // ✅ 最後只存一次
+            db.SaveChanges();
+
+            _ = service.LogServices.LogAsync(
+                "會議室編輯",
+                $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled} PricingType:{data.PricingType}"
+            );
         }
 
         public void Delete(Guid id)

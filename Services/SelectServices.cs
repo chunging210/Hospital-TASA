@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TASA.Extensions;
 using TASA.Models;
+using TASA.Models.Enums;
 using TASA.Program;
 
 namespace TASA.Services
@@ -10,6 +11,20 @@ namespace TASA.Services
         public record RoomVM : IdNameVM
         {
             public IEnumerable<IdNameVM> Ecs { get; set; } = [];
+        }
+
+        public record RoomListVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public string? Number { get; set; }
+            public uint Capacity { get; set; }
+            public decimal Area { get; set; }
+            public string? Status { get; set; }
+
+            public IEnumerable<string>? Images { get; set; }
         }
         public IQueryable<IdNameVM> Room()
         {
@@ -21,6 +36,36 @@ namespace TASA.Services
                 {
                     Ecs = x.Ecs.Where(x => x.IsEnabled && x.DeleteAt == null).Select(x => new IdNameVM() { Id = x.Id, Name = x.Name }).ToList()
                 });
+        }
+
+        public IQueryable<RoomListVM> RoomList(BaseQueryVM query)
+        {
+            var q = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != "maintenance");
+
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                q = q.Where(x => x.Name.Contains(query.Keyword));
+            }
+
+            return q.Mapping(x => new RoomListVM
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Building = x.Building,
+                Floor = x.Floor,
+                Number = x.Number,
+                Capacity = x.Capacity,
+                Area = x.Area,
+                Status = x.Status,
+                Images = x.Images
+                    .Where(i => i.ImagePath != "")
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => i.ImagePath)
+            });
         }
 
         public IQueryable<IdNameVM> Role()

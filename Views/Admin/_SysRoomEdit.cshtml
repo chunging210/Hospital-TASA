@@ -187,27 +187,27 @@
                 </div>
 
                 <!-- 媒體 -->
-                <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                    <h6 style="margin: 0 0 12px; font-weight: 600; color: #495057;">會議室媒體</h6>
+                <div style="background:#f8f9fa;border-radius:8px;padding:15px;">
+                    <h6 style="margin:0 0 12px;font-weight:600;">會議室媒體</h6>
 
-                    <div class="mb-3">
-                        <label class="form-label">上傳圖片/影片</label>
-                        <input type="file" class="form-control form-control-sm" accept="image/*,video/*" multiple
-                            @@change="room.handleMediaUpload">
-                    </div>
+                    <input type="file" id="editMediaUpload" class="form-control form-control-sm mb-2"
+                        accept="image/*,video/*" multiple @@change="room.handleMediaUpload">
 
-                    <div v-if="room.vm.Images && room.vm.Images.length > 0" class="mb-3">
-                        <div
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px;">
-                            <div v-for="(img, idx) in room.vm.Images" :key="idx"
-                                style="position: relative; width: 80px; height: 80px; border-radius: 6px; overflow: hidden; background: #f0f0f0;">
-                                <img v-if="img.Type === 'image'" :src="img.Src"
-                                    style="width: 100%; height: 100%; object-fit: cover;">
-                                <button type="button" @@click="room.removeMedia(idx)"
-                                    style="position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; padding: 0; line-height: 20px;">
-                                    ×
-                                </button>
-                            </div>
+                    <div v-if="room.mediaFiles.length > 0"
+                        style="display:grid;grid-template-columns:repeat(auto-fill,80px);gap:8px;">
+                        <div v-for="media in room.mediaFiles" :key="media.Id" style="position:relative;width:80px;height:80px;
+                    border-radius:6px;overflow:hidden;background:#eee;">
+
+                            <img v-if="media.type === 'image'" :src="media.src"
+                                style="width:100%;height:100%;object-fit:cover;">
+
+                            <button type="button" @@click="room.removeMedia(media.Id)" style="position:absolute;top:2px;right:2px;
+                           width:20px;height:20px;
+                           background:rgba(0,0,0,.6);
+                           color:#fff;border:0;border-radius:50%;
+                           line-height:20px;font-size:12px;">
+                                ×
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,108 +1,109 @@
-﻿// Calendar
-import '/js/fullcalendar/index.global.js';
-import '/js/fullcalendar/locales-all.global.js';
-import VSelect from 'vselect';
+﻿// Admin/SysRoomCalendar
 import global from '/global.js';
-import { me, room, department, template, mcu, schedule, conference } from '/Views/Conference/Index.cshtml.js';
-const { ref, reactive, onMounted, watch } = Vue;
+const { ref, reactive, onMounted, computed } = Vue;
 
-export const user = new function () {
-    this.list = reactive([]);
-    this.getList = () => {
-        global.api.select.user()
-            .then((response) => {
-                copy(this.list, response.data);
-            });
-    }
-}
+const room = new function () {
 
-export const recent = new function () {
+    this.query = reactive({
+        keyword: '',
+        isEnabled: true
+    });
+
     this.list = reactive([]);
-    this.getList = () => {
-        global.api.calendar.recent()
-            .then((response) => {
-                copy(this.list, response.data);
+    this.page = {};
+
+    /* ========= 詳細 ========= */
+    this.detailRoom = ref(null);
+    this.detailRoomCarouselIndex = ref(0);
+
+    this.hasDetailImages = computed(() => {
+        return this.detailRoom.value &&
+            Array.isArray(this.detailRoom.value.Images) &&
+            this.detailRoom.value.Images.length > 0;
+    });
+
+    this.currentDetailImage = computed(() => {
+        if (!this.hasDetailImages.value) return null;
+        return this.detailRoom.value.Images[this.detailRoomCarouselIndex.value];
+    });
+
+    this.prevDetailImage = () => {
+        if (!this.hasDetailImages.value) return;
+        const len = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value =
+            (this.detailRoomCarouselIndex.value - 1 + len) % len;
+    };
+
+    this.nextDetailImage = () => {
+        if (!this.hasDetailImages.value) return;
+        const len = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value =
+            (this.detailRoomCarouselIndex.value + 1) % len;
+    };
+
+    /* ========= 列表 ========= */
+    this.getList = (payload) => {
+        if (payload?.page) this.page.data.page = payload.page;
+        if (payload?.perPage) this.page.data.perPage = payload.perPage;
+
+        global.api.select.roomlist(
+            this.page.setHeaders({
+                params: this.query
+            })
+        )
+            .then(this.page.setTotal)
+            .then(res => {
+                this.list.splice(0);
+                res.data.forEach(x => this.list.push(x));
+            })
+            .catch(() => {
+                addAlert('取得會議室失敗', { type: 'danger' });
             });
-    }
-}
+    };
+
+    /* ========= 詳細 ========= */
+    this.openDetail = (id) => {
+        global.api.admin.roomdetail({ body: { Id: id } })
+            .then(res => {
+                this.detailRoom.value = res.data;
+                this.detailRoomCarouselIndex.value = 0;
+
+                const modal = new bootstrap.Modal(
+                    document.getElementById('roomDetailModal')
+                );
+                modal.show();
+            })
+            .catch(() => {
+                addAlert('取得會議室詳情失敗', { type: 'danger' });
+            });
+    };
+
+    this.nextCardImage = (item) => {
+        if (!item.Images?.length) return;
+        item._imgIndex = ((item._imgIndex || 0) + 1) % item.Images.length;
+    };
+
+    this.prevCardImage = (item) => {
+        if (!item.Images?.length) return;
+        const len = item.Images.length;
+        item._imgIndex = ((item._imgIndex || 0) - 1 + len) % len;
+    };
+};
 
 window.$config = {
-    components: { VSelect },
     setup: () => new function () {
-        this.me = me;
         this.room = room;
-        this.user = user;
-        this.department = department;
-        this.conference = conference;
-        this.conferenceoffcanvas = ref(null);
-        this.template = template;
-        this.mcu = mcu;
-        this.schedule = schedule;
-        this.schedulepage = ref(null);
+        this.roompage = ref(null);
 
-        this.recent = recent;
-
-        this.calendar = calendar;
-        this.calendarfc = ref(null);
-        this.calendaroffcanvas = ref(null);
-
-        watch(
-            () => [calendar.query.start, calendar.query.end], calendar.getList
-        );
-
-        watch(
-            () => [calendar.query.keyword, calendar.query.localtion, calendar.query.user, calendar.query.department],
-            () => {
-                calendar.fc.setOption('events', calendar.list.filter(calendar.dataFilter));
-            }
-        );
-
-        const datesSet = (info) => {
-            const { start, end } = info;
-            if (calendar.query.start instanceof Date && calendar.query.end instanceof Date) {
-                const queryDates = { start: calendar.query.start.getTime(), end: calendar.query.end.getTime() };
-                const newDates = { start: start.getTime(), end: end.getTime() };
-                if (queryDates.start <= newDates.start && newDates.end <= queryDates.end) {
-                    return;
-                }
-            }
-            Object.assign(calendar.query, { start, end });
-        }
-
-        const eventClick = (info) => {
-            const id = info.event.extendedProps.Id;
-            global.api.conference.detail({ body: { id } })
-                .then(response => {
-                    copy(calendar.vm, response.data);
-                    calendar.offcanvas.show();
-                })
-                .catch(error => {
-                    addAlert(getMessage(error), { type: 'danger', click: error.download });
-                });
-        }
-
-        const dayCellContent = (arg) => {
-            return { html: arg.dayNumberText.replace('日', '') };
-        }
-
-        const dateClick = (info) => {
-            conference.getVM();
-            conference.vm.StartTime = info.dateStr.format('yyyy-mm-dd 00:00');
-        }
+        /* expose 給 cshtml */
+        this.detailRoom = room.detailRoom;
+        this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
+        this.hasDetailImages = room.hasDetailImages;
+        this.currentDetailImage = room.currentDetailImage;
 
         onMounted(() => {
-            me.getVM();
-            room.getList();
-            user.getList();
-            department.getList();
-            department.getTree();
-            recent.getList();
-            conference.offcanvas = this.conferenceoffcanvas.value;
-            schedule.page = this.schedulepage.value;
-
-            calendar.fc = new FullCalendar.Calendar(this.calendarfc.value, { ...calendar.config, datesSet, eventClick, dayCellContent, dateClick });
-            calendar.fc.render();
-            calendar.offcanvas = this.calendaroffcanvas.value;
+            room.page = this.roompage.value;
+            room.getList({ page: 1, perPage: 6 });
         });
     }
 };

@@ -45,6 +45,8 @@ const room = new function () {
         rentalType: 'in'
     });
 
+    this.editModal = null;
+    this.page = {};
     this.mediaFiles = reactive([]);
     this.timeSlots = reactive([]);
     this.hourlySlots = ref([]);
@@ -73,22 +75,26 @@ const room = new function () {
         };
     };
 
-    this.getList = () => {
-        global.api.admin.roomlist({ body: this.query })
+    this.getList = (page) => {
+
+        if (typeof page === 'number') {
+            this.page.data.page = page;
+        } else if (!this.page.data.page) {
+            this.page.data.page = 1;
+        }
+
+        global.api.admin.roomlist(
+            this.page.setHeaders({ body: this.query })
+        )
+            .then(this.page.setTotal)
             .then((response) => {
                 copy(this.list, response.data);
-                if (Array.isArray(response.data)) {
-                    response.data.forEach(item => {
-                        if (!imageIndices[item.Id]) {
-                            imageIndices[item.Id] = 0;
-                        }
-                    });
-                }
             })
             .catch(error => {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
-    }
+    };
+
 
     this.offcanvas = null;
     this.vm = reactive(new VM());
@@ -117,15 +123,17 @@ const room = new function () {
                     this.vm.BookingSettings = response.data.BookingSettings;
 
                     // ✅ 圖片格式轉換
-                    if (response.data.Images && Array.isArray(response.data.Images)) {
-                        this.vm.Images = response.data.Images.map((imgPath, Idx) => ({
-                            Id: Date.now() + Idx,
-                            Type: 'image',
-                            Src: imgPath
-                        }));
-                    } else {
-                        this.vm.Images = [];
-                    }
+                    (response.data.Images || []).forEach((imgPath, idx) => {
+                        this.mediaFiles.push({
+                            Id: Date.now() + idx,
+                            type: 'image',
+                            src: imgPath,
+                            name: ''
+                        });
+                    });
+
+                    // ⚠️ 不再使用 vm.Images 畫畫面
+                    this.vm.Images = [];
 
                     // ✅ 收費詳情
                     this.vm.PricingDetails = response.data.PricingDetails || [];
@@ -155,8 +163,8 @@ const room = new function () {
                     }
 
                     // ✅ 打開編輯 Modal
-                    const modal = new bootstrap.Modal(document.getElementById('roomEditModal'));
-                    modal.show();
+                    this.editModal.show();
+
                 })
                 .catch(error => {
                     addAlert('取得資料失敗', { type: 'danger', click: error.download });
@@ -213,7 +221,12 @@ const room = new function () {
             PricingType: pricingType,
             IsEnabled: source.IsEnabled ?? source.refundEnabled,
             BookingSettings: source.BookingSettings ?? source.rentalType,
-            Images: this.mediaFiles,
+            Images: this.mediaFiles.map((m, idx) => ({
+                type: m.type,
+                src: m.src,
+                fileSize: m.src?.length ?? 0,
+                sortOrder: idx
+            })),
             PricingDetails: this.getPricingDetails()
         };
 
@@ -224,6 +237,7 @@ const room = new function () {
                 addAlert('操作成功');
                 this.getList();
                 this.offcanvas?.hide();
+                this.editModal?.hide();
             })
             .catch(err => {
                 addAlert(err.details || '操作失敗', { type: 'danger' });
@@ -346,22 +360,25 @@ const room = new function () {
         const files = event.target.files;
         if (!files || files.length === 0) return;
 
-        const file = files[0];
-        const reader = new FileReader();
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
 
-        reader.onload = (e) => {
-            const mediaItem = {
-                Id: Date.now(),
-                type: file.type.startsWith('image/') ? 'image' : 'video',
-                src: e.target.result,
-                name: file.name
+            reader.onload = (e) => {
+                this.mediaFiles.push({
+                    Id: Date.now() + Math.random(),
+                    type: file.type.startsWith('image/') ? 'image' : 'video',
+                    src: e.target.result,
+                    name: file.name
+                });
             };
-            this.mediaFiles.push(mediaItem);
-            event.target.value = '';
-        };
 
-        reader.readAsDataURL(file);
-    }
+            reader.readAsDataURL(file);
+        });
+
+        // 關鍵：清空 input，否則同檔案第二次選不到
+        event.target.value = '';
+    };
+
 
     this.removeMedia = (Id) => {
         const index = this.mediaFiles.findIndex(m => m.Id === Id);
@@ -455,6 +472,7 @@ window.$config = {
         this.getStatusClass = getStatusClass;
         this.form = room.form;
         this.imageIndices = imageIndices;
+        this.roompage = ref(null);
         // this.hourlySlots = computed(() => room.hourlySlots.value);
         this.timeSlots = room.timeSlots;
         this.mediaFiles = room.mediaFiles;
@@ -504,8 +522,14 @@ window.$config = {
 
 
         onMounted(() => {
-            room.getList();
+            room.page = this.roompage.value;
 
+            room.getList(1);
+
+            room.editModal = new bootstrap.Modal(
+                document.getElementById('roomEditModal'),
+                { backdrop: 'static' }
+            );
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
         });
     }

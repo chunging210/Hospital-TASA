@@ -14,6 +14,16 @@ namespace TASA.Controllers.API
         {
             return Ok(service.SelectServices.Room());
         }
+        
+        [HttpGet("roomlist")]
+        public IActionResult RoomList([FromQuery] BaseQueryVM query)
+        {
+            return Ok(
+                service.SelectServices
+                    .RoomList(query)
+                    .ToPage(Request, Response)
+            );
+        }
 
         [HttpGet("role")]
         public IActionResult Role()

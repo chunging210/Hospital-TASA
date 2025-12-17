@@ -6,6 +6,7 @@ using TASA.Services.DepartmentModule;
 using TASA.Services.EcsModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.RoomModule;
+using TASA.Extensions;
 
 namespace TASA.Controllers.API
 {
@@ -77,8 +78,11 @@ namespace TASA.Controllers.API
 
         [HttpGet("roomlist")]
         public IActionResult RoomList([FromQuery] BaseQueryVM query)
+
         {
-            return Ok(service.RoomService.List(query));
+            Console.WriteLine($"PageNumber={query.PageNumber}, PageSize={query.PageSize}");
+
+            return Ok(service.RoomService.List(query).ToPage(Request, Response));
         }
 
         [HttpGet("roomdetail")]

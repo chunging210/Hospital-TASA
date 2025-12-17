@@ -103,12 +103,25 @@
     padding: 15px;
 }
 
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+
 .room-preview {
     border-radius: 6px;
     background: #f8f9fa;
     margin-bottom: 15px;
     width: 100%;
-    height: 180px;
+    height: 250px;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -472,13 +485,26 @@ body {
 }
 
 .room-preview {
+    pointer-events: auto;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+
+}
+
+.action-buttons .btn {
+    width: 150px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 .carousel-btn {
+    width: 25px;
     position: absolute;
     top: 50%;
     border-radius: 50px;
