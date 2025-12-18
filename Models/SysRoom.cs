@@ -83,13 +83,6 @@ public partial class SysRoom
     public decimal Area { get; set; }
 
     /// <summary>
-    /// 房間編號
-    /// </summary>
-    [StringLength(50)]
-    public string Number { get; set; }
-
-
-    /// <summary>
     /// 使用狀態(available/maintenance)
     /// </summary>
     public RoomStatus Status { get; set; }

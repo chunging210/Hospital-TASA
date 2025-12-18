@@ -31,23 +31,23 @@
 
                 <div class="mb-3">
                     <label class="form-label form-label-custom">樓層</label>
-                    <select v-model="form.floor" class="form-control" required>
-                        <option value="">請選擇樓層</option>
-                        <option value="B2">B2 地下二樓</option>
-                        <option value="B1">B1 地下一樓</option>
-                        <option value="1">1樓</option>
-                        <option value="2">2樓</option>
-                        <option value="3">3樓</option>
-                        <option value="4">4樓</option>
-                        <option value="5">5樓</option>
-                    </select>
-                    <div class="invalid-feedback">請選擇樓層</div>
-                </div>
 
-                <div class="mb-3">
-                    <label class="form-label form-label-custom">房間編號</label>
-                    <input v-model="form.roomNumber" type="text" class="form-control" placeholder="如：EDU-201" required>
-                    <div class="invalid-feedback">請輸入房間編號</div>
+                    <input
+                        v-model.trim="form.floor"
+                        type="text"
+                        class="form-control"
+                        placeholder="例：B1、B2、1、5、10、RF"
+                        maxlength="4"
+                        required
+                    />
+
+                    <div class="form-text text-muted">
+                        可輸入格式：B1~B99、1~99、1F~99F、RF
+                    </div>
+
+                    <div class="invalid-feedback">
+                        請輸入正確樓層格式
+                    </div>
                 </div>
 
                 <div class="mb-3">

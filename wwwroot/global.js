@@ -36,6 +36,7 @@ const global = new function () {
             conferencecreateby: GET,
             equipment: GET,
             ECS: GET,
+            buildingfloors:POST
         }),
         calendar: apiMethods('/api/calendar', {
             list: GET,

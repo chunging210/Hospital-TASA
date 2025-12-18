@@ -16,19 +16,22 @@ namespace TASA.Controllers.API
         }
         
         [HttpGet("roomlist")]
-        public IActionResult RoomList([FromQuery] BaseQueryVM query)
-        {
-            return Ok(
-                service.SelectServices
-                    .RoomList(query)
-                    .ToPage(Request, Response)
-            );
+        public IActionResult RoomList([FromQuery] SysRoomQueryVM query)
+        {            
+            
+            return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
         [HttpGet("role")]
         public IActionResult Role()
         {
             return Ok(service.SelectServices.Role());
+        }
+
+        [HttpPost("buildingfloors")]
+        public IActionResult RoomBuildingFloors()
+        {
+            return Ok(service.SelectServices.RoomBuildingFloors().ToList());
         }
 
         [HttpGet("user")]

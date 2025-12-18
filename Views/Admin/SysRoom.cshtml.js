@@ -70,7 +70,6 @@ const room = new function () {
         name: '',
         building: '',
         floor: '',
-        roomNumber: '',
         description: '',
         capacity: null,
         area: null,
@@ -142,7 +141,6 @@ const room = new function () {
                     this.vm.Name = response.data.Name;
                     this.vm.Building = response.data.Building;
                     this.vm.Floor = response.data.Floor;
-                    this.vm.Number = response.data.Number;
                     this.vm.Description = response.data.Description;
                     this.vm.Capacity = response.data.Capacity;
                     this.vm.Area = response.data.Area;
@@ -194,7 +192,6 @@ const room = new function () {
             this.form.name = '';
             this.form.building = '';
             this.form.floor = '';
-            this.form.roomNumber = '';
             this.form.description = '';
             this.form.capacity = null;
             this.form.area = null;
@@ -226,15 +223,21 @@ const room = new function () {
             status = RoomStatus.Maintenance;
         }
 
+        // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
+        const capacity = Number(source.Capacity ?? source.capacity ?? 0);
+        const area = Number(source.Area ?? source.area ?? 0);
+
         const body = {
             Id: this.vm.Id ?? null,
             Name: source.Name ?? source.name,
             Building: source.Building ?? source.building,
             Floor: source.Floor ?? source.floor,
-            Number: source.Number ?? source.roomNumber,
             Description: source.Description ?? source.description,
-            Capacity: source.Capacity ?? source.capacity,
-            Area: source.Area ?? source.area,
+
+            // ✅ 一定是 number
+            Capacity: isNaN(capacity) ? 0 : capacity,
+            Area: isNaN(area) ? 0 : area,
+
             Status: status,
             PricingType: pricingType,
             IsEnabled: source.IsEnabled ?? source.refundEnabled,
@@ -248,7 +251,7 @@ const room = new function () {
             PricingDetails: this.getPricingDetails()
         };
 
-        console.log('🔍 [SAVE]', body);
+        console.log('🔍 [SAVE normalized]', body);
 
         method({ body })
             .then(() => {
@@ -261,6 +264,7 @@ const room = new function () {
                 addAlert(err.details || '操作失敗', { type: 'danger' });
             });
     };
+
 
     this.deleteRoom = (Id) => {
         if (confirm('確認刪除?')) {
@@ -290,7 +294,7 @@ const room = new function () {
 
         [
             { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000 },
-            { Name: '午餐場', StartTime: '12:00', EndTime: '14:00', Price: 800 },
+            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800 },
             { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200 }
         ].forEach(s => {
             this.timeSlots.push(this.createPeriodSlot(s));

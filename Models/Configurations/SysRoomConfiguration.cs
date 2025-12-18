@@ -39,7 +39,6 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Area)
                 .HasDefaultValue(0)
                 .HasComment("面積(平方公尺)");
-            entity.Property(e => e.Number).HasComment("房間編號");
             entity.Property(e => e.Status)
                 .HasDefaultValue(RoomStatus.Available)
                 .HasComment("使用狀態(available/maintenance)");

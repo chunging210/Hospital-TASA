@@ -4,10 +4,40 @@
 <div class="page-content">
     <div class="container-fluid vstack gap-3">
         <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-xl-auto col-sm-12 text-branding align-middle">
+            <div class="card-header mx-4 mt-3">
+                <div class="row align-items-center">
+                    <!-- Title -->
+                    <div class="col-auto text-branding align-middle">
                         <i class="mdi mdi-home-city"></i> 會議室總覽
+                    </div>
+
+                    <!-- 大樓下拉 -->
+                    <div class="col-auto">
+                        <select class="form-select" v-model="selectedBuilding" style="min-width: 180px;">
+                            <option value="">請選擇大樓...</option>
+                            <option v-for="b in buildings" :key="b.Building" :value="b.Building">
+                                {{ b.Building }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- 樓層下拉 -->
+                    <div class="col-auto">
+                        <select class="form-select" v-model="selectedFloor" :disabled="!selectedBuilding"
+                            style="min-width: 180px;">
+                            <option value="">請選擇樓層...</option>
+                            <option v-for="f in floorOptions" :key="f" :value="f">
+                                {{ f }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- 智慧搜尋按鈕 -->
+                    <div class="col-auto ms-auto">
+                        <button type="button" class="btn btn-outline-primary btn-rounded" data-bs-toggle="modal"
+                            data-bs-target="#smartSearchModal" style="font-size: 14px;">
+                            智慧搜尋
+                        </button>
                     </div>
                 </div>
             </div>

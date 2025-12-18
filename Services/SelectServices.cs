@@ -19,13 +19,53 @@ namespace TASA.Services
             public string Name { get; set; } = string.Empty;
             public string? Building { get; set; }
             public string? Floor { get; set; }
-            public string? Number { get; set; }
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public RoomStatus Status { get; set; }
 
             public IEnumerable<string>? Images { get; set; }
         }
+
+        public record BuildingFloorVM
+        {
+            public string Building { get; set; } = string.Empty;
+            public List<string> Floors { get; set; } = new();
+        }
+
+
+
+       public List<BuildingFloorVM> RoomBuildingFloors()
+{
+    var data = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .Where(x =>
+            !string.IsNullOrEmpty(x.Building) &&
+            !string.IsNullOrEmpty(x.Floor)
+        )
+        .Select(x => new
+        {
+            x.Building,
+            x.Floor
+        })
+        .Distinct()
+        .ToList(); // ⚠️ 關鍵：這裡先拉回來
+
+    return data
+        .GroupBy(x => x.Building!)
+        .Select(g => new BuildingFloorVM
+        {
+            Building = g.Key,
+            Floors = g
+                .Select(x => x.Floor!)
+                .Distinct()
+                .OrderBy(f => f)
+                .ToList()
+        })
+        .OrderBy(x => x.Building)
+        .ToList();
+}
+
         public IQueryable<IdNameVM> Room()
         {
             return db.SysRoom
@@ -38,26 +78,37 @@ namespace TASA.Services
                 });
         }
 
-        public IQueryable<RoomListVM> RoomList(BaseQueryVM query)
+       public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
         {
+
+
             var q = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
                 .Where(x => x.Status != RoomStatus.Maintenance);
 
+            if (!string.IsNullOrWhiteSpace(query.Building))
+            {
+                q = q.Where(x => x.Building == query.Building);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Floor))
+            {
+                q = q.Where(x => x.Floor == query.Floor);
+            }
+
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 q = q.Where(x => x.Name.Contains(query.Keyword));
             }
 
-            return q.Mapping(x => new RoomListVM
+            return q.Select(x => new RoomListVM
             {
                 Id = x.Id,
                 Name = x.Name,
                 Building = x.Building,
                 Floor = x.Floor,
-                Number = x.Number,
                 Capacity = x.Capacity,
                 Area = x.Area,
                 Status = x.Status,
