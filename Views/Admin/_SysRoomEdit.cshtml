@@ -1,4 +1,3 @@
-
 <div class="modal fade" id="roomEditModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -115,7 +114,8 @@
                         <div class="hourly-pricing-container">
                             <div v-for="slot in room.hourlySlots.value" :key="slot.Hour" class="hourly-pricing-item">
                                 <!-- 複選框 -->
-                                <input v-model="slot.Checked" type="checkbox" class="form-check-input hourly-pricing-checkbox">
+                                <input v-model="slot.Checked" type="checkbox"
+                                    class="form-check-input hourly-pricing-checkbox">
 
                                 <!-- 時段標籤 -->
                                 <label class="hourly-pricing-label">
@@ -126,9 +126,8 @@
                                 <!-- 價格輸入框 -->
                                 <div class="input-group input-group-sm hourly-pricing-input">
                                     <span class="input-group-text">$</span>
-                                    <input v-model.number="slot.Fee" type="number"
-                                        class="form-control form-control-sm" min="0" :disabled="!slot.Checked"
-                                        placeholder="500">
+                                    <input v-model.number="slot.Fee" type="number" class="form-control form-control-sm"
+                                        min="0" :disabled="!slot.Checked" placeholder="500">
                                     <span class="input-group-text">元</span>
                                 </div>
                             </div>
@@ -148,9 +147,11 @@
                                 <input v-model="slot.Enabled" type="checkbox" class="form-check-input">
                                 <input v-model="slot.Name" class="form-control form-control-sm name-input"
                                     placeholder="時段名稱">
-                                <input v-model="slot.StartTime" type="time" class="form-control form-control-sm time-input">
+                                <input v-model="slot.StartTime" type="time"
+                                    class="form-control form-control-sm time-input">
                                 <span>-</span>
-                                <input v-model="slot.EndTime" type="time" class="form-control form-control-sm time-input">
+                                <input v-model="slot.EndTime" type="time"
+                                    class="form-control form-control-sm time-input">
                                 <div class="input-group input-group-sm price-input">
                                     <span class="input-group-text">$</span>
                                     <input v-model.number="slot.Price" type="number" class="form-control">
@@ -174,7 +175,16 @@
 
                     <div v-if="room.mediaFiles.length > 0" class="edit-media-grid">
                         <div v-for="media in room.mediaFiles" :key="media.Id" class="edit-media-item">
+                            <!-- 圖片 -->
                             <img v-if="media.type === 'image'" :src="media.src" alt="媒體預覽">
+
+                            <!-- 影片（不管是 base64 還是路徑都能播放） -->
+                            <video v-else controls
+                                style="width: 100%; height: 100%; object-fit: cover; background: #000;">
+                                <source :src="media.src" type="video/mp4">
+                            </video>
+
+                            <!-- 刪除按鈕 -->
                             <button type="button" class="remove-btn" @@click="room.removeMedia(media.Id)">×</button>
                         </div>
                     </div>
@@ -204,8 +214,7 @@
                         </div>
 
                         <!-- 不開放 (Closed = 2) -->
-                        <div class="edit-rental-option edit-rental-option-closed"
-                            @@click="room.vm.BookingSettings = 2"
+                        <div class="edit-rental-option edit-rental-option-closed" @@click="room.vm.BookingSettings = 2"
                             :class="{ active: room.vm.BookingSettings === 2, inactive: room.vm.BookingSettings !== 2 }">
                             <i class="bx bx-block"></i>
                             <h6>不開放</h6>
@@ -213,8 +222,7 @@
                         </div>
 
                         <!-- 免費 (Free = 3) -->
-                        <div class="edit-rental-option edit-rental-option-free"
-                            @@click="room.vm.BookingSettings = 3"
+                        <div class="edit-rental-option edit-rental-option-free" @@click="room.vm.BookingSettings = 3"
                             :class="{ active: room.vm.BookingSettings === 3, inactive: room.vm.BookingSettings !== 3 }">
                             <i class="bx bx-gift"></i>
                             <h6>免費開放</h6>

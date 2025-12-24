@@ -1,0 +1,143 @@
+.time-slot-card {
+    border: 2px solid #e5eaf0;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.time-slot-card:hover:not(.occupied) {
+    border-color: #0d6efd;
+}
+
+.time-slot-card.selected {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+}
+
+.time-slot-card.occupied {
+    background: #f1f3f5;
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+.slot-time {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+.slot-price {
+    font-size: 14px;
+    color: #0d6efd;
+}
+
+.time-slot-card.occupied .slot-price {
+    color: #adb5bd;
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.equipment-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.equipment-item input[type="checkbox"] {
+    display: none;
+}
+
+.equipment-item input[type="checkbox"]:checked+label {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.equipment-item label {
+    cursor: pointer;
+    margin: 0;
+}
+
+.equipment-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.equipment-item.selected {
+    border: 2px solid #0d6efd;
+    background: #e7f1ff;
+}
+
+.equipment-price {
+    color: #007bff;
+    font-weight: 600;
+}
+
+.time-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.time-slot-item:hover:not(.occupied) {
+    border-color: #0056b3;
+}
+
+.time-slot-item.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.time-slot-item.occupied {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.price-display {
+    font-weight: 600;
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+.payment-method {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.payment-method:hover {
+    border-color: #0056b3;
+}
+
+.payment-method.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.payment-method label {
+    cursor: pointer;
+    margin: 0;
+}
+
+.total-section {
+    color: rgb(0, 0, 0);
+    padding: 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    margin: 20px 0;
+}

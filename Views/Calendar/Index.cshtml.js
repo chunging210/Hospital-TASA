@@ -36,6 +36,12 @@ const room = new function () {
             });
     };
 
+    this.isVideoFile = (filePath) => {
+        if (!filePath) return false;
+        const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+        return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+    };
+
     /* ========= 列表 ========= */
     this.getList = (payload) => {
         if (payload?.page) this.page.data.page = payload.page;
@@ -62,6 +68,31 @@ const room = new function () {
     /* ========= 詳細 ========= */
     this.detailRoom = ref(null);
     this.detailRoomCarouselIndex = ref(0);
+    this.carouselInterval = null;  // 輪播計時器
+    this.carouselDirection = 'next';  // 輪播方向
+    // ✅ 啟動自動輪播
+    this.startCarousel = () => {
+        if (this.carouselInterval) {
+            clearInterval(this.carouselInterval);
+        }
+
+        this.carouselInterval = setInterval(() => {
+            if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+
+            this.carouselDirection = 'next';
+            const length = this.detailRoom.value.Images.length;
+            this.detailRoomCarouselIndex.value =
+                (this.detailRoomCarouselIndex.value + 1) % length;
+        }, 5000);  // 5 秒換一張
+    };
+
+    // ✅ 停止自動輪播
+    this.stopCarousel = () => {
+        if (this.carouselInterval) {
+            clearInterval(this.carouselInterval);
+            this.carouselInterval = null;
+        }
+    };
 
     this.hasDetailImages = computed(() => {
         return this.detailRoom.value &&
@@ -76,16 +107,23 @@ const room = new function () {
 
     this.prevDetailImage = () => {
         if (!this.hasDetailImages.value) return;
+        this.stopCarousel();
+        this.carouselDirection = 'prev';
         const len = this.detailRoom.value.Images.length;
         this.detailRoomCarouselIndex.value =
             (this.detailRoomCarouselIndex.value - 1 + len) % len;
+        this.startCarousel();
     };
 
+    // ✅ 修改：下一張（加上停止/重啟輪播）
     this.nextDetailImage = () => {
         if (!this.hasDetailImages.value) return;
+        this.stopCarousel();
+        this.carouselDirection = 'next';
         const len = this.detailRoom.value.Images.length;
         this.detailRoomCarouselIndex.value =
             (this.detailRoomCarouselIndex.value + 1) % len;
+        this.startCarousel();
     };
 
     this.openDetail = (id) => {
@@ -98,6 +136,10 @@ const room = new function () {
                     document.getElementById('roomDetailModal')
                 );
                 modal.show();
+
+                setTimeout(() => {
+                    this.startCarousel();
+                }, 300);
             })
             .catch(() => {
                 addAlert('取得會議室詳情失敗', { type: 'danger' });
@@ -113,6 +155,17 @@ const room = new function () {
         if (!item.Images?.length) return;
         const len = item.Images.length;
         item._imgIndex = ((item._imgIndex || 0) - 1 + len) % len;
+    };
+
+    this.goReserve = (item) => {
+        const params = new URLSearchParams({
+            roomId: item.Id,
+            building: item.Building,
+            floor: item.Floor,
+            date: new Date().toISOString().slice(0, 10) // 今天
+        });
+
+        location.href = `/Conference/Create?${params.toString()}`;
     };
 };
 
@@ -131,6 +184,13 @@ window.$config = {
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.hasDetailImages = room.hasDetailImages;
         this.currentDetailImage = room.currentDetailImage;
+
+        this.isDetailVideoFile = (filePath) => {
+            if (!filePath) return false;
+            const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+            return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+        };
+
         onMounted(() => {
             room.loadBuildingFloors();
 
@@ -148,6 +208,13 @@ window.$config = {
                 room.query.floor = newFloor || '';
                 room.getList({ page: 1, perPage: 6 });
             });
+
+            const detailModalElement = document.getElementById('roomDetailModal');
+            if (detailModalElement) {
+                detailModalElement.addEventListener('hidden.bs.modal', () => {
+                    room.stopCarousel();
+                });
+            }
         });
     }
 };

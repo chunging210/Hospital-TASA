@@ -59,9 +59,23 @@
 
                         <!-- 卡片身 -->
                         <div class="room-card-body">
-                            <!-- 輪播圖片 -->
-                            <div class="room-preview"
-                                :style="{ backgroundImage: `url('${roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[imageIndices[roomItem.Id] || 0] : ''}')` }">
+                            <!-- 輪播圖片/影片 -->
+                            <div class="room-preview">
+                                <!-- 圖片 -->
+                                <img v-if="!isVideoFile(roomItem.Images[imageIndices[roomItem.Id] || 0])"
+                                    :src="roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[imageIndices[roomItem.Id] || 0] : ''"
+                                    style="width: 100%; height: 100%; object-fit: cover;" alt="會議室圖片">
+
+                                <!-- 影片 -->
+                                <video v-else controls
+                                    style="width: 100%; height: 100%; object-fit: cover; background: #000;">
+                                    <source
+                                        :src="roomItem.Images && roomItem.Images.length > 0 ? roomItem.Images[imageIndices[roomItem.Id] || 0] : ''"
+                                        type="video/mp4">
+                                    你的瀏覽器不支援視訊播放
+                                </video>
+
+                                <!-- 導航按鈕 -->
                                 <button v-if="roomItem.Images && roomItem.Images.length > 1"
                                     @@click="prevImage(roomItem.Id)" class="carousel-btn prev">
                                     &lt;

@@ -61,6 +61,13 @@ const getBookingSettingsText = (bookingSettings) => {
     return settingsMap[bookingSettings] || String(bookingSettings);
 };
 
+
+const isVideoFile = (filePath) => {
+    if (!filePath) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+    return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+};
+
 let imageIndices = reactive({});
 
 const room = new function () {
@@ -86,6 +93,51 @@ const room = new function () {
 
     this.detailRoom = ref(null);
     this.detailRoomCarouselIndex = ref(0);
+    this.carouselInterval = null;
+    this.carouselDirection = 'next';
+
+    // ✅ 新增：啟動自動輪播
+    this.startCarousel = () => {
+        // 清除舊的計時器
+        if (this.carouselInterval) {
+            clearInterval(this.carouselInterval);
+        }
+
+        // 每 3 秒自動切換一張
+        this.carouselInterval = setInterval(() => {
+            if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+            this.carouselDirection = 'next';
+            const length = this.detailRoom.value.Images.length;
+            this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value + 1) % length;
+        }, 5000);  // 3 秒換一張（可改為 1000、2000 等）
+    };
+
+    // ✅ 新增：停止自動輪播
+    this.stopCarousel = () => {
+        if (this.carouselInterval) {
+            clearInterval(this.carouselInterval);
+            this.carouselInterval = null;
+        }
+    };
+
+    this.prevDetailImage = () => {
+        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+        this.stopCarousel();  // 停止自動輪播
+        this.carouselDirection = 'prev';
+        const length = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value - 1 + length) % length;
+        this.startCarousel();  // 重新啟動輪播
+    }
+
+    this.nextDetailImage = () => {
+        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
+        this.stopCarousel();  // 停止自動輪播
+        this.carouselDirection = 'next';
+        const length = this.detailRoom.value.Images.length;
+        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value + 1) % length;
+        this.startCarousel();  // 重新啟動輪播
+    }
+
 
     this.createHourlySlot = (hour, data = {}) => {
         return {
@@ -152,7 +204,7 @@ const room = new function () {
                     (response.data.Images || []).forEach((imgPath, idx) => {
                         this.mediaFiles.push({
                             Id: Date.now() + idx,
-                            type: 'image',
+                            type: isVideoFile(imgPath) ? 'video' : 'image',
                             src: imgPath,
                             name: ''
                         });
@@ -415,33 +467,19 @@ const room = new function () {
     this.viewRoom = (Id) => {
         global.api.admin.roomdetail({ body: { Id } })
             .then((response) => {
-                console.log('🔍 [viewRoom] 完整回應:', response);
-                console.log('🔍 [viewRoom] response.data:', response.data);
-                console.log('🔍 [viewRoom] Images 陣列:', response.data.Images);
-                console.log('🔍 [viewRoom] Images 長度:', response.data.Images?.length);
 
                 this.detailRoom.value = response.data;
                 this.detailRoomCarouselIndex.value = 0;
 
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
+                this.startCarousel();
             })
             .catch(error => {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
     }
 
-    this.prevDetailImage = () => {
-        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
-        const length = this.detailRoom.value.Images.length;
-        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value - 1 + length) % length;
-    }
-
-    this.nextDetailImage = () => {
-        if (!this.detailRoom.value || !this.detailRoom.value.Images) return;
-        const length = this.detailRoom.value.Images.length;
-        this.detailRoomCarouselIndex.value = (this.detailRoomCarouselIndex.value + 1) % length;
-    }
 
     this.onPricingTypeChange = () => {
         if (this.vm.PricingType === PricingType.Hourly) {
@@ -504,6 +542,18 @@ window.$config = {
             }
         };
 
+        this.isVideoFile = (filePath) => {
+            if (!filePath) return false;
+            const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+            return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+        };
+
+        this.isDetailVideoFile = (filePath) => {
+            if (!filePath) return false;
+            const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
+            return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
+        };
+
         this.clearSearch = () => {
             room.query.keyword = '';
             room.getList();
@@ -518,6 +568,11 @@ window.$config = {
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
+            const detailModalElement = document.getElementById('roomDetailModal');
+            detailModalElement.addEventListener('hidden.bs.modal', () => {
+                room.stopCarousel();
+            });
+
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
         });
     }

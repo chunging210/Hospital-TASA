@@ -27,7 +27,6 @@ public partial class Equipment
     /// <summary>
     /// 名稱
     /// </summary>
-    [Required]
     [StringLength(100)]
     public string Name { get; set; }
 
@@ -40,7 +39,6 @@ public partial class Equipment
     /// <summary>
     /// 裝備位置
     /// </summary>
-    [Required]
     [StringLength(100)]
     public string Host { get; set; }
 
@@ -78,6 +76,11 @@ public partial class Equipment
     /// </summary>
     public Guid CreateBy { get; set; }
 
+
+    public string? ProductModel { get; set; }
+
+
+    public decimal RentalPrice { get; set; } = 0;
     /// <summary>
     /// 刪除
     /// </summary>

@@ -10,8 +10,8 @@ namespace TASA.Services.EquipmentModule
         public record ListVM
         {
             public Guid Id { get; set; }
-            public string Name { get; set; } = string.Empty;
-            public string? Host { get; set; }
+            public string? Name { get; set; } = string.Empty;
+            public string? Host { get; set; } = string.Empty;
             public int? Port { get; set; }
             public bool IsEnabled { get; set; }
             public DateTime CreateAt { get; set; }
@@ -21,6 +21,7 @@ namespace TASA.Services.EquipmentModule
         /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
+            Console.WriteLine("123");
             return db.Equipment
                 .AsNoTracking()
                 .WhereNotDeleted()

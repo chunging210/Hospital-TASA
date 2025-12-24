@@ -172,4 +172,6 @@ public partial class Conference
 
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
+
+     public ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = [];
 }

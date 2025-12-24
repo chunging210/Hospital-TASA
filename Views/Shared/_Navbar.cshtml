@@ -52,7 +52,7 @@
                         <li class="nav-item">
                             <a href="/calendar" class="nav-link icon-text-container">
                                 <span class="material-icons font-size-16">grid_view</span>
-                                <span class="text">會議日程</span>
+                                <span class="text">會議室總覽</span>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -88,28 +88,28 @@
                                 </a>
                             </li>
 
-                            <li class="nav-item">
+                            @* <li class="nav-item">
                                 <a href="/admin/seatsetting" class="nav-link icon-text-container">
                                     <span class="material-icons font-size-16">badge</span>
                                     <span class="text">電子桌牌設定</span>
                                 </a>
-                            </li>
+                            </li> *@
 
-                            <li class="nav-item">
+                            @* <li class="nav-item">
                                 <a href="/admin/visitor" class="nav-link icon-text-container">
                                     <span class="material-icons font-size-16">people</span>
                                     <span class="text">訪客總覽</span>
                                 </a>
+                            </li> *@
+                            <li class="nav-item">
+                                <a href="/admin/equipment" class="nav-link icon-text-container">
+                                    <span class="material-icons font-size-16">grid_view</span>
+                                    <span class="text">設備總覽</span>
+                                </a>
                             </li>
-
                             @if (service.SettingServices.GetSettings().UCNS.Ecs)
                             {
-                                <li class="nav-item">
-                                    <a href="/admin/equipment" class="nav-link icon-text-container">
-                                        <span class="material-icons font-size-16">grid_view</span>
-                                        <span class="text">設備總覽</span>
-                                    </a>
-                                </li>
+
                                 <li class="nav-item">
                                     <a href="/admin/ecs" class="nav-link icon-text-container">
                                         <span class="material-icons font-size-16">grid_view</span>

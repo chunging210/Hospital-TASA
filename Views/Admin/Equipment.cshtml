@@ -1,12 +1,15 @@
 ﻿<div class="page-content">
     <div class="container-fluid vstack gap-3">
         <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-                        <span class="material-icons">folder</span>設備總覽
+            <div class="card-header mx-4 mt-3">
+                <div class="row align-items-center">
+                    <!-- Title -->
+                    <div class="col-auto text-branding align-middle">
+                        <i class="mdi mdi-archive"></i> 設備總覽
                     </div>
-                    <div class="col-12 col-lg-2">
+
+                    <!-- 搜尋 -->
+                    <div class="col-auto">
                         <div class="input-group">
                             <div class="form-floating">
                                 <input v-model="equipment.query.keyword" @@blur="equipment.getList" type="text" class="form-control" placeholder="關鍵字">
@@ -15,42 +18,69 @@
                             <button @@click="equipment.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
                         </div>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <button @@click="equipment.getVM()" class="btn btn-primary">新增設備</button>
+
+                    <!-- 產品類型篩選 -->
+                    <div class="col-auto">
+                        <select v-model="equipment.query.type" @@change="equipment.getList" class="form-select" style="min-width: 150px;">
+                            <option value="">產品類型</option>
+                            <option value="1">影像設備</option>
+                            <option value="2">聲音設備</option>
+                            <option value="3">控制設備</option>
+                            <option value="4">分配器</option>
+                            <option value="8">公有設備</option>
+                            <option value="9">攤位租借</option>
+                        </select>
+                    </div>
+
+                    <!-- 新增按鈕 -->
+                    <div class="col-auto ms-auto">
+                        <button @@click="equipment.getVM()" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#equipmentModal">
+                            <i class="mdi mdi-archive-plus-outline"></i> 新增設備
+                        </button>
                     </div>
                 </div>
             </div>
+
             <div class="card-body">
+                <!-- 表格 -->
                 <table class="table table-hover table-responsive">
                     <caption>設備列表</caption>
                     <thead>
                         <tr class="table-light">
-                            <th>名稱</th>
-                            <th>Host</th>
-                            <th>Port</th>
+                            <th>產品名稱</th>
+                            <th>產品型號</th>
+                            <th>產品類型</th>
+                            <th>大樓/會議室</th>
+                            <th>租借金額</th>
                             <th>啟用</th>
                             <th>建立日期</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in equipment.list" @@dblclick="equipment.getVM(item.Id)" :key="item.Id">
-                            <td>{{item.Name}}</td>
-                            <td>{{item.Host}}</td>
-                            <td>{{item.Port}}</td>
-                            <td>{{item.IsEnabled?'V':''}}</td>
-                            <td>{{item.CreateAt.format()}}</td>
+                        <tr v-for="item in equipment.list" :key="item.Id">
+                            <td>{{ item.Name }}</td>
+                            <td>{{ item.ProductModel || '-' }}</td>
+                            <td>{{ item.TypeName }}</td>
+                            <td>{{ item.Building }} {{ item.Floor }} / {{ item.RoomName || '-' }}</td>
+                            <td>{{ item.RentalPrice > 0 ? 'NT$ ' + item.RentalPrice : '-' }}</td>
+                            <td>{{ item.IsEnabled ? '✓' : '' }}</td>
+                            <td>{{ item.CreateAt.format() }}</td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-secondary">編輯</button>
-                                    <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-danger">刪除</button>
+                                    <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#equipmentModal">
+                                        <i class="mdi mdi-pencil-outline"></i> 編輯
+                                    </button>
+                                    <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-danger">
+                                         <i class="mdi mdi-delete-outline"></i> 刪除
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     </tbody>
-                    <tfoot v-if="equipment.list.length==0">
+                    <tfoot v-if="equipment.list.length === 0">
                         <tr>
-                            <td colspan="6" class="text-center">查無資料</td>
+                            <td colspan="8" class="text-center">查無資料</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -58,106 +88,111 @@
         </div>
     </div>
 </div>
-<offcanvas ref="equipmentoffcanvas">
-    <template #header>
-        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-            <span class="material-icons">folder</span>設備管理
+
+<!-- ===== 新增/編輯 Modal ===== -->
+<div class="modal fade" id="equipmentModal" tabindex="-1" aria-labelledby="equipmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="equipmentModalLabel">
+                    {{ equipment.vm.Id ? '編輯設備' : '新增設備' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body px-4 mt-3">
+                <form>
+                    <!-- 產品名稱 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">產品名稱 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input v-model="equipment.vm.Name" type="text" class="form-control" placeholder="例：投影機">
+                        </div>
+                    </div>
+
+                    <!-- 產品型號 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">產品型號</label>
+                        <div class="col-sm-9">
+                            <input v-model="equipment.vm.ProductModel" type="text" class="form-control" placeholder="例：Epson EB-2250U">
+                        </div>
+                    </div>
+
+                    <!-- 產品類型 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">產品類型 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select v-model.number="equipment.vm.Type" class="form-select">
+                                <option value="">請選擇類型</option>
+                                <option value="1">影像設備</option>
+                                <option value="2">聲音設備</option>
+                                <option value="3">控制設備</option>
+                                <option value="4">分配器</option>
+                                <option value="8">公有設備</option>
+                                <option value="9">攤位租借</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 大樓名稱 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">大樓名稱</label>
+                        <div class="col-sm-9">
+                            <select v-model="equipment.vm.Building" @@change="equipment.onBuildingChange" class="form-select">
+                                <option value="">請選擇大樓</option>
+                                <option v-for="b in equipment.buildings" :key="b" :value="b">{{ b }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 會議室名稱 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">會議室名稱</label>
+                        <div class="col-sm-9">
+                            <select v-model="equipment.vm.RoomId" class="form-select" :disabled="!equipment.vm.Building">
+                                <option value="">請先選擇大樓</option>
+                                <option v-for="room in equipment.roomOptions" :key="room.Id" :value="room.Id">
+                                    {{ room.Name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <!-- 租借金額 (只在公有設備/攤位租借時顯示) -->
+                    <div v-if="[8, 9].includes(equipment.vm.Type)" class="row mb-4">
+                        <label class="col-sm-3 col-form-label">租借金額 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <div class="input-group">
+                                <span class="input-group-text">NT$</span>
+                                <input v-model.number="equipment.vm.RentalPrice" type="number" class="form-control" placeholder="0" min="0" step="0.01">
+                            </div>
+                            <small class="form-text text-muted">僅限公有設備/攤位租借使用</small>
+                        </div>
+                    </div>
+
+                    <!-- 啟用 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">啟用</label>
+                        <div class="col-sm-9">
+                            <label class="form-check">
+                                <input v-model="equipment.vm.IsEnabled" class="form-check-input" type="checkbox">
+                                <span class="form-check-label">啟用此設備</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" @@click="equipment.save" data-bs-dismiss="modal">
+                    {{ equipment.vm.Id ? '確認修改' : '確認新增' }}
+                </button>
+            </div>
         </div>
-    </template>
-    <template #footer>
-        <button @@click="equipment.save()" class="btn btn-branding text-white">
-            確認修改
-        </button>
-    </template>
-    <ol class="activity-checkout mb-0 px-4 mt-3">
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">edit</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">名稱</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="equipment.vm.Name" type="text" class="form-control" placeholder="名稱" />
-                    </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20"></span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">類型</label>
-                    </div>
-                    <div class="col-12">
-                        <select v-model="equipment.vm.Type" class="form-select">
-                            <option value="3">環控</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">Host</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="equipment.vm.Host" type="text" class="form-control" placeholder="Host" />
-                    </div>
-                </div>
-                <div class="feed-item-list">
-                    <div class="row align-items-center">
-                        <div class="col-sm-12 col-xl-auto pe-0">
-                            <label class="col-form-label pe-3">Port</label>
-                        </div>
-                        <div class="col-12">
-                            <input v-model="equipment.vm.Port" type="number" class="form-control" placeholder="Port" />
-                        </div>
-                    </div>
-                </div>
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">Account</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="equipment.vm.Account" type="text" class="form-control" placeholder="Account" />
-                    </div>
-                </div>
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">Password</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="equipment.vm.Password" type="text" class="form-control" placeholder="Password" />
-                    </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">check</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">啟用</label>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check">
-                            <input v-model="equipment.vm.IsEnabled" class="form-check-input" type="checkbox" :value="true">
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </li>
-    </ol>
-</offcanvas>
+    </div>
+</div>

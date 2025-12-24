@@ -283,6 +283,9 @@ namespace TASA.Services.RoomModule
         /// </summary>
         private void ValidatePricingDetails(PricingType pricingType, List<PricingDetailVM>? pricingDetails)
         {
+
+             Console.WriteLine($"🔍 [Debug] PricingType: {pricingType}");
+            Console.WriteLine($"🔍 [Debug] PricingDetails Count: {pricingDetails?.Count ?? 0}");
             // 必須有勾選的時段或小時
             if (pricingDetails == null || pricingDetails.Count == 0)
             {
@@ -290,6 +293,8 @@ namespace TASA.Services.RoomModule
             }
 
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
+
+    Console.WriteLine($"🔍 [Debug] EnabledPricings Count: {enabledPricings.Count}");
 
             // 必須有至少一個被勾選的項目
             if (enabledPricings.Count == 0)
@@ -511,7 +516,9 @@ namespace TASA.Services.RoomModule
                     : base64Data;
 
                 byte[] imageBytes = Convert.FromBase64String(base64String);
-                string extension = fileType == "video" ? ".mp4" : ".png";
+
+                // ✅ 根據 base64 的 MIME type 判斷副檔名
+                string extension = ExtractExtensionFromBase64(base64Data) ?? ".bin";
                 string fileName = $"{Guid.NewGuid()}{extension}";
 
                 string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "room-images");
@@ -527,10 +534,42 @@ namespace TASA.Services.RoomModule
             }
             catch (Exception ex)
             {
-                throw new HttpException($"保存圖片失敗: {ex.Message}");
+                throw new HttpException($"保存檔案失敗: {ex.Message}");
             }
         }
 
+        private string? ExtractExtensionFromBase64(string base64Data)
+        {
+            // base64 格式: data:image/jpeg;base64,... 或 data:video/mp4;base64,...
+            if (!base64Data.StartsWith("data:"))
+                return null;
+
+            var mimeType = base64Data
+                .Substring(5, base64Data.IndexOf(';') - 5)
+                .ToLower();
+
+            return mimeType switch
+            {
+                // 圖片
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                "image/bmp" => ".bmp",
+                "image/svg+xml" => ".svg",
+                
+                // 視訊
+                "video/mp4" => ".mp4",
+                "video/webm" => ".webm",
+                "video/ogg" => ".ogv",
+                "video/quicktime" => ".mov",
+                "video/x-msvideo" => ".avi",
+                "video/x-matroska" => ".mkv",
+                "video/x-flv" => ".flv",
+                
+                _ => ".bin"
+            };
+        }
         // ✅ 改成接收 InsertVM（Images 是完整物件）
         public void Update(InsertVM vm)
         {

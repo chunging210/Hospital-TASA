@@ -61,10 +61,30 @@
                             </div>
                         </div>
 
-                        <!-- 圖片 -->
-                        <div class="room-preview"
-                            :style="{ backgroundImage: `url('${item.Images?.[item._imgIndex || 0]}')` }">
+                        <!-- 圖片/影片 -->
+                        <div class="room-preview">
+                            <!-- 圖片 -->
+                            <div v-if="item.Images && item.Images.length > 0 && !room.isVideoFile(item.Images[item._imgIndex || 0])"
+                                style="width: 100%; height: 100%; background-size: cover; background-position: center;"
+                                :style="{ backgroundImage: `url('${item.Images[item._imgIndex || 0]}')` }">
+                            </div>
 
+                            <!-- ✅ 影片：加 controls autoplay muted -->
+                            <video
+                                v-else-if="item.Images && item.Images.length > 0 && room.isVideoFile(item.Images[item._imgIndex || 0])"
+                                controls autoplay muted
+                                style="width: 100%; height: 100%; object-fit: cover; background: #000; display: block;">
+                                <source :src="item.Images[item._imgIndex || 0]" type="video/mp4">
+                                你的瀏覽器不支援視訊播放
+                            </video>
+
+                            <!-- 無圖片 -->
+                            <div v-else
+                                style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">
+                                暫無圖片
+                            </div>
+
+                            <!-- 按鈕 -->
                             <button v-if="item.Images?.length > 1" class="carousel-btn prev"
                                 @@click.stop="room.prevCardImage(item)">
                                 ‹
@@ -95,6 +115,10 @@
                                 <button class="btn btn-primary" @@click.stop="room.openDetail(item.Id)">
                                     <i class="mdi mdi-eye-outline"></i>
                                     了解更多
+                                </button>
+                                <button class="btn btn-primary" @@click.stop="room.goReserve(item)">
+                                    <i class="mdi mdi-calendar-plus"></i>
+                                    立即預約
                                 </button>
                             </div>
                         </div>

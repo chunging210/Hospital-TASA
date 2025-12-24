@@ -277,7 +277,7 @@ body {
 }
 
 .action-buttons .btn {
-    width: 150px;
+    width: 200px;
     font-size: 15px;
     font-weight: 500;
     border-radius: 10px;
@@ -287,6 +287,49 @@ body {
 }
 
 /* ===== 房間特性區塊 ===== */
+
+/* 向右滑入（下一張圖片） */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 向左滑入（前一張圖片） */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 應用到圖片和影片 */
+.detail-image-container img,
+.detail-image-container video {
+    animation: slideInRight 0.5s ease-in-out;
+}
+
+/* 前進時的動畫 */
+.carousel-next {
+    animation: slideInRight 0.5s ease-in-out;
+}
+
+/* 後退時的動畫 */
+.carousel-prev {
+    animation: slideInLeft 0.5s ease-in-out;
+}
+
 .room-feature-section {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid #e0e0e0;

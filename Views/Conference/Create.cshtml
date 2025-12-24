@@ -1,0 +1,416 @@
+@{
+    ViewData["Title"] = "新增會議預約 | UCMS 圖像科技";
+}
+
+<link rel="stylesheet" href="/css/createroom.css">
+
+<div id="app" class="main-content">
+    <div class="page-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <!-- Header -->
+                        <div class="card-header mx-4 mt-3">
+                            <div class="row align-items-center">
+                                <div class="col-xl-9 col-sm-12 text-branding align-middle">
+                                    <i class="mdi mdi-calendar-cursor"></i> 新增會議預約
+                                </div>
+                                <div class="col-xl-3 col-sm-12 df-box01">
+                                    <div class="d-flex align-items-center me-3">
+                                        <div class="flex-grow-1">
+                                            <p class="text-muted mb-1">發起會議者</p>
+                                            <h4 class="mb-0">{{ initiatorName }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="card-body">
+                            <ol class="activity-checkout mb-0 px-4 mt-3">
+
+                                <!-- 1. 會議基本資訊 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bxs-pencil text-white font-size-20"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list">
+                                        <form>
+                                            <div class="mb-3 row align-items-top">
+                                                <div class="col-sm-12 col-xl-auto pe-0">
+                                                    <label class="col-form-label pe-3">會議類型</label>
+                                                </div>
+                                                <div class="col-sm-12 col-xl-10">
+                                                    <div class="row">
+                                                        <div class="col-sm-12 col-xl-3 mb-2">
+                                                            <select class="form-select" v-model="form.meetingType">
+                                                                <option value="physical">實體會議</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 會議名稱 -->
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="meetingName"
+                                                    placeholder="請填寫會議名稱" v-model="form.name" required>
+                                                <label for="meetingName" class="ms-2">會議名稱</label>
+                                            </div>
+
+                                            <!-- 會議內容 -->
+                                            <div class="form-floating mb-3">
+                                                <textarea class="form-control" id="meetingContent" placeholder="請填寫會議內容"
+                                                    style="height: 180px" v-model="form.content"></textarea>
+                                                <label for="meetingContent" class="ms-2">會議內容</label>
+                                            </div>
+
+                                            <!-- 會議日期 -->
+                                            <div class="row">
+                                                <div class="col-xl-6">
+                                                    <div class="mb-3 mt-2 row align-items-center">
+                                                        <div class="col-sm-12 col-xl-auto">
+                                                            <label class="col-form-label">會議日期</label>
+                                                        </div>
+                                                        <div class="col-sm-12 col-xl-auto">
+                                                            <input class="form-control" type="date" v-model="form.date"
+                                                                @@change="updateTimeSlots">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        </form>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bxs-user text-white font-size-20"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list">
+                                        <form>
+                                            <div class="mb-3 row align-items-top">
+                                                <div class="col-sm-12 col-xl-auto pe-0">
+                                                    <label class="col-form-label pe-3">與會人員</label>
+                                                </div>
+                                                <div class="col-sm-12 col-xl-10">
+                                                    <div class="alert alert-light border">
+                                                        <div class="d-flex align-items-center justify-content-between">
+                                                            <div>
+                                                                <h6 class="mb-1">發起人</h6>
+                                                                <p class="mb-0 text-muted">{{ initiatorName }}</p>
+                                                            </div>
+                                                            <span class="badge bg-primary">主持人</span>
+                                                        </div>
+                                                    </div>
+                                                    <p class="text-muted small mt-2">
+                                                        <i class="bx bx-info-circle"></i>
+                                                        暫時僅記錄發起人，其他與會人員可在會議建立後進行新增
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <!-- 2. 與會地點 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bxs-map text-white font-size-20"></i>
+                                        </div>
+                                    </div>
+
+                                    <div class="feed-item-list">
+                                        <form class="pb-2">
+                                            <div class="mb-3 row align-items-stretch">
+                                                <div class="col-sm-12 col-xl-auto pe-0">
+                                                    <label class="col-form-label pe-3">與會地點</label>
+                                                </div>
+
+                                                <div class="col-sm-12 col-xl-10">
+
+                                                    <div class="row g-2">
+
+                                                        <!-- 大樓 -->
+                                                        <div class="col-sm-12 col-xl-4">
+                                                            <select class="form-select" v-model="form.building"
+                                                                @@change="onBuildingChange">
+                                                                <option value="">請選擇大樓</option>
+                                                                <option v-for="b in buildings" :key="b.Building"
+                                                                    :value="b.Building">
+                                                                    {{ b.Building }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- 樓層 -->
+                                                        <div class="col-sm-12 col-xl-4">
+                                                            <select class="form-select" v-model="form.floor"
+                                                                :disabled="!form.building" @@change="onFloorChange">
+                                                                <option value="">請選擇樓層</option>
+                                                                <option v-for="f in availableFloors" :key="f"
+                                                                    :value="f">
+                                                                    {{ f }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- 會議室 -->
+                                                        <div class="col-sm-12 col-xl-4">
+                                                            <select class="form-select" v-model="form.roomId"
+                                                                :disabled="!form.floor" @@change="updateTimeSlots">
+                                                                <option value="">請選擇會議室</option>
+                                                                <option v-for="room in filteredRooms" :key="room.Id"
+                                                                    :value="room.Id">
+                                                                    {{ room.Name }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                    </div>
+
+
+
+                                                    <!-- 時段選擇 -->
+                                                    <div v-if="form.roomId" class="mt-4">
+                                                        <label class="form-label">選擇時段（可多選）</label>
+                                                        <p class="text-muted small">
+                                                            點擊時段進行選擇，已被預約的時段無法選擇
+                                                        </p>
+
+                                                        <!-- ✅ 加上 grid 容器 -->
+                                                        <div class="time-slot-grid">
+                                                            <div v-for="slot in displayedSlots" :key="slot.Key"
+                                                                class="time-slot-card" :class="{
+      selected: isSlotSelected(slot),
+      occupied: slot.Occupied
+    }" @@click="toggleTimeSlot(slot)">
+                                                                <div class="slot-time">
+                                                                    {{ slot.displayLabel }}
+                                                                </div>
+
+                                                                <div class="slot-price">
+                                                                    {{ slot.Occupied ? '已預約' : '$' + slot.Price }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <hr>
+                                </li>
+
+
+                                <!-- 4. 公有設備加租 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bx-cog text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list flex-grow-1">
+                                        <h6>公有設備加租</h6>
+                                        <p class="text-muted small">選擇需要的額外設備</p>
+
+                                        <div class="equipment-grid">
+                                            <div v-for="equipment in availableEquipment" :key="equipment.id"
+                                                class="equipment-item"
+                                                :class="{ selected: form.selectedEquipment.includes(equipment.price) }"
+                                                @@click="toggleEquipment(equipment.price)">
+                                                <i :class="['bx', equipment.icon, 'text-primary']"
+                                                    style="font-size: 24px;"></i><br>
+                                                <strong>{{ equipment.name }}</strong><br>
+                                                <small class="text-muted">{{ equipment.description }}</small><br>
+                                                <span class="equipment-price">+ ${{ equipment.price }}/天</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <!-- 5. 展示攤位加租 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bx-store text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list flex-grow-1">
+                                        <h6>展示攤位加租</h6>
+                                        <div class="equipment-grid">
+                                            <div v-for="booth in availableBooths" :key="booth.id" class="equipment-item"
+                                                :class="{ selected: form.selectedBooths.includes(booth.price) }"
+                                                @@click="toggleBooth(booth.price)">
+                                                <i :class="['bx', booth.icon, 'text-primary']"
+                                                    style="font-size: 24px;"></i><br>
+                                                <strong>{{ booth.name }}</strong><br>
+                                                <small class="text-muted">{{ booth.description }}</small><br>
+                                                <span class="equipment-price">+ ${{ booth.price }}/天</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <!-- 6. 付費方式 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bx-credit-card text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list flex-grow-1">
+                                        <h6>付費方式選擇</h6>
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="payment-method"
+                                                    :class="{ 'selected': form.paymentMethod === 'transfer' }"
+                                                    @@click="form.paymentMethod = 'transfer'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-credit-card text-primary me-2"></i>
+                                                        <strong>銀行匯款</strong><br>
+                                                        <small class="text-muted">透過銀行轉帳付款</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="payment-method"
+                                                    :class="{ 'selected': form.paymentMethod === 'cost-sharing' }"
+                                                    @@click="form.paymentMethod = 'cost-sharing'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-building text-success me-2"></i>
+                                                        <strong>成本分攤</strong><br>
+                                                        <small class="text-muted">由部門預算支付</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="payment-method"
+                                                    :class="{ 'selected': form.paymentMethod === 'cash' }"
+                                                    @@click="form.paymentMethod = 'cash'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-money text-warning me-2"></i>
+                                                        <strong>現金付款</strong><br>
+                                                        <small class="text-muted">請至出納組繳款</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 付費詳細資訊 -->
+                                        <div v-if="form.paymentMethod" class="mt-3">
+                                            <div v-if="form.paymentMethod === 'transfer'" class="alert alert-info">
+                                                <h6><i class="bx bx-info-circle"></i> 匯款資訊</h6>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>銀行：</strong>圖像科技銀行 (012)</p>
+                                                        <p class="mb-1"><strong>分行：</strong>內湖瑞光分行</p>
+                                                        <p class="mb-1"><strong>戶名：</strong>圖像科技股份有限公司</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>帳號：</strong>012-68-789012345</p>
+                                                        <p class="mb-1"><strong>電話：</strong>(02) 8792-5678</p>
+                                                        <p class="mb-1"><strong>Swift：</strong>IMTCTWTP</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="form.paymentMethod === 'cost-sharing'"
+                                                class="alert alert-warning">
+                                                <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
+                                                <div class="mb-2">
+                                                    <label class="form-label">部門代碼：</label>
+                                                    <input type="text" class="form-control form-control-sm"
+                                                        v-model="form.departmentCode"
+                                                        placeholder="請輸入部門代碼 (例: ADM-2024)">
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>科目：</strong>7201-會議室租用費</p>
+                                                        <p class="mb-1"><strong>中心：</strong>ADM-2024-Q1</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>窗口：</strong>分機 2156</p>
+                                                        <p class="mb-1"><strong>權限：</strong>部門主管以上</p>
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">超過 $5,000 需總經理簽核</small>
+                                            </div>
+
+                                            <div v-if="form.paymentMethod === 'cash'" class="alert alert-secondary">
+                                                <h6><i class="bx bx-money"></i> 現金付款資訊</h6>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>地點：</strong>總部1樓出納組</p>
+                                                        <p class="mb-1"><strong>時間：</strong>週一至週五 09:00-17:00</p>
+                                                        <p class="mb-1"><strong>聯絡：</strong>分機 1234</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>承辦：</strong>財務部出納組</p>
+                                                        <p class="mb-1"><strong>限額：</strong>單筆不超過 $10,000</p>
+                                                        <p class="mb-1"><strong>收據：</strong>現場開立正式收據</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <!-- 7. 費用總計 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-success">
+                                            <i class="bx bx-calculator text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list flex-grow-1">
+                                        <div class="total-section">
+                                            <h5>費用總計</h5>
+                                            <div class="row">
+                                                <div class="col-md-8">
+                                                    <p class="mb-1">會議室費用：<span>${{ roomCost }}</span></p>
+                                                    <p class="mb-1">設備費用：<span>${{ equipmentCost }}</span></p>
+                                                    <p class="mb-1">攤位費用：<span>${{ boothCost }}</span></p>
+                                                    <hr>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <h4>總金額：<span>${{ totalAmount }}</span></h4>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
+                            <button @@click="submitBooking"
+                                class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
+                                預約送出
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

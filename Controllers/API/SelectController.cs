@@ -28,11 +28,24 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.Role());
         }
 
-        [HttpPost("buildingfloors")]
+        [HttpGet("buildingfloors")]
         public IActionResult RoomBuildingFloors()
         {
             return Ok(service.SelectServices.RoomBuildingFloors().ToList());
         }
+
+        [HttpPost("roomsbyfloor")]
+        public IActionResult RoomsByFloor([FromBody] RoomByFloorQueryVM query)
+        {
+            return Ok(service.SelectServices.RoomsByFloor(query));
+        }
+
+        [HttpPost("roomslots")]
+        public IActionResult RoomSlots([FromBody] RoomSlotQueryVM query)
+        {
+            return Ok(service.SelectServices.RoomSlots(query));
+        }
+
 
         [HttpGet("user")]
         new public IActionResult User()

@@ -8,5 +8,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
     }
 }

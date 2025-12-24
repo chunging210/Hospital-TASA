@@ -26,46 +26,90 @@ namespace TASA.Services
             public IEnumerable<string>? Images { get; set; }
         }
 
-        public record BuildingFloorVM
+                public record BuildingVM
         {
             public string Building { get; set; } = string.Empty;
-            public List<string> Floors { get; set; } = new();
+            public List<FloorVM> Floors { get; set; } = new();
         }
 
-
-
-       public List<BuildingFloorVM> RoomBuildingFloors()
+public record BuildingFloorVM
 {
+    public string Building { get; set; } = string.Empty;
+    public List<string> Floors { get; set; } = new();
+}
+
+        public record FloorVM
+        {
+            public string Floor { get; set; } = string.Empty;
+            public List<RoomSelectVM> Rooms { get; set; } = new();
+        }
+
+        public record RoomSelectVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public PricingType PricingType { get; set; }
+        }
+
+        public record RoomByFloorQueryVM
+{
+    public string Building { get; init; } = string.Empty;
+    public string Floor { get; init; } = string.Empty;
+}
+
+public record RoomSlotQueryVM
+{
+    public Guid RoomId { get; init; }
+    public DateOnly  Date { get; init; }   // yyyy-MM-dd
+}
+
+public record RoomSlotVM
+{
+    public string Key { get; init; } = string.Empty;
+    public string? Name { get; init; }          // Period 用
+    public TimeOnly StartTime { get; init; }
+    public TimeOnly EndTime { get; init; }
+    public decimal Price { get; init; }
+    public bool Occupied { get; init; }
+}
+
+
+
+
+public List<BuildingFloorVM> RoomBuildingFloors()
+{
+    // 1️⃣ 先拉平資料（避免 MySQL OUTER APPLY）
     var data = db.SysRoom
         .AsNoTracking()
         .WhereNotDeleted()
         .Where(x =>
-            !string.IsNullOrEmpty(x.Building) &&
-            !string.IsNullOrEmpty(x.Floor)
+            x.Status != RoomStatus.Maintenance &&
+            x.Building != null &&
+            x.Floor != null
         )
         .Select(x => new
         {
             x.Building,
             x.Floor
         })
-        .Distinct()
-        .ToList(); // ⚠️ 關鍵：這裡先拉回來
+        .ToList();   // ⚠️ 關鍵：在這裡中斷 IQueryable
 
+    // 2️⃣ 在記憶體中 GroupBy（C#）
     return data
         .GroupBy(x => x.Building!)
-        .Select(g => new BuildingFloorVM
+        .Select(bg => new BuildingFloorVM
         {
-            Building = g.Key,
-            Floors = g
+            Building = bg.Key,
+            Floors = bg
                 .Select(x => x.Floor!)
                 .Distinct()
                 .OrderBy(f => f)
                 .ToList()
         })
-        .OrderBy(x => x.Building)
+        .OrderBy(b => b.Building)
         .ToList();
 }
-
+    
         public IQueryable<IdNameVM> Room()
         {
             return db.SysRoom
@@ -77,6 +121,150 @@ namespace TASA.Services
                     Ecs = x.Ecs.Where(x => x.IsEnabled && x.DeleteAt == null).Select(x => new IdNameVM() { Id = x.Id, Name = x.Name }).ToList()
                 });
         }
+
+
+public IEnumerable<RoomSlotVM> RoomSlots(RoomSlotQueryVM query)
+{
+    var room = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .FirstOrDefault(x => x.Id == query.RoomId);
+
+    if (room == null)
+        return [];
+
+    // 1️⃣ 可販售時段（全部使用 TimeSpan）
+    var baseSlots = room.PricingType == PricingType.Hourly
+        ? db.SysRoomPriceHourly
+            .AsNoTracking()
+            .Where(x =>
+                x.RoomId == query.RoomId &&
+                x.IsEnabled &&
+                x.DeleteAt == null
+            )
+            .Select(x => new
+            {
+                Name = (string?)null,
+                Start = x.StartTime, // TimeSpan
+                End = x.EndTime,     // TimeSpan
+                x.Price
+            })
+            .ToList()
+        : db.SysRoomPricePeriod
+            .AsNoTracking()
+            .Where(x =>
+                x.RoomId == query.RoomId &&
+                x.IsEnabled &&
+                x.DeleteAt == null
+            )
+            .Select(x => new
+            {
+                x.Name,
+                Start = x.StartTime, // TimeSpan
+                End = x.EndTime,     // TimeSpan
+                x.Price
+            })
+            .ToList();
+
+    // 2️⃣ 已佔用時段（TimeSpan）
+    var occupiedSlots = db.ConferenceRoomSlot
+        .AsNoTracking()
+        .Where(x =>
+            x.RoomId == query.RoomId &&
+            x.SlotDate == query.Date
+        )
+        .Select(x => new
+        {
+            x.StartTime, // TimeSpan
+            x.EndTime    // TimeSpan
+        })
+        .ToList();
+
+    // 3️⃣ 比較 TimeSpan（⚠️這裡完全不出現 TimeOnly）
+    var result = baseSlots
+        .OrderBy(x => x.Start)
+        .Select(s => new
+        {
+            s.Name,
+            s.Start,
+            s.End,
+            s.Price,
+            Occupied = occupiedSlots.Any(o =>
+{
+                var oStart = o.StartTime.ToTimeSpan();
+                var oEnd = o.EndTime.ToTimeSpan();
+
+                return !(oEnd <= s.Start || oStart >= s.End);
+            })
+        })
+        .ToList();
+
+    // 4️⃣ 最後一步：只在「回傳 VM」時轉成 TimeOnly
+    return result.Select(s => new RoomSlotVM
+    {
+        Key = $"{s.Start}-{s.End}",
+        Name = s.Name,
+        StartTime = TimeOnly.FromTimeSpan(s.Start),
+        EndTime = TimeOnly.FromTimeSpan(s.End),
+        Price = s.Price,
+        Occupied = s.Occupied
+    }).ToList();
+}
+
+        
+public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
+{
+    // ===== Debug 1：確認參數 =====
+    Console.WriteLine("=== RoomsByFloor Debug ===");
+    Console.WriteLine($"Building = '{query.Building}'");
+    Console.WriteLine($"Floor    = '{query.Floor}'");
+
+    // ===== Debug 2：先不加條件，看 DB 到底有什麼 =====
+    var all = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .Select(x => new
+        {
+            x.Id,
+            x.Name,
+            x.Building,
+            x.Floor,
+            x.Status
+        })
+        .ToList();
+
+    Console.WriteLine($"SysRoom 總筆數 = {all.Count}");
+
+    foreach (var r in all)
+    {
+        Console.WriteLine(
+            $"Room: {r.Name}, Building={r.Building}, Floor={r.Floor}, Status={r.Status}"
+        );
+    }
+
+    // ===== Debug 3：真正套條件 =====
+    var result = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .Where(x =>
+            x.Status != RoomStatus.Maintenance &&
+            x.Building == query.Building &&
+            x.Floor == query.Floor
+        )
+        .OrderBy(x => x.Name)
+        .Select(x => new RoomSelectVM
+        {
+            Id = x.Id,
+            Name = x.Name,
+            PricingType = x.PricingType
+        })
+        .ToList();
+
+    Console.WriteLine($"符合條件筆數 = {result.Count}");
+    Console.WriteLine("==========================");
+
+    return result;
+}
 
        public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
         {
