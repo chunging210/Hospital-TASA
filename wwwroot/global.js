@@ -39,6 +39,7 @@ const global = new function () {
             buildingfloors:GET,
             roomsbyfloor:POST,
             roomslots:POST,
+            equipmentbyroom:GET,
         }),
         calendar: apiMethods('/api/calendar', {
             list: GET,

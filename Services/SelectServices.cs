@@ -24,6 +24,9 @@ namespace TASA.Services
             public RoomStatus Status { get; set; }
 
             public IEnumerable<string>? Images { get; set; }
+
+            public int EquipmentCount { get; set; }
+
         }
 
                 public record BuildingVM
@@ -300,6 +303,7 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 Capacity = x.Capacity,
                 Area = x.Area,
                 Status = x.Status,
+                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
                 Images = x.Images
                     .Where(i => i.ImagePath != "")
                     .OrderBy(i => i.SortOrder)
@@ -413,6 +417,86 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
         {
             var data = db.SysDepartment.AsNoTracking().WhereNotDeleted().WhereEnabled().ToList();
             return GetChildren(data, null);
+        }
+
+        public record EquipmentListVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? ProductModel { get; set; }
+            public string? TypeName { get; set; }
+            public Guid? RoomId { get; set; }
+            public string? RoomName { get; set; }
+            public decimal RentalPrice { get; set; }
+            public bool IsEnabled { get; set; }
+        }
+
+        private static string GetEquipmentTypeName(byte type)
+        {
+            return type switch
+            {
+                1 => "影像設備",
+                2 => "聲音設備",
+                3 => "控制設備",
+                4 => "分配器",
+                8 => "公有設備",
+                9 => "攤位租借",
+                _ => "未知"
+            };
+        }
+
+
+        public IEnumerable<EquipmentListVM> EquipmentByRoom(Guid? roomId = null)
+        {
+            // ✅ 顯示 request 參數
+            Console.WriteLine($"[EquipmentByRoom] Request Start" + roomId);
+            Console.WriteLine($"  roomId: {(roomId.HasValue ? roomId.ToString() : "null (共用設備)")}");
+            
+            try
+            {
+                var result = db.Equipment
+                    .AsNoTracking()
+                    .WhereNotDeleted()
+                    .Where(x => x.IsEnabled)  // 只取啟用的
+                    .Where(x => x.Type == 8 || x.Type == 9)  // 只取設備(8) 和 攤位(9)
+                    .Where(x => 
+                        x.RoomId == null ||  // 共用設備
+                        (roomId.HasValue && x.RoomId == roomId)  // 該房間專屬
+                    )
+                    .Select(x => new EquipmentListVM
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        ProductModel = x.ProductModel,
+                        TypeName = GetEquipmentTypeName(x.Type),
+                        RoomId = x.RoomId,
+                        RoomName = x.Room != null ? x.Room.Name : null,
+                        RentalPrice = x.RentalPrice,
+                        IsEnabled = x.IsEnabled
+                    })
+                    .ToList();
+
+                // ✅ 顯示查詢結果統計
+                Console.WriteLine($"[EquipmentByRoom] Found {result.Count()} items:");
+                Console.WriteLine($"  - 設備: {result.Count(x => x.TypeName != "攤位租借")} 個");
+                Console.WriteLine($"  - 攤位: {result.Count(x => x.TypeName == "攤位租借")} 個");
+                
+                // ✅ 詳細列出每一項
+                foreach (var item in result)
+                {
+                    Console.WriteLine($"    [{item.TypeName}] {item.Name} (RoomId: {(item.RoomId.HasValue ? item.RoomId.ToString() : "null")}) - ${item.RentalPrice}");
+                }
+
+                Console.WriteLine($"[EquipmentByRoom] Request End\n");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EquipmentByRoom] ❌ Error: {ex.Message}");
+                Console.WriteLine($"  Stack: {ex.StackTrace}\n");
+                throw;
+            }
         }
 
         public IQueryable<IdNameVM> ConferenceCreateBy()

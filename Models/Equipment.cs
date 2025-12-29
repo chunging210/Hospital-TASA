@@ -79,8 +79,9 @@ public partial class Equipment
 
     public string? ProductModel { get; set; }
 
+    public Guid? RoomId { get; set; }
 
-    public decimal RentalPrice { get; set; } = 0;
+    public int  RentalPrice { get; set; } = 0;
     /// <summary>
     /// 刪除
     /// </summary>
@@ -90,4 +91,7 @@ public partial class Equipment
     [ForeignKey("Type")]
     [InverseProperty("Equipment")]
     public virtual EquipmentType TypeNavigation { get; set; }
+
+    [ForeignKey("RoomId")]
+    public virtual SysRoom? Room { get; set; }
 }

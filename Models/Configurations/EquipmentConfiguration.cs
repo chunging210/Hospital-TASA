@@ -29,16 +29,28 @@ namespace TASA.Models.Configurations
             entity.HasOne(d => d.TypeNavigation).WithMany(p => p.Equipment)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Equipment_ibfk_1");
+
             // ✅ 新增：產品型號
             entity.Property(e => e.ProductModel)
                 .HasMaxLength(100)
                 .HasComment("產品型號");
 
-            // ✅ 新增：租借金額
+            // ✅ 修正：租借金額改成 int（整數）
             entity.Property(e => e.RentalPrice)
-                .HasPrecision(10, 2)
                 .HasDefaultValue(0)
-                .HasComment("租借金額（僅限租借類設備）");
+                .HasComment("租借金額（整數，僅限租借類設備）");
+
+            // ✅ 新增：會議室 ID
+            entity.Property(e => e.RoomId)
+                .HasComment("會議室ID（可為空）");
+
+            // ✅ 新增：會議室關聯
+            entity.HasOne(d => d.Room)
+                .WithMany(p => p.Equipment)
+                .HasForeignKey(d => d.RoomId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("Equipment_ibfk_2");
+
             OnConfigurePartial(entity);
         }
 

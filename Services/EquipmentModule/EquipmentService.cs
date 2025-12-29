@@ -7,94 +7,208 @@ namespace TASA.Services.EquipmentModule
 {
     public class EquipmentService(TASAContext db, ServiceWrapper service) : IService
     {
+        // ========= 列表 ViewModel =========
         public record ListVM
         {
             public Guid Id { get; set; }
             public string? Name { get; set; } = string.Empty;
-            public string? Host { get; set; } = string.Empty;
-            public int? Port { get; set; }
+            public string? ProductModel { get; set; }
+            public string? TypeName { get; set; } = string.Empty;
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public string? RoomName { get; set; }
+            public int  RentalPrice { get; set; }
             public bool IsEnabled { get; set; }
             public DateTime CreateAt { get; set; }
         }
-        /// <summary>
-        /// 列表
-        /// </summary>
-        public IQueryable<ListVM> List(BaseQueryVM query)
+
+        public IQueryable<ListVM> List(EquipmentQueryVM query)
         {
-            Console.WriteLine("123");
-            return db.Equipment
+            Console.WriteLine("EquipmentService.List 被調用");
+            
+            var q = db.Equipment
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereIf(query.IsEnabled.HasValue, x => x.IsEnabled == query.IsEnabled)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .Mapping<ListVM>();
+                .WhereIf(!string.IsNullOrEmpty(query.Type), x => x.Type.ToString() == query.Type);
+
+            return q.Select(x => new ListVM
+            {
+                Id = x.Id,
+                Name = x.Name,
+                ProductModel = x.ProductModel,
+                TypeName = GetEquipmentTypeName(x.Type),
+                Building = x.Room != null ? x.Room.Building : null,
+                Floor = x.Room != null ? x.Room.Floor : null,
+                RoomName = x.Room != null ? x.Room.Name : null,
+                RentalPrice = x.RentalPrice,
+                IsEnabled = x.IsEnabled,
+                CreateAt = x.CreateAt
+            })
+            .AsQueryable();
         }
 
+        // ========= 詳細 ViewModel =========
         public record DetailVM
         {
             public Guid? Id { get; set; }
             public string Name { get; set; } = string.Empty;
-            public byte Type { get; set; }
+            public string? ProductModel { get; set; }
+            public int Type { get; set; } = 3;
+            public Guid? RoomId { get; set; }
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public int  RentalPrice { get; set; }
             public string? Host { get; set; }
             public int? Port { get; set; }
             public string? Account { get; set; }
             public string? Password { get; set; }
-            public bool IsEnabled { get; set; }
+            public bool IsEnabled { get; set; } = true;
         }
+
         public DetailVM? Detail(Guid id)
         {
             return db.Equipment
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Mapping<DetailVM>()
-                .FirstOrDefault(x => x.Id == id);
+                .Where(x => x.Id == id)
+                .Select(x => new DetailVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    ProductModel = x.ProductModel,
+                    Type = x.Type,
+                    RoomId = x.RoomId,
+                    Building = x.Room != null ? x.Room.Building : null,
+                    Floor = x.Room != null ? x.Room.Floor : null,
+                    RentalPrice = x.RentalPrice,
+                    Host = x.Host,
+                    Port = x.Port,
+                    Account = x.Account,
+                    Password = x.Password,
+                    IsEnabled = x.IsEnabled
+                })
+                .FirstOrDefault();
         }
 
+        /// <summary>
+        /// 統一驗證方法 - 新增/編輯都使用
+        /// </summary>
+        private void ValidateEquipment(DetailVM vm)
+        {
+            // ✅ 1️⃣ 驗證：RoomId 存在性（若有提供）
+            if (vm.RoomId.HasValue)
+            {
+                var room = db.SysRoom.FirstOrDefault(x => x.Id == vm.RoomId);
+                if (room == null)
+                    throw new HttpException("選擇的會議室不存在");
+            }
+
+            // ✅ 2️⃣ 驗證：公有設備(8)/攤位租借(9) 必須有租借金額
+            if ((vm.Type == 8 || vm.Type == 9) && vm.RentalPrice <= 0)
+            {
+                throw new HttpException("公有設備和攤位租借必須設定租借金額");
+            }
+
+            // ✅ 3️⃣ 檢核重複（根據設備類型檢核不同欄位）
+            if (vm.Type == 9)
+            {
+                // 攤位租借(9)：檢核名稱重複（排除自己）
+                if (db.Equipment.WhereNotDeleted().Any(x => x.Name == vm.Name && x.Id != vm.Id))
+                {
+                    throw new HttpException("此攤位名稱已存在");
+                }
+            }
+            else if ((vm.Type >= 1 && vm.Type <= 4) || vm.Type == 8)
+            {
+                // 其他類型(1,2,3,4,8)：檢核型號
+                if (string.IsNullOrWhiteSpace(vm.ProductModel))
+                {
+                    throw new HttpException("產品型號為必填");
+                }
+
+                if (db.Equipment.WhereNotDeleted().Any(x => x.ProductModel == vm.ProductModel && x.Id != vm.Id))
+                {
+                    throw new HttpException("此產品型號已存在");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 新增設備
+        /// </summary>
         public void Insert(DetailVM vm)
         {
             var userid = service.UserClaimsService.Me()?.Id;
-            if (db.Equipment.WhereNotDeleted().Any(x => x.Name == vm.Name))
-            {
-                throw new HttpException("設備已存在");
-            }
+            if (userid == null)
+                throw new HttpException("無法取得使用者資訊");
+
+            // ✅ 統一驗證
+            ValidateEquipment(vm);
 
             var newEquipment = new Equipment()
             {
                 Id = Guid.NewGuid(),
                 Name = vm.Name,
-                Type = 3,
+                ProductModel = vm.ProductModel,
+                Type = (byte)vm.Type,
+                RoomId = vm.RoomId,
+                RentalPrice = vm.RentalPrice,
                 Host = vm.Host,
                 Port = vm.Port,
                 Account = vm.Account,
                 Password = vm.Password,
                 IsEnabled = vm.IsEnabled,
                 CreateAt = DateTime.Now,
-                CreateBy = userid!.Value
+                CreateBy = userid.Value
             };
+
             db.Equipment.Add(newEquipment);
             db.SaveChanges();
-            _ = service.LogServices.LogAsync("設備新增", $"{newEquipment.Name}({newEquipment.Id}) IsEnabled:{newEquipment.IsEnabled}");
+
+            var roomInfo = vm.RoomId.HasValue ? $"(會議室: {vm.RoomId})" : "(未指派會議室)";
+            _ = service.LogServices.LogAsync("設備新增", $"{newEquipment.Name}({newEquipment.Id}) {roomInfo} IsEnabled:{newEquipment.IsEnabled}");
         }
 
+        /// <summary>
+        /// 編輯設備
+        /// </summary>
         public void Update(DetailVM vm)
         {
+            if (!vm.Id.HasValue)
+                throw new HttpException("設備ID不能為空");
+
             var data = db.Equipment
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);
-            if (data != null)
-            {
-                data.Name = vm.Name;
-                data.Type = vm.Type;
-                data.Host = vm.Host;
-                data.Port = vm.Port;
-                data.Account = vm.Account;
-                data.Password = vm.Password;
-                data.IsEnabled = vm.IsEnabled;
-                db.SaveChanges();
-                _ = service.LogServices.LogAsync("設備編輯", $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled}");
-            }
+
+            if (data == null)
+                throw new HttpException("設備不存在");
+
+            // ✅ 統一驗證
+            ValidateEquipment(vm);
+
+            data.Name = vm.Name;
+            data.ProductModel = vm.ProductModel;
+            data.Type = (byte)vm.Type;
+            data.RoomId = vm.RoomId;
+            data.RentalPrice = vm.RentalPrice;
+            data.Host = vm.Host;
+            data.Port = vm.Port;
+            data.Account = vm.Account;
+            data.Password = vm.Password;
+            data.IsEnabled = vm.IsEnabled;
+
+            db.SaveChanges();
+
+            var roomInfo = vm.RoomId.HasValue ? $"(會議室: {vm.RoomId})" : "(未指派會議室)";
+            _ = service.LogServices.LogAsync("設備編輯", $"{data.Name}({data.Id}) {roomInfo} IsEnabled:{data.IsEnabled}");
         }
 
+        /// <summary>
+        /// 刪除設備
+        /// </summary>
         public void Delete(Guid id)
         {
             var data = db.Equipment
@@ -107,6 +221,48 @@ namespace TASA.Services.EquipmentModule
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("設備刪除", $"{data.Name}({data.Id})");
             }
+        }
+
+        /// <summary>
+        /// 根據會議室取得設備列表
+        /// </summary>
+        public IQueryable<ListVM> GetEquipmentsByRoom(Guid roomId)
+        {
+            return db.Equipment
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => x.RoomId == roomId)
+                .Select(x => new ListVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    ProductModel = x.ProductModel,
+                    TypeName = GetEquipmentTypeName(x.Type),
+                    Building = x.Room != null ? x.Room.Building : null,
+                    Floor = x.Room != null ? x.Room.Floor : null,
+                    RoomName = x.Room != null ? x.Room.Name : null,
+                    RentalPrice = x.RentalPrice,
+                    IsEnabled = x.IsEnabled,
+                    CreateAt = x.CreateAt
+                })
+                .AsQueryable();
+        }
+
+        /// <summary>
+        /// 將 Type (byte) 轉換為設備類型名稱
+        /// </summary>
+        private static string GetEquipmentTypeName(byte type)
+        {
+            return type switch
+            {
+                1 => "影像設備",
+                2 => "聲音設備",
+                3 => "控制設備",
+                4 => "分配器",
+                8 => "公有設備",
+                9 => "攤位租借",
+                _ => "未知"
+            };
         }
     }
 }

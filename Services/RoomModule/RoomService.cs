@@ -24,6 +24,8 @@ namespace TASA.Services.RoomModule
 
             public List<string> Images { get; set; } = new();
             public DateTime CreateAt { get; set; }
+                public int EquipmentCount { get; set; }
+
         }
 
         public IQueryable<ListVM> List(BaseQueryVM query)
@@ -44,6 +46,7 @@ namespace TASA.Services.RoomModule
                     Status = x.Status,
                     IsEnabled = x.IsEnabled,
                     CreateAt = x.CreateAt,
+                    EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
                     Images = x.Images
                         .Where(img => !string.IsNullOrEmpty(img.ImagePath))
                         .OrderBy(img => img.SortOrder)

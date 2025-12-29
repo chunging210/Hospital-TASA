@@ -22,6 +22,13 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
+        [HttpGet("equipmentbyroom")]
+        public IActionResult EquipmentByRoom(Guid? roomId = null)
+        {
+            Console.WriteLine($"[EquipmentByRoom] roomId: {(roomId.HasValue ? roomId.ToString() : "null (共用設備)")}");
+            return Ok(service.SelectServices.EquipmentByRoom(roomId));
+        }
+
         [HttpGet("role")]
         public IActionResult Role()
         {

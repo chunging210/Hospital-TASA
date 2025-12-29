@@ -116,4 +116,7 @@ public partial class SysRoom
 
     public virtual ICollection<SysRoomImage> Images { get; set; } = new List<SysRoomImage>();
 
+    public virtual ICollection<Equipment> Equipment { get; set; } = new List<Equipment>();
+
+
 }

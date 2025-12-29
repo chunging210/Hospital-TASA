@@ -115,7 +115,7 @@ namespace TASA.Controllers.API
         /* --- */
 
         [HttpGet("equipmentlist")]
-        public IActionResult EquipmentList([FromQuery] BaseQueryVM query)
+        public IActionResult EquipmentList([FromQuery] EquipmentQueryVM  query)
         {
             return Ok(service.EquipmentService.List(query));
         }

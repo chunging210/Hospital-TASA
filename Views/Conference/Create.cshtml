@@ -197,7 +197,10 @@
       occupied: slot.Occupied
     }" @@click="toggleTimeSlot(slot)">
                                                                 <div class="slot-time">
-                                                                    {{ slot.displayLabel }}
+                                                                    <strong>{{ slot.Name }}</strong>
+                                                                    <div class="text-muted small">
+                                                                        {{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}
+                                                                    </div>
                                                                 </div>
 
                                                                 <div class="slot-price">
@@ -229,8 +232,8 @@
                                         <div class="equipment-grid">
                                             <div v-for="equipment in availableEquipment" :key="equipment.id"
                                                 class="equipment-item"
-                                                :class="{ selected: form.selectedEquipment.includes(equipment.price) }"
-                                                @@click="toggleEquipment(equipment.price)">
+                                                :class="{ selected: form.selectedEquipment.includes(equipment.id) }"
+                                                @@click="toggleEquipment(equipment.id)">
                                                 <i :class="['bx', equipment.icon, 'text-primary']"
                                                     style="font-size: 24px;"></i><br>
                                                 <strong>{{ equipment.name }}</strong><br>
@@ -253,8 +256,8 @@
                                         <h6>展示攤位加租</h6>
                                         <div class="equipment-grid">
                                             <div v-for="booth in availableBooths" :key="booth.id" class="equipment-item"
-                                                :class="{ selected: form.selectedBooths.includes(booth.price) }"
-                                                @@click="toggleBooth(booth.price)">
+                                                :class="{ selected: form.selectedBooths.includes(booth.id) }"
+                                                @@click="toggleBooth(booth.id)">
                                                 <i :class="['bx', booth.icon, 'text-primary']"
                                                     style="font-size: 24px;"></i><br>
                                                 <strong>{{ booth.name }}</strong><br>
