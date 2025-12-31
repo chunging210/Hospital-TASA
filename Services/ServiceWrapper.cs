@@ -21,6 +21,7 @@ namespace TASA.Services
         Lazy<SelectServices> selectServices,
 
         Lazy<LoginServices> loginServices,
+        Lazy<RegisterServices> registerServices,
         Lazy<PasswordServices> passwordServices,
         Lazy<PasswordMail> passwordMail,
         Lazy<UserClaimsService> userClaimsService,
@@ -56,6 +57,7 @@ namespace TASA.Services
 
         public LoginServices LoginServices => loginServices.Value;
         public PasswordServices PasswordServices => passwordServices.Value;
+        public RegisterServices RegisterServices => registerServices.Value;
         public PasswordMail PasswordMail => passwordMail.Value;
         public UserClaimsService UserClaimsService => userClaimsService.Value;
 

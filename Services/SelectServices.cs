@@ -35,11 +35,22 @@ namespace TASA.Services
             public List<FloorVM> Floors { get; set; } = new();
         }
 
-public record BuildingFloorVM
-{
-    public string Building { get; set; } = string.Empty;
-    public List<string> Floors { get; set; } = new();
-}
+        public record BuildingFloorVM
+        {
+            public string Building { get; set; } = string.Empty;
+            public List<string> Floors { get; set; } = new();
+        }
+
+        public record EquipmentByRoomsQueryVM
+        {
+            public Guid[]? RoomIds { get; init; }
+        }
+
+        public record EquipmentGroupVM
+        {
+            public List<EquipmentListVM> Shared { get; init; } = new();
+            public Dictionary<Guid, List<EquipmentListVM>> ByRoom { get; init; } = new();
+        }
 
         public record FloorVM
         {
@@ -445,7 +456,66 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
             };
         }
 
+public EquipmentGroupVM EquipmentByRooms(EquipmentByRoomsQueryVM query)
+{
+    Console.WriteLine("=== [EquipmentByRooms] Start ===");
+    
+    var sharedEquipment = db.Equipment
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .Where(x => x.IsEnabled)
+        .Where(x => x.Type == 8 || x.Type == 9)
+        .Where(x => x.RoomId == null)
+        .Select(x => new EquipmentListVM
+        {
+            Id = x.Id,
+            Name = x.Name,
+            ProductModel = x.ProductModel,
+            TypeName = GetEquipmentTypeName(x.Type),
+            RoomId = x.RoomId,
+            RoomName = x.Room != null ? x.Room.Name : null,
+            RentalPrice = x.RentalPrice,
+            IsEnabled = x.IsEnabled
+        })
+        .ToList();
 
+    var byRoomEquipment = new Dictionary<Guid, List<EquipmentListVM>>();
+
+    if (query.RoomIds != null && query.RoomIds.Length > 0)
+    {
+        foreach (var roomId in query.RoomIds)
+        {
+            var roomSpecificEquipment = db.Equipment
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => x.IsEnabled)
+                .Where(x => x.Type == 8 || x.Type == 9)
+                .Where(x => x.RoomId == roomId)
+                .Select(x => new EquipmentListVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    ProductModel = x.ProductModel,
+                    TypeName = GetEquipmentTypeName(x.Type),
+                    RoomId = x.RoomId,
+                    RoomName = x.Room != null ? x.Room.Name : null,
+                    RentalPrice = x.RentalPrice,
+                    IsEnabled = x.IsEnabled
+                })
+                .ToList();
+
+            byRoomEquipment[roomId] = roomSpecificEquipment;
+        }
+    }
+
+    var result = new EquipmentGroupVM
+    {
+        Shared = sharedEquipment,
+        ByRoom = byRoomEquipment
+    };
+
+    return result;
+}
         public IEnumerable<EquipmentListVM> EquipmentByRoom(Guid? roomId = null)
         {
             // ✅ 顯示 request 參數

@@ -6,28 +6,29 @@ using static TASA.Services.SelectServices;
 
 namespace TASA.Controllers.API
 {
-    [Authorize, ApiController, Route("api/[controller]")]
+    [ApiController, Route("api/[controller]")]
     public class SelectController(ServiceWrapper service) : ControllerBase
     {
-        [HttpGet("room")]
+        [Authorize, HttpGet("room")]
         public IActionResult Room()
         {
             return Ok(service.SelectServices.Room());
         }
         
-        [HttpGet("roomlist")]
+        [Authorize, HttpGet("roomlist")]
         public IActionResult RoomList([FromQuery] SysRoomQueryVM query)
         {            
             
             return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
-        [HttpGet("equipmentbyroom")]
-        public IActionResult EquipmentByRoom(Guid? roomId = null)
+        [Authorize, HttpPost("equipmentbyroom")]
+        public IActionResult EquipmentByRoom([FromBody] SelectServices.EquipmentByRoomsQueryVM query)
         {
-            Console.WriteLine($"[EquipmentByRoom] roomId: {(roomId.HasValue ? roomId.ToString() : "null (共用設備)")}");
-            return Ok(service.SelectServices.EquipmentByRoom(roomId));
+            Console.WriteLine($"[EquipmentByRoom] roomIds: {(query.RoomIds != null ? string.Join(", ", query.RoomIds) : "null")}");
+            return Ok(service.SelectServices.EquipmentByRooms(query));
         }
+
 
         [HttpGet("role")]
         public IActionResult Role()
@@ -54,13 +55,13 @@ namespace TASA.Controllers.API
         }
 
 
-        [HttpGet("user")]
+        [Authorize, HttpGet("user")]
         new public IActionResult User()
         {
             return Ok(service.SelectServices.User());
         }
 
-        [HttpPost("userschedule")]
+        [Authorize, HttpPost("userschedule")]
         public IActionResult UserSchedule(UserScheduleVM.QueryVM query)
         {
             return Ok(service.SelectServices.UserSchedule(query).ToPage(Request, Response));
@@ -78,7 +79,7 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.DepartmentTree());
         }
 
-        [HttpGet("conferencecreateby")]
+        [Authorize, HttpGet("conferencecreateby")]
         public IActionResult ConferenceCreateBy()
         {
             return Ok(service.SelectServices.ConferenceCreateBy());

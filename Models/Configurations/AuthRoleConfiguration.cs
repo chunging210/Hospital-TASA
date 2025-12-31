@@ -22,25 +22,25 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Name).HasComment("角色名稱");
 
             entity.HasMany(d => d.SysMenu).WithMany(p => p.AuthRole)
-                .UsingEntity<Dictionary<string, object>>(
-                    "AuthRoleMenu",
-                    r => r.HasOne<SysMenu>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("SysMenuId")
-                        .HasConstraintName("AuthRoleMenu_ibfk_2"),
-                    l => l.HasOne<AuthRole>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("AuthRoleId")
-                        .HasConstraintName("AuthRoleMenu_ibfk_1"),
-                    j =>
-                    {
-                        j.HasKey("AuthRoleId", "SysMenuId")
-                            .HasName("PRIMARY")
-                            .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-                        j.HasIndex(new[] { "SysMenuId" }, "SysMenuId");
-                        j.IndexerProperty<Guid>("AuthRoleId").HasComment("角色ID");
-                        j.IndexerProperty<Guid>("SysMenuId").HasComment("選單ID");
-                    });
+    .UsingEntity<Dictionary<string, object>>(
+        "AuthRoleMenu",
+        r => r.HasOne<SysMenu>().WithMany()
+            .HasPrincipalKey("Id")  // ✅ 保持 Id（Guid）
+            .HasForeignKey("SysMenuId")
+            .HasConstraintName("AuthRoleMenu_ibfk_2"),
+        l => l.HasOne<AuthRole>().WithMany()
+            .HasPrincipalKey("Id")  // ✅ 保持 Id（Guid）
+            .HasForeignKey("AuthRoleId")
+            .HasConstraintName("AuthRoleMenu_ibfk_1"),
+        j =>
+        {
+            j.HasKey("AuthRoleId", "SysMenuId")
+                .HasName("PRIMARY")
+                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
+            j.HasIndex(new[] { "SysMenuId" }, "SysMenuId");
+            j.IndexerProperty<Guid>("AuthRoleId").HasComment("角色ID");     // ✅ Guid
+            j.IndexerProperty<Guid>("SysMenuId").HasComment("選單ID");     // ✅ Guid
+        });
 
             OnConfigurePartial(entity);
         }

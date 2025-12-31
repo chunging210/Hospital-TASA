@@ -16,6 +16,7 @@ public partial class AuthUser
     /// 流水號
     /// </summary>
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column(TypeName = "int(10) unsigned")]
     public uint No { get; set; }
 

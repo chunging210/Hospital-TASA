@@ -28,7 +28,7 @@
                                     <div class="mt-4 pt-2">
                                         <div class="form-floating form-floating-custom mb-4">
                                             <input v-model="vm.Account" type="text" class="form-control" placeholder="Account">
-                                            <label>使用者名稱</label>
+                                            <label>電子信箱</label>
                                             <div class="form-floating-icon">
                                                 <span class="material-icons">account_circle</span>
                                             </div>
@@ -44,8 +44,20 @@
                                                 <span class="material-icons">password</span>
                                             </div>
                                         </div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <button @@click="auth" class="btn-branding w-100 waves-effect waves-light text-white">登入</button>
+                                            </div>
+                                            <div class="col-6">
+                                                <button @@click="showRegisterModal" class="btn-branding w-100 waves-effect waves-light text-white" data-bs-toggle="modal" data-bs-target="#guestRegisterModal">註冊</button>
+                                            </div>
+                                        </div>
+
                                         <div class="mb-3">
-                                            <button @@click="auth" class="btn-branding w-100 waves-effect waves-light text-white">登入</button>
+                                            <a href="/conference/list" class="btn btn-outline-primary w-100 waves-effect" style="border-radius: 6px; padding: 10px 20px; font-weight: 600;">
+                                                <span class="material-icons" style="vertical-align: middle; font-size: 18px; margin-right: 4px;">visibility</span>
+                                                瀏覽會議室列表
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -73,4 +85,101 @@
         <!-- end row -->
     </div>
     <!-- end container fluid -->
+
+    <div class="modal fade" id="guestRegisterModal" tabindex="-1" aria-labelledby="guestRegisterLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="guestRegisterLabel">訪客註冊</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+            </div>
+
+            <form @@submit.prevent="registerGuest">
+                
+                <div class="modal-body">
+                    <!-- 使用者名稱 -->
+                    <div class="form-floating form-floating-custom mb-3">
+                        <input type="text" class="form-control" id="guestName" 
+                            placeholder="使用者名稱" v-model="guestForm.name" required>
+                        <label for="guestName">使用者名稱</label>
+                        <div class="form-floating-icon">
+                            <span class="material-icons">person</span>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-floating form-floating-custom mb-3">
+                        <input type="email" class="form-control" id="guestEmail" 
+                            placeholder="name@example.com" v-model="guestForm.email" required>
+                        <label for="guestEmail">Email</label>
+                        <div class="form-floating-icon">
+                            <span class="material-icons">email</span>
+                        </div>
+                    </div>
+
+                    <!-- 密碼 -->
+                    <div class="form-floating form-floating-custom mb-3">
+                        <input type="password" class="form-control" id="guestPassword" 
+                            placeholder="密碼" v-model="guestForm.password" required>
+                        <label for="guestPassword">密碼</label>
+                        <div class="form-floating-icon">
+                            <span class="material-icons">lock</span>
+                        </div>
+                    </div>
+
+                    <!-- 確認密碼 -->
+                    <div class="form-floating form-floating-custom mb-3">
+                        <input type="password" class="form-control" id="guestPassword2" 
+                            placeholder="再次輸入密碼" v-model="guestForm.confirmPassword" required>
+                        <label for="guestPassword2">確認密碼</label>
+                        <div class="form-floating-icon">
+                            <span class="material-icons">lock</span>
+                        </div>
+                    </div>
+
+                    <!-- 選擇分院 -->
+                    <div class="form-floating mb-2">
+                    <select class="form-select" v-model="guestForm.departmentId">
+                        <option :value="null">未選擇（一般會員）</option>
+                        <option
+                            v-for="d in departments"
+                            :key="d.Id"
+                            :value="d.Id">
+                            {{ d.Name }}
+                        </option>
+                    </select>
+                    <label>所屬分院（非必填）</label>
+                </div>
+
+                    <div class="form-text text-muted mb-3">
+                        <span class="material-icons" style="font-size: 16px; vertical-align: middle;">info</span>
+                        未選擇分院將註冊為一般會員；<br>
+                        若您為院內職員，請選擇所屬分院，帳號將由管理員審核後調整權限。
+                    </div>
+
+                    @* <!-- 服務條款同意 -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="agreeTerms" 
+                            v-model="guestForm.agreeTerms" required>
+                        <label class="form-check-label" for="agreeTerms">
+                            我已閱讀並同意 <a href="#" target="_blank">服務條款</a> 與 <a href="#" target="_blank">隱私權政策</a>
+                        </label>
+                    </div> *@
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-soft-secondary" data-bs-dismiss="modal">取消</button>
+                    <button
+                            type="button"
+                            class="btn btn-branding text-white"
+                            @@click="registerGuest">
+                            註冊
+                        </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+</div>
+

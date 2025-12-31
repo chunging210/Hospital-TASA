@@ -11,6 +11,7 @@ const global = new function () {
             login: POST,
             logout: POST,
             me: GET,
+            register: POST,  
         }),
         password: apiMethods('/api/password', {
             forgetmail: POST,
@@ -39,7 +40,7 @@ const global = new function () {
             buildingfloors:GET,
             roomsbyfloor:POST,
             roomslots:POST,
-            equipmentbyroom:GET,
+            equipmentbyroom:POST,
         }),
         calendar: apiMethods('/api/calendar', {
             list: GET,

@@ -12,8 +12,10 @@ namespace TASA.Models.Configurations
         public void Configure(EntityTypeBuilder<AuthUser> entity)
         {
             entity.HasKey(e => e.No).HasName("PRIMARY");
-
-            entity.Property(e => e.No).HasComment("流水號");
+            entity.HasAlternateKey(e => e.Id);
+            entity.Property(e => e.No)
+                .ValueGeneratedOnAdd()     
+                .HasComment("流水號");
             entity.Property(e => e.Account).HasComment("帳號");
             entity.Property(e => e.Card).HasComment("卡號");
             entity.Property(e => e.CreateAt).HasComment("建立時間	");
@@ -34,25 +36,25 @@ namespace TASA.Models.Configurations
                 .HasConstraintName("AuthUser_ibfk_1");
 
             entity.HasMany(d => d.AuthRole).WithMany(p => p.AuthUser)
-                .UsingEntity<Dictionary<string, object>>(
-                    "AuthUserRole",
-                    r => r.HasOne<AuthRole>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("AuthRoleId")
-                        .HasConstraintName("AuthUserRole_ibfk_2"),
-                    l => l.HasOne<AuthUser>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("AuthUserId")
-                        .HasConstraintName("AuthUserRole_ibfk_1"),
-                    j =>
-                    {
-                        j.HasKey("AuthUserId", "AuthRoleId")
-                            .HasName("PRIMARY")
-                            .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-                        j.HasIndex(new[] { "AuthRoleId" }, "AuthRoleId");
-                        j.IndexerProperty<Guid>("AuthUserId").HasComment("使用者ID	");
-                        j.IndexerProperty<Guid>("AuthRoleId").HasComment("角色ID");
-                    });
+    .UsingEntity<Dictionary<string, object>>(
+        "AuthUserRole",
+        r => r.HasOne<AuthRole>().WithMany()
+            .HasPrincipalKey("Id")  // ✅ 保持 Id（Guid）
+            .HasForeignKey("AuthRoleId")
+            .HasConstraintName("AuthUserRole_ibfk_2"),
+        l => l.HasOne<AuthUser>().WithMany()
+            .HasPrincipalKey("Id")  // ✅ 改成 Id（Guid），不是 No
+            .HasForeignKey("AuthUserId")
+            .HasConstraintName("AuthUserRole_ibfk_1"),
+        j =>
+        {
+            j.HasKey("AuthUserId", "AuthRoleId")
+                .HasName("PRIMARY")
+                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
+            j.HasIndex(new[] { "AuthRoleId" }, "AuthRoleId");
+            j.IndexerProperty<Guid>("AuthUserId").HasComment("使用者ID");   // ✅ Guid
+            j.IndexerProperty<Guid>("AuthRoleId").HasComment("角色ID");     // ✅ Guid
+        });
 
             OnConfigurePartial(entity);
         }

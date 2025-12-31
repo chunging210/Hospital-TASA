@@ -18,6 +18,7 @@ namespace TASA.Services.AuthUserModule
             public DateTime CreateAt { get; set; }
             public bool IsNormal { get; set; }
             public bool IsAdmin { get; set; }
+            public bool IsStaff { get; set; }
         }
         public IEnumerable<ListVM> List(BaseQueryVM query)
         {
@@ -30,7 +31,8 @@ namespace TASA.Services.AuthUserModule
                 {
                     DepartmentName = x.Department.Name,
                     IsNormal = x.AuthRole.Any(r => r.Code == AuthRoleServices.Normal),
-                    IsAdmin = x.AuthRole.Any(r => r.Code == AuthRoleServices.Admin)
+                    IsAdmin = x.AuthRole.Any(r => r.Code == AuthRoleServices.Admin),
+                    IsStaff = x.AuthRole.Any(r => r.Code == AuthRoleServices.Staff) 
                 });
         }
 

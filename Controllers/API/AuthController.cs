@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TASA.Services;
 using static TASA.Services.AuthModule.LoginServices;
+using static TASA.Services.AuthModule.RegisterServices;
 
 namespace TASA.Controllers.API
 {
@@ -33,6 +34,13 @@ namespace TASA.Controllers.API
         public IActionResult Me()
         {
             return Ok(service.UserClaimsService.Me());
+        }
+
+        [HttpPost("register")]
+        public IActionResult Register(RegisterVM vm)
+        {
+            service.RegisterServices.Register(vm);
+            return Ok();
         }
     }
 }

@@ -13,7 +13,7 @@ class VM {
 
 const tabs = new function () {
     this.select = ref('IsAdmin');
-    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '一般使用者', value: 'IsNormal' }];
+    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '一般使用者', value: 'IsNormal' }, { text: '一般職員', value: 'IsStaff' }];
     this.click = (value) => {
         this.select.value = value;
     }
@@ -89,15 +89,23 @@ window.$config = {
         this.role = role;
         this.authuser = authuser;
         this.authuseroffcanvas = ref(null);
-
+        this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
         this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
 
         onMounted(() => {
+            console.log('🚀 onMounted 開始');
             department.gettree();
             role.getList();
             authuser.getList();
             authuser.offcanvas = this.authuseroffcanvas.value;
-            //window.addEventListener('ctrls', () => authuser.save());
+
+            // ✅ 延遲 log，確認資料已載入
+            setTimeout(() => {
+                console.log('⏱️ 1 秒後 - authuser.list 筆數:', authuser.list.length);
+                console.log('⏱️ 1 秒後 - 第一筆資料:', authuser.list[0]);
+                console.log('⏱️ 1 秒後 - IsStaff 欄位:', authuser.list[0]?.IsStaff);
+                console.log('⏱️ 1 秒後 - 一般職員總數:', authuser.list.filter(x => x.IsStaff).length);
+            }, 1000);
         });
     }
 }

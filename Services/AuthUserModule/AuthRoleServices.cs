@@ -9,6 +9,7 @@ namespace TASA.Services.AuthUserModule
     {
         public const string Normal = "NORMAL";
         public const string Admin = "ADMINN";
+        public const string Staff = "STAFF";
 
         public record ListVM
         {
