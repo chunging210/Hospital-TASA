@@ -4,6 +4,7 @@ using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using System.Net;
+using Newtonsoft.Json;
 
 namespace TASA.Services.AuthModule
 {
@@ -38,9 +39,11 @@ namespace TASA.Services.AuthModule
          * =============================== */
         public void Register(RegisterVM vm)
         {
-            // 0️⃣ 密碼確認（⚠️ 後端一定要做）
+            // 0️⃣ 密碼確認
             if (vm.Password != vm.ConfirmPassword)
             {
+                var failureInfo = new { UserName = vm.Email, IsSuccess = false, FailureReason = "密碼不符" };
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("兩次輸入的密碼不一致")
                 {
                     StatusCode = System.Net.HttpStatusCode.BadRequest
@@ -55,11 +58,8 @@ namespace TASA.Services.AuthModule
 
             if (exists)
             {
-                _ = service.LogServices.LogAsync(
-                    "註冊失敗",
-                    $"Email 已存在：{vm.Email}"
-                );
-
+                var failureInfo = new { UserName = vm.Email, IsSuccess = false, FailureReason = "Email已存在" };
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("此 Email 已被註冊")
                 {
                     StatusCode = System.Net.HttpStatusCode.BadRequest
@@ -98,19 +98,16 @@ namespace TASA.Services.AuthModule
             // 4️⃣ 密碼加密
             var hashVm = HashString.Hash(vm.Password);
 
-            // 5️⃣ 建立使用者（一律一般會員）
+            // 5️⃣ 建立使用者
             var user = new AuthUser
             {
                 Id = Guid.NewGuid(),
                 Account = vm.Email,
                 Email = vm.Email,
                 Name = vm.Name,
-
                 PasswordHash = hashVm.Hash,
                 PasswordSalt = hashVm.Salt,
-
                 DepartmentId = department?.Id,
-
                 IsEnabled = true,
                 CreateAt = DateTime.Now,
             };
@@ -121,10 +118,9 @@ namespace TASA.Services.AuthModule
             db.SaveChanges();
 
             // 6️⃣ 紀錄 Log
-            _ = service.LogServices.LogAsync(
-                "註冊成功",
-                $"新使用者註冊：{user.Account}"
-            );
+            var successInfo = new { UserName = user.Account, Email = user.Email, IsSuccess = true };
+            _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo));
         }
+
     }
 }

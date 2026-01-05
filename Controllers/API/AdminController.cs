@@ -188,5 +188,19 @@ namespace TASA.Controllers.API
             service.EcsService.Send(id, isTest: true);
             return Ok();
         }
+
+        [HttpPost("loginloglist")]
+        public IActionResult LoginLogList([FromBody] LoginLogServices.QueryVM query)
+        {
+            try
+            {
+                var result = service.LoginLogServices.List(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

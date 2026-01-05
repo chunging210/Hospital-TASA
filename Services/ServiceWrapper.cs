@@ -10,6 +10,7 @@ using TASA.Services.RoomModule;
 using TASA.Services.SeatSettingModule;
 using TASA.Services.VisitorModule;
 using TASA.Services.WebexModule;
+using TASA.Services;
 
 namespace TASA.Services
 {
@@ -21,6 +22,7 @@ namespace TASA.Services
         Lazy<SelectServices> selectServices,
 
         Lazy<LoginServices> loginServices,
+        Lazy<LoginLogServices> loginLogServices,
         Lazy<RegisterServices> registerServices,
         Lazy<PasswordServices> passwordServices,
         Lazy<PasswordMail> passwordMail,
@@ -56,6 +58,7 @@ namespace TASA.Services
         public SelectServices SelectServices => selectServices.Value;
 
         public LoginServices LoginServices => loginServices.Value;
+        public LoginLogServices LoginLogServices => loginLogServices.Value;
         public PasswordServices PasswordServices => passwordServices.Value;
         public RegisterServices RegisterServices => registerServices.Value;
         public PasswordMail PasswordMail => passwordMail.Value;

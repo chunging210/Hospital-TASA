@@ -1,0 +1,74 @@
+﻿<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">history</span>登入日誌
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="input-group">
+                            <div class="form-floating">
+                                <input v-model="loginlog.query.keyword" @@blur="loginlog.getList" type="text" class="form-control" placeholder="搜尋">
+                                <label>搜尋</label>
+                            </div>
+                            <button @@click="loginlog.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="input-group">
+                            <input v-model="loginlog.query.startDate" type="date" class="form-control" placeholder="開始日期">
+                            <span class="input-group-text">-</span>
+                            <input v-model="loginlog.query.endDate" type="date" class="form-control" placeholder="結束日期">
+                            <button @@click="loginlog.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs">
+                    <li v-for="item in loginlog.tabs" class="nav-item">
+                        <div @@click="loginlog.selectTab(item.value)" v-bind:class="['nav-link',{'active': loginlog.selectedTab.value == item.value}]" role="button">{{item.text}}</div>
+                    </li>
+                </ul>
+                <table class="table table-hover table-responsive">
+                    <caption>登入日誌列表</caption>
+
+                    <thead>
+                        <tr class="table-light">
+                            <th>登入時間</th>
+                            <th>使用者</th>
+                            <th>登入方式</th>
+                            <th>狀態</th>
+                            <th>IP 位址</th>
+                            <th>裝置 / 瀏覽器</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr v-for="(item, index) in loginlog.list" :key="index">
+                            <td>{{ item?.LoginTime ? new Date(item.LoginTime).toLocaleString('zh-TW') : '' }}</td>
+                            <td>{{ item?.UserName }}</td>
+                            <td>{{ item?.LoginMethod }}</td>
+                            <td>
+                                <span v-if="item?.IsSuccess" class="badge bg-success">
+                                    <span class="material-icons font-size-12">check_circle</span>
+                                    成功
+                                </span>
+                                <span v-else class="badge bg-danger">
+                                    <span class="material-icons font-size-12">cancel</span>
+                                    失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
+                                </span>
+                            </td>
+                            <td>{{ item?.IpAddress }}</td>
+                            <td>{{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}</td>
+                        </tr>
+                        <tr v-if="loginlog.list.length === 0">
+                            <td colspan="6" class="text-center">查無資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

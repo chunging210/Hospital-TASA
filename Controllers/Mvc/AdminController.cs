@@ -43,5 +43,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult Loginlog()
+        {
+            return View();
+        }
     }
 }

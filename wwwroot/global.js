@@ -102,6 +102,7 @@ const global = new function () {
             ecsupdate: POST,
             ecsdelete: DELETE,
             ecstest: GET,
+            loginloglist: POST, 
         }),
         adminwebex: apiMethods('/api/adminwebex', {
             list: GET,

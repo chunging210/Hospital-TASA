@@ -2,6 +2,7 @@
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
+using Newtonsoft.Json;
 
 namespace TASA.Services.AuthUserModule
 {
@@ -90,7 +91,9 @@ namespace TASA.Services.AuthUserModule
             };
             db.AuthUser.Add(newAuthUser);
             db.SaveChanges();
-            _ = _ = service.LogServices.LogAsync("帳號新增", $"{newAuthUser.Name}({newAuthUser.Id}) IsEnabled:{newAuthUser.IsEnabled}");
+            var insertInfo = new { UserName = newAuthUser.Name, Email = newAuthUser.Email, Action = "create", IsEnabled = newAuthUser.IsEnabled };
+            service.LogServices.LogAsync("user_insert", JsonConvert.SerializeObject(insertInfo)).Wait();
+
         }
 
         public void Update(DetailVM vm)
@@ -111,7 +114,8 @@ namespace TASA.Services.AuthUserModule
                 data.IsEnabled = vm.IsEnabled;
                 data.AuthRole = [.. db.AuthRole.WhereNotDeleted().Where(x => vm.Role.Contains(x.Id))];
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("帳號編輯", $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled}");
+                var updateInfo = new { UserName = data.Name, Email = data.Email, Action = "update", IsEnabled = data.IsEnabled };
+                service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo)).Wait();
             }
         }
     }

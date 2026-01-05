@@ -4,6 +4,7 @@ using System.Security.Claims;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
+using Newtonsoft.Json;
 
 namespace TASA.Services.AuthModule
 {
@@ -29,7 +30,8 @@ namespace TASA.Services.AuthModule
         {
             if (user?.IsEnabled == false)
             {
-                _ = _ = service.LogServices.LogAsync("登入失敗", $"帳號 {user.Account} 已停用");
+                var failureInfo = new { UserName = user.Account, LoginMethod = "本地", IsSuccess = false, FailureReason = "帳號已停用" };
+                _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("帳號已停用")
                 {
                     StatusCode = System.Net.HttpStatusCode.Unauthorized
@@ -49,7 +51,9 @@ namespace TASA.Services.AuthModule
             var user = IsValidUser(vm.Account, vm.Password);
             if (user == null)
             {
-                _ = _ = service.LogServices.LogAsync("登入失敗", $"帳號 {vm.Account}");
+                // ✅ 改這裡：info 改成 JSON 字串
+                var failureInfo = new { UserName = vm.Account, LoginMethod = "本地", IsSuccess = false, FailureReason = "密碼錯誤" };
+                _ = service.LogServices.LogAsync("login_failed", Newtonsoft.Json.JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("登入失敗")
                 {
                     StatusCode = System.Net.HttpStatusCode.Unauthorized
@@ -57,7 +61,9 @@ namespace TASA.Services.AuthModule
             }
             else
             {
-                _ = _ = service.LogServices.LogAsync("登入成功", $"帳號 {user.Account}");
+                // ✅ 改這裡：info 改成 JSON 字串
+                var successInfo = new { UserName = user.Account, LoginMethod = "本地", IsSuccess = true, FailureReason = (string)null };
+                _ = service.LogServices.LogAsync("login_success", Newtonsoft.Json.JsonConvert.SerializeObject(successInfo));
                 return user;
             }
         }
