@@ -47,7 +47,8 @@ namespace TASA.Services
         Lazy<WebexService> webexService,
         Lazy<WebexMeetingService> webexMeetingService,
         Lazy<SeatSettingService> seatSettingService,
-        Lazy<VisitorService> visitorService
+        Lazy<VisitorService> visitorService,
+        Lazy<SysConfigService> sysConfigService
 
     )
     {
@@ -86,5 +87,7 @@ namespace TASA.Services
         public SeatSettingService SeatSettingService => seatSettingService.Value;
 
         public VisitorService VisitorService => visitorService.Value;
+        public SysConfigService SysConfigService => sysConfigService.Value;
+
     }
 }

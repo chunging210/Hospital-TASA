@@ -11,7 +11,7 @@ const global = new function () {
             login: POST,
             logout: POST,
             me: GET,
-            register: POST,  
+            register: POST,
         }),
         password: apiMethods('/api/password', {
             forgetmail: POST,
@@ -28,7 +28,7 @@ const global = new function () {
         }),
         select: apiMethods('/api/select', {
             room: GET,
-            roomlist:GET,
+            roomlist: GET,
             role: GET,
             user: GET,
             userschedule: POST,
@@ -37,10 +37,10 @@ const global = new function () {
             conferencecreateby: GET,
             equipment: GET,
             ECS: GET,
-            buildingfloors:GET,
-            roomsbyfloor:POST,
-            roomslots:POST,
-            equipmentbyroom:POST,
+            buildingfloors: GET,
+            roomsbyfloor: POST,
+            roomslots: POST,
+            equipmentbyroom: POST,
         }),
         calendar: apiMethods('/api/calendar', {
             list: GET,
@@ -102,7 +102,7 @@ const global = new function () {
             ecsupdate: POST,
             ecsdelete: DELETE,
             ecstest: GET,
-            loginloglist: POST, 
+            loginloglist: POST,
         }),
         adminwebex: apiMethods('/api/adminwebex', {
             list: GET,
@@ -110,6 +110,10 @@ const global = new function () {
             insert: POST,
             update: POST,
             delete: DELETE,
+        }),
+        sysconfig: apiMethods('/api/sysconfig', {
+            registrationstatus: GET,
+            registrationtoggle: POST,
         }),
     }
 }

@@ -9,12 +9,28 @@
                     <div class="col-12 col-lg-2">
                         <div class="input-group">
                             <div class="form-floating">
-                                <input v-model="authuser.query.keyword" @@blur="authuser.getList" type="text" class="form-control" placeholder="關鍵字">
+                                <input v-model="authuser.query.keyword" @@blur="authuser.getList" type="text"
+                                    class="form-control" placeholder="關鍵字">
                                 <label>關鍵字</label>
                             </div>
-                            <button @@click="authuser.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                            <button @@click="authuser.getList" class="btn btn-secondary"><span
+                                    class="material-icons">search</span></button>
                         </div>
                     </div>
+
+                    <div class="col-auto d-flex align-items-center gap-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="registrationToggle"
+                                :checked="sysConfig.isRegistrationOpen.value" @@change="sysConfig.toggleRegistration">
+                            <label class="form-check-label" for="registrationToggle">
+                                <span class="material-icons" style="vertical-align: middle; font-size: 18px;">
+                                    {{ sysConfig.isRegistrationOpen.value ? 'check_circle' : 'cancel' }}
+                                </span>
+                                {{ sysConfig.isRegistrationOpen.value ? '開放註冊' : '關閉註冊' }}
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="col-auto d-flex align-items-center">
                         <button @@click="authuser.getVM()" class="btn btn-primary">新增使用者</button>
                     </div>
@@ -23,7 +39,9 @@
             <div class="card-body">
                 <ul class="nav nav-tabs">
                     <li v-for="item in tabs.list" class="nav-item">
-                        <div @@click="tabs.click(item.value)" v-bind:class="['nav-link',{'active':tabs.select.value==item.value}]" role="button">{{item.text}}</div>
+                        <div @@click="tabs.click(item.value)"
+                            v-bind:class="['nav-link',{'active':tabs.select.value==item.value}]" role="button">
+                            {{item.text}}</div>
                     </li>
                 </ul>
                 <table class="table table-hover table-responsive">
@@ -140,19 +158,22 @@
                         <ul class="list-group">
                             <li class="form-check form-check-inline ps-0">
                                 <label class="form-check-label">
-                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio" :value="null" />
+                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio"
+                                        :value="null" />
                                     無
                                 </label>
                             </li>
                             <li v-for="{Id,Name,Children} in department.tree" class="form-check form-check-inline ps-0">
                                 <label class="form-check-label">
-                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio" :value="Id" />
+                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio"
+                                        :value="Id" />
                                     {{Name}}
                                 </label>
                                 <ul class="list-group">
                                     <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
                                         <label class="form-check-label">
-                                            <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio" :value="Id" />
+                                            <input v-model="authuser.vm.DepartmentId" class="form-radio-primary"
+                                                type="radio" :value="Id" />
                                             {{Name}}
                                         </label>
                                     </li>
@@ -196,7 +217,8 @@
                     </div>
                     <div class="col-12">
                         <label class="form-check">
-                            <input v-model="authuser.vm.IsEnabled" class="form-check-input" type="checkbox" :value="true">
+                            <input v-model="authuser.vm.IsEnabled" class="form-check-input" type="checkbox"
+                                :value="true">
                         </label>
                     </div>
                 </div>
