@@ -195,7 +195,7 @@ namespace TASA.Controllers.API
             try
             {
                 var result = service.LoginLogServices.List(query);
-                return Ok(result);
+                return Ok(result.ToPage(Request, Response));  // ✅ 直接用 ToPage
             }
             catch (Exception ex)
             {

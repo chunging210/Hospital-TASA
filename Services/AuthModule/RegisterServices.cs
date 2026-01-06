@@ -8,8 +8,64 @@ using Newtonsoft.Json;
 
 namespace TASA.Services.AuthModule
 {
-    public class RegisterServices(TASAContext db, ServiceWrapper service) : IService
+    public class RegisterServices(TASAContext db, ServiceWrapper service, IHttpContextAccessor httpContextAccessor) : IService
     {
+        // ✅ 取得客戶端 IP
+        private string GetClientIp()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var ip = context?.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim()
+                ?? context?.Request.Headers["X-Real-IP"].ToString()
+                ?? context?.Connection.RemoteIpAddress?.ToString() 
+                ?? "未知";
+            
+            return ip;
+        }
+
+        // ✅ 取得登入方式
+        private string GetLoginMethod(string? provider = null)
+        {
+            return provider switch
+            {
+                "Google" => "Google",
+                "Microsoft" => "Microsoft",
+                "Facebook" => "Facebook",
+                _ => "本地"
+            };
+        }
+
+        // ✅ 取得瀏覽器和裝置資訊 - 回傳 tuple（和 LoginServices 一樣）
+        private (string browser, string device) GetDeviceInfo()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var userAgent = context?.Request.Headers["User-Agent"].ToString() ?? "未知";
+            
+            var device = "未知";
+            var browser = "未知";
+
+            if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase))
+                device = "Windows";
+            else if (userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase))
+                device = "macOS";
+            else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase))
+                device = "Linux";
+            else if (userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase))
+                device = "iPhone";
+            else if (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase))
+                device = "Android";
+
+            if (userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chromium"))
+                browser = "Chrome";
+            else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chrome"))
+                browser = "Safari";
+            else if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase))
+                browser = "Firefox";
+            else if (userAgent.Contains("Edge", StringComparison.OrdinalIgnoreCase))
+                browser = "Edge";
+
+            return (browser, device);
+        }
+
         /* ===============================
          * Register VM
          * =============================== */
@@ -39,10 +95,24 @@ namespace TASA.Services.AuthModule
          * =============================== */
         public void Register(RegisterVM vm)
         {
+            // ✅ 在方法開頭宣告一次，所有區塊共用
+            var deviceInfo = GetDeviceInfo();
+
             // 0️⃣ 密碼確認
             if (vm.Password != vm.ConfirmPassword)
             {
-                var failureInfo = new { UserName = vm.Email, IsSuccess = false, FailureReason = "密碼不符" };
+                var failureInfo = new 
+                { 
+                    UserName = vm.Email,
+                    Email = vm.Email,
+                    IsSuccess = false,
+                    FailureReason = "密碼不符",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    LoginMethod = GetLoginMethod(),
+                    Timestamp = DateTime.Now
+                };
                 _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("兩次輸入的密碼不一致")
                 {
@@ -58,7 +128,18 @@ namespace TASA.Services.AuthModule
 
             if (exists)
             {
-                var failureInfo = new { UserName = vm.Email, IsSuccess = false, FailureReason = "Email已存在" };
+                var failureInfo = new 
+                { 
+                    UserName = vm.Email,
+                    Email = vm.Email,
+                    IsSuccess = false,
+                    FailureReason = "Email已存在",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    LoginMethod = GetLoginMethod(),
+                    Timestamp = DateTime.Now
+                };
                 _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("此 Email 已被註冊")
                 {
@@ -117,8 +198,19 @@ namespace TASA.Services.AuthModule
             db.AuthUser.Add(user);
             db.SaveChanges();
 
-            // 6️⃣ 紀錄 Log
-            var successInfo = new { UserName = user.Account, Email = user.Email, IsSuccess = true };
+            // 6️⃣ 紀錄 Log - ✅ 使用最上面宣告的 deviceInfo
+            var successInfo = new 
+            { 
+                UserName = user.Account,
+                Email = user.Email,
+                IsSuccess = true,
+                ClientIp = GetClientIp(),
+                DeviceInfo = deviceInfo.device,
+                BrowserInfo = deviceInfo.browser,
+                LoginMethod = GetLoginMethod(),
+                DepartmentId = user.DepartmentId,
+                Timestamp = DateTime.Now
+            };
             _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo));
         }
 

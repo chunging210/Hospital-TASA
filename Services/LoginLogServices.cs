@@ -7,15 +7,15 @@ namespace TASA.Services
 {
     public class LoginLogServices(TASAContext db) : IService
     {
-        public record QueryVM
+        // ✅ QueryVM 改成繼承 BaseQueryVM
+        public class QueryVM : BaseQueryVM
         {
-            public string Keyword { get; set; } = string.Empty;
             public string StartDate { get; set; } = string.Empty;
             public string EndDate { get; set; } = string.Empty;
             public string InfoType { get; set; } = "all";
         }
 
-        public record ListVM
+        public class ListVM
         {
             public uint Id { get; set; }
             public DateTime LoginTime { get; set; }
@@ -29,12 +29,13 @@ namespace TASA.Services
             public string Type { get; set; } = string.Empty;
         }
 
-        public List<ListVM> List(QueryVM query)
+        // ✅ 改成 IQueryable<ListVM> 版本，支援 ToPage
+        public IQueryable<ListVM> List(QueryVM query)
         {
             // ✅ 驗證日期參數
             if (string.IsNullOrEmpty(query.StartDate) || string.IsNullOrEmpty(query.EndDate))
             {
-                return new List<ListVM>();
+                return new List<ListVM>().AsQueryable();
             }
 
             // ✅ 解析日期
@@ -70,7 +71,7 @@ namespace TASA.Services
                             LoginMethod = info?.LoginMethod ?? "未知",
                             IsSuccess = info?.IsSuccess ?? false,
                             FailureReason = info?.FailureReason,
-                            IpAddress = x.Ip,
+                            IpAddress = info?.ClientIp ?? info?.IpAddress ?? x.Ip ?? "未知",
                             DeviceInfo = info?.DeviceInfo ?? "Unknown",
                             BrowserInfo = info?.BrowserInfo ?? "Unknown",
                             Type = ExtractType(x.InfoType)
@@ -78,7 +79,6 @@ namespace TASA.Services
                     }
                     catch
                     {
-                        // ✅ 異常處理 - 如果 JSON 解析失敗
                         return new ListVM
                         {
                             Id = x.No,
@@ -87,7 +87,7 @@ namespace TASA.Services
                             LoginMethod = "未知",
                             IsSuccess = x.InfoType.Contains("success"),
                             FailureReason = null,
-                            IpAddress = x.Ip,
+                            IpAddress = x.Ip ?? "未知",
                             DeviceInfo = "Unknown",
                             BrowserInfo = "Unknown",
                             Type = ExtractType(x.InfoType)
@@ -108,7 +108,8 @@ namespace TASA.Services
                     .ToList();
             }
 
-            return result;
+            // ✅ 改成回傳 IQueryable，這樣才能用 ToPage
+            return result.AsQueryable();
         }
 
         /// <summary>

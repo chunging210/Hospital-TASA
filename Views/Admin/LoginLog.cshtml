@@ -9,18 +9,22 @@
                     <div class="col-12 col-lg-4">
                         <div class="input-group">
                             <div class="form-floating">
-                                <input v-model="loginlog.query.keyword" @@blur="loginlog.getList" type="text" class="form-control" placeholder="搜尋">
+                                <input v-model="loginlog.query.keyword" @@blur="loginlog.getList" type="text"
+                                    class="form-control" placeholder="搜尋">
                                 <label>搜尋</label>
                             </div>
-                            <button @@click="loginlog.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                            <button @@click="loginlog.getList" class="btn btn-secondary"><span
+                                    class="material-icons">search</span></button>
                         </div>
                     </div>
                     <div class="col-12 col-lg-4">
                         <div class="input-group">
-                            <input v-model="loginlog.query.startDate" type="date" class="form-control" placeholder="開始日期">
+                            <input v-model="loginlog.query.startDate" type="date" class="form-control"
+                                placeholder="開始日期">
                             <span class="input-group-text">-</span>
                             <input v-model="loginlog.query.endDate" type="date" class="form-control" placeholder="結束日期">
-                            <button @@click="loginlog.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                            <button @@click="loginlog.getList" class="btn btn-secondary"><span
+                                    class="material-icons">search</span></button>
                         </div>
                     </div>
                 </div>
@@ -28,10 +32,12 @@
             <div class="card-body">
                 <ul class="nav nav-tabs">
                     <li v-for="item in loginlog.tabs" class="nav-item">
-                        <div @@click="loginlog.selectTab(item.value)" v-bind:class="['nav-link',{'active': loginlog.selectedTab.value == item.value}]" role="button">{{item.text}}</div>
+                        <div @@click="loginlog.selectTab(item.value)"
+                            v-bind:class="['nav-link',{'active': loginlog.selectedTab.value == item.value}]"
+                            role="button">{{item.text}}</div>
                     </li>
                 </ul>
-                <table class="table table-hover table-responsive">
+                <table class="table table-hover">
                     <caption>登入日誌列表</caption>
 
                     <thead>
@@ -48,7 +54,11 @@
                     <tbody>
                         <tr v-for="(item, index) in loginlog.list" :key="index">
                             <td>{{ item?.LoginTime ? new Date(item.LoginTime).toLocaleString('zh-TW') : '' }}</td>
-                            <td>{{ item?.UserName }}</td>
+                            <!-- ✅ 使用者也加上省略號，避免超長 Email -->
+                            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                :title="item?.UserName">
+                                {{ item?.UserName }}
+                            </td>
                             <td>{{ item?.LoginMethod }}</td>
                             <td>
                                 <span v-if="item?.IsSuccess" class="badge bg-success">
@@ -60,14 +70,23 @@
                                     失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
                                 </span>
                             </td>
-                            <td>{{ item?.IpAddress }}</td>
-                            <td>{{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}</td>
+                            <!-- ✅ IP 位址加上省略號 + Tooltip -->
+                            <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                :title="item?.IpAddress">
+                                {{ item?.IpAddress }}
+                            </td>
+                            <!-- ✅ 裝置/瀏覽器也加上省略號 -->
+                            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                :title="(item?.DeviceInfo || '') + ' / ' + (item?.BrowserInfo || '')">
+                                {{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}
+                            </td>
                         </tr>
                         <tr v-if="loginlog.list.length === 0">
                             <td colspan="6" class="text-center">查無資料</td>
                         </tr>
                     </tbody>
                 </table>
+                <page ref="loginlogpage" @@reload="loginlog.getList(true)"></page>
             </div>
         </div>
     </div>

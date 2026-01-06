@@ -8,8 +8,64 @@ using Newtonsoft.Json;
 
 namespace TASA.Services.AuthModule
 {
-    public class LoginServices(TASAContext db, ServiceWrapper service) : IService
+    public class LoginServices(TASAContext db, ServiceWrapper service, IHttpContextAccessor httpContextAccessor) : IService
     {
+        // ✅ 取得客戶端 IP
+        private string GetClientIp()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var ip = context?.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim()
+                ?? context?.Request.Headers["X-Real-IP"].ToString()
+                ?? context?.Connection.RemoteIpAddress?.ToString() 
+                ?? "未知";
+            
+            return ip;
+        }
+
+        // ✅ 取得登入方式
+        private string GetLoginMethod(string? provider = null)
+        {
+            return provider switch
+            {
+                "Google" => "Google",
+                "Microsoft" => "Microsoft",
+                "Facebook" => "Facebook",
+                _ => "本地"
+            };
+        }
+
+        // ✅ 取得瀏覽器和裝置資訊 - 回傳 tuple
+        private (string browser, string device) GetDeviceInfo()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var userAgent = context?.Request.Headers["User-Agent"].ToString() ?? "未知";
+            
+            var device = "未知";
+            var browser = "未知";
+
+            if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase))
+                device = "Windows";
+            else if (userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase))
+                device = "macOS";
+            else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase))
+                device = "Linux";
+            else if (userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase))
+                device = "iPhone";
+            else if (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase))
+                device = "Android";
+
+            if (userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chromium"))
+                browser = "Chrome";
+            else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chrome"))
+                browser = "Safari";
+            else if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase))
+                browser = "Firefox";
+            else if (userAgent.Contains("Edge", StringComparison.OrdinalIgnoreCase))
+                browser = "Edge";
+
+            return (browser, device);
+        }
+
         public AuthUser? IsValidUser(string account, string password)
         {
             var user = db.AuthUser
@@ -30,7 +86,18 @@ namespace TASA.Services.AuthModule
         {
             if (user?.IsEnabled == false)
             {
-                var failureInfo = new { UserName = user.Account, LoginMethod = "本地", IsSuccess = false, FailureReason = "帳號已停用" };
+                var deviceInfo = GetDeviceInfo();
+                var failureInfo = new 
+                { 
+                    UserName = user.Account, 
+                    LoginMethod = GetLoginMethod(),
+                    IsSuccess = false, 
+                    FailureReason = "帳號已停用",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    Timestamp = DateTime.Now
+                };
                 _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("帳號已停用")
                 {
@@ -46,14 +113,25 @@ namespace TASA.Services.AuthModule
             [Required(ErrorMessage = "密碼是必要項")]
             public string Password { get; set; } = string.Empty;
         }
+
         public AuthUser Login(LoginVM vm)
         {
             var user = IsValidUser(vm.Account, vm.Password);
             if (user == null)
             {
-                // ✅ 改這裡：info 改成 JSON 字串
-                var failureInfo = new { UserName = vm.Account, LoginMethod = "本地", IsSuccess = false, FailureReason = "密碼錯誤" };
-                _ = service.LogServices.LogAsync("login_failed", Newtonsoft.Json.JsonConvert.SerializeObject(failureInfo));
+                var deviceInfo = GetDeviceInfo();
+                var failureInfo = new 
+                { 
+                    UserName = vm.Account, 
+                    LoginMethod = GetLoginMethod(),
+                    IsSuccess = false, 
+                    FailureReason = "密碼錯誤",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    Timestamp = DateTime.Now
+                };
+                _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo));
                 throw new HttpException("登入失敗")
                 {
                     StatusCode = System.Net.HttpStatusCode.Unauthorized
@@ -61,24 +139,27 @@ namespace TASA.Services.AuthModule
             }
             else
             {
-                // ✅ 改這裡：info 改成 JSON 字串
-                var successInfo = new { UserName = user.Account, LoginMethod = "本地", IsSuccess = true, FailureReason = (string)null };
-                _ = service.LogServices.LogAsync("login_success", Newtonsoft.Json.JsonConvert.SerializeObject(successInfo));
+                var deviceInfo = GetDeviceInfo();
+                var successInfo = new 
+                { 
+                    UserName = user.Account,
+                    LoginMethod = GetLoginMethod(),
+                    IsSuccess = true,
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    Timestamp = DateTime.Now
+                };
+                _ = service.LogServices.LogAsync("login_success", JsonConvert.SerializeObject(successInfo));
                 return user;
             }
         }
 
-        /// <summary>
-        /// 設定 JWT Cookie
-        /// </summary>
         public void GenerateCookie(IResponseCookies cookies, AuthUser user)
         {
             Jwt.GenerateCookie(cookies, UserClaimsService.ToClaims(user));
         }
 
-        /// <summary>
-        /// 刪除 JWT Cookie
-        /// </summary>
         public void DeleteCookie(IResponseCookies cookies)
         {
             Jwt.DeleteCookie(cookies);

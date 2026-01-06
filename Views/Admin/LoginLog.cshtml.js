@@ -1,13 +1,15 @@
-﻿// Admin/LoginLog.cshtml.js - 最簡單版本
-import global from '/global.js';
-const { ref, reactive, onMounted, computed, watch } = Vue;
+﻿import global from '/global.js';
+const { ref, reactive, onMounted, watch } = Vue;
+
+let currentSearchController = null;
+let loginlogpageRef = null;
 
 const loginlog = new function () {
     // ✅ Tab 列表
     this.tabs = [
-        { text: '登入日誌', value: 'login_' },      // ✅ 以 login_ 開頭
-        { text: '新增帳號日誌', value: 'user_register_' },  // ✅ 以 user_insert_ 開頭
-        { text: '修改帳號日誌', value: 'user_update' },  // ✅ 以 user_delete_ 開頭
+        { text: '登入日誌', value: 'login_' },
+        { text: '新增帳號日誌', value: 'user_register_' },
+        { text: '修改帳號日誌', value: 'user_update' },
     ];
 
     this.selectedTab = ref('login_');
@@ -23,124 +25,138 @@ const loginlog = new function () {
     // ✅ 資料列表
     this.list = reactive([]);
 
-    // ✅ 分頁相關
-    this.currentPage = ref(1);
-    this.pageSize = ref(10);
-    this.totalPages = computed(() => {
-        return Math.ceil(this.list.length / this.pageSize.value);
-    });
-
-    // ✅ 簡單過濾 - 只做分頁
-    this.filteredList = computed(() => {
-        const startIdx = (this.currentPage.value - 1) * this.pageSize.value;
-        const endIdx = startIdx + this.pageSize.value;
-        return this.list.slice(startIdx, endIdx);
-    });
-
-    this.searchByDate = () => {
-        console.log('📅 搜尋日期範圍:', this.query.startDate, '到', this.query.endDate);
-
-        // 驗證日期
-        if (this.query.startDate && this.query.endDate) {
-            const startDate = new Date(this.query.startDate);
-            const endDate = new Date(this.query.endDate);
-
-            if (startDate > endDate) {
-                addAlert('開始日期不能大於結束日期', { type: 'warning' });
-                return;
+    // ✅ 參考 visitor.js 的寫法 - 完整的 getList
+    this.getList = async (pagination) => {
+        try {
+            if (currentSearchController) {
+                currentSearchController.abort();
             }
-        }
 
-        this.currentPage.value = 1;
-        this.getList();
-    };
+            currentSearchController = new AbortController();
 
-    // ✅ 清除日期篩選
-    this.clearDateFilter = () => {
-        console.log('🗑️ 清除日期篩選');
-        this.query.startDate = '';
-        this.query.endDate = '';
-        this.currentPage.value = 1;
-        this.getList();
-    };
+            const queryParams = {};
+            if (this.query.keyword && this.query.keyword.trim()) {
+                queryParams.keyword = this.query.keyword.trim();
+            }
+            if (this.query.startDate) {
+                queryParams.startDate = this.query.startDate;
+            }
+            if (this.query.endDate) {
+                queryParams.endDate = this.query.endDate;
+            }
+            if (this.query.infoType) {
+                queryParams.infoType = this.query.infoType;
+            }
 
-    // ✅ 清除關鍵字篩選
-    this.clearKeywordFilter = () => {
-        console.log('🗑️ 清除關鍵字篩選');
-        this.query.keyword = '';
-        this.currentPage.value = 1;
-        this.getList();
-    };
+            const options = { body: queryParams, signal: currentSearchController.signal };
 
+            // ✅ 參考 visitor 的寫法
+            const request = pagination && loginlogpageRef
+                ? global.api.admin.loginloglist(loginlogpageRef.setHeaders(options))
+                : global.api.admin.loginloglist(options);
 
-    // ✅ 取得資料
-    this.getList = () => {
-        console.log('🔍 發送查詢:', this.query);
+            const response = await request;
 
-        global.api.admin.loginloglist({ body: this.query })
-            .then((response) => {
-                console.log('🔍 API Response:', response);
+            console.log('🔍 API Response:', response);
 
-                let data = response;
-                if (response && response.data && Array.isArray(response.data)) {
-                    data = response.data;
+            // ✅ 參考 visitor 的寫法 - 設定分頁總數
+            if (pagination && loginlogpageRef) {
+                loginlogpageRef.setTotal(response);
+            }
+
+            let data = response;
+            if (response && response.data && Array.isArray(response.data)) {
+                data = response.data;
+            }
+            if (!Array.isArray(data)) {
+                data = [];
+            }
+
+            console.log('📦 資料數量:', data.length);
+
+            // 確保日期是 Date 物件
+            data.forEach(x => {
+                if (x.LoginTime && typeof x.LoginTime === 'string') {
+                    x.LoginTime = new Date(x.LoginTime);
                 }
-                if (!Array.isArray(data)) {
-                    data = [];
-                }
-
-                console.log('📦 資料數量:', data.length);
-
-                // 確保日期是 Date 物件
-                data.forEach(x => {
-                    if (x.LoginTime && typeof x.LoginTime === 'string') {
-                        x.LoginTime = new Date(x.LoginTime);
-                    }
-                });
-
-                this.list.splice(0, this.list.length, ...data);
-                this.currentPage.value = 1;
-
-                console.log('✅ list 現在有:', this.list.length, '筆');
-            })
-            .catch(error => {
-                console.error('❌ 錯誤:', error);
-                addAlert('取得資料失敗', { type: 'danger' });
             });
+
+            this.list.splice(0, this.list.length, ...data);
+
+            console.log('✅ list 現在有:', this.list.length, '筆');
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            console.error('❌ 錯誤:', err);
+            addAlert({ message: `${err.status ?? ''} ${err.message ?? err}`, type: 'danger' });
+        } finally {
+            currentSearchController = null;
+        }
     };
 
     // ✅ 切換 tab
     this.selectTab = (value) => {
         this.selectedTab.value = value;
         this.query.infoType = value;
-        this.currentPage.value = 1;
-        console.log('🔍 切換 Tab，準備查詢:', this.query);  // ✅ 加這行
-        this.getList();
-    };
-
-    // ✅ 分頁方法
-    this.previousPage = () => {
-        if (this.currentPage.value > 1) {
-            this.currentPage.value--;
+        console.log('🔍 切換 Tab，準備查詢:', this.query);
+        if (loginlogpageRef) {
+            loginlogpageRef.go(1);
         }
+        this.getList(true);
     };
 
-    this.nextPage = () => {
-        if (this.currentPage.value < this.totalPages.value) {
-            this.currentPage.value++;
+    // ✅ 搜尋
+    this.search = () => {
+        if (loginlogpageRef) {
+            loginlogpageRef.go(1);
         }
+        this.getList(true);
     };
 
-    
+    // ✅ 清除搜尋
+    this.clearSearch = () => {
+        this.query.keyword = '';
+        if (loginlogpageRef) {
+            loginlogpageRef.go(1);
+        }
+        this.getList(true);
+    };
+
+    // ✅ 清除日期篩選
+    this.clearDateFilter = () => {
+        this.query.startDate = '';
+        this.query.endDate = '';
+        if (loginlogpageRef) {
+            loginlogpageRef.go(1);
+        }
+        this.getList(true);
+    };
+}
+
+// ✅ Debounce 搜尋
+const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(null, args), delay);
+    };
 };
+
+const debouncedSearch = debounce(() => {
+    if (loginlogpageRef) {
+        loginlogpageRef.go(1);
+    }
+    loginlog.getList(true);
+}, 300);
 
 window.$config = {
     setup: () => new function () {
         this.loginlog = loginlog;
+        this.loginlogpage = ref(null);
 
         onMounted(() => {
             console.log('🚀 登入日誌頁面 onMounted 開始');
 
+            // ✅ 初始化日期範圍
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - 15);
@@ -148,9 +164,24 @@ window.$config = {
             this.loginlog.query.startDate = startDate.toISOString().split('T')[0];
             this.loginlog.query.endDate = endDate.toISOString().split('T')[0];
 
-            console.log('📅 查詢日期:', this.loginlog.query.startDate, '-', this.loginlog.query.endDate);
+            // ✅ 初始化分頁參考
+            loginlogpageRef = this.loginlogpage.value;
 
-            this.loginlog.getList();
+            // ✅ 初始載入
+            console.log('📅 查詢日期:', this.loginlog.query.startDate, '-', this.loginlog.query.endDate);
+            this.loginlog.getList(true);
+
+            // ✅ Watch 關鍵字搜尋
+            watch(() => loginlog.query.keyword, (newValue) => {
+                if (newValue.trim() === '') {
+                    if (loginlogpageRef) {
+                        loginlogpageRef.go(1);
+                    }
+                    loginlog.getList(true);
+                    return;
+                }
+                debouncedSearch();
+            });
         });
     }
 };
