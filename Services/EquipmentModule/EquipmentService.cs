@@ -65,6 +65,7 @@ namespace TASA.Services.EquipmentModule
             public string? Account { get; set; }
             public string? Password { get; set; }
             public bool IsEnabled { get; set; } = true;
+            public Guid? DepartmentId { get; set; }  
         }
 
         public DetailVM? Detail(Guid id)
@@ -82,6 +83,7 @@ namespace TASA.Services.EquipmentModule
                     RoomId = x.RoomId,
                     Building = x.Room != null ? x.Room.Building : null,
                     Floor = x.Room != null ? x.Room.Floor : null,
+                    DepartmentId = x.Room != null ? x.Room.DepartmentId : null,
                     RentalPrice = x.RentalPrice,
                     Host = x.Host,
                     Port = x.Port,
@@ -91,7 +93,6 @@ namespace TASA.Services.EquipmentModule
                 })
                 .FirstOrDefault();
         }
-
         /// <summary>
         /// 統一驗證方法 - 新增/編輯都使用
         /// </summary>

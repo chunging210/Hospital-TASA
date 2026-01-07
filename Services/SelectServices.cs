@@ -35,12 +35,6 @@ namespace TASA.Services
             public List<FloorVM> Floors { get; set; } = new();
         }
 
-        public record BuildingFloorVM
-        {
-            public string Building { get; set; } = string.Empty;
-            public List<string> Floors { get; set; } = new();
-        }
-
         public record EquipmentByRoomsQueryVM
         {
             public Guid[]? RoomIds { get; init; }
@@ -87,44 +81,15 @@ public record RoomSlotVM
     public bool Occupied { get; init; }
 }
 
-
-
-
-public List<BuildingFloorVM> RoomBuildingFloors()
+public record FloorsByBuildingQueryVM
 {
-    // 1️⃣ 先拉平資料（避免 MySQL OUTER APPLY）
-    var data = db.SysRoom
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .Where(x =>
-            x.Status != RoomStatus.Maintenance &&
-            x.Building != null &&
-            x.Floor != null
-        )
-        .Select(x => new
-        {
-            x.Building,
-            x.Floor
-        })
-        .ToList();   // ⚠️ 關鍵：在這裡中斷 IQueryable
-
-    // 2️⃣ 在記憶體中 GroupBy（C#）
-    return data
-        .GroupBy(x => x.Building!)
-        .Select(bg => new BuildingFloorVM
-        {
-            Building = bg.Key,
-            Floors = bg
-                .Select(x => x.Floor!)
-                .Distinct()
-                .OrderBy(f => f)
-                .ToList()
-        })
-        .OrderBy(b => b.Building)
-        .ToList();
+    public Guid DepartmentId { get; init; }
+    public string Building { get; init; } = string.Empty;
 }
-    
-        public IQueryable<IdNameVM> Room()
+
+
+  
+public IQueryable<IdNameVM> Room()
         {
             return db.SysRoom
                 .AsNoTracking()
@@ -135,7 +100,6 @@ public List<BuildingFloorVM> RoomBuildingFloors()
                     Ecs = x.Ecs.Where(x => x.IsEnabled && x.DeleteAt == null).Select(x => new IdNameVM() { Id = x.Id, Name = x.Name }).ToList()
                 });
         }
-
 
 public IEnumerable<RoomSlotVM> RoomSlots(RoomSlotQueryVM query)
 {
@@ -280,49 +244,53 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
     return result;
 }
 
-       public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
+public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
+    {
+        var q = db.SysRoom
+            .AsNoTracking()
+            .WhereNotDeleted()
+            .WhereEnabled()
+            .Where(x => x.Status != RoomStatus.Maintenance);
+
+        // ✅ 加上分院篩選
+        if (query.DepartmentId.HasValue)
         {
-
-
-            var q = db.SysRoom
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereEnabled()
-                .Where(x => x.Status != RoomStatus.Maintenance);
-
-            if (!string.IsNullOrWhiteSpace(query.Building))
-            {
-                q = q.Where(x => x.Building == query.Building);
-            }
-
-            if (!string.IsNullOrWhiteSpace(query.Floor))
-            {
-                q = q.Where(x => x.Floor == query.Floor);
-            }
-
-            if (!string.IsNullOrWhiteSpace(query.Keyword))
-            {
-                q = q.Where(x => x.Name.Contains(query.Keyword));
-            }
-
-            return q.Select(x => new RoomListVM
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Building = x.Building,
-                Floor = x.Floor,
-                Capacity = x.Capacity,
-                Area = x.Area,
-                Status = x.Status,
-                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                Images = x.Images
-                    .Where(i => i.ImagePath != "")
-                    .OrderBy(i => i.SortOrder)
-                    .Select(i => i.ImagePath)
-            });
+            q = q.Where(x => x.DepartmentId == query.DepartmentId);
         }
 
-        public IQueryable<IdNameVM> Role()
+        if (!string.IsNullOrWhiteSpace(query.Building))
+        {
+            q = q.Where(x => x.Building == query.Building);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Floor))
+        {
+            q = q.Where(x => x.Floor == query.Floor);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Keyword))
+        {
+            q = q.Where(x => x.Name.Contains(query.Keyword));
+        }
+
+        return q.Select(x => new RoomListVM
+        {
+            Id = x.Id,
+            Name = x.Name,
+            Building = x.Building,
+            Floor = x.Floor,
+            Capacity = x.Capacity,
+            Area = x.Area,
+            Status = x.Status,
+            EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+            Images = x.Images
+                .Where(i => i.ImagePath != "")
+                .OrderBy(i => i.SortOrder)
+                .Select(i => i.ImagePath)
+        });
+    }
+
+public IQueryable<IdNameVM> Role()
         {
             return db.AuthRole
                 .AsNoTracking()
@@ -331,7 +299,7 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 .Mapping<IdNameVM>();
         }
 
-        public IQueryable<IdNameVM> User()
+public IQueryable<IdNameVM> User()
         {
             return db.AuthUser
                 .AsNoTracking()
@@ -340,7 +308,7 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 .Mapping<IdNameVM>();
         }
 
-        public record UserScheduleVM
+public record UserScheduleVM
         {
             public record QueryVM(DateTime ScheduleDate, Guid? DepartmentId, bool? Contains, Guid[]? List, string Keyword);
             public record BusyTimeVM
@@ -355,10 +323,8 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 public IEnumerable<BusyTimeVM> BusyTime { get; set; } = [];
             }
         }
-        /// <summary>
-        /// 忙碌時段
-        /// </summary>
-        public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM query)
+
+public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM query)
         {
             var start = query.ScheduleDate.Date;
             var end = start.Set(hour: 23, minute: 59, second: 59);
@@ -399,14 +365,14 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 });
         }
 
-        public IQueryable<IdNameVM> Department()
-        {
-            return db.SysDepartment
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereEnabled()
-                .Mapping<IdNameVM>();
-        }
+public IQueryable<IdNameVM> Department()
+{
+    return db.SysDepartment
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .WhereEnabled()
+        .Mapping<IdNameVM>();
+}
 
         public record TreeVM : IdNameVM
         {
@@ -454,6 +420,48 @@ public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
                 9 => "攤位租借",
                 _ => "未知"
             };
+        }
+        // 在 SelectServices 裡新增方法
+        public List<BuildingVM> BuildingsByDepartment(Guid departmentId)
+        {
+            return db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => 
+                    x.DepartmentId == departmentId &&
+                    x.Status != RoomStatus.Maintenance &&
+                    x.Building != null
+                )
+                .Select(x => x.Building)
+                .Distinct()
+                .OrderBy(b => b)
+                .Select(b => new BuildingVM
+                { 
+                    Building = b,
+                    Floors = new List<FloorVM>()  // 先回傳空的，會由 loadFloorsByBuilding 填充
+                })
+                .ToList();
+        }
+        public List<IdNameVM> FloorsByBuilding(Guid departmentId, string building)
+        {
+            return db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => 
+                    x.DepartmentId == departmentId &&
+                    x.Building == building &&
+                    x.Status != RoomStatus.Maintenance &&
+                    x.Floor != null
+                )
+                .Select(x => x.Floor)
+                .Distinct()
+                .OrderBy(f => f)
+                .Select(f => new IdNameVM 
+                { 
+                    Id = Guid.Empty,
+                    Name = f 
+                })
+                .ToList();
         }
 
 public EquipmentGroupVM EquipmentByRooms(EquipmentByRoomsQueryVM query)
@@ -604,4 +612,6 @@ public EquipmentGroupVM EquipmentByRooms(EquipmentByRoomsQueryVM query)
                 .Mapping<ECSVM>();
         }
     }
+
+    
 }

@@ -7,6 +7,7 @@ class VM {
     Name = '';
     Description = '';
     IsEnabled = true;
+    DepartmentId = null;
 }
 
 // ✅ Enum 定義（與後端對應）
@@ -68,6 +69,19 @@ const isVideoFile = (filePath) => {
     return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
 };
 
+const department = new function () {
+    this.list = reactive([]);
+    this.getList = () => {
+        global.api.select.department()
+            .then((response) => {
+                copy(this.list, response.data);
+            })
+            .catch(err => {
+                console.error('取得分院列表失敗:', err);
+            });
+    }
+}
+
 let imageIndices = reactive({});
 
 const room = new function () {
@@ -82,7 +96,8 @@ const room = new function () {
         area: null,
         refundEnabled: true,
         feeType: PricingType.Hourly,
-        rentalType: BookingSettings.InternalOnly
+        rentalType: BookingSettings.InternalOnly,
+        departmentId: null
     });
 
     this.editModal = null;
@@ -200,6 +215,7 @@ const room = new function () {
                     this.vm.PricingType = response.data.PricingType;
                     this.vm.IsEnabled = response.data.IsEnabled;
                     this.vm.BookingSettings = response.data.BookingSettings;
+                    this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
 
                     (response.data.Images || []).forEach((imgPath, idx) => {
                         this.mediaFiles.push({
@@ -251,6 +267,7 @@ const room = new function () {
             this.form.feeType = PricingType.Hourly;
             this.vm.PricingType = PricingType.Hourly;
             this.form.rentalType = BookingSettings.InternalOnly;
+            this.form.departmentId = null;
 
             this.generateHourlySlots();
             this.timeSlots.splice(0);
@@ -294,6 +311,7 @@ const room = new function () {
             PricingType: pricingType,
             IsEnabled: source.IsEnabled ?? source.refundEnabled,
             BookingSettings: source.BookingSettings ?? source.rentalType,
+            DepartmentId: source.DepartmentId ?? source.departmentId,
             Images: this.mediaFiles.map((m, idx) => ({
                 type: m.type,
                 src: m.src,
@@ -512,7 +530,7 @@ window.$config = {
         this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
-
+        this.department = department;
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {
                 return null;
@@ -568,6 +586,8 @@ window.$config = {
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
+            department.getList();
+
             const detailModalElement = document.getElementById('roomDetailModal');
             detailModalElement.addEventListener('hidden.bs.modal', () => {
                 room.stopCarousel();

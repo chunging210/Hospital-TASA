@@ -134,6 +134,14 @@
                                         <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor
                                             || '') }}樓</div>
                                     </div>
+                                    <!-- ✅ 加上分院 -->
+                                    <div class="info-item">
+                                        <div class="info-icon">
+                                            <i class="mdi mdi-hospital-box"></i>
+                                        </div>
+                                        <div class="info-label">分院</div>
+                                        <div class="info-value">{{ detailRoom?.Department?.Name || '-' }}</div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -143,21 +151,16 @@
                                     <h6 class="mb-3">
                                         <i class="mdi mdi-tools text-warning"></i> 設備狀態
                                     </h6>
-                                    <div class="equipment-list">
-                                        <!-- 如果有設備資料就顯示，沒有就顯示提示 -->
-                                        <div v-if="detailRoom?.Equipment && detailRoom.Equipment.length > 0">
-                                            <div v-for="equipment in detailRoom.Equipment" :key="equipment.id"
-                                                class="equipment-item d-flex justify-content-between align-items-center mb-2">
-                                                <span>{{ equipment.name }}</span>
-                                                <span
-                                                    :class="['badge', equipment.status === 'working' ? 'bg-success' : 'bg-danger']">
-                                                    {{ equipment.status === 'working' ? '正常' : '異常' }}
-                                                </span>
-                                            </div>
+                                    <div v-if="detailRoom?.Equipment?.length > 0">
+                                        <div v-for="equipment in detailRoom.Equipment" :key="equipment.Id"
+                                            class="equipment-item d-flex align-items-center mb-2">
+                                            <i class="mdi mdi-tools me-2 text-secondary"></i>
+                                            <span>{{ equipment.Name }}</span>
                                         </div>
-                                        <div v-else class="text-muted">
-                                            暫無設備資訊
-                                        </div>
+                                    </div>
+
+                                    <div v-else class="text-muted">
+                                        暫無設備資訊
                                     </div>
                                 </div>
                             </div>

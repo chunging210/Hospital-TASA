@@ -21,11 +21,18 @@ namespace TASA.Services.RoomModule
             public decimal Area { get; set; }
             public RoomStatus Status { get; set; }  // ✅ Enum
             public bool IsEnabled { get; set; }
-
+            public Guid? DepartmentId { get; set; }
             public List<string> Images { get; set; } = new();
             public DateTime CreateAt { get; set; }
-                public int EquipmentCount { get; set; }
+            public int EquipmentCount { get; set; }
 
+        }
+
+
+        public record EquipmentVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
         }
 
         public IQueryable<ListVM> List(BaseQueryVM query)
@@ -34,6 +41,8 @@ namespace TASA.Services.RoomModule
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+                .WhereIf(query.DepartmentId.HasValue, x => 
+                        x.DepartmentId == query.DepartmentId)
                 .Select(x => new ListVM
                 {
                     No = x.No,
@@ -69,8 +78,18 @@ namespace TASA.Services.RoomModule
             public PricingType PricingType { get; set; }  // ✅ Enum
             public bool IsEnabled { get; set; }
             public BookingSettings BookingSettings { get; set; }  // ✅ Enum
+            public Guid? DepartmentId { get; set; } 
+            public DepartmentInfoVM? Department { get; set; }
             public List<string>? Images { get; set; }  // ✅ 改成字串陣列
             public List<PricingDetailVM>? PricingDetails { get; set; }
+
+            public List<EquipmentVM>? Equipment { get; set; }
+        }
+
+        public record DepartmentInfoVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
         }
 
         // ✅ 新增/編輯用：接收完整的圖片物件
@@ -87,6 +106,7 @@ namespace TASA.Services.RoomModule
             public PricingType PricingType { get; set; }  // ✅ Enum
             public bool IsEnabled { get; set; }
             public BookingSettings BookingSettings { get; set; }  // ✅ Enum
+            public Guid? DepartmentId { get; set; } 
             public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
         }
@@ -122,8 +142,10 @@ namespace TASA.Services.RoomModule
             var room = db.SysRoom
                 .AsNoTracking()
                 .Include(x => x.Images)
+                .Include(x => x.Department) 
                 .Include(x => x.SysRoomPriceHourly)
                 .Include(x => x.SysRoomPricePeriod)
+                .Include(x => x.Equipment)
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == id);
 
@@ -142,6 +164,21 @@ namespace TASA.Services.RoomModule
                 PricingType = room.PricingType,
                 IsEnabled = room.IsEnabled,
                 BookingSettings = room.BookingSettings,
+                Equipment = room.Equipment
+                    .Where(e => e.DeleteAt == null)
+                    .Select(e => new EquipmentVM
+                    {
+                        Id = e.Id,
+                        Name = e.Name,
+                        // Status = e.Status
+                    })
+                    .ToList(),
+
+                 Department = room.Department != null ? new DepartmentInfoVM
+                {
+                    Id = room.Department.Id,
+                    Name = room.Department.Name
+                } : null,
                 PricingDetails = new List<PricingDetailVM>(),
                 // ✅ 只提取路徑字串
                 Images = room.Images
@@ -204,6 +241,11 @@ namespace TASA.Services.RoomModule
             if (vm.Name.Length > 100)
             {
                 throw new HttpException("會議室名稱長度不得超過 100 字");
+            }
+
+            if (vm.DepartmentId == null || vm.DepartmentId == Guid.Empty)
+            {
+                throw new HttpException("分院為必填");
             }
 
             // 2. 大樓名稱 - 必填
@@ -463,6 +505,7 @@ namespace TASA.Services.RoomModule
                 Status = status,
                 PricingType = vm.PricingType,
                 BookingSettings = vm.BookingSettings,
+                DepartmentId = vm.DepartmentId,
                 IsEnabled = vm.IsEnabled,
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
@@ -604,6 +647,7 @@ namespace TASA.Services.RoomModule
             data.Area = vm.Area;
             data.PricingType = vm.PricingType;
             data.BookingSettings = vm.BookingSettings;
+            data.DepartmentId = vm.DepartmentId;
             data.IsEnabled = vm.IsEnabled;
 
             // ===== 5. 更新 Status 邏輯 =====

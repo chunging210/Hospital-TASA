@@ -18,28 +18,33 @@
                 <h6>基本資訊</h6>
 
                 <div class="mb-3">
-                    <label class="form-label form-label-custom">會議室名稱</label>
+                    <label class="form-label form-label-custom">會議室名稱 <span class="text-danger">*</span></label>
                     <input v-model="form.name" type="text" class="form-control" placeholder="請輸入會議室名稱" required>
                     <div class="invalid-feedback">請輸入會議室名稱</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label form-label-custom">大樓名稱</label>
+                    <label class="form-label form-label-custom">分院 <span class="text-danger">*</span></label>
+                    <select v-model="form.departmentId" class="form-control" required>
+                        <option :value="null">請選擇分院</option>
+                        <option v-for="dept in department.list" :key="dept.Id" :value="dept.Id">
+                            {{ dept.Name }}
+                        </option>
+                    </select>
+                    <div class="invalid-feedback">請選擇分院</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label form-label-custom">大樓名稱 <span class="text-danger">*</span></label>
                     <input v-model="form.building" type="text" class="form-control" placeholder="請輸入大樓名稱" required>
                     <div class="invalid-feedback">請輸入大樓名稱</div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label form-label-custom">樓層</label>
+                    <label class="form-label form-label-custom">樓層 <span class="text-danger">*</span></label>
 
-                    <input
-                        v-model.trim="form.floor"
-                        type="text"
-                        class="form-control"
-                        placeholder="例：B1、B2、1、5、10、RF"
-                        maxlength="4"
-                        required
-                    />
+                    <input v-model.trim="form.floor" type="text" class="form-control" placeholder="例：B1、B2、1、5、10、RF"
+                        maxlength="4" required />
 
                     <div class="form-text text-muted">
                         可輸入格式：B1~B99、1~99、1F~99F、RF
@@ -59,13 +64,13 @@
 
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label form-label-custom">人數</label>
+                        <label class="form-label form-label-custom">人數 <span class="text-danger">*</span></label>
                         <input v-model.number="form.capacity" type="number" class="form-control" placeholder="請輸入人數"
                             min="1" step="1" required>
                         <div class="invalid-feedback">請輸入人數（最少 1 人）</div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label form-label-custom">面積（㎡）</label>
+                        <label class="form-label form-label-custom">面積（㎡） <span class="text-danger">*</span></label>
                         <input v-model.number="form.area" type="number" class="form-control" placeholder="請輸入面積" min="1"
                             step="0.01" required>
                         <div class="invalid-feedback">請輸入面積（㎡）</div>
@@ -75,7 +80,7 @@
 
             <!-- 收費設定區塊 -->
             <div class="form-section">
-                <h6>收費設定</h6>
+                <h6>收費設定 <span class="text-danger">*</span></h6>
 
                 <div class="mb-3">
                     <div class="form-check form-switch">
@@ -92,8 +97,8 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-check">
-                                <input v-model.number="form.feeType" type="radio" name="feeType" id="feeHourly" :value="0"
-                                    class="form-check-input" @@change="room.toggleFeeOptions()">
+                                <input v-model.number="form.feeType" type="radio" name="feeType" id="feeHourly"
+                                    :value="0" class="form-check-input" @@change="room.toggleFeeOptions()">
                                 <label class="form-check-label" for="feeHourly">小時制</label>
                             </div>
                         </div>
@@ -160,11 +165,13 @@
                                             :id="`slot_${slot.Id}`">
                                         <label class="form-check-label" :for="`slot_${slot.Id}`">開放</label>
                                     </div>
-                                    <input v-model="slot.Name" type="text" class="form-control form-control-sm name-input"
-                                        placeholder="時段名稱">
-                                    <input v-model="slot.StartTime" type="time" class="form-control form-control-sm time-input">
+                                    <input v-model="slot.Name" type="text"
+                                        class="form-control form-control-sm name-input" placeholder="時段名稱">
+                                    <input v-model="slot.StartTime" type="time"
+                                        class="form-control form-control-sm time-input">
                                     <span>-</span>
-                                    <input v-model="slot.EndTime" type="time" class="form-control form-control-sm time-input">
+                                    <input v-model="slot.EndTime" type="time"
+                                        class="form-control form-control-sm time-input">
                                     <div class="input-group price-input">
                                         <span class="input-group-text">$</span>
                                         <input v-model.number="slot.Price" type="number"
@@ -197,15 +204,15 @@
                         <div class="upload-item" @@click="room.triggerMediaUpload()">
                             請上傳圖片/影片
                         </div>
-                        <input type="file" id="mediaUpload" accept="image/*,video/*"
-                            @@change="room.handleMediaUpload" style="display: none;">
+                        <input type="file" id="mediaUpload" accept="image/*,video/*" @@change="room.handleMediaUpload"
+                            style="display: none;">
                     </div>
                 </div>
             </div>
 
             <!-- 租借權限設定區塊 -->
             <div class="form-section">
-                <h6>租借權限設定</h6>
+                <h6>租借權限設定 <span class="text-danger">*</span></h6>
                 <div class="rental-options">
                     <!-- 對內 -->
                     <div class="rental-option rental-option-internal" @@click="room.selectRentalOption(0)"

@@ -97,6 +97,11 @@ public partial class SysRoom
     /// </summary>
     public BookingSettings BookingSettings { get; set; }
 
+    public Guid? DepartmentId { get; set; }
+    
+    public SysDepartment? Department { get; set; } 
+
+
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
 

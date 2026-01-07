@@ -48,9 +48,16 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.BookingSettings)
                 .HasDefaultValue(BookingSettings.InternalOnly)
                 .HasComment("租借權限設定");
+            entity.Property(e => e.DepartmentId)
+                .HasComment("分院ID");
 
-            OnConfigurePartial(entity);
-        }
+            entity.HasOne(e => e.Department)
+                .WithMany()
+                .HasForeignKey(e => e.DepartmentId)
+                .HasPrincipalKey(d => d.Id)  // ✅ 指定 SysDepartment 的 Id 作為 Principal Key
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_SysRoom_SysDepartment");
+                    }
         partial void OnConfigurePartial(EntityTypeBuilder<SysRoom> entity);
     }
 }

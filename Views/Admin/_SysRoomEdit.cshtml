@@ -20,53 +20,63 @@
                         <input v-model="room.vm.Name" type="text" class="form-control form-control-sm">
                     </div>
 
+                    <!-- ✅ 分院、大樓、樓層同一列 -->
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label">分院 <span class="text-danger">*</span></label>
+                            <select v-model="room.vm.DepartmentId" class="form-select form-select-sm" required>
+                                <option :value="null">請選擇</option>
+                                <option v-for="dept in department.list" :key="dept.Id" :value="dept.Id">
+                                    {{ dept.Name }}
+                                </option>
+                            </select>
+                            <div class="invalid-feedback">請選擇分院</div>
+                        </div>
+
+                        <div class="col-md-4">
                             <label class="form-label">大樓名稱 <span class="text-danger">*</span></label>
                             <input v-model="room.vm.Building" type="text" class="form-control form-control-sm">
                         </div>
-                        <div class="col-md-6">
+
+                        <div class="col-md-4">
                             <label class="form-label">樓層 <span class="text-danger">*</span></label>
-                            <select v-model="room.vm.Floor" class="form-select form-select-sm">
-                                <option value="B2">B2 地下二樓</option>
-                                <option value="B1">B1 地下一樓</option>
-                                <option value="1">1樓</option>
-                                <option value="2">2樓</option>
-                                <option value="3">3樓</option>
-                                <option value="4">4樓</option>
-                                <option value="5">5樓</option>
-                            </select>
+                            <input v-model.trim="room.vm.Floor" type="text" class="form-control form-control-sm"
+                                placeholder="例：B1、1、RF" maxlength="4">
                         </div>
                     </div>
 
-                    <div class="row g-2 mt-2">
-                        <div class="col-md-6">
-                            <label class="form-label">使用狀態</label>
-                            <select v-model.number="room.vm.Status" class="form-select form-select-sm">
-                                <option value="0">可預約</option>
-                                <option value="1">維修中</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="mb-3 mt-2">
+                    <!-- ✅ 說明單獨一列 -->
+                    <div class="mb-3 mt-3">
                         <label class="form-label">會議室說明</label>
                         <textarea v-model="room.vm.Description" class="form-control form-control-sm"
                             rows="3"></textarea>
                     </div>
 
+                    <!-- ✅ 容量、面積各佔一列 -->
                     <div class="row g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label class="form-label">容量（人） <span class="text-danger">*</span></label>
                             <input v-model.number="room.vm.Capacity" type="number" class="form-control form-control-sm"
                                 min="1">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label class="form-label">面積（㎡） <span class="text-danger">*</span></label>
                             <input v-model.number="room.vm.Area" type="number" class="form-control form-control-sm"
                                 min="1" step="0.01">
                         </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check mb-0">
+                                <input v-model="room.vm.Status" :true-value="1" :false-value="0" type="checkbox"
+                                    class="form-check-input" id="editStatus">
+                                <label class="form-check-label" for="editStatus">
+                                    維修中
+                                </label>
+                            </div>
+                        </div>
                     </div>
+
+
                 </div>
 
                 <!-- 收費設定 -->

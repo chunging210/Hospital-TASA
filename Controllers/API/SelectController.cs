@@ -36,10 +36,17 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.Role());
         }
 
-        [HttpGet("buildingfloors")]
-        public IActionResult RoomBuildingFloors()
+        [HttpGet("buildingsbydepartment")]
+        public IActionResult BuildingsByDepartment([FromQuery] Guid departmentId)
         {
-            return Ok(service.SelectServices.RoomBuildingFloors().ToList());
+
+            return Ok(service.SelectServices.BuildingsByDepartment(departmentId));
+        }
+
+        [HttpPost("floorsbybuilding")]
+        public IActionResult FloorsByBuilding([FromBody] FloorsByBuildingQueryVM query)
+        {
+            return Ok(service.SelectServices.FloorsByBuilding(query.DepartmentId, query.Building));
         }
 
         [HttpPost("roomsbyfloor")]

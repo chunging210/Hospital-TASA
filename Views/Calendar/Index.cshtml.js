@@ -5,6 +5,8 @@ const { ref, reactive, onMounted, computed, watch, toRaw } = Vue;
 const buildings = ref([]);
 const selectedBuilding = ref('');
 const selectedFloor = ref('');
+const departments = ref([]);
+const selectedDepartment = ref(null);
 
 const floorOptions = computed(() => {
     const b = buildings.value.find(
@@ -18,6 +20,7 @@ const room = new function () {
     this.query = reactive({
         keyword: '',
         building: '',
+        departmentId: '',
         floor: '',
         isEnabled: true
     });
@@ -25,14 +28,54 @@ const room = new function () {
     this.list = reactive([]);
     this.page = {};
 
-    /* ====== 載入大樓/樓層 ====== */
-    this.loadBuildingFloors = () => {
-        global.api.select.buildingfloors()
+    /* ====== 載入分院 ====== */
+    this.loadDepartments = () => {
+        global.api.select.department()
+            .then(res => {
+                departments.value = res.data || [];
+            })
+            .catch(() => {
+                addAlert('取得分院列表失敗', { type: 'danger' });
+            });
+    };
+
+
+    /* ====== 載入樓層（根據分院+大樓） ====== */
+    this.loadFloorsByBuilding = (building) => {
+        if (!building || !selectedDepartment.value) return;
+
+        global.api.select.floorsbybuilding({
+            body: {
+                departmentId: selectedDepartment.value,
+                building: building
+            }
+        })
+            .then(res => {
+                const buildingItem = buildings.value.find(
+                    b => b.Building === building
+                );
+
+                if (buildingItem) {
+                    buildingItem.Floors = (res.data || []).map(f => f.Name);
+                }
+            })
+            .catch(() => {
+                addAlert('取得樓層列表失敗', { type: 'danger' });
+            });
+    };
+
+    /* ====== 載入大樓（根據分院） ====== */
+    this.loadBuildingsByDepartment = (departmentId) => {
+        global.api.select.buildingsbydepartment({
+            body: {
+                departmentId: departmentId
+            }
+        })
             .then(res => {
                 buildings.value = res.data || [];
             })
             .catch(() => {
-                addAlert('取得大樓樓層失敗', { type: 'danger' });
+                addAlert('取得大樓列表失敗', { type: 'danger' });
             });
     };
 
@@ -179,7 +222,8 @@ window.$config = {
         this.selectedBuilding = selectedBuilding;
         this.selectedFloor = selectedFloor;
         this.floorOptions = floorOptions;
-
+        this.departments = departments;  // ✅ 加上分院
+        this.selectedDepartment = selectedDepartment;  // ✅ 加上分院選擇
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.hasDetailImages = room.hasDetailImages;
@@ -192,15 +236,45 @@ window.$config = {
         };
 
         onMounted(() => {
-            room.loadBuildingFloors();
+            room.loadDepartments();
 
             room.page = this.roompage.value;
             room.getList({ page: 1, perPage: 6 });
 
+            watch(selectedDepartment, (departmentId) => {
+                // 只接受「有值的字串」
+                if (typeof departmentId !== 'string' || !departmentId) {
+                    // 清空所有條件
+                    room.query.departmentId = '';
+                    room.query.building = '';
+                    room.query.floor = '';
+
+                    buildings.value = [];
+                    selectedBuilding.value = '';
+                    selectedFloor.value = '';
+
+                    // ⭐ 重新抓「全部會議室」
+                    room.getList({ page: 1, perPage: 6 });
+                    return;
+                }
+
+                room.query.departmentId = departmentId;
+                room.query.building = '';
+                room.query.floor = '';
+                selectedBuilding.value = '';
+                selectedFloor.value = '';
+
+                room.loadBuildingsByDepartment(departmentId);
+                room.getList({ page: 1, perPage: 6 });
+            });
+
             watch(selectedBuilding, (newBuilding) => {
+                console.log('[watch selectedBuilding]', newBuilding);
                 room.query.building = newBuilding || '';
                 selectedFloor.value = '';  // ⭐ 自動清空樓層
                 room.query.floor = '';
+                room.loadFloorsByBuilding(newBuilding);
+
                 room.getList({ page: 1, perPage: 6 });
             });
 

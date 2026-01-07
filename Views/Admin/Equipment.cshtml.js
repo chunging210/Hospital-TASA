@@ -1,6 +1,6 @@
 ﻿// Admin/Equipment - 修正級聯邏輯
 import global from '/global.js';
-const { ref, reactive, onMounted, computed } = Vue;
+const { ref, reactive, onMounted, computed, watch } = Vue;
 
 class VM {
     Id = null;
@@ -18,7 +18,11 @@ class VM {
     Account = '';
     Password = '';
     IsEnabled = true;
+    DepartmentId = '';
 }
+const isEditing = ref(false);
+const departments = ref([]);
+const selectedDepartment = ref('');
 
 const equipment = new function () {
     // ========= 查詢參數 =========
@@ -43,42 +47,24 @@ const equipment = new function () {
             });
     };
 
-    // ========= 載入大樓清單 =========
-    this.loadBuildingFloors = () => {
-        global.api.select.buildingfloors()
-            .then((response) => {
-                // buildingfloors 返回 { Building, Floors[] }[]
-                copy(this.buildings, response.data || []);
-                console.log('大樓列表:', this.buildings);
-            })
-            .catch(error => {
-                addAlert('取得大樓資訊失敗', { type: 'danger', click: error.download });
-            });
-    };
 
     // ========= 大樓變更時取得樓層 =========
     this.onBuildingChange = () => {
-        if (!this.vm.Building) {
-            this.floorOptions.splice(0);
-            this.roomOptions.splice(0);
-            this.vm.Floor = '';
-            this.vm.RoomId = null;
-            return;
-        }
-
-        // 從 buildingfloors 結果中直接取得該大樓的樓層
-        const selectedBuilding = this.buildings.find(b => b.Building === this.vm.Building);
-        if (selectedBuilding) {
-            copy(this.floorOptions, selectedBuilding.Floors || []);
-            console.log(`大樓: ${this.vm.Building}, 樓層:`, this.floorOptions);
-        } else {
-            this.floorOptions.splice(0);
-        }
-
-        // 清空會議室和樓層選擇
+        this.floorOptions.splice(0);
         this.roomOptions.splice(0);
         this.vm.Floor = '';
         this.vm.RoomId = null;
+
+        if (!this.vm.Building) return;
+
+        global.api.select.floorsbybuilding({
+            body: {
+                departmentId: selectedDepartment.value,
+                building: this.vm.Building
+            }
+        }).then(res => {
+            copy(this.floorOptions, res.data || []);
+        });
     };
 
     // ========= 樓層變更時取得會議室 =========
@@ -109,39 +95,53 @@ const equipment = new function () {
     this.vm = reactive(new VM());
 
     // ========= 打開 Modal (新增或編輯) =========
-    this.getVM = (id) => {
-        if (id) {
-            // ===== 編輯 =====
-            global.api.admin.equipmentdetail({ body: { id } })
-                .then((response) => {
-                    copy(this.vm, response.data);
-                    // 編輯時也要載入該大樓的樓層
-                    // ✅ 直接從 buildings 中獲取樓層，不清空
-                    const selectedBuilding = this.buildings.find(b => b.Building === this.vm.Building);
-                    if (selectedBuilding) {
-                        copy(this.floorOptions, selectedBuilding.Floors || []);
-                    }
+    this.getVM = async (id) => {
 
-                    // ✅ 直接用 API 載入會議室，不清空其他數據
-                    if (this.vm.Floor) {
-                        global.api.select.roomsbyfloor({
-                            body: { Building: this.vm.Building, Floor: this.vm.Floor }
-                        })
-                            .then((roomResponse) => {
-                                copy(this.roomOptions, roomResponse.data);
-                            })
-                    }
-                })
-                .catch(error => {
-                    addAlert('取得資料失敗', { type: 'danger', click: error.download });
-                });
-        } else {
-            // ===== 新增 =====
+        if (!id) {
+            // 新增
+            isEditing.value = false;
             copy(this.vm, new VM());
-            this.floorOptions.splice(0);
-            this.roomOptions.splice(0);
+            selectedDepartment.value = '';
+            return;
         }
+
+        // ===== 編輯 =====
+        isEditing.value = true;
+
+        const res = await global.api.admin.equipmentdetail({ body: { id } });
+        copy(this.vm, res.data);
+
+        // 同步分院（不觸發清空）
+        selectedDepartment.value = this.vm.DepartmentId;
+
+        // 載入大樓
+        const bRes = await global.api.select.buildingsbydepartment({
+            body: { departmentId: selectedDepartment.value }
+        });
+        copy(this.buildings, bRes.data || []);
+
+        // 載樓層
+        const fRes = await global.api.select.floorsbybuilding({
+            body: {
+                departmentId: selectedDepartment.value,
+                building: this.vm.Building
+            }
+        });
+        copy(this.floorOptions, fRes.data || []);
+
+        // 載會議室
+        const rRes = await global.api.select.roomsbyfloor({
+            body: {
+                Building: this.vm.Building,
+                Floor: this.vm.Floor
+            }
+        });
+        copy(this.roomOptions, rRes.data || []);
+
+        isEditing.value = false;
     };
+
+
 
     // ========= 驗證 =========
     this.validate = () => {
@@ -157,15 +157,20 @@ const equipment = new function () {
             return false;
         }
 
-        // 3️⃣ 如果選擇了大樓，則樓層和會議室必填
-        if (this.vm.Building) {
+        if (selectedDepartment.value) {
+
+            if (!this.vm.Building || this.vm.Building === '') {
+                addAlert('已選擇分院，請選擇大樓', { type: 'warning' });
+                return false;
+            }
+
             if (!this.vm.Floor || this.vm.Floor === '') {
-                addAlert('已選擇大樓，樓層為必填', { type: 'warning' });
+                addAlert('已選擇分院，請選擇樓層', { type: 'warning' });
                 return false;
             }
 
             if (!this.vm.RoomId) {
-                addAlert('已選擇大樓，會議室為必填', { type: 'warning' });
+                addAlert('已選擇分院，請選擇會議室', { type: 'warning' });
                 return false;
             }
         }
@@ -206,6 +211,16 @@ const equipment = new function () {
         }
 
         return true;
+    };
+
+    this.loadDepartments = () => {
+        global.api.select.department()
+            .then(res => {
+                departments.value = res.data || [];
+            })
+            .catch(() => {
+                addAlert('取得分院失敗', { type: 'danger' });
+            });
     };
 
     // ========= 保存 =========
@@ -250,13 +265,37 @@ const equipment = new function () {
 };
 
 window.$config = {
-    setup: () => new function () {
-        this.equipment = equipment;
+    setup() {
+        watch(selectedDepartment, (departmentId) => {
+
+            if (isEditing.value) return;
+
+            equipment.buildings.splice(0);
+            equipment.floorOptions.splice(0);
+            equipment.roomOptions.splice(0);
+
+            equipment.vm.Building = '';
+            equipment.vm.Floor = '';
+            equipment.vm.RoomId = null;
+
+            if (!departmentId) return;
+
+            global.api.select.buildingsbydepartment({
+                body: { departmentId }
+            }).then(res => {
+                copy(equipment.buildings, res.data || []);
+            });
+        });
 
         onMounted(() => {
-            // 初始化：載入大樓清單和設備列表
-            equipment.loadBuildingFloors();
+            equipment.loadDepartments();
             equipment.getList();
         });
+
+        return {
+            equipment,
+            departments,
+            selectedDepartment
+        };
     }
 };

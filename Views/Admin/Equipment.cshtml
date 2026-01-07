@@ -66,7 +66,7 @@
                             <td>{{ item.Name }}</td>
                             <td>{{ item.TypeName }}</td>
                             <td>{{ item.ProductModel || '-' }}</td>
-                            <td>{{ (item.Building && item.Floor && item.RoomName) ? `${item.Building} ${item.Floor} /
+                            <td>{{ (item.Building && item.Floor && item.RoomName) ? `${item.Building} ${item.Floor} 樓/
                                 ${item.RoomName}` : '-' }}</td>
                             <td>{{ item.RentalPrice > 0 ? 'NT$ ' + item.RentalPrice : '-' }}</td>
                             @* <td>{{ item.IsEnabled ? '✓' : '' }}</td> *@
@@ -145,6 +145,19 @@
                     </div>
 
 
+                    <!-- 分院 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">分院</label>
+                        <div class="col-sm-9">
+                            <select v-model="selectedDepartment" class="form-select">
+                                <option value="">請選擇分院</option>
+                                <option v-for="d in departments" :key="d.Id" :value="d.Id">
+                                    {{ d.Name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- 大樓名稱 -->
                     <div class="row mb-4">
                         <label class="col-sm-3 col-form-label">大樓名稱</label>
@@ -166,8 +179,8 @@
                             <select v-model="equipment.vm.Floor" @@change="equipment.onFloorChange" class="form-select"
                                 :disabled="!equipment.vm.Building">
                                 <option value="">請先選擇大樓</option>
-                                <option v-for="f in equipment.floorOptions" :key="f" :value="f">
-                                    {{ f }}
+                                <option v-for="f in equipment.floorOptions" :key="f.Name" :value="f.Name">
+                                    {{ f.Name }}
                                 </option>
                             </select>
                         </div>
