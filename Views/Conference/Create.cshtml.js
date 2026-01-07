@@ -1,6 +1,6 @@
 // Conference Create Page
 import global from '/global.js';
-const { ref, reactive, computed, onMounted, watch } = Vue;
+const { ref, reactive, computed, onMounted, watch, toRaw } = Vue;
 
 /* ===============================
  * 主畫面 ViewModel
@@ -9,7 +9,7 @@ window.$config = {
     setup: () => new function () {
 
         /* ========= 基本資料 ========= */
-        this.initiatorName = ref(''); // 之後可接 me.vm.Name
+        this.initiatorName = ref('');
         this.initiatorId = ref('');
         this.availableEquipment = ref([]);
         this.availableBooths = ref([]);
@@ -20,6 +20,7 @@ window.$config = {
             date: '',
             meetingType: 'physical',
 
+            departmentId: null,
             building: '',
             floor: '',
             roomId: '',
@@ -37,13 +38,13 @@ window.$config = {
         });
 
         /* ========= 會議室資料 ========= */
-        this.buildings = ref([]);          // API buildingfloors
-        this.rooms = ref([]);              // 展平後 rooms
+        this.departments = ref([]);
+        this.buildings = ref([]);
+        this.rooms = ref([]);
         this.selectedRoom = ref(null);
         this.timeSlots = ref([]);
 
-        /* ========= 設備 / 攤位 ========= */
-
+        /* ========= 計算樓層選項 ========= */
         this.availableFloors = computed(() => {
             const b = this.buildings.value.find(
                 x => x.Building === this.form.building
@@ -51,81 +52,9 @@ window.$config = {
             return b ? b.Floors : [];
         });
 
-
-        this.submitBooking = () => {
-            if (!this.form.name || !this.form.date || !this.form.roomId) {
-                alert('請填寫完整會議資訊');
-                return;
-            }
-
-            const payload = {
-                ...this.form,
-                roomCost: this.roomCost.value,
-                equipmentCost: this.equipmentCost.value,
-                boothCost: this.boothCost.value,
-                totalAmount: this.totalAmount.value
-            };
-
-            console.log('送出資料', payload);
-            // 呼叫後端 API
-            global.api.conference.create({ body: payload })
-                .then(res => {
-                    alert('預約成功');
-                    // 重導到預約清單
-                })
-                .catch(err => {
-                    alert('預約失敗：' + err.message);
-                });
-        };
-
-        this.loadEquipmentByRoom = async (roomId = null) => {
-            try {
-
-                const body = {};
-
-                if (roomId) {
-                    body.roomId = roomId;
-                }
-
-                const res = await global.api.select.equipmentbyroom({
-                    body
-                });
-
-                const allData = res.data;
-                console.log('✅ 回傳資料:', res);
-                // ✅ 分離設備和攤位
-                this.availableEquipment.value = allData
-                    .filter(e => e.TypeName !== '攤位租借')
-                    .map(e => ({
-                        id: e.Id,
-                        name: e.Name,
-                        icon: 'bx-cog',
-                        description: e.ProductModel || '設備',
-                        price: e.RentalPrice
-                    }));
-
-                this.availableBooths.value = allData
-                    .filter(e => e.TypeName === '攤位租借')
-                    .map(e => ({
-                        id: e.Id,
-                        name: e.Name,
-                        icon: 'bx-store',
-                        description: e.ProductModel || '攤位',
-                        price: e.RentalPrice
-                    }));
-
-
-            } catch (err) {
-                console.error('❌ 錯誤:', err);  // ← 這樣才能看到錯誤
-            }
-
-        };
-
-        /* ===============================
-         * computed
-         * =============================== */
         this.filteredRooms = computed(() => this.rooms.value);
 
+        /* ========= 費用計算 ========= */
         this.roomCost = computed(() => {
             if (!this.form.selectedSlots.length) return 0;
 
@@ -148,19 +77,135 @@ window.$config = {
             }, 0);
         });
 
-        this.toggleEquipment = (equipmentId) => {
-            const idx = this.form.selectedEquipment.indexOf(equipmentId);
-            if (idx > -1) {
-                this.form.selectedEquipment.splice(idx, 1);
-            } else {
-                this.form.selectedEquipment.push(equipmentId);
+        this.totalAmount = computed(() => {
+            return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
+        });
+
+        /* ====== 載入分院 ====== */
+        this.loadDepartments = () => {
+            global.api.select.department()
+                .then(res => {
+                    this.departments.value = res.data || [];
+                })
+                .catch(() => {
+                    addAlert('取得分院列表失敗', { type: 'danger' });
+                });
+        };
+
+        /* ====== 載入大樓（根據分院） ====== */
+        this.loadBuildingsByDepartment = (departmentId) => {
+            if (!departmentId) {
+                this.buildings.value = [];
+                return;
+            }
+
+            global.api.select.buildingsbydepartment({
+                body: {
+                    departmentId: departmentId
+                }
+            })
+                .then(res => {
+                    this.buildings.value = res.data || [];
+                })
+                .catch(() => {
+                    addAlert('取得大樓列表失敗', { type: 'danger' });
+                });
+        };
+
+        /* ====== 載入樓層（根據分院+大樓） ====== */
+        this.loadFloorsByBuilding = (building) => {
+            if (!building || !this.form.departmentId) {
+                return;
+            }
+
+            global.api.select.floorsbybuilding({
+                body: {
+                    departmentId: this.form.departmentId,
+                    building: building
+                }
+            })
+                .then(res => {
+                    const buildingItem = this.buildings.value.find(
+                        b => b.Building === building
+                    );
+
+                    if (buildingItem) {
+                        buildingItem.Floors = (res.data || []).map(f => f.Name);
+                    }
+                })
+                .catch(() => {
+                    addAlert('取得樓層列表失敗', { type: 'danger' });
+                });
+        };
+
+        /* ====== 載入會議室（根據樓層） ====== */
+        this.loadRoomsByFloor = async () => {
+            if (!this.form.building || !this.form.floor) return;
+
+            this.form.roomId = '';
+            this.rooms.value = [];
+            this.timeSlots.value = [];
+            this.form.selectedSlots = [];
+
+            try {
+                const res = await global.api.select.roomsbyfloor({
+                    body: {
+                        building: this.form.building,
+                        floor: this.form.floor
+                    }
+                });
+
+                this.rooms.value = res.data || [];
+                console.log('✅ 成功載入會議室:', this.rooms.value);
+
+            } catch (error) {
+                console.error('❌ 失敗:', error);
             }
         };
 
-        /* ===============================
-         * methods（對齊畫面）
-         * =============================== */
+        /* ========= 設備和攤位 ========= */
+        this.loadEquipmentByRoom = async (roomId = null) => {
+            try {
+                const body = {};
 
+                if (roomId) {
+                    body.roomId = roomId;
+                }
+
+                const res = await global.api.select.equipmentbyroom({
+                    body
+                });
+
+                const allData = res.data;
+                console.log('✅ 設備資料:', res);
+
+                // ✅ 分離設備和攤位
+                this.availableEquipment.value = allData
+                    .filter(e => e.TypeName !== '攤位租借')
+                    .map(e => ({
+                        id: e.Id,
+                        name: e.Name,
+                        icon: 'bx-cog',
+                        description: e.ProductModel || '設備',
+                        price: e.RentalPrice
+                    }));
+
+                this.availableBooths.value = allData
+                    .filter(e => e.TypeName === '攤位租借')
+                    .map(e => ({
+                        id: e.Id,
+                        name: e.Name,
+                        icon: 'bx-store',
+                        description: e.ProductModel || '攤位',
+                        price: e.RentalPrice
+                    }));
+
+            } catch (err) {
+                console.error('❌ 錯誤:', err);
+            }
+        };
+
+        /* ========= 時段 ========= */
         this.updateTimeSlots = async () => {
             console.group('🟦 updateTimeSlots Debug');
 
@@ -200,7 +245,6 @@ window.$config = {
             } finally {
                 console.groupEnd();
             }
-
         };
 
         this.displayedSlots = computed(() => {
@@ -231,7 +275,23 @@ window.$config = {
             }
         };
 
-        this.updateTotal = () => { };
+        this.toggleEquipment = (equipmentId) => {
+            const idx = this.form.selectedEquipment.indexOf(equipmentId);
+            if (idx > -1) {
+                this.form.selectedEquipment.splice(idx, 1);
+            } else {
+                this.form.selectedEquipment.push(equipmentId);
+            }
+        };
+
+        this.toggleBooth = (boothId) => {
+            const idx = this.form.selectedBooths.indexOf(boothId);
+            if (idx > -1) {
+                this.form.selectedBooths.splice(idx, 1);
+            } else {
+                this.form.selectedBooths.push(boothId);
+            }
+        };
 
         this.submitBooking = () => {
             if (!this.form.name || !this.form.date || !this.form.roomId) {
@@ -248,135 +308,49 @@ window.$config = {
             };
 
             console.log('送出資料', payload);
-            alert('預約成功（示意）');
-        };
-
-        this.onBuildingChange = () => {
-            this.form.floor = '';
-            this.form.roomId = '';
-            this.timeSlots.value = [];
-            this.form.selectedSlots = [];
-        };
-
-        this.onFloorChange = async () => {
-            if (!this.form.building || !this.form.floor) return;
-
-            this.form.roomId = '';
-            this.rooms.value = [];
-            this.timeSlots.value = [];
-            this.form.selectedSlots = [];
-
-            try {
-                const res = await global.api.select.roomsbyfloor({
-                    body: {
-                        building: this.form.building,
-                        floor: this.form.floor
-                    }
+            // 呼叫後端 API
+            global.api.conference.create({ body: payload })
+                .then(res => {
+                    alert('預約成功');
+                    // 重導到預約清單
+                })
+                .catch(err => {
+                    alert('預約失敗：' + err.message);
                 });
-
-                this.rooms.value = res.data || [];
-                console.log('✅ 成功:', this.rooms.value);
-
-            } catch (error) {
-                console.error('❌ 失敗:', error);
-            }
         };
-
-        this.toggleEquipment = (price) => {
-            const idx = this.form.selectedEquipment.indexOf(price);
-            if (idx > -1) {
-                this.form.selectedEquipment.splice(idx, 1);
-            } else {
-                this.form.selectedEquipment.push(price);
-            }
-        };
-
-        this.toggleBooth = (price) => {
-            const idx = this.form.selectedBooths.indexOf(price);
-            if (idx > -1) {
-                this.form.selectedBooths.splice(idx, 1);
-            } else {
-                this.form.selectedBooths.push(price);
-            }
-        };
-
-        watch(
-            () => this.form.roomId,
-            (roomId) => {
-                console.log('🔄 roomId changed:', roomId);
-
-                // roomId === '' → 不帶參數
-                // roomId === guid → 帶 roomId
-                this.loadEquipmentByRoom(roomId);
-            },
-            { immediate: true } // ⭐ 一進畫面就會跑一次（共用設備）
-        );
-
 
         /* ===============================
          * mounted
          * =============================== */
         onMounted(async () => {
-            const params = new URLSearchParams(location.search);
+            // 先載入分院列表
+            this.loadDepartments();
 
+            // 檢查 URL 參數
+            const params = new URLSearchParams(location.search);
             const presetRoomId = params.get('roomId');
             const presetBuilding = params.get('building');
             const presetFloor = params.get('floor');
-            const presetDate = params.get('date');
+            const presetDepartmentId = params.get('departmentId');
 
-            if (presetDate) {
-                this.form.date = presetDate;
-            }
+
             console.log('📌 預設參數', {
                 presetRoomId,
                 presetBuilding,
-                presetFloor
+                presetFloor,
+                presetDepartmentId
             });
-            // 先載入大樓 / 樓層資料
-            const bfRes = await global.api.select.buildingfloors();
-            this.buildings.value = bfRes.data || [];
-            await this.updateTimeSlots();
 
-
-            // 如果是從「立即預約」進來
-            if (presetRoomId && presetBuilding && presetFloor) {
-
-                // 1️⃣ 設定大樓
-                this.form.building = presetBuilding;
-
-                // 2️⃣ 設定樓層
-                this.form.floor = presetFloor;
-
-                // 3️⃣ 撈該樓層會議室
-                const roomRes = await global.api.select.roomsbyfloor({
-                    body: {
-                        building: presetBuilding,
-                        floor: presetFloor
-                    }
-                });
-                this.rooms.value = roomRes.data || [];
-
-                // 4️⃣ 選中會議室
-                this.form.roomId = presetRoomId;
-                this.selectedRoom.value =
-                    this.rooms.value.find(r => r.Id === presetRoomId) || null;
-                await this.updateTimeSlots();
-                console.log('✅ 自動選好會議室', this.selectedRoom.value);
-            }
-
-
-
+            // 載入使用者資訊
             try {
                 const userRes = await global.api.auth.me();
                 const currentUser = userRes.data;
 
                 console.log('✅ 目前登入使用者:', currentUser);
 
-                // ✅ 修正：直接使用 API 返回的欄位名稱
                 this.initiatorName.value = currentUser.Name || '未知使用者';
                 this.initiatorId.value = currentUser.Id || '';
 
-                // ✅ 設定表單
                 this.form.initiatorId = this.initiatorId.value;
                 this.form.attendees = [this.initiatorId.value];
 
@@ -385,6 +359,108 @@ window.$config = {
                 this.initiatorName.value = '未知使用者';
                 this.initiatorId.value = '';
             }
+
+            // 如果從「立即預約」進來，自動填入資料
+            if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
+
+
+                this.form.departmentId = presetDepartmentId;  // ✅ 先設定分院
+                await this.loadBuildingsByDepartment(presetDepartmentId);
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.building = presetBuilding;
+                this.loadFloorsByBuilding(presetBuilding);
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.floor = presetFloor;
+                await this.loadRoomsByFloor();
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.roomId = presetRoomId;
+                this.selectedRoom.value =
+                    this.rooms.value.find(r => r.Id === presetRoomId) || null;
+                await this.updateTimeSlots();
+                console.log('✅ 自動選好會議室', this.selectedRoom.value);
+            }
+
+            // Watch 監聽選擇變化
+            watch(
+                () => this.form.departmentId,
+                (departmentId) => {
+                    if (!departmentId) {
+                        this.buildings.value = [];
+                        this.form.building = '';
+                        this.form.floor = '';
+                        this.form.roomId = '';
+                        this.rooms.value = [];
+                        this.timeSlots.value = [];
+                        this.form.selectedSlots = [];
+                        return;
+                    }
+
+                    this.form.building = '';
+                    this.form.floor = '';
+                    this.form.roomId = '';
+                    this.rooms.value = [];
+                    this.timeSlots.value = [];
+                    this.form.selectedSlots = [];
+
+                    this.loadBuildingsByDepartment(departmentId);
+                }
+            );
+
+            watch(
+                () => this.form.building,
+                (building) => {
+                    if (!building) {
+                        this.form.floor = '';
+                        this.form.roomId = '';
+                        this.rooms.value = [];
+                        this.timeSlots.value = [];
+                        this.form.selectedSlots = [];
+                        return;
+                    }
+
+                    this.form.floor = '';
+                    this.form.roomId = '';
+                    this.rooms.value = [];
+                    this.timeSlots.value = [];
+                    this.form.selectedSlots = [];
+
+                    this.loadFloorsByBuilding(building);
+                }
+            );
+
+            watch(
+                () => this.form.floor,
+                (floor) => {
+                    if (!floor) {
+                        this.form.roomId = '';
+                        this.rooms.value = [];
+                        this.timeSlots.value = [];
+                        this.form.selectedSlots = [];
+                        return;
+                    }
+
+                    this.loadRoomsByFloor();
+                }
+            );
+
+            watch(
+                () => this.form.roomId,
+                (roomId) => {
+                    console.log('🔄 roomId changed:', roomId);
+                    this.loadEquipmentByRoom(roomId);
+                    this.updateTimeSlots();  // ✅ 加上這行
+                }
+            );
+
+            watch(
+                () => this.form.date,
+                () => {
+                    this.updateTimeSlots();
+                }
+            );
         });
     }
 };

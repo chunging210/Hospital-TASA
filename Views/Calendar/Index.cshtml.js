@@ -205,7 +205,7 @@ const room = new function () {
             roomId: item.Id,
             building: item.Building,
             floor: item.Floor,
-            date: new Date().toISOString().slice(0, 10) // 今天
+            departmentId: item.DepartmentId,
         });
 
         location.href = `/Conference/Create?${params.toString()}`;

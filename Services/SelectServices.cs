@@ -22,7 +22,7 @@ namespace TASA.Services
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public RoomStatus Status { get; set; }
-
+            public Guid? DepartmentId { get; set; } 
             public IEnumerable<string>? Images { get; set; }
 
             public int EquipmentCount { get; set; }
@@ -252,6 +252,11 @@ public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
             .WhereEnabled()
             .Where(x => x.Status != RoomStatus.Maintenance);
 
+        if (query.DepartmentId.HasValue)
+        {
+            q = q.Where(x => x.DepartmentId == query.DepartmentId);
+        }
+
         // ✅ 加上分院篩選
         if (query.DepartmentId.HasValue)
         {
@@ -279,6 +284,7 @@ public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
             Name = x.Name,
             Building = x.Building,
             Floor = x.Floor,
+            DepartmentId = x.DepartmentId, 
             Capacity = x.Capacity,
             Area = x.Area,
             Status = x.Status,

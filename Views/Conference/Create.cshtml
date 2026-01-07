@@ -77,19 +77,18 @@
                                                             <label class="col-form-label">會議日期</label>
                                                         </div>
                                                         <div class="col-sm-12 col-xl-auto">
-                                                            <input class="form-control" type="date" v-model="form.date"
-                                                                @@change="updateTimeSlots">
+                                                            <input class="form-control" type="date" v-model="form.date">
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-
 
                                         </form>
                                     </div>
                                     <hr>
                                 </li>
 
+                                <!-- 2. 與會人員 -->
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
@@ -123,7 +122,7 @@
                                     <hr>
                                 </li>
 
-                                <!-- 2. 與會地點 -->
+                                <!-- 3. 與會地點 -->
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
@@ -142,45 +141,78 @@
 
                                                     <div class="row g-2">
 
+                                                        <!-- 分院 -->
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <select
+                                                                class="form-select"
+                                                                v-model="form.departmentId"
+                                                            >
+                                                                <option :value="null">請選擇分院</option>
+                                                                <option
+                                                                    v-for="d in departments"
+                                                                    :key="d.Id"
+                                                                    :value="d.Id"
+                                                                >
+                                                                    {{ d.Name }}
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
                                                         <!-- 大樓 -->
-                                                        <div class="col-sm-12 col-xl-4">
-                                                            <select class="form-select" v-model="form.building"
-                                                                @@change="onBuildingChange">
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <select
+                                                                class="form-select"
+                                                                v-model="form.building"
+                                                                :disabled="!form.departmentId"
+                                                            >
                                                                 <option value="">請選擇大樓</option>
-                                                                <option v-for="b in buildings" :key="b.Building"
-                                                                    :value="b.Building">
+                                                                <option
+                                                                    v-for="b in buildings"
+                                                                    :key="b.Building"
+                                                                    :value="b.Building"
+                                                                >
                                                                     {{ b.Building }}
                                                                 </option>
                                                             </select>
                                                         </div>
 
                                                         <!-- 樓層 -->
-                                                        <div class="col-sm-12 col-xl-4">
-                                                            <select class="form-select" v-model="form.floor"
-                                                                :disabled="!form.building" @@change="onFloorChange">
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <select
+                                                                class="form-select"
+                                                                v-model="form.floor"
+                                                                :disabled="!form.building"
+                                                            >
                                                                 <option value="">請選擇樓層</option>
-                                                                <option v-for="f in availableFloors" :key="f"
-                                                                    :value="f">
+                                                                <option
+                                                                    v-for="f in availableFloors"
+                                                                    :key="f"
+                                                                    :value="f"
+                                                                >
                                                                     {{ f }}
                                                                 </option>
                                                             </select>
                                                         </div>
 
                                                         <!-- 會議室 -->
-                                                        <div class="col-sm-12 col-xl-4">
-                                                            <select class="form-select" v-model="form.roomId"
-                                                                :disabled="!form.floor" @@change="updateTimeSlots">
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <select
+                                                                class="form-select"
+                                                                v-model="form.roomId"
+                                                                :disabled="!form.floor"
+                                                            >
                                                                 <option value="">請選擇會議室</option>
-                                                                <option v-for="room in filteredRooms" :key="room.Id"
-                                                                    :value="room.Id">
+                                                                <option
+                                                                    v-for="room in filteredRooms"
+                                                                    :key="room.Id"
+                                                                    :value="room.Id"
+                                                                >
                                                                     {{ room.Name }}
                                                                 </option>
                                                             </select>
                                                         </div>
 
                                                     </div>
-
-
 
                                                     <!-- 時段選擇 -->
                                                     <div v-if="form.roomId" class="mt-4">
@@ -189,15 +221,14 @@
                                                             點擊時段進行選擇，已被預約的時段無法選擇
                                                         </p>
 
-                                                        <!-- ✅ 加上 grid 容器 -->
                                                         <div class="time-slot-grid">
                                                             <div v-for="slot in displayedSlots" :key="slot.Key"
                                                                 class="time-slot-card" :class="{
-      selected: isSlotSelected(slot),
-      occupied: slot.Occupied
-    }" @@click="toggleTimeSlot(slot)">
+                                                                    selected: isSlotSelected(slot),
+                                                                    occupied: slot.Occupied
+                                                                }" @@click="toggleTimeSlot(slot)">
                                                                 <div class="slot-time">
-                                                                    <strong>{{ slot.Name }}</strong>
+                                                                    <strong>{{ slot.Name || '時段' }}</strong>
                                                                     <div class="text-muted small">
                                                                         {{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}
                                                                     </div>
@@ -216,7 +247,6 @@
                                     </div>
                                     <hr>
                                 </li>
-
 
                                 <!-- 4. 公有設備加租 -->
                                 <li class="checkout-item">
