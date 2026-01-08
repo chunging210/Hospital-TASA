@@ -22,11 +22,11 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
-        [Authorize, HttpPost("equipmentbyroom")]
-        public IActionResult EquipmentByRoom([FromBody] SelectServices.EquipmentByRoomsQueryVM query)
+        [HttpPost("equipmentbyroom")]
+        public IActionResult EquipmentByRoom([FromBody] EquipmentByRoomQueryVM query)
         {
-            Console.WriteLine($"[EquipmentByRoom] roomIds: {(query.RoomIds != null ? string.Join(", ", query.RoomIds) : "null")}");
-            return Ok(service.SelectServices.EquipmentByRooms(query));
+            
+            return Ok(service.SelectServices.EquipmentByRoom(query?.RoomId));
         }
 
 

@@ -23,7 +23,7 @@ window.$config = {
             departmentId: null,
             building: '',
             floor: '',
-            roomId: '',
+            roomId: null,
 
             initiatorId: '',
             attendees: [],
@@ -142,7 +142,7 @@ window.$config = {
         this.loadRoomsByFloor = async () => {
             if (!this.form.building || !this.form.floor) return;
 
-            this.form.roomId = '';
+            this.form.roomId = null;
             this.rooms.value = [];
             this.timeSlots.value = [];
             this.form.selectedSlots = [];
@@ -164,20 +164,45 @@ window.$config = {
         };
 
         /* ========= 設備和攤位 ========= */
-        this.loadEquipmentByRoom = async (roomId = null) => {
+        this.loadEquipmentByRoom = async () => {
             try {
-                const body = {};
+                const roomId = this.form.roomId;  // ✅ 直接讀取 reactive 的值
 
+                console.log('🔄 loadEquipmentByRoom - roomId:', roomId);
+
+                const body = {};
                 if (roomId) {
-                    body.roomId = roomId;
+                    body.RoomId = roomId;
                 }
+
+                console.log('📤 send body:', body);
 
                 const res = await global.api.select.equipmentbyroom({
                     body
                 });
 
-                const allData = res.data;
-                console.log('✅ 設備資料:', res);
+                // ✅ 檢查回傳的資料結構
+                console.log('✅ API 回傳:', res);
+
+                let allData = [];
+
+                // 如果 res.data 是陣列，直接使用
+                if (Array.isArray(res.data)) {
+                    allData = res.data;
+                }
+                // 如果是物件（EquipmentGroupVM），合併 Shared 和 ByRoom
+                else if (res.data && typeof res.data === 'object') {
+                    const shared = res.data.Shared || [];
+                    const byRoom = res.data.ByRoom || {};
+
+                    // 合併共用設備和該房間的設備
+                    allData = [
+                        ...shared,
+                        ...Object.values(byRoom).flat()
+                    ];
+                }
+
+                console.log('📊 整理後的設備列表:', allData);
 
                 // ✅ 分離設備和攤位
                 this.availableEquipment.value = allData
@@ -199,6 +224,9 @@ window.$config = {
                         description: e.ProductModel || '攤位',
                         price: e.RentalPrice
                     }));
+
+                console.log('✅ 設備:', this.availableEquipment.value);
+                console.log('✅ 攤位:', this.availableBooths.value);
 
             } catch (err) {
                 console.error('❌ 錯誤:', err);
@@ -326,6 +354,9 @@ window.$config = {
             // 先載入分院列表
             this.loadDepartments();
 
+            // ✅ 第一次載入共用設備（form.roomId 為 null）
+            await this.loadEquipmentByRoom();
+
             // 檢查 URL 參數
             const params = new URLSearchParams(location.search);
             const presetRoomId = params.get('roomId');
@@ -334,12 +365,6 @@ window.$config = {
             const presetDepartmentId = params.get('departmentId');
 
 
-            console.log('📌 預設參數', {
-                presetRoomId,
-                presetBuilding,
-                presetFloor,
-                presetDepartmentId
-            });
 
             // 載入使用者資訊
             try {
@@ -376,10 +401,14 @@ window.$config = {
                 await this.loadRoomsByFloor();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                this.form.roomId = presetRoomId;
+                this.form.roomId = presetRoomId;  // ✅ 設定 roomId
                 this.selectedRoom.value =
                     this.rooms.value.find(r => r.Id === presetRoomId) || null;
+
                 await this.updateTimeSlots();
+                // ✅ 現在 form.roomId 已設定，直接呼叫（會自動讀取 form.roomId）
+                await this.loadEquipmentByRoom();
+
                 console.log('✅ 自動選好會議室', this.selectedRoom.value);
             }
 
@@ -391,7 +420,7 @@ window.$config = {
                         this.buildings.value = [];
                         this.form.building = '';
                         this.form.floor = '';
-                        this.form.roomId = '';
+                        this.form.roomId = null;
                         this.rooms.value = [];
                         this.timeSlots.value = [];
                         this.form.selectedSlots = [];
@@ -400,7 +429,7 @@ window.$config = {
 
                     this.form.building = '';
                     this.form.floor = '';
-                    this.form.roomId = '';
+                    this.form.roomId = null;
                     this.rooms.value = [];
                     this.timeSlots.value = [];
                     this.form.selectedSlots = [];
@@ -414,7 +443,7 @@ window.$config = {
                 (building) => {
                     if (!building) {
                         this.form.floor = '';
-                        this.form.roomId = '';
+                        this.form.roomId = null;
                         this.rooms.value = [];
                         this.timeSlots.value = [];
                         this.form.selectedSlots = [];
@@ -422,7 +451,7 @@ window.$config = {
                     }
 
                     this.form.floor = '';
-                    this.form.roomId = '';
+                    this.form.roomId = null;
                     this.rooms.value = [];
                     this.timeSlots.value = [];
                     this.form.selectedSlots = [];
@@ -435,7 +464,7 @@ window.$config = {
                 () => this.form.floor,
                 (floor) => {
                     if (!floor) {
-                        this.form.roomId = '';
+                        this.form.roomId = null;
                         this.rooms.value = [];
                         this.timeSlots.value = [];
                         this.form.selectedSlots = [];
@@ -449,9 +478,11 @@ window.$config = {
             watch(
                 () => this.form.roomId,
                 (roomId) => {
+                    if (!roomId) return;
                     console.log('🔄 roomId changed:', roomId);
-                    this.loadEquipmentByRoom(roomId);
-                    this.updateTimeSlots();  // ✅ 加上這行
+                    // ✅ roomId 已改變，直接呼叫（會自動讀取最新的 form.roomId）
+                    this.loadEquipmentByRoom();
+                    this.updateTimeSlots();
                 }
             );
 
