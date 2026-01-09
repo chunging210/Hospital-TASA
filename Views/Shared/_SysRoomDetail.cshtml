@@ -202,8 +202,9 @@
                             <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
                                 <div class="pricing-section">
                                     <div class="mb-3">
-                                        <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' : '時段制'
-                                            }}</span>
+                                        @* <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' : '時段制'
+                                            }}</span> *@
+                                            <span class="badge bg-primary">時段制</span>
                                     </div>
 
                                     <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"
@@ -224,14 +225,14 @@
                                         </div>
 
                                         <!-- 小時制 - 只顯示時間 -->
-                                        <div v-else-if="detailRoom.PricingType === 0"
+                                        @* <div v-else-if="detailRoom.PricingType === 0"
                                             v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
                                             <div class="pricing-item-hourly">
                                                 <span class="pricing-item-hourly-time">{{ pricing.StartTime }} - {{
                                                     pricing.EndTime }}</span>
                                                 <span class="pricing-item-hourly-price">NT$ {{ pricing.Price }}</span>
                                             </div>
-                                        </div>
+                                        </div> *@
                                     </div>
 
                                     <div v-else class="text-muted">

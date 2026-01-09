@@ -124,6 +124,62 @@ public partial class Conference
     /// </summary>
     public Guid? AgentBy { get; set; }
 
+        /// <summary>
+    /// 付費方式
+    /// </summary>
+    [Required]
+    [StringLength(50)]
+    public string PaymentMethod { get; set; }
+
+    /// <summary>
+    /// 付款狀態
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int PaymentStatus { get; set; } = 1;
+
+    /// <summary>
+    /// 付款備註
+    /// </summary>
+    [StringLength(255)]
+    public string PaymentNote { get; set; }
+
+    /// <summary>
+    /// 付款日期
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? PaidAt { get; set; }
+
+    /// <summary>
+    /// 部門代碼
+    /// </summary>
+    [StringLength(50)]
+    public string DepartmentCode { get; set; }
+
+    /// <summary>
+    /// 會議室費用
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int RoomCost { get; set; } = 0;
+
+    /// <summary>
+    /// 設備費用
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int EquipmentCost { get; set; } = 0;
+
+    /// <summary>
+    /// 攤位費用
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int BoothCost { get; set; } = 0;
+
+    /// <summary>
+    /// 總金額
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int TotalAmount { get; set; } = 0;
+
+
     /// <summary>
     /// 建立時間
     /// </summary>
@@ -173,5 +229,8 @@ public partial class Conference
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
 
-     public ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = [];
+    [InverseProperty("Conference")]
+    public virtual ICollection<ConferenceEquipment> ConferenceEquipments { get; set; } = new List<ConferenceEquipment>();
+
+    public ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = [];
 }

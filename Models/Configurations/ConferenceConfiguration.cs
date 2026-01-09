@@ -33,6 +33,47 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Recording).HasComment("錄製");
             entity.Property(e => e.RecurrenceId).HasComment("重複會議父ID");
             entity.Property(e => e.StartTime).HasComment("開始時間");
+            entity.Property(e => e.PaymentMethod)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasComment("付費方式");
+
+            entity.Property(e => e.PaymentStatus)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'1'")
+                .HasComment("付款狀態");
+
+            entity.Property(e => e.PaymentNote)
+                .HasMaxLength(255)
+                .HasComment("付款備註");
+
+            entity.Property(e => e.PaidAt)
+                .HasColumnType("datetime")
+                .HasComment("付款日期");
+
+            entity.Property(e => e.DepartmentCode)
+                .HasMaxLength(50)
+                .HasComment("部門代碼");
+
+            entity.Property(e => e.RoomCost)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("會議室費用");
+
+            entity.Property(e => e.EquipmentCost)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("設備費用");
+
+            entity.Property(e => e.BoothCost)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("攤位費用");
+
+            entity.Property(e => e.TotalAmount)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("總金額");
             entity.Property(e => e.Status)
                 .HasDefaultValueSql("'1'")
                 .HasComment("狀態");

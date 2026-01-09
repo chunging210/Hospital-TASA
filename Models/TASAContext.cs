@@ -28,6 +28,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<ConferenceTemplateUser> ConferenceTemplateUser { get; set; }
 
+    public virtual DbSet<ConferenceEquipment> ConferenceEquipment { get; set; }
+
     public virtual DbSet<ConferenceUser> ConferenceUser { get; set; }
 
     public virtual DbSet<ConferenceWebex> ConferenceWebex { get; set; }
@@ -109,6 +111,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomImageConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceRoomSlotConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysConfigConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferenceEquipmentConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

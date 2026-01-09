@@ -95,7 +95,7 @@ const room = new function () {
         capacity: null,
         area: null,
         refundEnabled: true,
-        feeType: PricingType.Hourly,
+        feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
         departmentId: null
     });
@@ -104,7 +104,7 @@ const room = new function () {
     this.page = {};
     this.mediaFiles = reactive([]);
     this.timeSlots = reactive([]);
-    this.hourlySlots = ref([]);
+    // this.hourlySlots = ref([]);
 
     this.detailRoom = ref(null);
     this.detailRoomCarouselIndex = ref(0);
@@ -154,14 +154,14 @@ const room = new function () {
     }
 
 
-    this.createHourlySlot = (hour, data = {}) => {
-        return {
-            Id: data.Id ?? null,
-            Hour: hour,
-            Checked: data.Checked ?? false,
-            Fee: data.Fee ?? 500
-        };
-    };
+    // this.createHourlySlot = (hour, data = {}) => {
+    //     return {
+    //         Id: data.Id ?? null,
+    //         Hour: hour,
+    //         Checked: data.Checked ?? false,
+    //         Fee: data.Fee ?? 500
+    //     };
+    // };
 
     this.createPeriodSlot = (data = {}) => {
         return {
@@ -199,7 +199,7 @@ const room = new function () {
     this.getVM = (Id) => {
         this.mediaFiles.splice(0);
         this.timeSlots.splice(0);
-        this.hourlySlots.value = [];
+        // this.hourlySlots.value = [];
 
         if (Id) {
             global.api.admin.roomdetail({ body: { Id } })
@@ -229,22 +229,23 @@ const room = new function () {
                     this.vm.Images = [];
                     this.vm.PricingDetails = response.data.PricingDetails || [];
 
-                    if (response.data.PricingType === PricingType.Hourly) {
-                        const dbPricingMap = {};
-                        response.data.PricingDetails?.forEach(p => {
-                            const hour = parseInt(p.StartTime.split(':')[0]);
-                            dbPricingMap[hour] = {
-                                Id: p.Id,
-                                Checked: p.Enabled,
-                                Fee: p.Price
-                            };
-                        });
+                    // if (response.data.PricingType === PricingType.Hourly) {
+                    //     const dbPricingMap = {};
+                    //     response.data.PricingDetails?.forEach(p => {
+                    //         const hour = parseInt(p.StartTime.split(':')[0]);
+                    //         dbPricingMap[hour] = {
+                    //             Id: p.Id,
+                    //             Checked: p.Enabled,
+                    //             Fee: p.Price
+                    //         };
+                    //     });
 
-                        this.hourlySlots.value = Array.from(
-                            { length: 12 },
-                            (_, i) => this.createHourlySlot(i + 8, dbPricingMap[i + 8])
-                        );
-                    } else if (response.data.PricingType === PricingType.Period) {
+                    //     this.hourlySlots.value = Array.from(
+                    //         { length: 12 },
+                    //         (_, i) => this.createHourlySlot(i + 8, dbPricingMap[i + 8])
+                    //     );
+                    // } else 
+                    if (response.data.PricingType === PricingType.Period) {
                         this.timeSlots.splice(0);
                         response.data.PricingDetails?.forEach(p => {
                             this.timeSlots.push(this.createPeriodSlot(p));
@@ -264,13 +265,13 @@ const room = new function () {
             this.form.capacity = null;
             this.form.area = null;
             this.form.refundEnabled = true;
-            this.form.feeType = PricingType.Hourly;
-            this.vm.PricingType = PricingType.Hourly;
+            this.form.feeType = PricingType.Period;
+            this.vm.PricingType = PricingType.Period;
             this.form.rentalType = BookingSettings.InternalOnly;
             this.form.departmentId = null;
-
-            this.generateHourlySlots();
-            this.timeSlots.splice(0);
+            this.generateCreateTimeSlotDefaults();
+            // this.generateHourlySlots();
+            // this.timeSlots.splice(0);
             this.offcanvas.show();
         }
     }
@@ -350,10 +351,11 @@ const room = new function () {
     }
 
     this.toggleFeeOptions = () => {
-        if (this.form.feeType === PricingType.Hourly) {
-            this.generateHourlySlots();
-            this.timeSlots.splice(0);
-        } else if (this.form.feeType === PricingType.Period) {
+        // if (this.form.feeType === PricingType.Hourly) {
+        //     this.generateHourlySlots();
+        //     this.timeSlots.splice(0);
+        // } else
+        if (this.form.feeType === PricingType.Period) {
             this.timeSlots.splice(0);
             this.generateCreateTimeSlotDefaults();
         }
@@ -371,24 +373,24 @@ const room = new function () {
         });
     };
 
-    this.generateHourlySlots = () => {
-        this.hourlySlots.value = Array.from(
-            { length: 12 },
-            (_, i) => this.createHourlySlot(i + 8)
-        );
-    };
+    // this.generateHourlySlots = () => {
+    //     this.hourlySlots.value = Array.from(
+    //         { length: 12 },
+    //         (_, i) => this.createHourlySlot(i + 8)
+    //     );
+    // };
 
-    this.selectAllHours = () => {
-        this.hourlySlots.value.forEach(slot => {
-            slot.Checked = true;
-        });
-    }
+    // this.selectAllHours = () => {
+    //     this.hourlySlots.value.forEach(slot => {
+    //         slot.Checked = true;
+    //     });
+    // }
 
-    this.deselectAllHours = () => {
-        this.hourlySlots.value.forEach(slot => {
-            slot.Checked = false;
-        });
-    }
+    // this.deselectAllHours = () => {
+    //     this.hourlySlots.value.forEach(slot => {
+    //         slot.Checked = false;
+    //     });
+    // }
 
     this.addTimeSlot = () => {
         this.timeSlots.push(this.createPeriodSlot());
@@ -405,20 +407,21 @@ const room = new function () {
             ? this.vm.PricingType
             : this.form.feeType;
 
-        if (pricingType === PricingType.Hourly) {
-            this.hourlySlots.value.forEach(slot => {
-                if (slot.Checked) {
-                    details.push({
-                        Id: slot.Id,
-                        Name: `${slot.Hour}:00 - ${slot.Hour + 1}:00`,
-                        StartTime: `${String(slot.Hour).padStart(2, '0')}:00`,
-                        EndTime: `${String(slot.Hour + 1).padStart(2, '0')}:00`,
-                        Price: slot.Fee,
-                        Enabled: true
-                    });
-                }
-            });
-        } else if (pricingType === PricingType.Period) {
+        // if (pricingType === PricingType.Hourly) {
+        //     this.hourlySlots.value.forEach(slot => {
+        //         if (slot.Checked) {
+        //             details.push({
+        //                 Id: slot.Id,
+        //                 Name: `${slot.Hour}:00 - ${slot.Hour + 1}:00`,
+        //                 StartTime: `${String(slot.Hour).padStart(2, '0')}:00`,
+        //                 EndTime: `${String(slot.Hour + 1).padStart(2, '0')}:00`,
+        //                 Price: slot.Fee,
+        //                 Enabled: true
+        //             });
+        //         }
+        //     });
+        // } else 
+        if (pricingType === PricingType.Period) {
             this.timeSlots.forEach(slot => {
                 if (slot.Enabled) {
                     details.push({
@@ -500,10 +503,10 @@ const room = new function () {
 
 
     this.onPricingTypeChange = () => {
-        if (this.vm.PricingType === PricingType.Hourly) {
-            this.generateHourlySlots();
-            return;
-        }
+        // if (this.vm.PricingType === PricingType.Hourly) {
+        //     this.generateHourlySlots();
+        //     return;
+        // }
 
         if (this.vm.PricingType === PricingType.Period) {
             if (this.timeSlots.length > 0) {
@@ -527,7 +530,7 @@ window.$config = {
         this.roompage = ref(null);
         this.timeSlots = room.timeSlots;
         this.mediaFiles = room.mediaFiles;
-        this.hourlySlots = room.hourlySlots;
+        // this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.department = department;

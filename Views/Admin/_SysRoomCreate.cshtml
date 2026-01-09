@@ -95,13 +95,13 @@
                 <div class="mb-3">
                     <label class="form-label form-label-custom">收費方式</label>
                     <div class="row">
-                        <div class="col-md-3">
+                        @* <div class="col-md-3">
                             <div class="form-check">
                                 <input v-model.number="form.feeType" type="radio" name="feeType" id="feeHourly"
                                     :value="0" class="form-check-input" @@change="room.toggleFeeOptions()">
                                 <label class="form-check-label" for="feeHourly">小時制</label>
                             </div>
-                        </div>
+                        </div> *@
                         <div class="col-md-3">
                             <div class="form-check">
                                 <input v-model.number="form.feeType" type="radio" name="feeType" id="feeSlot" :value="1"
@@ -113,7 +113,7 @@
                 </div>
 
                 <!-- 小時制設定 -->
-                <div v-if="form.feeType === 0">
+                @* <div v-if="form.feeType === 0">
                     <h6 class="fee-type-title">小時制收費</h6>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -145,7 +145,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> *@
 
                 <!-- 時段制設定 -->
                 <div v-else-if="form.feeType === 1">

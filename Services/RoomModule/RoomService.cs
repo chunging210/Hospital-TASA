@@ -189,24 +189,25 @@ namespace TASA.Services.RoomModule
             };
 
             // 取得收費詳情
-            if (room.PricingType == PricingType.Hourly)
-            {
-                var hourlyPricing = room.SysRoomPriceHourly
-                    .Where(x => x.DeleteAt == null)
-                    .OrderBy(x => x.StartTime)
-                    .Select(x => new PricingDetailVM
-                    {
-                        Name = $"{x.StartTime:hh\\:mm} - {x.EndTime:hh\\:mm}",
-                        StartTime = x.StartTime.ToString(@"hh\:mm"),
-                        EndTime = x.EndTime.ToString(@"hh\:mm"),
-                        Price = x.Price,
-                        Enabled = x.IsEnabled
-                    })
-                    .ToList();
+            // if (room.PricingType == PricingType.Hourly)
+            // {
+            //     var hourlyPricing = room.SysRoomPriceHourly
+            //         .Where(x => x.DeleteAt == null)
+            //         .OrderBy(x => x.StartTime)
+            //         .Select(x => new PricingDetailVM
+            //         {
+            //             Name = $"{x.StartTime:hh\\:mm} - {x.EndTime:hh\\:mm}",
+            //             StartTime = x.StartTime.ToString(@"hh\:mm"),
+            //             EndTime = x.EndTime.ToString(@"hh\:mm"),
+            //             Price = x.Price,
+            //             Enabled = x.IsEnabled
+            //         })
+            //         .ToList();
 
-                detailVM.PricingDetails = hourlyPricing;
-            }
-            else if (room.PricingType == PricingType.Period)
+            //     detailVM.PricingDetails = hourlyPricing;
+            // }
+            // else
+         if (room.PricingType == PricingType.Period)
             {
                 var periodPricing = room.SysRoomPricePeriod
                     .Where(x => x.DeleteAt == null)
@@ -718,13 +719,13 @@ namespace TASA.Services.RoomModule
                 data.DeleteAt = DateTime.UtcNow;
                 db.SaveChanges();
 
-                var hourlyPrices = db.SysRoomPriceHourly
-                    .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
-                    .ToList();
-                foreach (var price in hourlyPrices)
-                {
-                    price.DeleteAt = DateTime.UtcNow;
-                }
+                // var hourlyPrices = db.SysRoomPriceHourly
+                //     .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
+                //     .ToList();
+                // foreach (var price in hourlyPrices)
+                // {
+                //     price.DeleteAt = DateTime.UtcNow;
+                // }
 
                 var periodPrices = db.SysRoomPricePeriod
                     .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
@@ -747,28 +748,29 @@ namespace TASA.Services.RoomModule
             var userid = service.UserClaimsService.Me()?.Id;
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
-            if (pricingType == PricingType.Hourly)
-            {
-                foreach (var pricing in enabledPricings)
-                {
-                    TimeSpan.TryParse(pricing.StartTime, out var startTime);
-                    TimeSpan.TryParse(pricing.EndTime, out var endTime);
+            // if (pricingType == PricingType.Hourly)
+            // {
+            //     foreach (var pricing in enabledPricings)
+            //     {
+            //         TimeSpan.TryParse(pricing.StartTime, out var startTime);
+            //         TimeSpan.TryParse(pricing.EndTime, out var endTime);
 
-                    var hourlyPrice = new SysRoomPriceHourly
-                    {
-                        Id = Guid.NewGuid(),
-                        RoomId = roomId,
-                        StartTime = startTime,
-                        EndTime = endTime,
-                        Price = pricing.Price,
-                        IsEnabled = pricing.Enabled,
-                        CreateAt = DateTime.Now,
-                        CreateBy = userid!.Value
-                    };
-                    db.SysRoomPriceHourly.Add(hourlyPrice);
-                }
-            }
-            else if (pricingType == PricingType.Period)
+            //         var hourlyPrice = new SysRoomPriceHourly
+            //         {
+            //             Id = Guid.NewGuid(),
+            //             RoomId = roomId,
+            //             StartTime = startTime,
+            //             EndTime = endTime,
+            //             Price = pricing.Price,
+            //             IsEnabled = pricing.Enabled,
+            //             CreateAt = DateTime.Now,
+            //             CreateBy = userid!.Value
+            //         };
+            //         db.SysRoomPriceHourly.Add(hourlyPrice);
+            //     }
+            // }
+            // else 
+            if (pricingType == PricingType.Period)
             {
                 foreach (var pricing in enabledPricings)
                 {
@@ -796,17 +798,18 @@ namespace TASA.Services.RoomModule
 
         private void DeletePricingDetails(Guid roomId, PricingType pricingType)
         {
-            if (pricingType == PricingType.Hourly)
-            {
-                var hourlyPrices = db.SysRoomPriceHourly
-                    .Where(x => x.RoomId == roomId && x.DeleteAt == null)
-                    .ToList();
-                foreach (var price in hourlyPrices)
-                {
-                    price.DeleteAt = DateTime.UtcNow;
-                }
-            }
-            else if (pricingType == PricingType.Period)
+            // if (pricingType == PricingType.Hourly)
+            // {
+            //     var hourlyPrices = db.SysRoomPriceHourly
+            //         .Where(x => x.RoomId == roomId && x.DeleteAt == null)
+            //         .ToList();
+            //     foreach (var price in hourlyPrices)
+            //     {
+            //         price.DeleteAt = DateTime.UtcNow;
+            //     }
+            // }
+            // else
+            if (pricingType == PricingType.Period)
             {
                 var periodPrices = db.SysRoomPricePeriod
                     .Where(x => x.RoomId == roomId && x.DeleteAt == null)

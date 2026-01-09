@@ -322,22 +322,65 @@ window.$config = {
         };
 
         this.submitBooking = () => {
+
+            if (!this.form.name.trim()) {
+                addAlert('請填寫會議名稱', { type: 'warning' });
+                return;
+            }
+            if (!this.form.date) {
+                addAlert('請選擇會議日期', { type: 'warning' });
+                return;
+            }
+            if (!this.form.roomId) {
+                addAlert('請選擇會議室', { type: 'warning' });
+                return;
+            }
+            if (!this.form.selectedSlots.length) {
+                addAlert('請選擇時段', { type: 'warning' });
+                return;
+            }
+            if (!this.form.paymentMethod) {
+                addAlert('請選擇付款方式', { type: 'warning' });
+                return;
+            }
+
             if (!this.form.name || !this.form.date || !this.form.roomId) {
                 alert('請填寫完整會議資訊');
                 return;
             }
 
             const payload = {
-                ...this.form,
+                // Conference 基本資訊
+                name: this.form.name,
+                description: this.form.content,
+                usageType: 1,  // 實體會議
+                startDate: this.form.date,
+                durationHH: this.calculateDuration().hours,
+                durationSS: this.calculateDuration().minutes,
+
+                // 付款
+                paymentMethod: this.form.paymentMethod,
+                departmentCode: this.form.paymentMethod === 'cost-sharing' ? this.form.departmentCode : null,
                 roomCost: this.roomCost.value,
                 equipmentCost: this.equipmentCost.value,
                 boothCost: this.boothCost.value,
-                totalAmount: this.totalAmount.value
+                totalAmount: this.totalAmount.value,
+
+                // 會議室時段
+                roomId: this.form.roomId,
+                slotKeys: this.form.selectedSlots,  // 時段 key 陣列
+
+                // 設備和攤位
+                equipmentIds: this.form.selectedEquipment,
+                boothIds: this.form.selectedBooths,
+
+                // 參與者
+                attendeeIds: [this.initiatorId.value]
             };
 
             console.log('送出資料', payload);
             // 呼叫後端 API
-            global.api.conference.create({ body: payload })
+            global.api.conference.insert({ body: payload })
                 .then(res => {
                     alert('預約成功');
                     // 重導到預約清單
