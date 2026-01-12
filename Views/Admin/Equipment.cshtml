@@ -164,7 +164,8 @@
                         <div class="col-sm-9">
                             <select v-model="equipment.vm.Building" @@change="equipment.onBuildingChange"
                                 class="form-select">
-                                <option value="">請選擇大樓</option>
+                                <option value="">{{ selectedDepartment ? '請選擇大樓' : '請先選擇分院' }}</option>
+
                                 <option v-for="b in equipment.buildings" :key="b.Building" :value="b.Building">
                                     {{ b.Building }}
                                 </option>
@@ -178,7 +179,9 @@
                         <div class="col-sm-9">
                             <select v-model="equipment.vm.Floor" @@change="equipment.onFloorChange" class="form-select"
                                 :disabled="!equipment.vm.Building">
-                                <option value="">請先選擇大樓</option>
+                                <option value="">{{ equipment.vm.Building ? '請選擇樓層' : '請先選擇大樓' }}</option>
+
+
                                 <option v-for="f in equipment.floorOptions" :key="f.Name" :value="f.Name">
                                     {{ f.Name }}
                                 </option>
@@ -192,6 +195,8 @@
                         <div class="col-sm-9">
                             <select v-model="equipment.vm.RoomId" class="form-select" :disabled="!equipment.vm.Floor">
                                 <option :value="null">{{ equipment.vm.Floor ? '請選擇會議室' : '請先選擇樓層' }}</option>
+
+
                                 <option v-for="room in equipment.roomOptions" :key="room.Id" :value="room.Id">
                                     {{ room.Name }}
                                 </option>

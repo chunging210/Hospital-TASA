@@ -1,4 +1,4 @@
-﻿// Admin/Equipment - 修正級聯邏輯
+﻿// Admin/Equipment - 修正級聯邏輯 v3.0
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch } = Vue;
 
@@ -94,51 +94,79 @@ const equipment = new function () {
     // ========= VM 初始化 =========
     this.vm = reactive(new VM());
 
+    // ========= 清空所有級聯欄位 =========
+    this.clearCascadeFields = () => {
+        this.buildings.splice(0);
+        this.floorOptions.splice(0);
+        this.roomOptions.splice(0);
+        this.vm.Building = '';
+        this.vm.Floor = '';
+        this.vm.RoomId = null;
+    };
+
     // ========= 打開 Modal (新增或編輯) =========
     this.getVM = async (id) => {
-
         if (!id) {
-            // 新增
+            // ===== 新增 =====
             isEditing.value = false;
             copy(this.vm, new VM());
             selectedDepartment.value = '';
+            // ✅ 使用新增的清空方法
+            this.clearCascadeFields();
             return;
         }
 
         // ===== 編輯 =====
         isEditing.value = true;
 
-        const res = await global.api.admin.equipmentdetail({ body: { id } });
-        copy(this.vm, res.data);
+        try {
+            // ✅ 先拿設備詳細資料
+            const res = await global.api.admin.equipmentdetail({ body: { id } });
+            copy(this.vm, res.data);
 
-        // 同步分院（不觸發清空）
-        selectedDepartment.value = this.vm.DepartmentId;
+            // ✅ 用設備本身的 DepartmentId
+            const departmentId = this.vm.DepartmentId;
+            selectedDepartment.value = departmentId || '';
 
-        // 載入大樓
-        const bRes = await global.api.select.buildingsbydepartment({
-            body: { departmentId: selectedDepartment.value }
-        });
-        copy(this.buildings, bRes.data || []);
+            // ✅ 載入大樓（用正確的 departmentId）
+            if (departmentId) {
+                const bRes = await global.api.select.buildingsbydepartment({
+                    body: { departmentId: departmentId }
+                });
+                copy(this.buildings, bRes.data || []);
 
-        // 載樓層
-        const fRes = await global.api.select.floorsbybuilding({
-            body: {
-                departmentId: selectedDepartment.value,
-                building: this.vm.Building
+                // ✅ 載樓層
+                if (this.vm.Building) {
+                    const fRes = await global.api.select.floorsbybuilding({
+                        body: {
+                            departmentId: departmentId,
+                            building: this.vm.Building
+                        }
+                    });
+                    copy(this.floorOptions, fRes.data || []);
+
+                    // ✅ 載會議室
+                    if (this.vm.Floor) {
+                        const rRes = await global.api.select.roomsbyfloor({
+                            body: {
+                                Building: this.vm.Building,
+                                Floor: this.vm.Floor
+                            }
+                        });
+                        copy(this.roomOptions, rRes.data || []);
+                    }
+                }
+            } else {
+                // ✅ 如果沒有 DepartmentId，清空相關欄位
+                this.clearCascadeFields();
             }
-        });
-        copy(this.floorOptions, fRes.data || []);
 
-        // 載會議室
-        const rRes = await global.api.select.roomsbyfloor({
-            body: {
-                Building: this.vm.Building,
-                Floor: this.vm.Floor
-            }
-        });
-        copy(this.roomOptions, rRes.data || []);
-
-        isEditing.value = false;
+            isEditing.value = false;
+        } catch (error) {
+            console.error('❌ 載入設備詳細資料失敗:', error);
+            addAlert('載入設備詳細資料失敗', { type: 'danger' });
+            isEditing.value = false;
+        }
     };
 
 
