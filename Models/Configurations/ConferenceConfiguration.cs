@@ -24,7 +24,7 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.DurationHH).HasComment("持續時間(小時)");
             entity.Property(e => e.DurationSS).HasComment("持續時間(分鐘)");
             entity.Property(e => e.Email).HasComment("電子郵件通知信箱群");
-            entity.Property(e => e.EndTime).HasComment("結束時間");
+            entity.Property(e => e.EndTime).HasComment("結束時間 (由 ConferenceRoomSlot 決定，可為 NULL)"); // ✅ 修改註釋
             entity.Property(e => e.FinishTime).HasComment("實際結束時間");
             entity.Property(e => e.Id).HasComment("會議ID");
             entity.Property(e => e.MCU).HasComment("連線選項");
@@ -32,7 +32,34 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.RRule).HasComment("重複(RFC5545)");
             entity.Property(e => e.Recording).HasComment("錄製");
             entity.Property(e => e.RecurrenceId).HasComment("重複會議父ID");
-            entity.Property(e => e.StartTime).HasComment("開始時間");
+            entity.Property(e => e.StartTime).HasComment("開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)"); // ✅ 修改註釋
+            entity.Property(e => e.Status)
+                .HasDefaultValueSql("'1'")
+                .HasComment("狀態");
+            entity.Property(e => e.UsageType).HasComment("會議種類 (1:一般 2:視訊)");
+
+            // ✅ 新增預約狀態欄位
+            entity.Property(e => e.ReservationStatus)
+                .HasColumnType("tinyint(1) unsigned")
+                .HasDefaultValue(0)
+                .HasComment("預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功)");
+
+            entity.Property(e => e.ReviewedAt)
+                .HasColumnType("datetime")
+                .HasComment("審核時間");
+
+            entity.Property(e => e.ReviewedBy)
+                .HasComment("審核者");
+
+            entity.Property(e => e.ApprovedAt)
+                .HasColumnType("datetime")
+                .HasComment("批准時間");
+
+            entity.Property(e => e.PaymentDeadline)
+                .HasColumnType("datetime")
+                .HasComment("繳費期限");
+
+            // ✅ 付費相關欄位
             entity.Property(e => e.PaymentMethod)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -55,6 +82,7 @@ namespace TASA.Models.Configurations
                 .HasMaxLength(50)
                 .HasComment("部門代碼");
 
+            // ✅ 費用欄位
             entity.Property(e => e.RoomCost)
                 .HasColumnType("int(11)")
                 .HasDefaultValueSql("'0'")
@@ -74,10 +102,13 @@ namespace TASA.Models.Configurations
                 .HasColumnType("int(11)")
                 .HasDefaultValueSql("'0'")
                 .HasComment("總金額");
-            entity.Property(e => e.Status)
-                .HasDefaultValueSql("'1'")
-                .HasComment("狀態");
-            entity.Property(e => e.UsageType).HasComment("會議種類 (1:一般 2:視訊)");
+
+            // ✅ 新增索引
+            entity.HasIndex(new[] { nameof(Conference.ReservationStatus), nameof(Conference.CreateAt) }, "idx_reservation_status");
+
+            // ===============================
+            // Relationships
+            // ===============================
 
             entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.Conference)
                 .HasPrincipalKey(p => p.Id)
@@ -88,6 +119,14 @@ namespace TASA.Models.Configurations
             entity.HasOne(d => d.StatusNavigation).WithMany(p => p.Conference)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Conference_ibfk_1");
+
+            // ✅ 新增：Conference → ConferenceRoomSlot 的關係
+            entity.HasMany(d => d.ConferenceRoomSlots)
+                .WithOne(s => s.Conference)
+                .HasForeignKey(s => s.ConferenceId)
+                .HasPrincipalKey(c => c.Id)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_slot_conf");
 
             entity.HasMany(d => d.Department).WithMany(p => p.Conference)
                 .UsingEntity<Dictionary<string, object>>(

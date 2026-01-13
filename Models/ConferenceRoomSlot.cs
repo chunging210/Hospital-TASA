@@ -8,6 +8,8 @@ using TASA.Models.Enums;
 namespace TASA.Models;
 
 [Index(nameof(RoomId), nameof(SlotDate), nameof(StartTime), Name = "idx_room_date")]
+[Index(nameof(RoomId), nameof(SlotDate), nameof(SlotStatus), Name = "idx_slot_availability")] // ✅ 新增
+[Index(nameof(ConferenceId), nameof(SlotStatus), Name = "idx_conference_slots")] // ✅ 新增
 public partial class ConferenceRoomSlot
 {
     /// <summary>
@@ -19,7 +21,7 @@ public partial class ConferenceRoomSlot
     /// <summary>
     /// 會議ID（對應 Conference.Id）
     /// </summary>
-    public Guid ConferenceId { get; set; }
+    public Guid? ConferenceId { get; set; } // ✅ 改為 nullable (未被預約時為 NULL)
 
     /// <summary>
     /// 會議室ID
@@ -56,16 +58,35 @@ public partial class ConferenceRoomSlot
     public PricingType PricingType { get; set; }
 
     /// <summary>
+    /// 時段狀態 (0=可用, 1=審核中, 2=預約成功, 3=已釋放) - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "tinyint(1) unsigned")]
+    public byte SlotStatus { get; set; } = 0;
+
+    /// <summary>
+    /// 時段被鎖定時間 - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? LockedAt { get; set; }
+
+    /// <summary>
+    /// 時段被釋放時間 - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? ReleasedAt { get; set; }
+
+    /// <summary>
     /// 建立時間
     /// </summary>
     [Column(TypeName = "datetime")]
     public DateTime CreateAt { get; set; }
 
     /* ===============================
-     * Navigation
+     * Navigation Properties
      * =============================== */
 
     [ForeignKey(nameof(ConferenceId))]
+    [InverseProperty("ConferenceRoomSlots")] // ✅ 修改 InverseProperty
     public virtual Conference Conference { get; set; }
 
     [ForeignKey(nameof(RoomId))]

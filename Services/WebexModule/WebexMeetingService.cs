@@ -10,8 +10,19 @@ namespace TASA.Services.WebexModule
     {
         private static readonly JsonSerializerOptions CaseInsensitive = new() { PropertyNameCaseInsensitive = true };
 
+        /// <summary>
+        /// 建立 Webex 會議
+        /// ⚠️ 臨時防呆：只支援 StartTime/EndTime 都有值的會議
+        /// TODO: 未來支援預約系統後，需要調整邏輯計算時間
+        /// </summary>
         public ConferenceWebex? Create(Conference vm, string? meetingId = null)
         {
+            // ✅ 防呆：如果 StartTime/EndTime 為 NULL，直接返回 null（不建立 Webex）
+            if (vm.StartTime == null || vm.EndTime == null)
+            {
+                return null;  // 待審核/待繳費的預約不建立 Webex
+            }
+
             if (vm.MCU == 7)
             {
                 var invitees = db.AuthUser
@@ -26,8 +37,9 @@ namespace TASA.Services.WebexModule
                 var request = new WebexHttpClient.CreateMeetingVM.RequestVM()
                 {
                     Title = vm.Name,
-                    Start = vm.StartTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
-                    End = vm.EndTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                    // ✅ 使用 .Value 因為上面已經檢查 != null
+                    Start = vm.StartTime.Value.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                    End = vm.EndTime.Value.ToString("yyyy-MM-ddTHH:mm:sszzz"),
                     EnabledAutoRecordMeeting = vm.Recording == true,
                     Invitees = invitees
                 };
@@ -36,7 +48,13 @@ namespace TASA.Services.WebexModule
                     .AsNoTracking()
                     .WhereNotDeleted()
                     .WhereEnabled()
-                    .Where(x => x.Id != vm.Id && x.MCU == 7 && x.StartTime < vm.EndTime && x.EndTime > vm.StartTime)
+                    // ✅ 修復：檢查 StartTime/EndTime 有值才比較
+                    .Where(x => x.Id != vm.Id 
+                             && x.MCU == 7 
+                             && x.StartTime.HasValue 
+                             && x.EndTime.HasValue
+                             && x.StartTime < vm.EndTime 
+                             && x.EndTime > vm.StartTime)
                     .Select(x => x.ConferenceWebex.WebexId)
                     .ToList();
 

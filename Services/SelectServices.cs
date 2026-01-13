@@ -67,6 +67,7 @@ public record RoomSlotQueryVM
 
 public record RoomSlotVM
 {
+    public Guid Id { get; set; } 
     public string Key { get; init; } = string.Empty;
     public string? Name { get; init; }          // Period 用
     public TimeOnly StartTime { get; init; }
@@ -83,7 +84,7 @@ public record FloorsByBuildingQueryVM
 
 
   
-public IQueryable<IdNameVM> Room()
+        public IQueryable<IdNameVM> Room()
         {
             return db.SysRoom
                 .AsNoTracking()
@@ -95,94 +96,80 @@ public IQueryable<IdNameVM> Room()
                 });
         }
 
-public IEnumerable<RoomSlotVM> RoomSlots(RoomSlotQueryVM query)
-{
-    var room = db.SysRoom
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .FirstOrDefault(x => x.Id == query.RoomId);
-
-    if (room == null)
-        return [];
-
-    // 1️⃣ 可販售時段（全部使用 TimeSpan）
-    var baseSlots = room.PricingType == PricingType.Hourly
-        ? db.SysRoomPriceHourly
-            .AsNoTracking()
-            .Where(x =>
-                x.RoomId == query.RoomId &&
-                x.IsEnabled &&
-                x.DeleteAt == null
-            )
-            .Select(x => new
-            {
-                Name = (string?)null,
-                Start = x.StartTime, // TimeSpan
-                End = x.EndTime,     // TimeSpan
-                x.Price
-            })
-            .ToList()
-        : db.SysRoomPricePeriod
-            .AsNoTracking()
-            .Where(x =>
-                x.RoomId == query.RoomId &&
-                x.IsEnabled &&
-                x.DeleteAt == null
-            )
-            .Select(x => new
-            {
-                x.Name,
-                Start = x.StartTime, // TimeSpan
-                End = x.EndTime,     // TimeSpan
-                x.Price
-            })
-            .ToList();
-
-    // 2️⃣ 已佔用時段（TimeSpan）
-    var occupiedSlots = db.ConferenceRoomSlot
-        .AsNoTracking()
-        .Where(x =>
-            x.RoomId == query.RoomId &&
-            x.SlotDate == query.Date
-        )
-        .Select(x => new
+        public IEnumerable<RoomSlotVM> RoomSlots(RoomSlotQueryVM query)
         {
-            x.StartTime, // TimeSpan
-            x.EndTime    // TimeSpan
-        })
-        .ToList();
+            var room = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .FirstOrDefault(x => x.Id == query.RoomId);
 
-    // 3️⃣ 比較 TimeSpan（⚠️這裡完全不出現 TimeOnly）
-    var result = baseSlots
-        .OrderBy(x => x.Start)
-        .Select(s => new
-        {
-            s.Name,
-            s.Start,
-            s.End,
-            s.Price,
-            Occupied = occupiedSlots.Any(o =>
-{
-                var oStart = o.StartTime.ToTimeSpan();
-                var oEnd = o.EndTime.ToTimeSpan();
+            if (room == null)
+                return [];
 
-                return !(oEnd <= s.Start || oStart >= s.End);
-            })
-        })
-        .ToList();
+            // 1️⃣ 可販售時段（只用 Period 定價）
+            var baseSlots = db.SysRoomPricePeriod
+                .AsNoTracking()
+                .Where(x =>
+                    x.RoomId == query.RoomId &&
+                    x.IsEnabled &&
+                    x.DeleteAt == null
+                )
+                .Select(x => new
+                {
+                    x.Id,               // ✅ 加上 ID
+                    x.Name,
+                    Start = x.StartTime, // TimeSpan
+                    End = x.EndTime,     // TimeSpan
+                    x.Price
+                })
+                .ToList();
 
-    // 4️⃣ 最後一步：只在「回傳 VM」時轉成 TimeOnly
-    return result.Select(s => new RoomSlotVM
+// 2️⃣ 已佔用時段（轉成 TimeSpan）
+var occupiedSlots = db.ConferenceRoomSlot
+    .AsNoTracking()
+    .Where(x =>
+        x.RoomId == query.RoomId &&
+        x.SlotDate == query.Date
+    )
+    .Select(x => new
     {
-        Key = $"{s.Start}-{s.End}",
-        Name = s.Name,
-        StartTime = TimeOnly.FromTimeSpan(s.Start),
-        EndTime = TimeOnly.FromTimeSpan(s.End),
-        Price = s.Price,
-        Occupied = s.Occupied
-    }).ToList();
-}
+        StartTime = x.StartTime.ToTimeSpan(),  // ✅ 轉成 TimeSpan
+        EndTime = x.EndTime.ToTimeSpan()       // ✅ 轉成 TimeSpan
+    })
+    .ToList();
 
+// 3️⃣ 檢查是否被佔用
+var result = baseSlots
+    .OrderBy(x => x.Start)
+    .Select(s => new
+    {
+        s.Id,
+        s.Name,
+        s.Start,
+        s.End,
+        s.Price,
+        Occupied = occupiedSlots.Any(o =>
+        {
+            var oStart = o.StartTime;  // TimeSpan
+            var oEnd = o.EndTime;      // TimeSpan
+
+            return !(oEnd <= s.Start || oStart >= s.End);  // ✅ 都是 TimeSpan，可以比較
+        })
+    })
+    .ToList();
+
+            // 4️⃣ 轉成 RoomSlotVM
+            return result.Select(s => new RoomSlotVM
+            {
+                Id = s.Id,                              // ✅ 加上 ID
+                Key = $"{s.Start:hh\\:mm\\:ss}-{s.End:hh\\:mm\\:ss}",
+                Name = s.Name,
+                StartTime = TimeOnly.FromTimeSpan(s.Start),
+                EndTime = TimeOnly.FromTimeSpan(s.End),
+                Price = s.Price,
+                Occupied = s.Occupied
+            }).ToList();
+        }
         
 public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
 {
@@ -365,14 +352,22 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
                 });
         }
 
-public IQueryable<IdNameVM> Department()
-{
-    return db.SysDepartment
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .WhereEnabled()
-        .Mapping<IdNameVM>();
-}
+        public IQueryable<IdNameVM> Department(bool excludeTaipei = false)
+        {
+            var query = db.SysDepartment
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled();
+
+            if (excludeTaipei)
+            {
+                query = query.Where(x => x.Sequence != 1);  // ✅ 排除台北總院
+            }
+
+            return query
+                .OrderBy(x => x.Sequence)
+                .Mapping<IdNameVM>();
+        }
 
         public record TreeVM : IdNameVM
         {

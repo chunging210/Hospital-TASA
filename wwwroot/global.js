@@ -54,6 +54,10 @@ const global = new function () {
             insert: POST,
             update: POST,
             delete: DELETE,
+            createreservation: POST,
+            approve: POST,
+            reject: POST,
+            confirmpayment: POST,
         }),
         conferencetemplate: apiMethods('/api/conferencetemplate', {
             list: GET,

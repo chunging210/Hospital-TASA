@@ -11,6 +11,7 @@ namespace TASA.Models;
 [Index("CreateBy", Name = "CreatedBy")]
 [Index("Id", Name = "Id", IsUnique = true)]
 [Index("Status", Name = "Status")]
+[Index("ReservationStatus", "CreateAt", Name = "idx_reservation_status")] // ✅ 新增索引
 public partial class Conference
 {
     /// <summary>
@@ -56,16 +57,16 @@ public partial class Conference
     public string Description { get; set; }
 
     /// <summary>
-    /// 開始時間
+    /// 開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)
     /// </summary>
     [Column(TypeName = "datetime")]
-    public DateTime StartTime { get; set; }
+    public DateTime? StartTime { get; set; } // ✅ 改為 nullable
 
     /// <summary>
-    /// 結束時間
+    /// 結束時間 (由 ConferenceRoomSlot 決定，可為 NULL)
     /// </summary>
     [Column(TypeName = "datetime")]
-    public DateTime EndTime { get; set; }
+    public DateTime? EndTime { get; set; } // ✅ 改為 nullable
 
     /// <summary>
     /// 實際結束時間
@@ -103,10 +104,39 @@ public partial class Conference
     public string Email { get; set; }
 
     /// <summary>
-    /// 狀態
+    /// 狀態 (會議進行狀態：未開始、進行中、已結束等)
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
     public byte Status { get; set; }
+
+    /// <summary>
+    /// 預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功) - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "tinyint(1) unsigned")]
+    public byte ReservationStatus { get; set; } = 0;
+
+    /// <summary>
+    /// 審核時間 - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? ReviewedAt { get; set; }
+
+    /// <summary>
+    /// 審核者 - ✅ 新增
+    /// </summary>
+    public Guid? ReviewedBy { get; set; }
+
+    /// <summary>
+    /// 批准時間 - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? ApprovedAt { get; set; }
+
+    /// <summary>
+    /// 繳費期限 - ✅ 新增
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? PaymentDeadline { get; set; }
 
     /// <summary>
     /// 報到時間
@@ -124,7 +154,7 @@ public partial class Conference
     /// </summary>
     public Guid? AgentBy { get; set; }
 
-        /// <summary>
+    /// <summary>
     /// 付費方式
     /// </summary>
     [Required]
@@ -179,7 +209,6 @@ public partial class Conference
     [Column(TypeName = "int(11)")]
     public int TotalAmount { get; set; } = 0;
 
-
     /// <summary>
     /// 建立時間
     /// </summary>
@@ -196,6 +225,10 @@ public partial class Conference
     /// </summary>
     [Column(TypeName = "datetime")]
     public DateTime? DeleteAt { get; set; }
+
+    /* ===============================
+     * Navigation Properties
+     * =============================== */
 
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceUser> ConferenceUser { get; set; } = new List<ConferenceUser>();
@@ -232,5 +265,7 @@ public partial class Conference
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceEquipment> ConferenceEquipments { get; set; } = new List<ConferenceEquipment>();
 
-    public ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = [];
+    // ✅ 新增：時段關聯
+    [InverseProperty("Conference")]
+    public virtual ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = new List<ConferenceRoomSlot>();
 }

@@ -180,7 +180,7 @@
                         <!-- 選擇分院 -->
                         <div class="form-floating mb-2">
                             <select class="form-select" v-model="guestForm.departmentId">
-                                <option :value="null">未選擇（一般會員）</option>
+                                <option :value="null">其他（院外人士）</option>
                                 <option v-for="d in departments" :key="d.Id" :value="d.Id">
                                     {{ d.Name }}
                                 </option>
@@ -191,7 +191,7 @@
                         <div class="form-text text-muted mb-3">
                             <span class="material-icons" style="font-size: 16px; vertical-align: middle;">info</span>
                             未選擇分院將註冊為一般會員；<br>
-                            若您為院內職員，請選擇所屬分院，帳號將由管理員審核後調整權限。
+                            若您為院內職員，請選擇所屬分院。
                         </div>
 
                         @* <!-- 服務條款同意 -->

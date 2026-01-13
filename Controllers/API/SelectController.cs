@@ -75,15 +75,15 @@ namespace TASA.Controllers.API
         }
 
         [HttpGet("department")]
-        public IActionResult Department()
+        public IActionResult Department([FromQuery] bool excludeTaipei = false)
         {
-            return Ok(service.SelectServices.Department());
+            return Ok(service.SelectServices.Department(excludeTaipei));
         }
 
         [HttpGet("departmenttree")]
         public IActionResult DepartmentTree()
         {
-            return Ok(service.SelectServices.DepartmentTree());
+            return Ok(service.SelectServices.DepartmentTree().ToList());
         }
 
         [Authorize, HttpGet("conferencecreateby")]

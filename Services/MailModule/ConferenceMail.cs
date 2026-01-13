@@ -11,10 +11,18 @@ namespace TASA.Services.MailModule
 
         /// <summary>
         /// 會議通知
+        /// ⚠️ 臨時防呆：只發送 StartTime/EndTime 都有值的會議
+        /// TODO: 未來支援預約系統後，需要調整郵件模板和邏輯
         /// </summary>
         public void New(Conference conference, string subject = "[新會議通知]", [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
         {
             if (!Enable)
+            {
+                return;
+            }
+
+            // ✅ 防呆：如果 StartTime/EndTime 為 NULL，不發送郵件（待審核的預約暫不通知）
+            if (conference.StartTime == null || conference.EndTime == null)
             {
                 return;
             }
@@ -43,8 +51,9 @@ namespace TASA.Services.MailModule
         private static string BuildBody(Conference conference, bool isHost)
         {
             string webexBody = BuildWebex(conference.ConferenceWebex, isHost);
+            // ✅ 使用 .Value 因為上面已經檢查 StartTime/EndTime HasValue
             return $@"<p>會議名稱: {conference.Name}</p>
-                <p>會議時間: {TimeFormat(conference.StartTime)} - {TimeFormat(conference.EndTime)}</p>
+                <p>會議時間: {TimeFormat(conference.StartTime!.Value)} - {TimeFormat(conference.EndTime!.Value)}</p>
                 <p>會議內容: {conference.Description}</p>
                 <p>會議地點: {string.Join(",", conference.Room.Select(x => x.Name))}</p>
                 {webexBody}{BuildWebex(conference.ConferenceWebex, isHost)}";

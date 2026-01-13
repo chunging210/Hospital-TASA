@@ -268,6 +268,12 @@ window.$config = {
                 console.log('✅ API data =', res.data);
                 this.timeSlots.value = res.data || [];
 
+                // 🔍 【新增 DEBUG】
+                if (this.timeSlots.value.length > 0) {
+                    console.log('🔍 第一個時段完整結構:');
+                    console.log(this.timeSlots.value[0]);
+                }
+
             } catch (err) {
                 console.error('🔥 roomslots API error', err);
             } finally {
@@ -321,8 +327,59 @@ window.$config = {
             }
         };
 
-        this.submitBooking = () => {
+        // ✅ 新增：計算時段持續時間
+        this.calculateDuration = () => {
+            if (!this.selectedRoom.value || !this.form.selectedSlots.length) {
+                return { hours: 0, minutes: 0 };
+            }
 
+            // 取得選中的所有時段
+            const selectedSlots = this.timeSlots.value.filter(slot =>
+                this.form.selectedSlots.includes(slot.Key)
+            );
+
+            if (!selectedSlots.length) {
+                return { hours: 0, minutes: 0 };
+            }
+
+            // 按開始時間排序
+            selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+
+            // 取第一個時段的開始時間和最後一個時段的結束時間
+            const firstSlot = selectedSlots[0];
+            const lastSlot = selectedSlots[selectedSlots.length - 1];
+
+            const startTime = this.parseTime(firstSlot.StartTime);
+            const endTime = this.parseTime(lastSlot.EndTime);
+
+            // 計算時間差（秒轉換為分鐘）
+            const totalMinutes = (endTime - startTime) / 60;
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            return {
+                hours: Math.max(0, hours),
+                minutes: Math.max(0, Math.round(minutes))
+            };
+        };
+
+        // ✅ 輔助方法：解析時間字串為秒數
+        this.parseTime = (timeStr) => {
+            // 時間格式: "09:00" 或 "09:00:00"
+            if (!timeStr) return 0;
+
+            const parts = timeStr.split(':').map(Number);
+            const hours = parts[0] || 0;
+            const minutes = parts[1] || 0;
+            const seconds = parts[2] || 0;
+
+            return hours * 3600 + minutes * 60 + seconds;
+        };
+
+        this.submitBooking = () => {
+            console.log('🟢 submitBooking 開始執行');
+
+            // ===== 驗證 =====
             if (!this.form.name.trim()) {
                 addAlert('請填寫會議名稱', { type: 'warning' });
                 return;
@@ -344,17 +401,14 @@ window.$config = {
                 return;
             }
 
-            if (!this.form.name || !this.form.date || !this.form.roomId) {
-                alert('請填寫完整會議資訊');
-                return;
-            }
+            console.log('✅ 所有驗證通過');
 
+            // ===== 準備發送資料 =====
             const payload = {
                 // Conference 基本資訊
                 name: this.form.name,
                 description: this.form.content,
                 usageType: 1,  // 實體會議
-                startDate: this.form.date,
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,
 
@@ -368,25 +422,37 @@ window.$config = {
 
                 // 會議室時段
                 roomId: this.form.roomId,
-                slotKeys: this.form.selectedSlots,  // 時段 key 陣列
+                // ✅ 【重要】轉換 Proxy Array 成普通陣列
+                slotKeys: [...this.form.selectedSlots],
 
                 // 設備和攤位
-                equipmentIds: this.form.selectedEquipment,
-                boothIds: this.form.selectedBooths,
+                // ✅ 【重要】轉換 Proxy Array 成普通陣列
+                equipmentIds: [...this.form.selectedEquipment],
+                boothIds: [...this.form.selectedBooths],
 
                 // 參與者
                 attendeeIds: [this.initiatorId.value]
             };
 
-            console.log('送出資料', payload);
-            // 呼叫後端 API
-            global.api.conference.insert({ body: payload })
+            console.log('📤 payload:', JSON.stringify(payload));
+
+            // ✅ 改為呼叫新的 createreservation endpoint
+            global.api.conference.createreservation({ body: payload })
                 .then(res => {
-                    alert('預約成功');
-                    // 重導到預約清單
+                    console.log('%c✅ 預約成功！', 'color: #00aa00; font-weight: bold; font-size: 14px;');
+                    console.log('預約ID:', res);
+
+                    addAlert('預約已送出，請等待管理者審核！', { type: 'success' });
+
+                    // 延遲後重導到預約清單
+                    setTimeout(() => {
+                        window.location.href = '/conference/list';
+                    }, 2000);
                 })
                 .catch(err => {
-                    alert('預約失敗：' + err.message);
+                    console.error('%c❌ 預約失敗！', 'color: #aa0000; font-weight: bold; font-size: 14px;');
+                    console.error('錯誤:', err);
+                    addAlert('預約失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
                 });
         };
 
@@ -406,8 +472,6 @@ window.$config = {
             const presetBuilding = params.get('building');
             const presetFloor = params.get('floor');
             const presetDepartmentId = params.get('departmentId');
-
-
 
             // 載入使用者資訊
             try {
@@ -430,8 +494,6 @@ window.$config = {
 
             // 如果從「立即預約」進來，自動填入資料
             if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
-
-
                 this.form.departmentId = presetDepartmentId;  // ✅ 先設定分院
                 await this.loadBuildingsByDepartment(presetDepartmentId);
                 await new Promise(resolve => setTimeout(resolve, 300));

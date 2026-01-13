@@ -9,7 +9,7 @@ class VM {
     Type = '';
     RoomId = null;
     Building = '';
-    Floor = '';              // ✅ 樓層
+    Floor = '';             
     RentalPrice = 0;
     Host = '';
     Port = null;
@@ -242,7 +242,7 @@ const equipment = new function () {
     };
 
     this.loadDepartments = () => {
-        global.api.select.department()
+        global.api.select.department({ excludeTaipei: true })
             .then(res => {
                 departments.value = res.data || [];
             })

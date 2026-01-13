@@ -135,7 +135,7 @@ window.$config = {
                 });
         };
 
-        global.api.select.department()
+        global.api.select.department({ body: { excludeTaipei: true } })
             .then(res => {
                 console.log('res:', res);
                 console.log('res.data:', res.data);

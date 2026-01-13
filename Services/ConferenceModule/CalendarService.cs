@@ -30,8 +30,11 @@ namespace TASA.Services.ConferenceModule
             public DateTime End { get; set; }
             public ExtendedPropsVM? ExtendedProps { get; set; }
         }
+
         /// <summary>
         /// FullCalendar 會議列表
+        /// ⚠️ 臨時防呆：只顯示 StartTime/EndTime 都有值的會議
+        /// TODO: 未來支援預約系統後，需要調整邏輯
         /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
@@ -39,17 +42,21 @@ namespace TASA.Services.ConferenceModule
             query.End ??= query.Start.Value.AddMonths(1);
             var userId = service.UserClaimsService.Me()?.Id;
             var ConferencesIds = UserConferences(userId);
+
             return db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
+                // ✅ 防呆：只查詢 StartTime/EndTime 都有值的會議（舊的會議建立方式）
+                .Where(x => x.StartTime.HasValue && x.EndTime.HasValue)
                 .WhereIf(query.Start.HasValue, x => query.Start <= x.StartTime)
                 .WhereIf(query.End.HasValue, x => x.StartTime <= query.End)
                 .WhereIf(query.Self == true, x => ConferencesIds.Contains(x.Id))
                 .Mapping(x => new ListVM()
                 {
                     Title = x.Name,
-                    Start = x.StartTime,
-                    End = x.EndTime,
+                    // ✅ 使用 .Value 因為上面已經檢查 HasValue
+                    Start = x.StartTime!.Value,
+                    End = x.EndTime!.Value,
                     ExtendedProps = new ListVM.ExtendedPropsVM()
                     {
                         Id = x.Id,
@@ -67,21 +74,30 @@ namespace TASA.Services.ConferenceModule
             public DateTime StartTime { get; set; }
             public bool Self { get; set; }
         }
+
         /// <summary>
         /// 最近活動
+        /// ⚠️ 臨時防呆：只顯示 StartTime 有值的會議
+        /// TODO: 未來支援預約系統後，需要調整邏輯
         /// </summary>
         public IQueryable<RecentVM> Recent(int length = 3)
         {
             var userId = service.UserClaimsService.Me()?.Id;
             var ConferencesIds = UserConferences(userId);
+
             return db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
+                // ✅ 防呆：只查詢 StartTime 有值的會議
+                .Where(x => x.StartTime.HasValue)
                 .Where(x => x.StartTime >= DateTime.UtcNow && ConferencesIds.Contains(x.Id))
                 .OrderBy(x => x.StartTime)
                 .Take(length)
                 .Mapping(x => new RecentVM()
                 {
+                    Name = x.Name,
+                    // ✅ 使用 .Value 因為上面已經檢查 HasValue
+                    StartTime = x.StartTime!.Value,
                     Self = x.CreateBy == userId
                 });
         }
