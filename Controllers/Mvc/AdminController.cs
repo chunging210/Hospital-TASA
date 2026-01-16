@@ -48,5 +48,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult Reservation()
+        {
+            return View();
+        }
     }
 }

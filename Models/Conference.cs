@@ -110,10 +110,16 @@ public partial class Conference
     public byte Status { get; set; }
 
     /// <summary>
-    /// 預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功) - ✅ 新增
+    /// 預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕)- ✅ 新增
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
     public byte ReservationStatus { get; set; } = 0;
+
+    /// <summary>
+    /// ✅ 新增：拒絕原因
+    /// </summary>
+    [Column(TypeName = "text")]
+    public string RejectReason { get; set; }
 
     /// <summary>
     /// 審核時間 - ✅ 新增
@@ -162,7 +168,7 @@ public partial class Conference
     public string PaymentMethod { get; set; }
 
     /// <summary>
-    /// 付款狀態
+    /// 付款狀態 (1=未付款, 2=待查帳 (已上傳憑證), 3= 已收款(全額), 4 = 已收款(訂金30%) , 5 = 已收款(尾款70%))
     /// </summary>
     [Column(TypeName = "int(11)")]
     public int PaymentStatus { get; set; } = 1;
@@ -268,4 +274,8 @@ public partial class Conference
     // ✅ 新增：時段關聯
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = new List<ConferenceRoomSlot>();
+
+    // ✅ 新增：付款憑證關聯
+    [InverseProperty("Conference")]
+    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofs { get; set; } = new List<ConferencePaymentProof>();
 }

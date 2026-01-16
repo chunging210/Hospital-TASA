@@ -50,39 +50,5 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
-        
-        [HttpPost("createreservation")]
-        public IActionResult CreateReservation([FromBody] InsertVM vm)
-        {
-            var id = service.ConferenceService.CreateReservation(vm);
-            return Ok(id);
-        }
-
-        [HttpPost("approve")]
-        public IActionResult ApproveReservation([FromBody] dynamic request)
-        {
-            var conferenceId = Guid.Parse(request.conferenceId);
-            var adminId = User.FindFirst("Id")?.Value ?? throw new HttpException("無法取得管理者資訊");
-            service.ConferenceService.ApproveReservation(conferenceId, Guid.Parse(adminId));
-            return Ok();
-        }
-
-        [HttpPost("reject")]
-        public IActionResult RejectReservation([FromBody] dynamic request)
-        {
-            var conferenceId = Guid.Parse(request.conferenceId);
-            var reason = request.reason?.ToString() ?? "";
-            service.ConferenceService.RejectReservation(conferenceId, reason);
-            return Ok();
-        }
-
-        [HttpPost("confirmpayment")]
-        public IActionResult ConfirmPayment([FromBody] dynamic request)
-        {
-            var conferenceId = Guid.Parse(request.conferenceId);
-            service.ConferenceService.ConfirmPayment(conferenceId);
-            return Ok();
-        }
-
     }
 }

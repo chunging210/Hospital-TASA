@@ -42,7 +42,10 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.ReservationStatus)
                 .HasColumnType("tinyint(1) unsigned")
                 .HasDefaultValue(0)
-                .HasComment("預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功)");
+                .HasComment("預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕)");
+            entity.Property(e => e.RejectReason)
+                .HasColumnType("text")
+                .HasComment("拒絕原因");
 
             entity.Property(e => e.ReviewedAt)
                 .HasColumnType("datetime")

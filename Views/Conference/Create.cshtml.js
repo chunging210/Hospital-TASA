@@ -411,7 +411,7 @@ window.$config = {
                 usageType: 1,  // 實體會議
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,
-
+                reservationDate: this.form.date,
                 // 付款
                 paymentMethod: this.form.paymentMethod,
                 departmentCode: this.form.paymentMethod === 'cost-sharing' ? this.form.departmentCode : null,
@@ -437,7 +437,7 @@ window.$config = {
             console.log('📤 payload:', JSON.stringify(payload));
 
             // ✅ 改為呼叫新的 createreservation endpoint
-            global.api.conference.createreservation({ body: payload })
+            global.api.reservations.createreservation({ body: payload })
                 .then(res => {
                     console.log('%c✅ 預約成功！', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                     console.log('預約ID:', res);

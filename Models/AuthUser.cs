@@ -122,4 +122,10 @@ public partial class AuthUser
     [ForeignKey("AuthUserId")]
     [InverseProperty("AuthUser")]
     public virtual ICollection<AuthRole> AuthRole { get; set; } = new List<AuthRole>();
+
+    [InverseProperty("UploadedByNavigation")]
+    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofUploadedBy { get; set; } = new List<ConferencePaymentProof>();
+
+    [InverseProperty("ReviewedByNavigation")]
+    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofReviewedBy { get; set; } = new List<ConferencePaymentProof>();
 }

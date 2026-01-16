@@ -1,0 +1,307 @@
+/* ===== 時段列表滾動條樣式 ===== */
+.slot-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.slot-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.slot-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.slot-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.slot-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ===== 表格基本樣式修正 ===== */
+.table td,
+.table th {
+    background-color: transparent !important;
+    color: #212529 !important;
+}
+
+/* 表頭樣式 */
+.table thead th {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    font-weight: 600;
+}
+
+/* hover 效果 */
+.table-hover tbody tr:hover td {
+    background-color: #f5f5f5 !important;
+    color: #212529 !important;
+}
+
+/* 可點擊的行 */
+.row-click {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.row-click:hover {
+    background-color: #f5f5f5 !important;
+}
+
+.row-click:hover td {
+    color: #212529 !important;
+}
+
+/* ===== Badge 基本樣式 ===== */
+.badge {
+    font-size: 0.9rem !important;
+    padding: 0.5em 1em !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    letter-spacing: 0.03em;
+    display: inline-block;
+}
+
+/* ===== 預約狀態 Badge 樣式 ===== */
+/* 待審核 - 柔和橘黃 */
+.badge-pending {
+    background-color: #FFB74D !important;
+    color: #fff !important;
+}
+
+/* 待繳費 - 柔和天藍 */
+.badge-payment {
+    background-color: #4FC3F7 !important;
+    color: #fff !important;
+}
+
+/* 已拒絕 - 柔和紅色 */
+.badge-rejected {
+    background-color: #EF5350 !important;
+    color: #fff !important;
+}
+
+/* 預約成功 - 柔和綠色 */
+.badge-success {
+    background-color: #66BB6A !important;
+    color: #fff !important;
+}
+
+/* 已釋放 - 柔和灰色 */
+.badge-released {
+    background-color: #90A4AE !important;
+    color: #fff !important;
+}
+
+/* ===== 付款模式相關樣式 ===== */
+/* 付款模式啟用時的容器 */
+#personalPayWrap {
+    position: relative;
+}
+
+/* 付款欄位預設隱藏 */
+.pay-col {
+    width: 44px;
+    text-align: center;
+}
+
+/* 付款模式下無法選擇的行 */
+.pay-selecting .not-payable {
+    background-color: #f8f9fa !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pay-selecting .not-payable td {
+    color: #6c757d !important;
+}
+
+.pay-selecting .not-payable input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+/* 付款模式下可選擇的行 hover */
+.pay-selecting tr:not(.not-payable):hover {
+    background-color: #e3f2fd !important;
+}
+
+.pay-selecting tr:not(.not-payable):hover td {
+    color: #212529 !important;
+}
+
+/* ===== 查帳模式相關樣式 ===== */
+.check-col {
+    width: 44px;
+    text-align: center;
+}
+
+/* ===== Offcanvas 抽屜寬度調整 ===== */
+/* 審核抽屜 */
+#reviewDrawer.offcanvas-end {
+    width: 600px !important;
+    max-width: 90vw;
+}
+
+/* 預約詳情抽屜 */
+#bookingDrawer.offcanvas-end {
+    width: 800px !important;
+    max-width: 90vw;
+}
+
+/* ===== 響應式設計 ===== */
+/* 平板尺寸 */
+@media (min-width: 768px) {
+    #reviewDrawer.offcanvas-end {
+        width: 600px !important;
+    }
+
+    #bookingDrawer.offcanvas-end {
+        width: 700px !important;
+    }
+}
+
+/* 桌機尺寸 */
+@media (min-width: 1200px) {
+    #reviewDrawer.offcanvas-end {
+        width: 700px !important;
+    }
+
+    #bookingDrawer.offcanvas-end {
+        width: 800px !important;
+    }
+}
+
+/* 超大螢幕 */
+@media (min-width: 1600px) {
+    #reviewDrawer.offcanvas-end {
+        width: 800px !important;
+    }
+
+    #bookingDrawer.offcanvas-end {
+        width: 900px !important;
+    }
+}
+
+/* 手機尺寸 */
+@media (max-width: 767px) {
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #reviewDrawer.offcanvas-end,
+    #bookingDrawer.offcanvas-end {
+        width: 100vw !important;
+        max-width: 100vw !important;
+    }
+}
+
+/* ===== 表格內按鈕樣式優化 ===== */
+.table .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table .d-flex.gap-1 {
+    gap: 0.25rem !important;
+}
+
+/* ===== 搜尋框樣式 ===== */
+.search-box .search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+/* ===== 工具列樣式 ===== */
+#payTopBarNormal,
+#payTopBarSelect,
+#payBottomBar {
+    transition: all 0.3s ease;
+}
+
+/* ===== 表單樣式優化 ===== */
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* ===== 其他通用樣式 ===== */
+.text-branding {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.text-branding i {
+    margin-right: 0.5rem;
+    color: #0d6efd;
+}
+
+/* ✅ 不可付款的列 - 視覺上變灰 + 禁用 */
+#personalPayWrap.pay-selecting tr.not-payable {
+    opacity: 0.4;
+    background-color: #f8f9fa !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    /* 禁用所有滑鼠事件 */
+}
+
+/* ✅ 不可付款的 checkbox - 視覺上禁用 */
+#personalPayWrap.pay-selecting tr.not-payable .row-check {
+    cursor: not-allowed;
+    opacity: 0.3;
+}
+
+
+/* ✅ 可付款的列 - 保持正常樣式 */
+#personalPayWap.pay-selecting tr:not(.not-payable) {
+    cursor: pointer;
+}
+
+/* 付款選擇欄位顯示/隱藏 */
+#personalTable .pay-col {
+    display: none;
+    width: 44px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#personalPayWrap.pay-selecting .pay-col {
+    display: table-cell;
+}
+
+/* Checkbox 樣式 */
+#personalTable .row-check {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* ✅ 新增:不可付款列的提示文字顏色 */
+#personalPayWrap.pay-selecting tr.not-payable td {
+    color: #6c757d !important;
+}
+
+/* ✅ 新增:不可付款列的 badge 也變灰 */
+#personalPayWrap.pay-selecting tr.not-payable .badge {
+    opacity: 0.6;
+}
+
+
+/* ✅ 側邊欄加大 */
+.offcanvas-large {
+    width: 600px !important;
+}
+
+@media (max-width: 768px) {
+    .offcanvas-large {
+        width: 90% !important;
+    }
+}
