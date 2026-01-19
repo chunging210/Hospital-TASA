@@ -50,12 +50,6 @@
                                         個人預約
                                     </button>
                                 </li>
-                                <li class="nav-item" role="presentation" v-if="isAdmin">
-                                    <button class="nav-link" :class="{ active: activeTab === 'check' }"
-                                        @@click="activeTab = 'check'" type="button">
-                                        待查帳
-                                    </button>
-                                </li>
                             </ul>
 
                             <div class="table-responsive mx-3 mt-4">
@@ -110,7 +104,7 @@
                                         </table>
                                     </div>
 
-                                    <!-- ✅ 個人預約 Tab (大幅簡化) -->
+                                    <!-- 個人預約 Tab -->
                                     <div v-show="activeTab === 'personal'">
                                         <div class="table-responsive">
                                             <table class="table align-middle table-nowrap mb-0 table-hover">
@@ -160,91 +154,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- 待查帳 Tab -->
-                                    <div v-show="activeTab === 'check' && isAdmin">
-                                        <div class="d-flex align-items-center mb-3" style="justify-content: flex-end;">
-                                            <button type="button" class="btn btn-success me-2"
-                                                v-show="checkMode.batchMode" :disabled="checkMode.selectedCount === 0"
-                                                @@click="batchApprove">
-                                                <i class="mdi mdi-check me-1"></i>
-                                                批准選中項目 ({{ checkMode.selectedCount }})
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger me-2"
-                                                v-show="checkMode.batchMode" :disabled="checkMode.selectedCount === 0"
-                                                @@click="batchReject">
-                                                <i class="mdi mdi-close me-1"></i>
-                                                退回選中項目 ({{ checkMode.selectedCount }})
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary"
-                                                @@click="toggleBatchCheckMode">
-                                                <i class="mdi mdi-checkbox-multiple-marked me-1"></i>
-                                                {{ checkMode.batchMode ? '取消批量' : '批量處理' }}
-                                            </button>
-                                        </div>
-
-                                        <div class="table-responsive">
-                                            <table class="table align-middle table-nowrap mb-0 table-hover">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th class="check-col"
-                                                            :style="{ display: checkMode.batchMode ? 'table-cell' : 'none' }">
-                                                            <input class="form-check-input" type="checkbox"
-                                                                v-model="checkMode.selectAll"
-                                                                @@change="toggleCheckSelectAll">
-                                                        </th>
-                                                        <th class="align-middle">預約單號</th>
-                                                        <th class="align-middle">預約者</th>
-                                                        <th class="align-middle">預約日期</th>
-                                                        <th class="align-middle">時間</th>
-                                                        <th class="align-middle">會議室</th>
-                                                        <th class="align-middle">付款方式</th>
-                                                        <th class="align-middle">金額</th>
-                                                        <th class="align-middle">上傳時間</th>
-                                                        <th class="align-middle">審核狀態</th>
-                                                        <th class="align-middle">操作</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr v-for="item in checkReservations" :key="item.id">
-                                                        <td class="check-col"
-                                                            :style="{ display: checkMode.batchMode ? 'table-cell' : 'none' }">
-                                                            <input class="form-check-input row-check" type="checkbox"
-                                                                v-model="item.selected" @@change="updateCheckSelection">
-                                                        </td>
-                                                        <td>{{ item.reservationNo }}</td>
-                                                        <td>{{ item.reserverName }}</td>
-                                                        <td>{{ item.reservationDate }}</td>
-                                                        <td>{{ item.timeSlot }}</td>
-                                                        <td>{{ item.roomName }}</td>
-                                                        <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>
-                                                        <td>NT${{ item.amount.toLocaleString() }}</td>
-                                                        <td>{{ item.uploadTime }}</td>
-                                                        <td>
-                                                            <span class="badge bg-warning">待審核</span>
-                                                        </td>
-                                                        <td>
-                                                            <div class="d-flex gap-1">
-                                                                <!-- ✅ 只有現金付款才顯示查看憑證 -->
-                                                                <button v-if="isCounterPayment(item.paymentMethod)"
-                                                                    class="btn btn-sm btn-outline-primary"
-                                                                    @@click="viewPaymentProof(item)">
-                                                                    <i class="mdi mdi-eye"></i> 查看憑證
-                                                                </button>
-                                                                <button class="btn btn-sm btn-success"
-                                                                    @@click="approvePayment(item)">
-                                                                    <i class="mdi mdi-check"></i>
-                                                                </button>
-                                                                <button class="btn btn-sm btn-danger"
-                                                                    @@click="rejectPayment(item)">
-                                                                    <i class="mdi mdi-close"></i>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -254,14 +163,13 @@
         </div>
     </div>
 
-    <!-- ✅ 預約詳情 Offcanvas (加上付款欄位) -->
+    <!-- ✅ 預約詳情 Offcanvas -->
     <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="bookingDrawer" ref="bookingDrawer">
         <div class="offcanvas-header">
             <h5 class="mb-0 fw-bold">
                 預約詳情 <small class="text-muted ms-2">#{{ selectedItem?.reservationNo }}</small>
             </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas">
-            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body" v-if="selectedItem">
             <form class="row g-3">
@@ -339,7 +247,7 @@
                 <!-- 拒絕原因 -->
                 <div class="col-md-12" v-if="selectedItem.approvalStatus === '審核拒絕' && selectedItem.rejectReason">
                     <div class="alert alert-danger" role="alert">
-                        <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因：</strong>
+                        <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因:</strong>
                         <p class="mb-0 mt-2">{{ selectedItem.rejectReason }}</p>
                     </div>
                 </div>
@@ -349,74 +257,7 @@
                     <h6 class="fw-bold border-bottom pb-2 mt-3">付款狀態</h6>
                 </div>
 
-                <!-- ✅ 管理員可編輯付款狀態 -->
-                <div class="col-md-12" v-if="isAdmin">
-                    <label class="form-label fw-bold">付款狀態</label>
-                    <select class="form-select" v-model="selectedItem.paymentStatus"
-                        :disabled="selectedItem.approvalStatus !== '待繳費' && selectedItem.approvalStatus !== '預約成功'">
-                        <option>未付款</option>
-                        <option>待查帳</option>
-                        <option>已收款(全額)</option>
-                        <option>已收款(訂金30%)</option>
-                        <option>已收款(尾款70%)</option>
-                    </select>
-
-                    <!-- ✅ 如果是「待查帳」狀態,顯示付款資訊 -->
-                    <div v-if="selectedItem.paymentStatus === '待查帳'" class="mt-3">
-                        <div class="alert alert-info">
-                            <h6 class="fw-bold mb-2">
-                                <i class="mdi mdi-information-outline me-2"></i>付款資訊
-                            </h6>
-
-                            <!-- 現金付款 -->
-                            <div v-if="isCounterPayment(selectedItem.paymentMethod)">
-                                <p class="mb-2"><strong>付款方式:</strong> 現金付款 (臨櫃)</p>
-                                <p class="mb-2"><strong>上傳時間:</strong> {{ selectedItem.uploadTime || '-' }}</p>
-                                <p class="mb-2"><strong>備註:</strong> {{ selectedItem.paymentNote || '-' }}</p>
-
-                                <!-- ✅ 憑證預覽/下載 -->
-                                <div v-if="selectedItem.proofFiles && selectedItem.proofFiles.length > 0">
-                                    <strong>上傳憑證:</strong>
-                                    <div class="mt-2 d-flex gap-2 flex-wrap">
-                                        <a v-for="(file, index) in selectedItem.proofFiles" :key="index"
-                                            :href="file.url" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            <i class="mdi mdi-file-document me-1"></i>
-                                            {{ file.name }}
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 匯款付款 -->
-                            <div v-if="isTransferPayment(selectedItem.paymentMethod)">
-                                <p class="mb-2"><strong>付款方式:</strong> 銀行匯款</p>
-                                <p class="mb-2"><strong>轉帳末五碼:</strong> {{ selectedItem.last5 || '-' }}</p>
-                                <p class="mb-2"><strong>轉帳金額:</strong> NT${{
-                                    selectedItem.transferAmount?.toLocaleString() || '-' }}</p>
-                                <p class="mb-2"><strong>轉帳時間:</strong> {{ selectedItem.transferAt || '-' }}</p>
-                                <p class="mb-0"><strong>備註:</strong> {{ selectedItem.paymentNote || '-' }}</p>
-                            </div>
-                        </div>
-
-                        <!-- ✅ 提示:到待查帳頁面批准/退回 -->
-                        <div class="alert alert-warning">
-                            <i class="mdi mdi-alert me-2"></i>
-                            請到「待查帳」頁面進行批准或退回操作
-                        </div>
-                    </div>
-
-                    <div class="form-text text-danger"
-                        v-if="selectedItem.approvalStatus !== '待繳費' && selectedItem.approvalStatus !== '預約成功'">
-                        <i class="mdi mdi-alert-circle me-1"></i>
-                        {{ selectedItem.approvalStatus === '待審核' ? '請先審核通過後才能修改付款狀態' :
-                        selectedItem.approvalStatus === '審核拒絕' ? '已拒絕的預約無法修改付款狀態' :
-                        selectedItem.approvalStatus === '已釋放' ? '已釋放的預約無法修改付款狀態' :
-                        '此狀態無法修改付款狀態' }}
-                    </div>
-                </div>
-
-                <!-- ✅ 一般使用者查看付款狀態 + 付款欄位 -->
-                <div class="col-md-12" v-else>
+                <div class="col-md-12">
                     <div class="row">
                         <label class="form-label col-md-3 fw-bold">付款狀態</label>
                         <label class="form-label col-md-9">
@@ -427,8 +268,9 @@
                         </label>
                     </div>
 
-                    <!-- ✅ 如果狀態是「待繳費」且「未付款」,顯示付款欄位 -->
-                    <div v-if="selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款'">
+                    <!-- ✅ 只在「個人預約」Tab + 待繳費 + 未付款時顯示付款表單 -->
+                    <div
+                        v-if="activeTab === 'personal' && selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款'">
 
                         <!-- ========== 臨櫃付款欄位 ========== -->
                         <div v-if="isCounterPayment(selectedItem.paymentMethod)" class="mt-4">
@@ -439,23 +281,23 @@
 
                             <div v-if="selectedItem.amount === 0" class="alert alert-info">
                                 <i class="mdi mdi-information me-2"></i>
-                                此預約為免費使用，請上傳證明文件(如:公文、許可證明等)
+                                此預約為免費使用,請上傳證明文件(如:公文、許可證明等)
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">
-                                    {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單（影像或 PDF）' }}
+                                    {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單(影像或 PDF)' }}
                                     <span class="text-danger">*</span>
                                 </label>
                                 <input class="form-control" type="file" ref="counterPayFiles"
                                     accept=".jpg,.jpeg,.png,.pdf" multiple required>
-                                <div class="form-text">可上傳多檔；支援 JPG / PNG / PDF。</div>
+                                <div class="form-text">可上傳多檔;支援 JPG / PNG / PDF。</div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">備註（選填）</label>
+                                <label class="form-label">備註(選填)</label>
                                 <textarea class="form-control" v-model="paymentForm.counterNote" rows="2"
-                                    placeholder="例：窗口、收據號碼…"></textarea>
+                                    placeholder="例:窗口、收據號碼…"></textarea>
                             </div>
 
                             <button type="button" class="btn btn-primary" @@click="submitCounterPayment">
@@ -489,13 +331,13 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label">轉帳時間（選填）</label>
+                                    <label class="form-label">轉帳時間(選填)</label>
                                     <input type="datetime-local" class="form-control" v-model="paymentForm.transferAt">
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label">備註（選填）</label>
+                                    <label class="form-label">備註(選填)</label>
                                     <textarea class="form-control" v-model="paymentForm.transferNote" rows="2"
-                                        placeholder="例：銀行代碼、分行…"></textarea>
+                                        placeholder="例:銀行代碼、分行…"></textarea>
                                 </div>
                             </div>
 
@@ -508,22 +350,13 @@
                         <div v-if="isCostSharingPayment(selectedItem.paymentMethod)" class="mt-4">
                             <div class="alert alert-info">
                                 <i class="mdi mdi-information me-2"></i>
-                                此預約採用「成本分攤」付款方式，無需手動上傳憑證。
+                                此預約採用「成本分攤」付款方式,無需手動上傳憑證。
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- ========== 操作按鈕 ========== -->
-                <div class="col-12 d-flex gap-2 pt-3 border-top" style="justify-content: flex-end;">
-                    <button type="button" class="btn btn-primary" @@click="saveDetailChanges" v-if="isAdmin"
-                        :disabled="selectedItem.approvalStatus !== '待繳費' && selectedItem.approvalStatus !== '預約成功'">
-                        儲存
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">
-                        {{ isAdmin ? '取消' : '關閉' }}
-                    </button>
-                </div>
             </form>
         </div>
     </div>

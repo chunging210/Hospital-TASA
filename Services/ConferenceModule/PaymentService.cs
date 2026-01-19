@@ -37,17 +37,6 @@ namespace TASA.Services.ConferenceModule
             public string Reason { get; set; } = string.Empty;
         }
 
-        public class BatchApproveVM
-        {
-            public List<Guid> ReservationIds { get; set; } = new();
-        }
-
-        public class BatchRejectVM
-        {
-            public List<Guid> ReservationIds { get; set; } = new();
-            public string Reason { get; set; } = string.Empty;
-        }
-
         /// <summary>
         /// ✅ 上傳臨櫃付款憑證
         /// </summary>
@@ -274,7 +263,7 @@ namespace TASA.Services.ConferenceModule
             }
 
             // 付款狀態改回「未付款」
-            conference.PaymentStatus = 1;
+            conference.PaymentStatus = 4;
 
             await db.SaveChangesAsync();
 

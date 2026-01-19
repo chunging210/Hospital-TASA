@@ -56,15 +56,29 @@ const global = new function () {
             delete: DELETE,
         }),
         reservations: apiMethods('/api/reservations', {
+            // ===== 預約建立 =====
             createreservation: POST,
-            approve: POST,
-            reject: POST,
-            confirmpayment: POST,
-            reservationlist: GET,
-            list: GET,
-            mylist: GET,
-            pendingcheck: GET,
-            update: POST,
+
+            // ===== 租借審核 (主任/管理者) =====
+            reservationlist: GET,      // 租借審核列表
+            approve: POST,             // 租借審核通過
+            reject: POST,              // 租借審核拒絕
+
+            // ===== 付款審核 (總務/管理者) =====
+            paymentlist: GET,          // ✅ 新增:付款審核列表
+            approvepayment: POST,      // ✅ 新增:付款審核通過
+            rejectpayment: POST,       // ✅ 新增:付款審核拒絕
+
+            // ===== 預約總覽 (查詢) =====
+            list: GET,                 // 所有預約列表 (院內人員)
+            mylist: GET,               // 我的預約列表
+
+            // ===== 權限 =====
+            permissions: GET,          // ✅ 新增:取得使用者權限
+
+            // ===== 其他 (舊版,待整理) =====
+            pendingcheck: GET,         // 待查帳列表 (可能移除)
+            update: POST,              // 更新預約
         }),
         payment: apiMethods('/api/payment', {
             uploadcounter: POST,

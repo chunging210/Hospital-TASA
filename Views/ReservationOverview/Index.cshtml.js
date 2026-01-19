@@ -18,7 +18,6 @@ window.$config = {
         /* ========= 資料列表 ========= */
         this.allReservations = ref([]);
         this.personalReservations = ref([]);
-        this.checkReservations = ref([]);
 
         /* ========= 選中項目 ========= */
         this.selectedItem = ref(null);
@@ -35,13 +34,6 @@ window.$config = {
             amount: 0,
             transferAt: '',
             transferNote: ''
-        });
-
-        /* ========= 查帳模式 ========= */
-        this.checkMode = reactive({
-            batchMode: false,
-            selectAll: false,
-            selectedCount: 0
         });
 
         /* ========= Bootstrap Instances ========= */
@@ -180,24 +172,6 @@ window.$config = {
             });
         };
 
-        this.loadCheckReservations = async () => {
-            const res = await global.api.reservations.pendingcheck();
-
-            this.checkReservations.value = (res.data || []).map(item => ({
-                id: item.Id,
-                reservationNo: item.BookingNo,
-                reserverName: item.ApplicantName,
-                reservationDate: item.Date,
-                timeSlot: item.Time,
-                roomName: item.RoomName,
-                paymentMethod: item.PaymentMethod || '-',
-                amount: item.TotalAmount,
-                uploadTime: item.UploadTime || '-',
-                selected: false,
-                slots: item.Slots || []
-            }));
-        };
-
         /* ========= ✅ 付款相關方法 ========= */
         this.getPaymentMethodText = (method) => {
             const methodMap = {
@@ -223,9 +197,7 @@ window.$config = {
 
         // ✅ 上傳臨櫃憑證 (修正版)
         this.submitCounterPayment = async () => {
-            console.log('🔍 開始上傳憑證...');
-            console.log('counterPayFiles ref:', this.counterPayFiles.value);
-
+            
             // ✅ 修正:使用 ref 取得檔案
             const fileInput = this.counterPayFiles.value;
             if (!fileInput) {
@@ -235,7 +207,6 @@ window.$config = {
             }
 
             const files = fileInput.files;
-            console.log('選中的檔案:', files);
 
             if (!files || files.length === 0) {
                 const fileType = this.selectedItem.value.amount === 0 ? '證明文件' : '三聯單檔案';
@@ -246,7 +217,6 @@ window.$config = {
             try {
                 const formData = new FormData();
 
-                console.log('📦 準備 FormData...');
                 console.log('reservationNo:', this.selectedItem.value.reservationNo);
 
                 // reservationIds 序列化成 JSON
@@ -255,16 +225,13 @@ window.$config = {
 
                 // 附加所有檔案
                 for (let i = 0; i < files.length; i++) {
-                    console.log(`📎 附加檔案 ${i + 1}:`, files[i].name);
                     formData.append('files', files[i]);
                 }
 
-                console.log('🚀 呼叫 API...');
 
                 // ✅ 呼叫 API
                 const response = await global.api.payment.uploadcounter({ body: formData });
 
-                console.log('✅ API 回應:', response);
 
                 addAlert('憑證已上傳，等待審核', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
@@ -323,130 +290,6 @@ window.$config = {
             }
         };
 
-        /* ========= 查帳相關方法 ========= */
-        this.toggleBatchCheckMode = () => {
-            this.checkMode.batchMode = !this.checkMode.batchMode;
-
-            if (!this.checkMode.batchMode) {
-                this.checkReservations.value.forEach(item => {
-                    item.selected = false;
-                });
-                this.checkMode.selectAll = false;
-            }
-
-            this.updateCheckSelection();
-        };
-
-        this.toggleCheckSelectAll = () => {
-            this.checkReservations.value.forEach(item => {
-                item.selected = this.checkMode.selectAll;
-            });
-            this.updateCheckSelection();
-        };
-
-        this.updateCheckSelection = () => {
-            this.checkMode.selectedCount = this.checkReservations.value.filter(
-                item => item.selected
-            ).length;
-        };
-
-        this.viewPaymentProof = (item) => {
-            addAlert(`查看預約單 ${item.reservationNo} 的付款憑證`, { type: 'info' });
-            // TODO: 實作查看憑證功能
-        };
-
-        this.approvePayment = async (item) => {
-            if (!confirm(`確定要批准預約單 ${item.reservationNo} 嗎？`)) {
-                return;
-            }
-
-            try {
-                await global.api.payment.approve({
-                    body: {
-                        reservationId: item.id
-                    }
-                });
-
-                addAlert('批准成功！', { type: 'success' });
-                await this.loadCheckReservations();
-
-            } catch (err) {
-                console.error('❌ 批准失敗:', err);
-                addAlert('批准失敗', { type: 'danger' });
-            }
-        };
-
-        this.rejectPayment = async (item) => {
-            const reason = prompt('請輸入退回原因：');
-            if (!reason) return;
-
-            try {
-                await global.api.payment.reject({
-                    body: {
-                        reservationId: item.id,
-                        reason: reason
-                    }
-                });
-
-                addAlert(`退回成功！原因：${reason}`, { type: 'success' });
-                await this.loadCheckReservations();
-
-            } catch (err) {
-                console.error('❌ 退回失敗:', err);
-                addAlert('退回失敗', { type: 'danger' });
-            }
-        };
-
-        this.batchApprove = async () => {
-            const selected = this.checkReservations.value.filter(item => item.selected);
-            if (selected.length === 0) return;
-
-            if (!confirm(`確定要批准 ${selected.length} 個項目嗎？`)) {
-                return;
-            }
-
-            try {
-                await global.api.payment.batchapprove({
-                    body: {
-                        reservationIds: selected.map(item => item.id)
-                    }
-                });
-
-                addAlert('批准完成！', { type: 'success' });
-                await this.loadCheckReservations();
-                this.checkMode.batchMode = false;
-
-            } catch (err) {
-                console.error('❌ 批量批准失敗:', err);
-                addAlert('批量批准失敗', { type: 'danger' });
-            }
-        };
-
-        this.batchReject = async () => {
-            const selected = this.checkReservations.value.filter(item => item.selected);
-            if (selected.length === 0) return;
-
-            const reason = prompt('請輸入退回原因：');
-            if (!reason) return;
-
-            try {
-                await global.api.payment.batchreject({
-                    body: {
-                        reservationIds: selected.map(item => item.id),
-                        reason: reason
-                    }
-                });
-
-                addAlert(`退回完成！原因：${reason}`, { type: 'success' });
-                await this.loadCheckReservations();
-                this.checkMode.batchMode = false;
-
-            } catch (err) {
-                console.error('❌ 批量退回失敗:', err);
-                addAlert('批量退回失敗', { type: 'danger' });
-            }
-        };
-
         /* ========= 詳情相關方法 ========= */
         this.openDetailDrawer = async (item) => {
             // 基本資訊
@@ -466,35 +309,6 @@ window.$config = {
                 rejectReason: item.rejectReason || ''
             };
 
-            // ✅ 如果是「待查帳」,載入付款資訊
-            if (item.paymentStatus === '待查帳') {
-                try {
-                    const res = await global.api.reservations.paymentinfo({ body: { id: item.id } });
-
-                    if (res.data) {
-                        this.selectedItem.value.uploadTime = res.data.UploadTime;
-                        this.selectedItem.value.paymentNote = res.data.Note;
-
-                        // 現金付款的憑證
-                        if (res.data.ProofFiles) {
-                            this.selectedItem.value.proofFiles = res.data.ProofFiles.map(f => ({
-                                name: f.FileName,
-                                url: f.FilePath
-                            }));
-                        }
-
-                        // 匯款資訊
-                        if (res.data.Last5) {
-                            this.selectedItem.value.last5 = res.data.Last5;
-                            this.selectedItem.value.transferAmount = res.data.TransferAmount;
-                            this.selectedItem.value.transferAt = res.data.TransferAt;
-                        }
-                    }
-                } catch (err) {
-                    console.error('❌ 載入付款資訊失敗:', err);
-                }
-            }
-
             // 如果是匯款,預填金額
             if (this.isTransferPayment(item.paymentMethod)) {
                 this.paymentForm.amount = item.amount;
@@ -503,66 +317,15 @@ window.$config = {
             this.bookingDrawerInstance.value?.show();
         };
 
-        this.saveDetailChanges = async () => {
-            if (!this.isAdmin.value) {
-                addAlert('您沒有權限修改付款狀態', { type: 'warning' });
-                return;
-            }
-
-            const allowedStatuses = ['待繳費', '預約成功'];
-            if (!allowedStatuses.includes(this.selectedItem.value.approvalStatus)) {
-                const message = this.selectedItem.value.approvalStatus === '待審核'
-                    ? '請先審核通過後才能修改付款狀態'
-                    : this.selectedItem.value.approvalStatus === '審核拒絕'
-                        ? '已拒絕的預約無法修改付款狀態'
-                        : this.selectedItem.value.approvalStatus === '已釋放'
-                            ? '已釋放的預約無法修改付款狀態'
-                            : '此狀態無法修改付款狀態';
-
-                addAlert(message, { type: 'warning' });
-                return;
-            }
-
-            try {
-                const payload = {
-                    id: this.selectedItem.value.id,
-                    paymentStatus: this.selectedItem.value.paymentStatus,
-                };
-
-                await global.api.reservations.update({
-                    body: payload
-                });
-
-                addAlert('儲存成功', { type: 'success' });
-
-                this.bookingDrawerInstance.value?.hide();
-
-                if (this.activeTab.value === 'all') {
-                    this.loadAllReservations();
-                } else if (this.activeTab.value === 'personal') {
-                    this.loadPersonalReservations();
-                }
-
-            } catch (err) {
-                console.error('❌ 儲存失敗', err);
-                addAlert('儲存失敗', { type: 'danger' });
-            }
-        };
-
         /* ========= Watch ========= */
         watch(
             () => this.activeTab.value,
             (newTab) => {
-                if (newTab !== 'check') {
-                    this.checkMode.batchMode = false;
-                }
 
                 if (newTab === 'all') {
                     this.loadAllReservations();
                 } else if (newTab === 'personal') {
                     this.loadPersonalReservations();
-                } else if (newTab === 'check') {
-                    this.loadCheckReservations();
                 }
             },
             { immediate: true }

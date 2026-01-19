@@ -23,7 +23,7 @@ namespace TASA.Controllers.API
             var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reservationIds)
                 ?? new List<string>();
 
-            var vm = new PaymentService.UploadCounterVM
+            var vm = new UploadCounterVM
             {
                 ReservationIds = ids,
                 Files = files.ToList(),
@@ -38,7 +38,7 @@ namespace TASA.Controllers.API
         /// 提交匯款資訊
         /// </summary>
         [HttpPost("transfer")]
-        public async Task<IActionResult> Transfer([FromBody] PaymentService.TransferPaymentVM vm)
+        public async Task<IActionResult> Transfer([FromBody] TransferPaymentVM vm)
         {
             var proofIds = await service.PaymentService.SubmitTransferInfo(vm);
             return Ok(proofIds);
@@ -48,7 +48,7 @@ namespace TASA.Controllers.API
         /// 批准付款憑證
         /// </summary>
         [HttpPost("approve")]
-        public async Task<IActionResult> Approve([FromBody] PaymentService.ApprovePaymentVM vm)
+        public async Task<IActionResult> Approve([FromBody] ApprovePaymentVM vm)
         {
             await service.PaymentService.ApprovePayment(vm);
             return Ok();
@@ -58,30 +58,11 @@ namespace TASA.Controllers.API
         /// 退回付款憑證
         /// </summary>
         [HttpPost("reject")]
-        public async Task<IActionResult> Reject([FromBody] PaymentService.RejectPaymentVM vm)
+        public async Task<IActionResult> Reject([FromBody] RejectPaymentVM vm)
         {
             await service.PaymentService.RejectPayment(vm);
             return Ok();
         }
 
-        /// <summary>
-        /// 批量批准
-        /// </summary>
-        [HttpPost("batchapprove")]
-        public async Task<IActionResult> BatchApprove([FromBody] BatchApproveVM vm)
-        {
-            await service.PaymentService.BatchApprove(vm.ReservationIds);
-            return Ok();
-        }
-
-        /// <summary>
-        /// 批量退回
-        /// </summary>
-        [HttpPost("batchreject")]
-        public async Task<IActionResult> BatchReject([FromBody] BatchRejectVM vm)
-        {
-            await service.PaymentService.BatchReject(vm.ReservationIds, vm.Reason);
-            return Ok();
-        }
     }
 }

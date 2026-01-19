@@ -3,6 +3,7 @@ using TASA.Services;
 using TASA.Program;
 using static TASA.Services.ConferenceModule.ReservationService;
 using static TASA.Services.ConferenceModule.ConferenceService;
+using static TASA.Services.ConferenceModule.PaymentService;
 
 namespace TASA.Controllers.API
 {
@@ -10,8 +11,23 @@ namespace TASA.Controllers.API
     [Route("api/reservations")]
     public class ReservationController(ServiceWrapper service) : ControllerBase
     {
+        // ===== 權限相關 =====
+
         /// <summary>
-        /// 1. 建立預約 (createroom.js)
+        /// ✅ 取得當前使用者權限 (前端用)
+        /// </summary>
+        [HttpGet("permissions")]
+        public IActionResult GetPermissions()
+        {
+            var userId = GetCurrentUserId();
+            var permissions = service.AuthRoleServices.GetUserPermissions(userId);
+            return Ok(permissions);
+        }
+
+        // ===== 預約建立 =====
+
+        /// <summary>
+        /// 1. 建立預約
         /// </summary>
         [HttpPost("createreservation")]
         public IActionResult CreateReservation([FromBody] InsertVM vm)
@@ -20,84 +36,165 @@ namespace TASA.Controllers.API
             return Ok(id);
         }
 
-        // /// <summary>
-        // /// 2. 待審核列表 - 固定查 ReservationStatus = 1 (reservation.js)
-        // /// </summary>
-        // [HttpGet("reservationlist")]
-        // public IActionResult ReservationList([FromQuery] BaseQueryVM query)
-        // {
-        //     return Ok(service.ReservationService.ReservationList(query).ToList());
-        // }
+        // ===== 租借審核 (主任/管理者) =====
 
         /// <summary>
-        /// 3. 審核通過 (reservation.js)
+        /// 2. 租借審核通過
         /// </summary>
         [HttpPost("approve")]
         public IActionResult ApproveReservation([FromBody] ApproveVM request)
         {
-            var adminId = User.FindFirst("Id")?.Value ?? throw new HttpException("無法取得管理者資訊");
-            service.ReservationService.ApproveReservation(request, Guid.Parse(adminId));
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+            {
+                throw new HttpException("您沒有審核租借的權限");
+            }
+
+            service.ReservationService.ApproveReservation(request, userId);
             return Ok();
         }
 
         /// <summary>
-        /// 4. 審核拒絕 (reservation.js)
+        /// 3. 租借審核拒絕
         /// </summary>
         [HttpPost("reject")]
         public IActionResult RejectReservation([FromBody] RejectVM request)
         {
-            var adminId = User.FindFirst("Id")?.Value ?? throw new HttpException("無法取得管理者資訊");
-            service.ReservationService.RejectReservation(request, Guid.Parse(adminId));
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+            {
+                throw new HttpException("您沒有審核租借的權限");
+            }
+
+            service.ReservationService.RejectReservation(request, userId);
             return Ok();
         }
 
         /// <summary>
-        /// 5. 所有預約列表 - 管理者用,可查所有狀態 (reservationoverview.js)
+        /// 4. 取得租借審核列表 (ReservationStatus = 1)
         /// </summary>
-        [HttpGet("list")]
-        public IActionResult List([FromQuery] ReservationQueryVM query)
+        [HttpGet("reservationlist")]
+        public IActionResult ReservationList([FromQuery] ReservationQueryVM query)
         {
+            var userId = GetCurrentUserId();
+
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+            {
+                throw new HttpException("您沒有查看租借審核列表的權限");
+            }
+
             return Ok(service.ReservationService.AllList(query).ToList());
         }
 
-        /// <summary>
-        /// 6. 我的預約列表 (reservationoverview.js)
-        /// </summary>
-        [HttpGet("mylist")]
-        public IActionResult MyList([FromQuery] ReservationQueryVM query)
-        {
-            var userId = User.FindFirst("Id")?.Value ?? throw new HttpException("無法取得使用者資訊");
-            query.UserId = Guid.Parse(userId);
-            return Ok(service.ReservationService.AllList(query).ToList());
-        }
+        // ===== 付款審核 (總務/管理者) - ✅ 使用 PaymentService =====
 
         /// <summary>
-        /// 7. 待查帳列表 - 已上傳憑證但未確認 (reservationoverview.js)
+        /// 5. 取得付款審核列表 (ReservationStatus = 2 && PaymentStatus = 2)
         /// </summary>
-        [HttpGet("pendingcheck")]
-        public IActionResult PendingCheck([FromQuery] BaseQueryVM query)
+        [HttpGet("paymentlist")]
+        public IActionResult PaymentList([FromQuery] ReservationQueryVM query)
         {
+            var userId = GetCurrentUserId();
+
+            if (!service.AuthRoleServices.CanApprovePayment(userId))
+            {
+                throw new HttpException("您沒有查看付款審核列表的權限");
+            }
+
+            if (!query.ReservationStatus.HasValue)
+            {
+                query.ReservationStatus = 2; // 預設只看待繳費
+            }
+
             return Ok(service.ReservationService.PendingCheckList(query).ToList());
         }
 
         /// <summary>
-        /// 8. 確認繳費
+        /// 6. 付款審核通過 - ✅ 使用 PaymentService
         /// </summary>
-        [HttpPost("confirmpayment")]
-        public IActionResult ConfirmPayment([FromBody] Guid conferenceId)
+        [HttpPost("approvepayment")]
+        public async Task<IActionResult> ApprovePayment([FromBody] ApprovePaymentVM request)  // ✅ 改這裡
         {
-            service.ReservationService.ConfirmPayment(conferenceId);
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查
+            if (!service.AuthRoleServices.CanApprovePayment(userId))
+            {
+                throw new HttpException("您沒有審核付款的權限");
+            }
+
+            await service.PaymentService.ApprovePayment(request);  // ✅ 直接傳入
+
             return Ok();
         }
 
         /// <summary>
-        /// 9. 更新預約資料 (reservationoverview.js)
+        /// 7. 付款審核拒絕 - ✅ 使用 PaymentService
         /// </summary>
-        [HttpPost("update")]
-        public IActionResult Update([FromBody] UpdateReservationVM vm)
+        [HttpPost("rejectpayment")]
+        public async Task<IActionResult> RejectPayment([FromBody] RejectPaymentVM request)  // ✅ 改這裡
         {
-            service.ReservationService.UpdateReservation(vm);
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查
+            if (!service.AuthRoleServices.CanApprovePayment(userId))
+            {
+                throw new HttpException("您沒有審核付款的權限");
+            }
+
+            await service.PaymentService.RejectPayment(request);  // ✅ 直接傳入
+
             return Ok();
         }
+
+        // ===== 預約總覽 (查詢用) =====
+
+        /// <summary>
+        /// 8. 所有預約列表 - 管理者/院內人員用
+        /// </summary>
+        [HttpGet("list")]
+        public IActionResult List([FromQuery] ReservationQueryVM query)
+        {
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查:只有院內人員可以查看所有預約
+            if (!service.AuthRoleServices.IsInternalStaff(userId))
+            {
+                throw new HttpException("您沒有查看所有預約的權限");
+            }
+
+            return Ok(service.ReservationService.AllList(query).ToList());
+        }
+
+        /// <summary>
+        /// 9. 我的預約列表 - 所有使用者都可以查看自己的預約
+        /// </summary>
+        [HttpGet("mylist")]
+        public IActionResult MyList([FromQuery] ReservationQueryVM query)
+        {
+            var userId = GetCurrentUserId();
+            query.UserId = userId;
+            return Ok(service.ReservationService.AllList(query).ToList());
+        }
+
+        // ===== Helper Methods =====
+
+        /// <summary>
+        /// 取得當前使用者 ID
+        /// </summary>
+        private Guid GetCurrentUserId()
+        {
+            var userIdStr = User.FindFirst("Id")?.Value
+                ?? throw new HttpException("無法取得使用者資訊");
+            return Guid.Parse(userIdStr);
+        }
     }
+
+    // ===== ViewModel 定義 =====
+
+
 }
