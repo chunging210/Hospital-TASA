@@ -55,9 +55,9 @@ public class ConferenceRoomSlotConfiguration
 
         // ✅ 新增：時段狀態欄位
         entity.Property(e => e.SlotStatus)
-            .HasColumnType("tinyint(1) unsigned")
-            .HasDefaultValue(0)
-            .HasComment("時段狀態 (0=可用, 1=審核中, 2=預約成功, 3=已釋放)");
+    .HasColumnType("tinyint(1) unsigned")
+    .HasDefaultValue(SlotStatus.Available)  // ✅ 直接用 enum
+    .HasComment("時段狀態 (0=可用, 1=鎖定中, 2=已預約)");
 
         entity.Property(e => e.LockedAt)
             .HasColumnType("datetime")

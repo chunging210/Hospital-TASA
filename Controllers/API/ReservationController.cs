@@ -4,6 +4,7 @@ using TASA.Program;
 using static TASA.Services.ConferenceModule.ReservationService;
 using static TASA.Services.ConferenceModule.ConferenceService;
 using static TASA.Services.ConferenceModule.PaymentService;
+using TASA.Models.Enums;
 
 namespace TASA.Controllers.API
 {
@@ -107,7 +108,7 @@ namespace TASA.Controllers.API
 
             if (!query.ReservationStatus.HasValue)
             {
-                query.ReservationStatus = 2; // 預設只看待繳費
+                query.ReservationStatus = ReservationStatus.PendingPayment; // 預設只看待繳費
             }
 
             return Ok(service.ReservationService.PendingCheckList(query).ToList());

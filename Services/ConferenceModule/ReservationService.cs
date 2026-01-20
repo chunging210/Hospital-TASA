@@ -5,6 +5,7 @@ using TASA.Models;
 using TASA.Program;
 using TASA.Program.ModelState;
 using static TASA.Services.ConferenceModule.ConferenceService;
+using TASA.Models.Enums;
 
 namespace TASA.Services.ConferenceModule
 {
@@ -57,7 +58,7 @@ namespace TASA.Services.ConferenceModule
             public string SlotDate { get; set; }
             public string StartTime { get; set; }
             public string EndTime { get; set; }
-            public int SlotStatus { get; set; }
+            public SlotStatus SlotStatus { get; set; }  // ✅ 改成 SlotStatus enum
         }
 
         /// <summary>
@@ -86,12 +87,12 @@ namespace TASA.Services.ConferenceModule
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!))
                 .OrderBy(x =>
-                    x.ReservationStatus == 2 ? 0 :  // 待繳費 (優先)
-                    x.ReservationStatus == 1 ? 1 :  // 待審核
-                    x.ReservationStatus == 3 ? 2 :  // 預約成功
-                    x.ReservationStatus == 4 ? 3 :  // 審核拒絕
-                    x.ReservationStatus == 0 ? 4 :  // 已釋放
-                    5)                               // 未知
+    x.ReservationStatus == ReservationStatus.PendingPayment ? 0 :
+    x.ReservationStatus == ReservationStatus.PendingApproval ? 1 :
+    x.ReservationStatus == ReservationStatus.Confirmed ? 2 :
+    x.ReservationStatus == ReservationStatus.Rejected ? 3 :
+    x.ReservationStatus == ReservationStatus.Cancelled ? 4 :
+    5)                              // 未知
                 .ThenByDescending(x => x.CreateAt)
                 .Select(x => new ReservationListVM()
                 {
@@ -116,17 +117,16 @@ namespace TASA.Services.ConferenceModule
                     TotalAmount = x.TotalAmount,
 
                     // ✅ 審核狀態
-                    Status = x.ReservationStatus == 0 ? "已釋放" :
-                        x.ReservationStatus == 1 ? "待審核" :
-                        x.ReservationStatus == 2 ? "待繳費" :
-                        x.ReservationStatus == 3 ? "預約成功" :
-                        x.ReservationStatus == 4 ? "審核拒絕" : "未知",
+                    Status = x.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
+    x.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
+    x.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
+    x.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
+    x.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
 
                     // ✅ 付款狀態 (改名:待查帳)
-                    PaymentStatusText = x.PaymentStatus == 1 ? "未付款" :
-                   x.PaymentStatus == 2 ? "待查帳" :
-                   x.PaymentStatus == 3 ? "已收款" :
-                   x.PaymentStatus == 4 ? "已退回" : "未知",
+                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+    x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+    x.PaymentStatus == PaymentStatus.Paid ? "已收款" : "未知",
 
                     PaymentDeadline = x.PaymentDeadline.HasValue
                         ? x.PaymentDeadline.Value.ToString("yyyy/MM/dd")
@@ -158,7 +158,7 @@ namespace TASA.Services.ConferenceModule
             var queryable = db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Where(x => x.ReservationStatus == 2);  // ✅ 固定查詢「待繳費」
+                .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment);  // ✅ 固定查詢「待繳費」
 
             // ✅ 如果有指定付款狀態,才篩選
             if (query.PaymentStatus.HasValue)
@@ -175,7 +175,8 @@ namespace TASA.Services.ConferenceModule
                 {
                     Conference = x,
                     LatestProof = x.ConferencePaymentProofs
-                        .Where(p => p.DeleteAt == null && p.Status == 0)
+                        .Where(p => p.DeleteAt == null && p.Status == ProofStatus.PendingReview)
+
                         .OrderByDescending(p => p.UploadedAt)
                         .FirstOrDefault()
                 })
@@ -205,10 +206,9 @@ namespace TASA.Services.ConferenceModule
                     Status = "待繳費",
 
                     // ✅ 動態顯示付款狀態
-                    PaymentStatusText = x.Conference.PaymentStatus == 1 ? "未付款" :
-                   x.Conference.PaymentStatus == 2 ? "待查帳" :
-                   x.Conference.PaymentStatus == 3 ? "已收款" :
-                   x.Conference.PaymentStatus == 4 ? "已退回" : "未知",
+                    PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+   x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+   x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" : "未知",
 
                     UploadTime = x.LatestProof != null
                         ? x.LatestProof.UploadedAt.ToString("yyyy/MM/dd HH:mm")
@@ -284,7 +284,8 @@ namespace TASA.Services.ConferenceModule
             var occupiedSlots = db.ConferenceRoomSlot
                 .Where(s => s.RoomId == roomId
                          && s.SlotDate == slotDateOnly
-                         && (s.SlotStatus == 1 || s.SlotStatus == 2))
+                         && (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved))
+
                 .Select(s => new { s.StartTime, s.EndTime })
                 .ToList();
 
@@ -317,13 +318,14 @@ namespace TASA.Services.ConferenceModule
                 DurationSS = vm.DurationSS ?? 0,
                 RRule = null,
                 Status = 1,
-                ReservationStatus = 1,  // ✅ 待審核
+                ReservationStatus = ReservationStatus.PendingApproval,  // ✅ 待審核
+
                 ReviewedAt = null,
                 ReviewedBy = null,
                 ApprovedAt = null,
                 PaymentDeadline = null,
                 PaymentMethod = vm.PaymentMethod,
-                PaymentStatus = 1,  // ✅ 未付款
+                PaymentStatus = PaymentStatus.Unpaid,  // ✅ 未付款
                 PaidAt = null,
                 DepartmentCode = vm.DepartmentCode,
                 RoomCost = (int)(vm.RoomCost ?? 0),
@@ -361,7 +363,7 @@ namespace TASA.Services.ConferenceModule
                     EndTime = end,
                     Price = 0,
                     PricingType = PricingType.Period,
-                    SlotStatus = 1,  // 鎖定中
+                    SlotStatus = SlotStatus.Locked,  // 鎖定中
                     LockedAt = DateTime.UtcNow
                 };
 
@@ -386,13 +388,13 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
-            if (conference.ReservationStatus != 1)
+            if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
             var deadlineDays = GetPaymentDeadlineDays();
 
             // ✅ 狀態變更: 待審核 → 待繳費
-            conference.ReservationStatus = 2;
+            conference.ReservationStatus = ReservationStatus.PendingPayment;
             conference.ReviewedAt = DateTime.UtcNow;
             conference.ReviewedBy = reviewedBy;
             conference.PaymentDeadline = DateTime.UtcNow.AddDays(deadlineDays);
@@ -406,7 +408,7 @@ namespace TASA.Services.ConferenceModule
             // ✅ 時段狀態變更: 鎖定中 → 已預約
             foreach (var slot in conference.ConferenceRoomSlots)
             {
-                slot.SlotStatus = 2;
+                slot.SlotStatus = SlotStatus.Reserved;
             }
 
             db.SaveChanges();
@@ -425,11 +427,11 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
-            if (conference.ReservationStatus != 1)
+            if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
             // ✅ 狀態變更: 待審核 → 審核拒絕
-            conference.ReservationStatus = 4;
+            conference.ReservationStatus = ReservationStatus.Rejected;
             conference.ReviewedAt = DateTime.UtcNow;
             conference.ReviewedBy = reviewedBy;
             conference.RejectReason = vm.Reason ?? "";
@@ -437,7 +439,7 @@ namespace TASA.Services.ConferenceModule
             // ✅ 時段釋放
             foreach (var slot in conference.ConferenceRoomSlots)
             {
-                slot.SlotStatus = 3;  // 已釋放
+                slot.SlotStatus = SlotStatus.Available;  // 已釋放
                 slot.ReleasedAt = DateTime.UtcNow;
             }
 

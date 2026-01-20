@@ -1,6 +1,7 @@
 // Reservation Overview Page
 import global from '/global.js';
 const { ref, reactive, computed, onMounted, watch, nextTick } = Vue;
+import * as EnumHelper from '/js/helper.js';
 
 window.$config = {
     setup: () => new function () {
@@ -62,32 +63,15 @@ window.$config = {
 
         /* ========= 樣式相關方法 ========= */
         this.getPaymentStatusClass = (status) => {
-            if (status === '-') {
-                return '';
-            }
-
-            const statusMap = {
-                '未付款': 'badge-payment',
-                '待查帳': 'badge-pending',
-                '已收款(全額)': 'badge-success',
-                '已收款(訂金30%)': 'badge-success',
-                '已收款(尾款70%)': 'badge-success',
-                '未知': 'badge-default'
-            };
-
-            return `badge ${statusMap[status] || 'badge-default'}`;
+            return EnumHelper.getPaymentStatusBadgeClass(status);
         };
 
         this.getApprovalStatusClass = (status) => {
-            const statusMap = {
-                '待審核': 'badge-pending',
-                '待繳費': 'badge-payment',
-                '預約成功': 'badge-success',
-                '審核拒絕': 'badge-rejected',
-                '已釋放': 'badge-released',
-            };
+            return EnumHelper.getReservationStatusBadgeClass(status);
+        };
 
-            return `badge ${statusMap[status] || 'badge-default'}`;
+        this.getPaymentMethodText = (method) => {
+            return EnumHelper.getPaymentMethodText(method);
         };
 
         /* ========= 資料載入 ========= */
@@ -172,32 +156,22 @@ window.$config = {
             });
         };
 
-        /* ========= ✅ 付款相關方法 ========= */
-        this.getPaymentMethodText = (method) => {
-            const methodMap = {
-                'transfer': '銀行匯款',
-                'cost-sharing': '成本分攤',
-                'cash': '現金付款'
-            };
-
-            return methodMap[method] || method || '-';
-        };
 
         this.isCounterPayment = (method) => {
-            return method === 'cash' || method === '現金付款';
+            return EnumHelper.isCounterPayment(method);
         };
 
         this.isTransferPayment = (method) => {
-            return method === 'transfer' || method === '銀行匯款';
+            return EnumHelper.isTransferPayment(method);
         };
 
         this.isCostSharingPayment = (method) => {
-            return method === 'cost-sharing' || method === '成本分攤';
+            return EnumHelper.isCostSharingPayment(method);
         };
 
         // ✅ 上傳臨櫃憑證 (修正版)
         this.submitCounterPayment = async () => {
-            
+
             // ✅ 修正:使用 ref 取得檔案
             const fileInput = this.counterPayFiles.value;
             if (!fileInput) {

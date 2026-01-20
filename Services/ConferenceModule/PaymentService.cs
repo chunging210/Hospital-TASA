@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
+using TASA.Models.Enums;
 
 namespace TASA.Services.ConferenceModule
 {
@@ -67,7 +68,7 @@ namespace TASA.Services.ConferenceModule
                     ?? throw new HttpException($"找不到預約單號: {reservationNo}");
 
                 // 檢查會議狀態
-                if (conference.ReservationStatus != 2)
+                if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
 
                 // 儲存每個檔案
@@ -93,7 +94,7 @@ namespace TASA.Services.ConferenceModule
                         FileName = file.FileName,
                         PaymentType = "臨櫃",
                         Note = vm.Note,
-                        Status = 0,  // 待審核
+                        Status = ProofStatus.PendingReview,
                         UploadedAt = DateTime.UtcNow,
                         UploadedBy = userId
                     };
@@ -103,7 +104,7 @@ namespace TASA.Services.ConferenceModule
                 }
 
                 // 更新會議付款狀態為「待查帳」
-                conference.PaymentStatus = 2;
+                conference.PaymentStatus = PaymentStatus.PendingVerification;
             }
 
             await db.SaveChangesAsync();
@@ -140,7 +141,7 @@ namespace TASA.Services.ConferenceModule
                     .FirstOrDefaultAsync()
                     ?? throw new HttpException($"找不到預約單號: {reservationNo}");
 
-                if (conference.ReservationStatus != 2)
+                if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
 
                 var proofId = Guid.NewGuid();
@@ -157,7 +158,7 @@ namespace TASA.Services.ConferenceModule
                     TransferAmount = vm.Amount,
                     TransferAt = vm.TransferAt ?? DateTime.UtcNow,
                     Note = vm.Note,
-                    Status = 0,
+                    Status = ProofStatus.PendingReview,
                     UploadedAt = DateTime.UtcNow,
                     UploadedBy = userId
                 };
@@ -166,7 +167,7 @@ namespace TASA.Services.ConferenceModule
                 proofIds.Add(proofId);
 
                 // 更新會議付款狀態為「待查帳」
-                conference.PaymentStatus = 2;
+                conference.PaymentStatus = PaymentStatus.PendingVerification;
             }
 
             await db.SaveChangesAsync();
@@ -190,26 +191,29 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefaultAsync(c => c.Id == vm.ReservationId)
                 ?? throw new HttpException("找不到該預約");
 
-            if (conference.ReservationStatus != 2)
+            if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                 throw new HttpException("該預約不在待繳費狀態");
 
-            if (conference.PaymentStatus != 2)
+            if (conference.PaymentStatus != PaymentStatus.PendingVerification)
                 throw new HttpException("該預約未上傳憑證");
 
             // 更新憑證狀態
-            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == 0).ToList();  // ✅ Navigation Property 用複數
+            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == ProofStatus.PendingReview).ToList();
+            // ✅ Navigation Property 用複數
             foreach (var proof in proofs)
             {
-                proof.Status = 1;  // 已批准
+                proof.Status = ProofStatus.Approved;
                 proof.ReviewedAt = DateTime.UtcNow;
                 proof.ReviewedBy = userId;
             }
 
             // 更新會議付款狀態為「已收款(全額)」
-            conference.PaymentStatus = 3;
+            conference.PaymentStatus = PaymentStatus.Paid;
+
 
             // ✅ 如果全額付清,變更為「預約成功」
-            conference.ReservationStatus = 3;
+            conference.ReservationStatus = ReservationStatus.Confirmed;
+
             conference.ApprovedAt = DateTime.UtcNow;
             conference.PaidAt = DateTime.UtcNow;
             conference.Status = 1;
@@ -249,21 +253,22 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefaultAsync(c => c.Id == vm.ReservationId)
                 ?? throw new HttpException("找不到該預約");
 
-            if (conference.PaymentStatus != 2)
+            if (conference.PaymentStatus != PaymentStatus.PendingVerification)
                 throw new HttpException("該預約未上傳憑證");
 
             // 更新憑證狀態
-            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == 0).ToList();  // ✅ Navigation Property 用複數
+            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == ProofStatus.PendingReview).ToList();
+            // ✅ Navigation Property 用複數
             foreach (var proof in proofs)
             {
-                proof.Status = 2;  // 已退回
+                proof.Status = ProofStatus.Rejected;
                 proof.ReviewedAt = DateTime.UtcNow;
                 proof.ReviewedBy = userId;
                 proof.RejectReason = vm.Reason;
             }
 
             // 付款狀態改回「未付款」
-            conference.PaymentStatus = 4;
+            conference.PaymentStatus = PaymentStatus.Unpaid;
 
             await db.SaveChangesAsync();
 

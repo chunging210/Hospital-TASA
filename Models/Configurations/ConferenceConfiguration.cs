@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
 using TASA.Models;
+using TASA.Models.Enums;
 
 namespace TASA.Models.Configurations
 {
@@ -40,9 +41,10 @@ namespace TASA.Models.Configurations
 
             // ✅ 新增預約狀態欄位
             entity.Property(e => e.ReservationStatus)
-                .HasColumnType("tinyint(1) unsigned")
-                .HasDefaultValue(0)
-                .HasComment("預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕)");
+    .HasColumnType("tinyint(1) unsigned")
+    .HasDefaultValue(ReservationStatus.PendingApproval) // ✅ 改這裡
+    .HasComment("預約狀態 (1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕, 5=已取消)"); // ✅ 改註解
+
             entity.Property(e => e.RejectReason)
                 .HasColumnType("text")
                 .HasComment("拒絕原因");
@@ -69,9 +71,9 @@ namespace TASA.Models.Configurations
                 .HasComment("付費方式");
 
             entity.Property(e => e.PaymentStatus)
-                .HasColumnType("int(11)")
-                .HasDefaultValueSql("'1'")
-                .HasComment("付款狀態");
+    .HasColumnType("int(11)")
+    .HasDefaultValue(PaymentStatus.Unpaid) // ✅ 改這裡
+    .HasComment("付款狀態 (1=未付款, 2=待查帳, 3=已收款)"); // ✅ 改註解
 
             entity.Property(e => e.PaymentNote)
                 .HasMaxLength(255)

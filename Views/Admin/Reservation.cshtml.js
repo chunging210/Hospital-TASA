@@ -1,5 +1,7 @@
 // Reservation Review - 預約審核 (租借 + 付款)
 import global from '/global.js';
+import * as EnumHelper from '/js/helper.js';
+
 const { ref, reactive, onMounted, computed, watch } = Vue;
 
 const reservation = new function () {
@@ -16,8 +18,8 @@ const reservation = new function () {
     // ========= 查詢參數 =========
     this.query = reactive({
         keyword: '',
-        reservationStatus: '1',    // ✅ 租借審核狀態 (預設:待審核)
-        paymentStatus: '2'        // ✅ 付款審核狀態 (預設:待查帳)
+        reservationStatus: 1,    // ✅ 租借審核狀態 (預設:待審核)
+        paymentStatus: 2        // ✅ 付款審核狀態 (預設:待查帳)
     });
 
     // ========= 列表資料 =========
@@ -96,9 +98,9 @@ const reservation = new function () {
 
         if (tab === 'approval') {
             this.query.reservationStatus = 1;  // ✅ 預設「待審核」
-            this.query.paymentStatus = '';     // 清空付款狀態
+            this.query.paymentStatus = null;     // 清空付款狀態
         } else if (tab === 'payment') {
-            this.query.reservationStatus = '';  // 清空租借狀態
+            this.query.reservationStatus = null;  // 清空租借狀態
             this.query.paymentStatus = 2;       // ✅ 預設「待查帳」
         }
 
@@ -426,41 +428,23 @@ const reservation = new function () {
 
 // ========= Helper Functions (全域) =========
 function getPaymentMethodText(method) {
-    const methodMap = {
-        'transfer': '銀行匯款',
-        'cost-sharing': '成本分攤',
-        'cash': '現金付款'
-    };
-    return methodMap[method] || method || '-';
+    return EnumHelper.getPaymentMethodText(method);
 }
 
 function isCounterPayment(method) {
-    return method === 'cash' || method === '現金付款';
+    return EnumHelper.isCounterPayment(method);
 }
 
 function isTransferPayment(method) {
-    return method === 'transfer' || method === '銀行匯款';
+    return EnumHelper.isTransferPayment(method);
 }
 
 function getApprovalStatusClass(status) {
-    const statusMap = {
-        '待審核': 'bg-warning',
-        '待繳費': 'bg-info',
-        '預約成功': 'bg-success',
-        '審核拒絕': 'bg-danger',
-        '已釋放': 'bg-secondary'
-    };
-    return statusMap[status] || 'bg-secondary';
+    return EnumHelper.getReservationStatusClass(status);
 }
 
 function getPaymentStatusClass(status) {
-    const statusMap = {
-        '未付款': 'bg-secondary',
-        '待查帳': 'bg-warning',
-        '已收款': 'bg-success',
-        '已退回': 'bg-danger'
-    };
-    return statusMap[status] || 'bg-secondary';
+    return EnumHelper.getPaymentStatusClass(status);
 }
 
 // ========= Vue Setup =========

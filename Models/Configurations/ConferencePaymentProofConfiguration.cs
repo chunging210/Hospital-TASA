@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TASA.Models;
+using TASA.Models.Enums;
 
 namespace TASA.Models.Configurations;
 
@@ -63,9 +64,9 @@ public partial class ConferencePaymentProofConfiguration : IEntityTypeConfigurat
             .HasComment("備註");
 
         entity.Property(e => e.Status)
-            .HasColumnType("tinyint(1) unsigned")
-            .HasDefaultValueSql("'0'")
-            .HasComment("審核狀態 (0=待審核, 1=已批准, 2=已退回)");
+    .HasColumnType("tinyint(1) unsigned")
+    .HasDefaultValue(ProofStatus.PendingReview)
+    .HasComment("審核狀態 (0=待審核, 1=已批准, 2=已退回)");
 
         entity.Property(e => e.RejectReason)
             .HasColumnType("text")

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using TASA.Models.Enums;
 
 namespace TASA.Models;
 
@@ -113,7 +114,8 @@ public partial class Conference
     /// 預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕)- ✅ 新增
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
-    public byte ReservationStatus { get; set; } = 0;
+    public ReservationStatus ReservationStatus { get; set; } = ReservationStatus.PendingApproval;
+
 
     /// <summary>
     /// ✅ 新增：拒絕原因
@@ -171,7 +173,7 @@ public partial class Conference
     /// 付款狀態 (1=未付款, 2=待查帳 (已上傳憑證), 3= 已收款(全額), 4 = 已收款(訂金30%) , 5 = 已收款(尾款70%))
     /// </summary>
     [Column(TypeName = "int(11)")]
-    public int PaymentStatus { get; set; } = 1;
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
 
     /// <summary>
     /// 付款備註

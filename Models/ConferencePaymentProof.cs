@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using TASA.Models.Enums;
 
 namespace TASA.Models;
 
@@ -76,7 +77,8 @@ public partial class ConferencePaymentProof
     /// 審核狀態 1 = 未付款 2 = 待查帳 (已上傳憑證)3 = 已收款(全額)4 = 已收款(訂金30%)5 = 已收款(尾款70%)
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
-    public byte Status { get; set; } = 0;
+    public ProofStatus Status { get; set; } = ProofStatus.PendingReview;
+
 
     /// <summary>
     /// 退回原因

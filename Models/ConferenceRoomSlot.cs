@@ -61,7 +61,7 @@ public partial class ConferenceRoomSlot
     /// 時段狀態 (0=可用, 1=審核中, 2=預約成功, 3=已釋放) - ✅ 新增
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
-    public byte SlotStatus { get; set; } = 0;
+    public SlotStatus SlotStatus { get; set; } = SlotStatus.Available;
 
     /// <summary>
     /// 時段被鎖定時間 - ✅ 新增
