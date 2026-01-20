@@ -148,6 +148,8 @@ const global = new function () {
         sysconfig: apiMethods('/api/sysconfig', {
             registrationstatus: GET,
             registrationtoggle: POST,
+            getall: GET,
+            update: POST,
         }),
     }
 }

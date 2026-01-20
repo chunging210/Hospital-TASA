@@ -1,0 +1,137 @@
+/* 設定項目樣式 */
+.setting-item {
+    padding: 2rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.setting-item:last-of-type {
+    border-bottom: none;
+}
+
+.setting-item:first-child {
+    padding-top: 0;
+}
+
+.setting-label {
+    padding-top: 0.5rem;
+}
+
+/* 強化開關樣式 */
+.form-switch .form-check-input {
+    cursor: pointer;
+    border: 2px solid #dee2e6;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.form-switch .form-check-input:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Range Slider 簡潔樣式 */
+.custom-range {
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 10px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Chrome, Safari, Edge */
+.custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 2px solid var(--bs-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-range::-webkit-slider-runnable-track {
+    background: #e9ecef;
+    height: 6px;
+    border-radius: 10px;
+}
+
+/* Firefox */
+.custom-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 2px solid var(--bs-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.custom-range::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-range::-moz-range-track {
+    background: #e9ecef;
+    height: 6px;
+    border-radius: 10px;
+}
+
+/* Range 數值顯示 - 簡潔版 */
+.range-value {
+    min-width: 70px;
+    padding: 0.4rem 1rem;
+    background: #f8f9fa;
+    color: var(--bs-primary);
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Card 樣式 */
+.card.shadow-sm {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 按鈕樣式增強 */
+.btn-lg {
+    padding: 0.75rem 2.5rem;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+    transition: all 0.2s ease;
+}
+
+/* 上下間距調整 */
+.page-content {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.card-body {
+    background: white;
+}

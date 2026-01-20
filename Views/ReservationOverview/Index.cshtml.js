@@ -14,6 +14,7 @@ window.$config = {
         /* ========= 搜尋與篩選 ========= */
         this.searchQuery = ref('');
         this.dateRange = ref('');
+        this.approvalStatusFilter = ref('');
         this.paymentStatusFilter = ref('');
 
         /* ========= 資料列表 ========= */
@@ -44,6 +45,7 @@ window.$config = {
         this.filteredAllReservations = computed(() => {
             let filtered = this.allReservations.value;
 
+            // 🔍 關鍵字搜尋
             if (this.searchQuery.value) {
                 const query = this.searchQuery.value.toLowerCase();
                 filtered = filtered.filter(item =>
@@ -52,9 +54,49 @@ window.$config = {
                 );
             }
 
-            if (this.paymentStatusFilter.value) {
+            // ✅ 審核狀態篩選 - 使用 helper 轉換
+            if (this.approvalStatusFilter.value) {
+                const targetStatus = EnumHelper.getReservationStatusText(this.approvalStatusFilter.value);
                 filtered = filtered.filter(item =>
-                    item.paymentStatus.includes(this.paymentStatusFilter.value)
+                    item.approvalStatus === targetStatus
+                );
+            }
+
+            // ✅ 付款狀態篩選 - 使用 helper 轉換
+            if (this.paymentStatusFilter.value) {
+                const targetStatus = EnumHelper.getPaymentStatusText(this.paymentStatusFilter.value);
+                filtered = filtered.filter(item =>
+                    item.paymentStatus === targetStatus
+                );
+            }
+
+            return filtered;
+        });
+
+        this.filteredPersonalReservations = computed(() => {
+            let filtered = this.personalReservations.value;
+
+            // 🔍 關鍵字搜尋
+            if (this.searchQuery.value) {
+                const query = this.searchQuery.value.toLowerCase();
+                filtered = filtered.filter(item =>
+                    item.reservationNo.toLowerCase().includes(query)
+                );
+            }
+
+            // ✅ 審核狀態篩選 - 使用 helper 轉換
+            if (this.approvalStatusFilter.value) {
+                const targetStatus = EnumHelper.getReservationStatusText(this.approvalStatusFilter.value);
+                filtered = filtered.filter(item =>
+                    item.approvalStatus === targetStatus
+                );
+            }
+
+            // ✅ 付款狀態篩選 - 使用 helper 轉換
+            if (this.paymentStatusFilter.value) {
+                const targetStatus = EnumHelper.getPaymentStatusText(this.paymentStatusFilter.value);
+                filtered = filtered.filter(item =>
+                    item.paymentStatus === targetStatus
                 );
             }
 
@@ -111,6 +153,7 @@ window.$config = {
                     id: item.Id,
                     reservationNo: item.BookingNo,
                     reserverName: item.ApplicantName,
+                    conferenceName: item.ConferenceName,
                     reservationDate: item.Date,
                     timeSlot: item.Time,
                     roomName: item.RoomName,
@@ -121,6 +164,7 @@ window.$config = {
                     approvalStatus: item.Status,
                     costCenter: item.DepartmentCode || '-',
                     rejectReason: item.RejectReason || '',
+                    paymentRejectReason: item.PaymentRejectReason || '',
                     slots: item.Slots || []
                 };
             });
@@ -142,6 +186,7 @@ window.$config = {
                     id: item.Id,
                     reservationNo: item.BookingNo,
                     reservationDate: item.Date,
+                    conferenceName: item.ConferenceName,
                     timeSlot: item.Time,
                     roomName: item.RoomName,
                     paymentDeadline: item.PaymentDeadline || '-',
@@ -151,6 +196,7 @@ window.$config = {
                     approvalStatus: item.Status,
                     costCenter: item.DepartmentCode || '-',
                     rejectReason: item.RejectReason || '',
+                    paymentRejectReason: item.PaymentRejectReason || '',
                     slots: item.Slots || []
                 };
             });
@@ -271,6 +317,7 @@ window.$config = {
                 id: item.id,
                 reservationNo: item.reservationNo,
                 reserverName: item.reserverName,
+                conferenceName: item.conferenceName,
                 reservationDate: item.reservationDate,
                 timeSlot: item.timeSlot,
                 roomName: item.roomName,
@@ -280,7 +327,8 @@ window.$config = {
                 costCenter: item.costCenter,
                 paymentStatus: item.paymentStatus,
                 approvalStatus: item.approvalStatus,
-                rejectReason: item.rejectReason || ''
+                rejectReason: item.rejectReason || '',
+                paymentRejectReason: item.paymentRejectReason || ''
             };
 
             // 如果是匯款,預填金額
@@ -295,7 +343,12 @@ window.$config = {
         watch(
             () => this.activeTab.value,
             (newTab) => {
+                // ✅ 新增:重置所有篩選條件
+                this.searchQuery.value = '';
+                this.approvalStatusFilter.value = '';
+                this.paymentStatusFilter.value = '';
 
+                // 載入對應資料
                 if (newTab === 'all') {
                     this.loadAllReservations();
                 } else if (newTab === 'personal') {

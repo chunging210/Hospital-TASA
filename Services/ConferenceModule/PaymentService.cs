@@ -268,7 +268,7 @@ namespace TASA.Services.ConferenceModule
             }
 
             // 付款狀態改回「未付款」
-            conference.PaymentStatus = PaymentStatus.Unpaid;
+            conference.PaymentStatus = PaymentStatus.PendingReupload;
 
             await db.SaveChangesAsync();
 

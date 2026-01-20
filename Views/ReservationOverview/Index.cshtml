@@ -21,14 +21,28 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-xl-3 col-sm-12">
+                                <div class="col-xl-2 col-sm-10">
                                     <input type="text" class="form-control" v-model="dateRange" placeholder="選擇日期範圍" />
                                 </div>
-                                <div class="col-xl-auto col-sm-12">
-                                    <select class="form-select" v-model="paymentStatusFilter">
+                                <!-- ✅ 審核狀態篩選 -->
+                                <div class="col-xl-2 col-sm-12">
+                                    <select class="form-select" v-model.number="approvalStatusFilter">
+                                        <option value="">審核狀態</option>
+                                        <option :value="1">待審核</option>
+                                        <option :value="2">待繳費</option>
+                                        <option :value="3">預約成功</option>
+                                        <option :value="4">審核拒絕</option>
+                                    </select>
+                                </div>
+
+                                <!-- ✅ 付款狀態篩選 -->
+                                <div class="col-xl-2 col-sm-12">
+                                    <select class="form-select" v-model.number="paymentStatusFilter">
                                         <option value="">付款狀態</option>
-                                        <option value="未付款">未付款</option>
-                                        <option value="已付款">已付款</option>
+                                        <option :value="1">未付款</option>
+                                        <option :value="2">待查帳</option>
+                                        <option :value="3">已收款</option>
+                                        <option :value="4">待重新上傳</option>
                                     </select>
                                 </div>
                             </div>
@@ -62,6 +76,7 @@
                                                 <tr>
                                                     <th class="align-middle">預約單號</th>
                                                     <th class="align-middle">預約者</th>
+                                                    <th class="align-middle">會議名稱</th>
                                                     <th class="align-middle">預約日期</th>
                                                     <th class="align-middle">時間</th>
                                                     <th class="align-middle">會議室</th>
@@ -78,6 +93,7 @@
                                                     class="row-click" role="button" @@click="openDetailDrawer(item)">
                                                     <td>{{ item.reservationNo }}</td>
                                                     <td>{{ item.reserverName }}</td>
+                                                    <td>{{ item.conferenceName || '-' }}</td>
                                                     <td>{{ item.reservationDate }}</td>
                                                     <td>{{ item.timeSlot }}</td>
                                                     <td>{{ item.roomName }}</td>
@@ -111,6 +127,7 @@
                                                 <thead class="table-light">
                                                     <tr>
                                                         <th class="align-middle">預約單號</th>
+                                                        <th class="align-middle">會議名稱</th>
                                                         <th class="align-middle">預約日期</th>
                                                         <th class="align-middle">時間</th>
                                                         <th class="align-middle">會議室</th>
@@ -123,10 +140,12 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr v-for="item in personalReservations" :key="item.id"
+                                                    <!-- ✅ 改用 filteredPersonalReservations -->
+                                                    <tr v-for="item in filteredPersonalReservations" :key="item.id"
                                                         class="row-click" role="button"
                                                         @@click="openDetailDrawer(item)">
                                                         <td>{{ item.reservationNo }}</td>
+                                                        <td>{{ item.conferenceName || '-' }}</td>
                                                         <td>{{ item.reservationDate }}</td>
                                                         <td>{{ item.timeSlot }}</td>
                                                         <td>{{ item.roomName }}</td>
@@ -182,6 +201,12 @@
                     <div class="row">
                         <label class="form-label col-md-3 fw-bold">預約者</label>
                         <label class="form-label col-md-9">{{ selectedItem.reserverName }}</label>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="row">
+                        <label class="form-label col-md-3 fw-bold">會議名稱</label>
+                        <label class="form-label col-md-9">{{ selectedItem.conferenceName || '-' }}</label>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -269,9 +294,19 @@
                     </div>
 
                     <!-- ✅ 只在「個人預約」Tab + 待繳費 + 未付款時顯示付款表單 -->
-                    <div
-                        v-if="activeTab === 'personal' && selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款'">
+                    <div v-if="activeTab === 'personal' && 
+          ((selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款') || 
+           selectedItem.paymentStatus === '待重新上傳')">
 
+                        <!-- ✅ 待重新上傳提示 -->
+                        <div v-if="selectedItem.paymentStatus === '待重新上傳' && selectedItem.paymentRejectReason"
+                            class="alert alert-warning mb-3">
+                            <i class="mdi mdi-alert me-2"></i>
+                            <strong>需要重新上傳付款憑證</strong>
+                            <p class="mb-0 mt-1">
+                                拒絕原因: {{ selectedItem.paymentRejectReason }}
+                            </p>
+                        </div>
                         <!-- ========== 臨櫃付款欄位 ========== -->
                         <div v-if="isCounterPayment(selectedItem.paymentMethod)" class="mt-4">
                             <h6 class="fw-bold mb-3">

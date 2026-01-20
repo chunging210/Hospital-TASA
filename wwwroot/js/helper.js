@@ -52,14 +52,16 @@ export function getReservationStatusBadgeClass(status) {
 export const PaymentStatus = {
     Unpaid: 1,
     PendingVerification: 2,
-    Paid: 3
+    Paid: 3,
+    PendingReupload: 4
 };
 
 export function getPaymentStatusText(status) {
     const map = {
         1: '未付款',
         2: '待查帳',
-        3: '已收款'
+        3: '已收款',
+        4: '待重新上傳'
     };
     return map[status] || '未知';
 }
@@ -70,7 +72,8 @@ export function getPaymentStatusClass(status) {
     const map = {
         '未付款': 'bg-secondary',
         '待查帳': 'bg-warning',
-        '已收款': 'bg-success'
+        '已收款': 'bg-success',
+        '待重新上傳': 'bg-danger'
     };
     return map[status] || 'bg-secondary';
 }
@@ -81,7 +84,8 @@ export function getPaymentStatusBadgeClass(status) {
     const map = {
         '未付款': 'badge-payment',
         '待查帳': 'badge-pending',
-        '已收款': 'badge-success'
+        '已收款': 'badge-success',
+        '待重新上傳': 'badge-rejected'
     };
     return `badge ${map[status] || 'badge-default'}`;
 }

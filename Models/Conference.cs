@@ -223,10 +223,13 @@ public partial class Conference
     [Column(TypeName = "datetime")]
     public DateTime CreateAt { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime? UpdateAt { get; set; }
     /// <summary>
     /// 建立者
     /// </summary>
     public Guid CreateBy { get; set; }
+
 
     /// <summary>
     /// 刪除

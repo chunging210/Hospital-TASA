@@ -29,6 +29,7 @@ namespace TASA.Services.ConferenceModule
             public Guid Id { get; set; }
             public string BookingNo { get; set; }
             public string ApplicantName { get; set; }
+            public string ConferenceName { get; set; }
             public string Date { get; set; }
             public string Time { get; set; }
             public string RoomName { get; set; }
@@ -39,6 +40,7 @@ namespace TASA.Services.ConferenceModule
             public string? PaymentMethod { get; set; }
             public string? DepartmentCode { get; set; }
             public string? RejectReason { get; set; }
+            public string? PaymentRejectReason { get; set; }
             public string? UploadTime { get; set; }
 
             public string? PaymentType { get; set; }        // "匯款" 或 "臨櫃"
@@ -86,57 +88,77 @@ namespace TASA.Services.ConferenceModule
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!))
-                .OrderBy(x =>
-    x.ReservationStatus == ReservationStatus.PendingPayment ? 0 :
-    x.ReservationStatus == ReservationStatus.PendingApproval ? 1 :
-    x.ReservationStatus == ReservationStatus.Confirmed ? 2 :
-    x.ReservationStatus == ReservationStatus.Rejected ? 3 :
-    x.ReservationStatus == ReservationStatus.Cancelled ? 4 :
-    5)                              // 未知
+                .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
                 .ThenByDescending(x => x.CreateAt)
+                // ✅ 先取得 Conference 和最新的付款憑證
+                .Select(x => new
+                {
+                    Conference = x,
+                    LatestProof = x.ConferencePaymentProofs
+                        .Where(p => p.DeleteAt == null)
+                        .OrderByDescending(p => p.UploadedAt)
+                        .FirstOrDefault()
+                })
+                // ✅ 再映射到 ViewModel
                 .Select(x => new ReservationListVM()
                 {
-                    Id = x.Id,
-                    BookingNo = x.Id.ToString().Substring(0, 8),
-                    ApplicantName = x.CreateByNavigation.Name,
+                    Id = x.Conference.Id,
+                    BookingNo = x.Conference.Id.ToString().Substring(0, 8),
+                    ApplicantName = x.Conference.CreateByNavigation.Name,
+                    ConferenceName = x.Conference.Name,
 
-                    Date = x.ConferenceRoomSlots.Any()
-                            ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                    Date = x.Conference.ConferenceRoomSlots.Any()
+                            ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
                             : "-",
 
-                    Time = x.ConferenceRoomSlots.Any()
-                            ? $"{x.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                              $"{x.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm} " +
-                              $"({x.ConferenceRoomSlots.Count()} 個時段)"
+                    Time = x.Conference.ConferenceRoomSlots.Any()
+                            ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm} " +
+                              $"({x.Conference.ConferenceRoomSlots.Count()} 個時段)"
                             : "-",
 
-                    RoomName = x.ConferenceRoomSlots
+                    RoomName = x.Conference.ConferenceRoomSlots
                             .Select(s => s.Room.Name)
                             .FirstOrDefault() ?? "-",
 
-                    TotalAmount = x.TotalAmount,
+                    TotalAmount = x.Conference.TotalAmount,
 
                     // ✅ 審核狀態
-                    Status = x.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
-    x.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
-    x.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
-    x.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
-    x.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
+                    Status = x.Conference.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
+                             x.Conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
+                             x.Conference.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
+                             x.Conference.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
+                             x.Conference.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
 
-                    // ✅ 付款狀態 (改名:待查帳)
-                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
-    x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
-    x.PaymentStatus == PaymentStatus.Paid ? "已收款" : "未知",
+                    // ✅ 付款狀態
+                    PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                                       x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+                                       x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
+                                       x.Conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
 
-                    PaymentDeadline = x.PaymentDeadline.HasValue
-                        ? x.PaymentDeadline.Value.ToString("yyyy/MM/dd")
+                    PaymentDeadline = x.Conference.PaymentDeadline.HasValue
+                        ? x.Conference.PaymentDeadline.Value.ToString("yyyy/MM/dd")
                         : null,
 
-                    PaymentMethod = x.PaymentMethod,
-                    DepartmentCode = x.DepartmentCode,
-                    RejectReason = x.RejectReason,
+                    PaymentMethod = x.Conference.PaymentMethod,
+                    DepartmentCode = x.Conference.DepartmentCode,
 
-                    Slots = x.ConferenceRoomSlots
+                    // ✅ 審核拒絕原因 (來自 Conference 表 - 主管拒絕租借)
+                    RejectReason = x.Conference.RejectReason,
+
+                    // ✅ 付款拒絕原因 (來自 ConferencePaymentProof 表 - 會計退回憑證)
+                    PaymentRejectReason = x.LatestProof != null ? x.LatestProof.RejectReason : null,
+
+                    UploadTime = null,
+                    PaymentType = null,
+                    LastFiveDigits = null,
+                    TransferAmount = null,
+                    TransferAt = null,
+                    FilePath = null,
+                    FileName = null,
+                    Note = null,
+
+                    Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
                             .ThenBy(s => s.StartTime)
                             .Select(s => new SlotDetailVM
@@ -149,7 +171,6 @@ namespace TASA.Services.ConferenceModule
                             }).ToList()
                 });
         }
-
         /// <summary>
         /// ✅ 待查帳列表 - 已上傳憑證但未確認的預約
         /// </summary>
@@ -158,6 +179,7 @@ namespace TASA.Services.ConferenceModule
             var queryable = db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
+                .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
                 .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment);  // ✅ 固定查詢「待繳費」
 
             // ✅ 如果有指定付款狀態,才篩選
@@ -208,7 +230,9 @@ namespace TASA.Services.ConferenceModule
                     // ✅ 動態顯示付款狀態
                     PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
    x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
-   x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" : "未知",
+   x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
+   x.Conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" :
+   "未知",
 
                     UploadTime = x.LatestProof != null
                         ? x.LatestProof.UploadedAt.ToString("yyyy/MM/dd HH:mm")
@@ -334,6 +358,7 @@ namespace TASA.Services.ConferenceModule
                 TotalAmount = (int)(vm.TotalAmount ?? 0),
                 CreateBy = userId,
                 CreateAt = DateTime.UtcNow,
+                UpdateAt = DateTime.UtcNow,
                 Email = null,
                 ConferenceUser = new List<ConferenceUser>
                 {
@@ -378,6 +403,44 @@ namespace TASA.Services.ConferenceModule
             return conferenceId;
         }
 
+
+        // public void AutoCancelOverdueReservations()
+        // {
+        //     var overdueReservations = db.Conference
+        //         .Include(c => c.ConferenceRoomSlots)
+        //         .Include(c => c.ConferencePaymentProofs)
+        //         .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment
+        //                  && x.PaymentDeadline < DateTime.UtcNow
+        //                  && x.DeleteAt == null)
+        //         .ToList();
+
+        //     foreach (var conference in overdueReservations)
+        //     {
+        //         // ✅ 檢查是否有上傳過憑證
+        //         var hasProof = conference.ConferencePaymentProofs
+        //             .Any(p => p.DeleteAt == null);
+
+        //         conference.ReservationStatus = ReservationStatus.Cancelled;
+        //         conference.CancelReason = "超過繳費期限";
+
+        //         if (hasProof)
+        //         {
+        //             conference.HasPartialPayment = true;  // ✅ 標記為需要處理退款
+
+        //             // TODO: 發送通知給總務
+        //         }
+
+        //         // 釋放會議室時段
+        //         foreach (var slot in conference.ConferenceRoomSlots)
+        //         {
+        //             slot.SlotStatus = SlotStatus.Available;
+        //             slot.ReleasedAt = DateTime.UtcNow;
+        //         }
+        //     }
+
+        //     db.SaveChanges();
+        // }
+
         /// <summary>
         /// ✅ 審核通過
         /// </summary>
@@ -391,14 +454,15 @@ namespace TASA.Services.ConferenceModule
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
-            var deadlineDays = GetPaymentDeadlineDays();
+            // ✅ 改用 SysConfigService 統一管理
+            var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays();
 
             // ✅ 狀態變更: 待審核 → 待繳費
             conference.ReservationStatus = ReservationStatus.PendingPayment;
             conference.ReviewedAt = DateTime.UtcNow;
             conference.ReviewedBy = reviewedBy;
             conference.PaymentDeadline = DateTime.UtcNow.AddDays(deadlineDays);
-
+            conference.UpdateAt = DateTime.UtcNow;
             // ✅ 折扣處理
             if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
             {
@@ -416,7 +480,6 @@ namespace TASA.Services.ConferenceModule
             _ = service.LogServices.LogAsync("預約審核",
                 $"審核通過 - {conference.Name} ({conference.Id}), 折扣: {vm.DiscountAmount ?? 0}");
         }
-
         /// <summary>
         /// ✅ 審核拒絕
         /// </summary>
@@ -435,7 +498,7 @@ namespace TASA.Services.ConferenceModule
             conference.ReviewedAt = DateTime.UtcNow;
             conference.ReviewedBy = reviewedBy;
             conference.RejectReason = vm.Reason ?? "";
-
+            conference.UpdateAt = DateTime.UtcNow;
             // ✅ 時段釋放
             foreach (var slot in conference.ConferenceRoomSlots)
             {
@@ -447,19 +510,6 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("預約拒絕",
                 $"拒絕預約 - {conference.Name} ({conference.Id}) 原因: {vm.Reason}");
-        }
-
-        private int GetPaymentDeadlineDays()
-        {
-            var deadlineDays = db.SysConfig
-                .Where(x => x.ConfigKey == "PAYMENT_DEADLINE_DAYS")
-                .Select(x => x.ConfigValue)
-                .FirstOrDefault();
-
-            if (!string.IsNullOrEmpty(deadlineDays) && int.TryParse(deadlineDays, out var days))
-                return days;
-
-            return 7; // 預設 7 天
         }
     }
 }

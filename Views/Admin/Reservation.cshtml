@@ -39,10 +39,10 @@
                         <select v-model.number="reservation.query.paymentStatus" @@change="reservation.getList"
                             class="form-select">
                             <option :value="null">全部狀態</option> <!-- ✅ 改成 null -->
-                            <option :value="1">未付款</option> 
+                            <option :value="1">未付款</option>
                             <option :value="2">待查帳</option>
                             <option :value="3">已收款</option>
-                            <option :value="4">已退回</option>
+                            <option :value="4">待重新上傳</option>
                         </select>
                     </div>
                 </div>
@@ -458,7 +458,7 @@
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="payment-result" id="payment-reject"
                             value="reject" v-model="reservation.paymentVm.result">
-                        <label class="form-check-label" for="payment-reject">退回</label>
+                        <label class="form-check-label" for="payment-reject">退回重審</label>
                     </div>
                 </div>
             </div>

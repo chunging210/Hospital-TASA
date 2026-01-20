@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TASA.Extensions;
 using TASA.Services;
+using static TASA.Services.SysConfigService;
+
 
 namespace TASA.Controllers.API
 {
@@ -42,10 +44,45 @@ namespace TASA.Controllers.API
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 取得所有系統設定（管理員用）
+        /// </summary>
+        [Authorize]
+        [HttpGet("getall")]
+        public IActionResult GetAll()
+        {
+            try
+            {
+                var configs = service.SysConfigService.GetAllConfigs();
+                return Ok(configs);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 更新系統設定（管理員用）
+        /// </summary>
+        [Authorize]
+        [HttpPost("update")]
+        public IActionResult Update([FromBody] UpdateSysConfigDto dto)
+        {
+            try
+            {
+                service.SysConfigService.UpdateConfig(dto.ConfigKey, dto.ConfigValue);
+                return Ok(new { message = "設定已更新" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 
-    public class ToggleRequest
-    {
-        public bool IsOpen { get; set; }
-    }
+    // ===== DTO =====
+
+
 }

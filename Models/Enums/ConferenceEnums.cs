@@ -33,7 +33,8 @@ namespace TASA.Models.Enums
         PendingVerification = 2,
 
         /// <summary>已收款 - 會計確認收款</summary>
-        Paid = 3
+        Paid = 3,
+        PendingReupload = 4
     }
 
     /// <summary>

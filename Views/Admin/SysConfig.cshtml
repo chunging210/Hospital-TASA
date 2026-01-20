@@ -1,0 +1,139 @@
+<link rel="stylesheet" href="/css/sysconfig.css">
+
+<div class="page-content">
+    <div class="container-fluid py-4">
+
+
+        <!-- 主要內容卡片 -->
+        <div class="card border-0 shadow-sm">
+
+
+            <div class="card-body p-5">
+
+                <!-- 標題區塊 -->
+                <div class="mb-4">
+                    <h4 class="text-primary mb-0">
+                        <i class="bi bi-gear-fill me-2"></i>系統設定
+                    </h4>
+                </div>
+
+                <hr>
+
+                <!-- 1. 使用者註冊設定 -->
+                <div class="setting-item">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="setting-label">
+                                <strong class="text-primary">是否開啟訪客註冊</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="d-flex align-items-center gap-3">
+                                <label class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                        v-model="settings.isRegistrationOpen" style="width: 3rem; height: 1.5rem;">
+                                </label>
+                                <span class="badge" :class="settings.isRegistrationOpen ? 'bg-primary' : 'bg-secondary'"
+                                    style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                                    {{ settings.isRegistrationOpen ? '啟用訪客註冊' : '關閉訪客註冊' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 繳費期限設定 -->
+                <div class="setting-item">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="setting-label">
+                                <strong class="text-primary">繳費期限天數</strong>
+                                <small class="text-muted d-block mt-1">預約核准後的繳費期限</small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <!-- Slider -->
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <input type="range" class="form-range custom-range"
+                                    v-model.number="settings.paymentDeadlineDays" min="1" max="30" step="1"
+                                    style="flex: 1;">
+                                <div class="range-value">
+                                    {{ settings.paymentDeadlineDays }} 天
+                                </div>
+                            </div>
+
+                            <!-- 自動釋放開關 -->
+                            <label class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" v-model="settings.autoRelease">
+                                <span class="form-check-label text-muted">
+                                    逾期自動釋放預約
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 預約時間限制 -->
+                <div class="setting-item">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="setting-label">
+                                <strong class="text-primary">最早預約的天數</strong>
+                                <small class="text-muted d-block mt-1">需提前預約的天數</small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <!-- Slider -->
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <input type="range" class="form-range custom-range"
+                                    v-model.number="settings.minAdvanceBookingDays" min="1" max="30" step="1"
+                                    style="flex: 1;">
+                                <div class="range-value">
+                                    {{ settings.minAdvanceBookingDays }} 天
+                                </div>
+                            </div>
+
+                            <!-- 說明提示 -->
+                            <div class="alert alert-info mb-0" style="background-color: #e7f3ff; border: none;">
+                                <small>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>範例：</strong>
+                                    設定為 {{ settings.minAdvanceBookingDays }} 天 = 使用者
+                                    {{ settings.minAdvanceBookingDays === 0 ? '可以預約今天' : `只能預約
+                                    ${settings.minAdvanceBookingDays} 天後` }}的會議室
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 通知信箱設定 -->
+                <div class="setting-item">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="setting-label">
+                                <strong class="text-primary">主管通知信箱</strong>
+                                <small class="text-muted d-block mt-1">接收預約通知的信箱</small>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <input type="email" class="form-control" v-model="settings.managerEmail"
+                                placeholder="example@hospital.com" style="max-width: 500px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 - 置中 -->
+                <div class="text-center mt-5 pt-4 border-top">
+                    <button type="button" @@click="saveSettings" class="btn btn-primary btn-lg px-5 me-3">
+                        儲存設定
+                    </button>
+                    <button type="button" @@click="resetSettings" class="btn btn-outline-secondary btn-lg px-5">
+                        重設為預設值
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -446,7 +446,7 @@ window.$config = {
 
                     // 延遲後重導到預約清單
                     setTimeout(() => {
-                        window.location.href = '/conference/list';
+                        window.location.href = '/reservationoverview';
                     }, 2000);
                 })
                 .catch(err => {

@@ -20,6 +20,9 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.CheckinBy).HasComment("報到者");
             entity.Property(e => e.CreateAt).HasComment("建立時間");
             entity.Property(e => e.CreateBy).HasComment("建立者");
+            entity.Property(e => e.UpdateAt)
+    .HasColumnType("datetime")
+    .HasComment("更新時間");
             entity.Property(e => e.DeleteAt).HasComment("刪除");
             entity.Property(e => e.Description).HasComment("會議內容");
             entity.Property(e => e.DurationHH).HasComment("持續時間(小時)");
