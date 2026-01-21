@@ -43,6 +43,8 @@ namespace TASA.Services.AuthModule
             public Guid? DepartmentId { get; set; }
             public string? DepartmentName { get; set; }
             public bool IsAdmin { get; set; }
+            public bool IsDirector { get; set; }
+            public bool IsAccountant { get; set; }
         };
 
         public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
@@ -67,7 +69,9 @@ namespace TASA.Services.AuthModule
                 Role = role,
                 DepartmentId = departmentId,
                 DepartmentName = departmentName,
-                IsAdmin = role.Any(x => x == AuthRoleServices.Admin)
+                IsAdmin = role.Any(x => x == AuthRoleServices.Admin),
+                IsDirector = role.Any(x => x == AuthRoleServices.Director),      // ← 新增
+                IsAccountant = role.Any(x => x == AuthRoleServices.Accountant)   // ← 新增
             };
         }
 

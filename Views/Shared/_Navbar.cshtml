@@ -73,6 +73,17 @@
                                 <span class="text">預約總覽</span>
                             </a>
                         </li>
+                        @if (user?.IsAdmin == true || user?.IsAccountant == true || user?.IsDirector == true)
+                        {
+                            <li class="nav-item">
+                                <a href="/admin/reservation" class="nav-link icon-text-container">
+                                    <span class="material-icons font-size-16">assignment_turned_in</span>
+                                    <span class="text">預約審核</span>
+                                </a>
+                            </li>
+
+                        }
+
                         @if (user?.IsAdmin == true)
                         {
                             <li class="nav-item">
@@ -91,12 +102,6 @@
                                 <a href="/admin/sysroom" class="nav-link icon-text-container">
                                     <span class="material-icons font-size-16">grid_view</span>
                                     <span class="text">會議室管理</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="/admin/reservation" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">assignment_turned_in</span>
-                                    <span class="text">預約審核</span>
                                 </a>
                             </li>
 
