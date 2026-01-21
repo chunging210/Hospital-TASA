@@ -13,7 +13,7 @@ class VM {
 
 const tabs = new function () {
     this.select = ref('IsAdmin');
-    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '一般使用者', value: 'IsNormal' }, { text: '一般職員', value: 'IsStaff' }];
+    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '主任', value: 'IsDirector' }, { text: '總務', value: 'IsAccountant' }, { text: '一般使用者', value: 'IsNormal' }, { text: '一般職員', value: 'IsStaff' }];
     this.click = (value) => {
         this.select.value = value;
     }
