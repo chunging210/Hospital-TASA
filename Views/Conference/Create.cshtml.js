@@ -1,12 +1,13 @@
-// Conference Create Page
+// Conference Create/Edit Page
 import global from '/global.js';
-const { ref, reactive, computed, onMounted, watch, toRaw } = Vue;
+const { ref, reactive, computed, onMounted, watch } = Vue;
 
-/* ===============================
- * 主畫面 ViewModel
- * =============================== */
 window.$config = {
     setup: () => new function () {
+
+        /* ========= 編輯模式相關 ========= */
+        this.isEditMode = ref(false);
+        this.editingReservationId = ref(null);
 
         /* ========= 基本資料 ========= */
         this.initiatorName = ref('');
@@ -19,20 +20,15 @@ window.$config = {
             content: '',
             date: '',
             meetingType: 'physical',
-
             departmentId: null,
             building: '',
             floor: '',
             roomId: null,
-
             initiatorId: '',
             attendees: [],
-
             selectedSlots: [],
-
             selectedEquipment: [],
             selectedBooths: [],
-
             paymentMethod: '',
             departmentCode: ''
         });
@@ -46,9 +42,7 @@ window.$config = {
 
         /* ========= 計算樓層選項 ========= */
         this.availableFloors = computed(() => {
-            const b = this.buildings.value.find(
-                x => x.Building === this.form.building
-            );
+            const b = this.buildings.value.find(x => x.Building === this.form.building);
             return b ? b.Floors : [];
         });
 
@@ -57,7 +51,6 @@ window.$config = {
         /* ========= 費用計算 ========= */
         this.roomCost = computed(() => {
             if (!this.form.selectedSlots.length) return 0;
-
             return this.timeSlots.value
                 .filter(slot => this.form.selectedSlots.includes(slot.Key))
                 .reduce((sum, slot) => sum + slot.Price, 0);
@@ -92,7 +85,7 @@ window.$config = {
                 });
         };
 
-        /* ====== 載入大樓（根據分院） ====== */
+        /* ====== 載入大樓 ====== */
         this.loadBuildingsByDepartment = (departmentId) => {
             if (!departmentId) {
                 this.buildings.value = [];
@@ -100,9 +93,7 @@ window.$config = {
             }
 
             global.api.select.buildingsbydepartment({
-                body: {
-                    departmentId: departmentId
-                }
+                body: { departmentId: departmentId }
             })
                 .then(res => {
                     this.buildings.value = res.data || [];
@@ -112,11 +103,9 @@ window.$config = {
                 });
         };
 
-        /* ====== 載入樓層（根據分院+大樓） ====== */
+        /* ====== 載入樓層 ====== */
         this.loadFloorsByBuilding = (building) => {
-            if (!building || !this.form.departmentId) {
-                return;
-            }
+            if (!building || !this.form.departmentId) return;
 
             global.api.select.floorsbybuilding({
                 body: {
@@ -125,10 +114,7 @@ window.$config = {
                 }
             })
                 .then(res => {
-                    const buildingItem = this.buildings.value.find(
-                        b => b.Building === building
-                    );
-
+                    const buildingItem = this.buildings.value.find(b => b.Building === building);
                     if (buildingItem) {
                         buildingItem.Floors = (res.data || []).map(f => f.Name);
                     }
@@ -138,7 +124,7 @@ window.$config = {
                 });
         };
 
-        /* ====== 載入會議室（根據樓層） ====== */
+        /* ====== 載入會議室 ====== */
         this.loadRoomsByFloor = async () => {
             if (!this.form.building || !this.form.floor) return;
 
@@ -154,57 +140,42 @@ window.$config = {
                         floor: this.form.floor
                     }
                 });
-
                 this.rooms.value = res.data || [];
                 console.log('✅ 成功載入會議室:', this.rooms.value);
-
             } catch (error) {
                 console.error('❌ 失敗:', error);
             }
         };
 
-        /* ========= 設備和攤位 ========= */
+        /* ====== 載入設備和攤位 ====== */
         this.loadEquipmentByRoom = async () => {
+            // ✅ 條件判斷
+            if (!this.form.roomId || !this.form.date || !this.form.selectedSlots.length) {
+                console.warn('⏸ 條件不足,無法載入設備');
+                return;
+            }
+
             try {
-                const roomId = this.form.roomId;  // ✅ 直接讀取 reactive 的值
+                const body = {
+                    roomId: this.form.roomId,
+                    date: this.form.date,
+                    slotKeys: this.form.selectedSlots,  // ✅ 傳送所有選定的時段
+                    excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
+                };
 
-                console.log('🔄 loadEquipmentByRoom - roomId:', roomId);
-
-                const body = {};
-                if (roomId) {
-                    body.RoomId = roomId;
-                }
-
-                console.log('📤 send body:', body);
-
-                const res = await global.api.select.equipmentbyroom({
-                    body
-                });
-
-                // ✅ 檢查回傳的資料結構
-                console.log('✅ API 回傳:', res);
+                console.log('📤 發送請求:', JSON.stringify(body));
+                const res = await global.api.select.equipmentbyroom({ body });
 
                 let allData = [];
-
-                // 如果 res.data 是陣列，直接使用
                 if (Array.isArray(res.data)) {
                     allData = res.data;
-                }
-                // 如果是物件（EquipmentGroupVM），合併 Shared 和 ByRoom
-                else if (res.data && typeof res.data === 'object') {
+                } else if (res.data && typeof res.data === 'object') {
                     const shared = res.data.Shared || [];
                     const byRoom = res.data.ByRoom || {};
-
-                    // 合併共用設備和該房間的設備
-                    allData = [
-                        ...shared,
-                        ...Object.values(byRoom).flat()
-                    ];
+                    allData = [...shared, ...Object.values(byRoom).flat()];
                 }
 
-                console.log('📊 整理後的設備列表:', allData);
-
-                // ✅ 分離設備和攤位
+                // ✅ 後端已經標記好 Occupied 狀態
                 this.availableEquipment.value = allData
                     .filter(e => e.TypeName !== '攤位租借')
                     .map(e => ({
@@ -212,7 +183,8 @@ window.$config = {
                         name: e.Name,
                         icon: 'bx-cog',
                         description: e.ProductModel || '設備',
-                        price: e.RentalPrice
+                        price: e.RentalPrice,
+                        occupied: e.Occupied || false
                     }));
 
                 this.availableBooths.value = allData
@@ -222,58 +194,57 @@ window.$config = {
                         name: e.Name,
                         icon: 'bx-store',
                         description: e.ProductModel || '攤位',
-                        price: e.RentalPrice
+                        price: e.RentalPrice,
+                        occupied: e.Occupied || false
                     }));
 
                 console.log('✅ 設備:', this.availableEquipment.value);
                 console.log('✅ 攤位:', this.availableBooths.value);
+
+                // ✅ 過濾掉已選但現在變成 occupied 的設備
+                this.form.selectedEquipment = this.form.selectedEquipment.filter(id => {
+                    const equipment = this.availableEquipment.value.find(e => e.id === id);
+                    return equipment && !equipment.occupied;
+                });
+
+                this.form.selectedBooths = this.form.selectedBooths.filter(id => {
+                    const booth = this.availableBooths.value.find(b => b.id === id);
+                    return booth && !booth.occupied;
+                });
 
             } catch (err) {
                 console.error('❌ 錯誤:', err);
             }
         };
 
-        /* ========= 時段 ========= */
+        /* ====== 載入時段 ====== */
         this.updateTimeSlots = async () => {
             console.group('🟦 updateTimeSlots Debug');
 
-            console.log('form.roomId =', this.form.roomId);
-            console.log('form.date   =', this.form.date);
-
             if (!this.form.roomId || !this.form.date) {
-                console.warn('⏸ 條件不足，等待 roomId + date');
+                console.warn('⏸ 條件不足');
                 console.groupEnd();
                 return;
             }
 
-            this.selectedRoom.value =
-                this.rooms.value.find(r => r.Id === this.form.roomId) || null;
-
-            console.log('selectedRoom =', this.selectedRoom.value);
-
+            this.selectedRoom.value = this.rooms.value.find(r => r.Id === this.form.roomId) || null;
             this.form.selectedSlots = [];
             this.timeSlots.value = [];
 
+            const dateStr = this.form.date instanceof Date
+                ? this.form.date.toISOString().split('T')[0]
+                : this.form.date;
+
             const payload = {
                 roomId: this.form.roomId,
-                date: this.form.date
+                date: dateStr,
+                excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
             };
-            console.log('➡️ request payload =', payload);
 
             try {
-                const res = await global.api.select.roomslots({
-                    body: payload
-                });
-
+                const res = await global.api.select.roomslots({ body: payload });
                 console.log('✅ API data =', res.data);
                 this.timeSlots.value = res.data || [];
-
-                // 🔍 【新增 DEBUG】
-                if (this.timeSlots.value.length > 0) {
-                    console.log('🔍 第一個時段完整結構:');
-                    console.log(this.timeSlots.value[0]);
-                }
-
             } catch (err) {
                 console.error('🔥 roomslots API error', err);
             } finally {
@@ -287,10 +258,9 @@ window.$config = {
 
             return this.timeSlots.value.map(slot => ({
                 ...slot,
-                displayLabel:
-                    room.PricingType === 0
-                        ? `${slot.StartTime} - ${slot.EndTime}`
-                        : slot.Name
+                displayLabel: room.PricingType === 0
+                    ? `${slot.StartTime} - ${slot.EndTime}`
+                    : slot.Name
             }));
         });
 
@@ -300,7 +270,6 @@ window.$config = {
 
         this.toggleTimeSlot = (slot) => {
             if (slot.Occupied) return;
-
             const idx = this.form.selectedSlots.indexOf(slot.Key);
             if (idx > -1) {
                 this.form.selectedSlots.splice(idx, 1);
@@ -310,6 +279,13 @@ window.$config = {
         };
 
         this.toggleEquipment = (equipmentId) => {
+            const equipment = this.availableEquipment.value.find(e => e.id === equipmentId);
+
+            if (equipment && equipment.occupied) {
+                addAlert(`${equipment.name} 在選定時段已被借用`, { type: 'warning' });
+                return;
+            }
+
             const idx = this.form.selectedEquipment.indexOf(equipmentId);
             if (idx > -1) {
                 this.form.selectedEquipment.splice(idx, 1);
@@ -319,6 +295,13 @@ window.$config = {
         };
 
         this.toggleBooth = (boothId) => {
+            const booth = this.availableBooths.value.find(b => b.id === boothId);
+
+            if (booth && booth.occupied) {
+                addAlert(`${booth.name} 在選定時段已被借用`, { type: 'warning' });
+                return;
+            }
+
             const idx = this.form.selectedBooths.indexOf(boothId);
             if (idx > -1) {
                 this.form.selectedBooths.splice(idx, 1);
@@ -327,13 +310,12 @@ window.$config = {
             }
         };
 
-        // ✅ 新增：計算時段持續時間
+
         this.calculateDuration = () => {
             if (!this.selectedRoom.value || !this.form.selectedSlots.length) {
                 return { hours: 0, minutes: 0 };
             }
 
-            // 取得選中的所有時段
             const selectedSlots = this.timeSlots.value.filter(slot =>
                 this.form.selectedSlots.includes(slot.Key)
             );
@@ -342,17 +324,14 @@ window.$config = {
                 return { hours: 0, minutes: 0 };
             }
 
-            // 按開始時間排序
             selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
 
-            // 取第一個時段的開始時間和最後一個時段的結束時間
             const firstSlot = selectedSlots[0];
             const lastSlot = selectedSlots[selectedSlots.length - 1];
 
             const startTime = this.parseTime(firstSlot.StartTime);
             const endTime = this.parseTime(lastSlot.EndTime);
 
-            // 計算時間差（秒轉換為分鐘）
             const totalMinutes = (endTime - startTime) / 60;
             const hours = Math.floor(totalMinutes / 60);
             const minutes = totalMinutes % 60;
@@ -363,23 +342,88 @@ window.$config = {
             };
         };
 
-        // ✅ 輔助方法：解析時間字串為秒數
         this.parseTime = (timeStr) => {
-            // 時間格式: "09:00" 或 "09:00:00"
             if (!timeStr) return 0;
-
             const parts = timeStr.split(':').map(Number);
             const hours = parts[0] || 0;
             const minutes = parts[1] || 0;
             const seconds = parts[2] || 0;
-
             return hours * 3600 + minutes * 60 + seconds;
         };
 
+        /* ====== 載入預約資料（編輯模式） ====== */
+        this.loadReservationData = async (reservationNo) => {
+            try {
+                console.log('🔄 載入預約資料:', reservationNo);
+
+                const res = await global.api.reservations.detail({
+                    body: { reservationNo: reservationNo }
+                });
+
+                const data = res.data;
+                console.log('✅ 預約資料:', data);
+
+                // 填入基本資訊
+                this.form.name = data.ConferenceName || '';
+                this.form.content = data.Description || '';
+                this.form.date = data.ReservationDate || '';
+                this.form.paymentMethod = data.PaymentMethod || '';
+                this.form.departmentCode = data.DepartmentCode || '';
+
+                // 填入會議室資訊
+                this.form.departmentId = data.DepartmentId;
+                await this.loadBuildingsByDepartment(data.DepartmentId);
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.building = data.Building;
+                this.loadFloorsByBuilding(data.Building);
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.floor = data.Floor;
+                await this.loadRoomsByFloor();
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                this.form.roomId = data.RoomId;
+                this.selectedRoom.value = this.rooms.value.find(r => r.Id === data.RoomId) || null;
+
+                // 載入時段
+                await this.updateTimeSlots();
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+
+                if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
+
+                    // 直接用 API 回傳的值
+                    this.form.selectedSlots = data.SlotKeys;
+                }
+                // 載入設備
+                await this.loadEquipmentByRoom();
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // 選取已預約的設備和攤位
+                if (data.EquipmentIds && Array.isArray(data.EquipmentIds)) {
+                    this.form.selectedEquipment = [...data.EquipmentIds];
+                }
+                if (data.BoothIds && Array.isArray(data.BoothIds)) {
+                    this.form.selectedBooths = [...data.BoothIds];
+                }
+
+                console.log('✅ 預約資料載入完成');
+
+            } catch (err) {
+                console.error('❌ 載入預約資料失敗:', err);
+                addAlert('載入預約資料失敗', { type: 'danger' });
+                setTimeout(() => {
+                    window.location.href = '/reservationoverview';
+                }, 2000);
+            }
+        };
+
+        /* ====== 提交預約 ====== */
         this.submitBooking = () => {
             console.log('🟢 submitBooking 開始執行');
 
-            // ===== 驗證 =====
+            // 驗證
             if (!this.form.name.trim()) {
                 addAlert('請填寫會議名稱', { type: 'warning' });
                 return;
@@ -403,71 +447,63 @@ window.$config = {
 
             console.log('✅ 所有驗證通過');
 
-            // ===== 準備發送資料 =====
             const payload = {
-                // Conference 基本資訊
                 name: this.form.name,
                 description: this.form.content,
-                usageType: 1,  // 實體會議
+                usageType: 1,
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,
                 reservationDate: this.form.date,
-                // 付款
                 paymentMethod: this.form.paymentMethod,
                 departmentCode: this.form.paymentMethod === 'cost-sharing' ? this.form.departmentCode : null,
                 roomCost: this.roomCost.value,
                 equipmentCost: this.equipmentCost.value,
                 boothCost: this.boothCost.value,
                 totalAmount: this.totalAmount.value,
-
-                // 會議室時段
                 roomId: this.form.roomId,
-                // ✅ 【重要】轉換 Proxy Array 成普通陣列
                 slotKeys: [...this.form.selectedSlots],
-
-                // 設備和攤位
-                // ✅ 【重要】轉換 Proxy Array 成普通陣列
                 equipmentIds: [...this.form.selectedEquipment],
                 boothIds: [...this.form.selectedBooths],
-
-                // 參與者
                 attendeeIds: [this.initiatorId.value]
             };
 
+            if (this.isEditMode.value) {
+                payload.reservationNo = this.editingReservationId.value;
+            }
+
             console.log('📤 payload:', JSON.stringify(payload));
 
-            // ✅ 改為呼叫新的 createreservation endpoint
-            global.api.reservations.createreservation({ body: payload })
+            const apiCall = this.isEditMode.value
+                ? global.api.reservations.update({ body: payload })
+                : global.api.reservations.createreservation({ body: payload });
+
+            apiCall
                 .then(res => {
-                    console.log('%c✅ 預約成功！', 'color: #00aa00; font-weight: bold; font-size: 14px;');
-                    console.log('預約ID:', res);
+                    const successMsg = this.isEditMode.value
+                        ? '預約已更新，請等待管理者審核！'
+                        : '預約已送出，請等待管理者審核！';
 
-                    addAlert('預約已送出，請等待管理者審核！', { type: 'success' });
+                    console.log('%c✅ 操作成功！', 'color: #00aa00; font-weight: bold; font-size: 14px;');
+                    addAlert(successMsg, { type: 'success' });
 
-                    // 延遲後重導到預約清單
                     setTimeout(() => {
                         window.location.href = '/reservationoverview';
                     }, 2000);
                 })
                 .catch(err => {
-                    console.error('%c❌ 預約失敗！', 'color: #aa0000; font-weight: bold; font-size: 14px;');
-                    console.error('錯誤:', err);
-                    addAlert('預約失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
+                    const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
+                    console.error('%c❌ 操作失敗！', 'color: #aa0000; font-weight: bold; font-size: 14px;');
+                    addAlert(`${errorMsg}：${err.message || '未知錯誤'}`, { type: 'danger' });
                 });
         };
 
-        /* ===============================
-         * mounted
-         * =============================== */
+        /* ====== Mounted ====== */
         onMounted(async () => {
-            // 先載入分院列表
             this.loadDepartments();
-
-            // ✅ 第一次載入共用設備（form.roomId 為 null）
             await this.loadEquipmentByRoom();
 
-            // 檢查 URL 參數
             const params = new URLSearchParams(location.search);
+            const editId = params.get('id');
             const presetRoomId = params.get('roomId');
             const presetBuilding = params.get('building');
             const presetFloor = params.get('floor');
@@ -477,24 +513,25 @@ window.$config = {
             try {
                 const userRes = await global.api.auth.me();
                 const currentUser = userRes.data;
-
-                console.log('✅ 目前登入使用者:', currentUser);
-
                 this.initiatorName.value = currentUser.Name || '未知使用者';
                 this.initiatorId.value = currentUser.Id || '';
-
                 this.form.initiatorId = this.initiatorId.value;
                 this.form.attendees = [this.initiatorId.value];
-
             } catch (err) {
                 console.error('❌ 無法取得使用者資訊:', err);
                 this.initiatorName.value = '未知使用者';
-                this.initiatorId.value = '';
             }
 
-            // 如果從「立即預約」進來，自動填入資料
-            if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
-                this.form.departmentId = presetDepartmentId;  // ✅ 先設定分院
+            // 編輯模式
+            if (editId) {
+                console.log('📝 進入編輯模式');
+                this.isEditMode.value = true;
+                this.editingReservationId.value = editId;
+                await this.loadReservationData(editId);
+            }
+            // 從「立即預約」進來
+            else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
+                this.form.departmentId = presetDepartmentId;
                 await this.loadBuildingsByDepartment(presetDepartmentId);
                 await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -506,18 +543,16 @@ window.$config = {
                 await this.loadRoomsByFloor();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                this.form.roomId = presetRoomId;  // ✅ 設定 roomId
-                this.selectedRoom.value =
-                    this.rooms.value.find(r => r.Id === presetRoomId) || null;
+                this.form.roomId = presetRoomId;
+                this.selectedRoom.value = this.rooms.value.find(r => r.Id === presetRoomId) || null;
 
                 await this.updateTimeSlots();
-                // ✅ 現在 form.roomId 已設定，直接呼叫（會自動讀取 form.roomId）
                 await this.loadEquipmentByRoom();
 
                 console.log('✅ 自動選好會議室', this.selectedRoom.value);
             }
 
-            // Watch 監聽選擇變化
+            // Watch 監聽
             watch(
                 () => this.form.departmentId,
                 (departmentId) => {
@@ -575,7 +610,6 @@ window.$config = {
                         this.form.selectedSlots = [];
                         return;
                     }
-
                     this.loadRoomsByFloor();
                 }
             );
@@ -585,7 +619,6 @@ window.$config = {
                 (roomId) => {
                     if (!roomId) return;
                     console.log('🔄 roomId changed:', roomId);
-                    // ✅ roomId 已改變，直接呼叫（會自動讀取最新的 form.roomId）
                     this.loadEquipmentByRoom();
                     this.updateTimeSlots();
                 }
@@ -595,7 +628,29 @@ window.$config = {
                 () => this.form.date,
                 () => {
                     this.updateTimeSlots();
+                    // ✅ 日期改變時也要重新檢查設備
+                    if (this.form.roomId) {
+                        this.loadEquipmentByRoom();
+                    }
                 }
+            );
+
+            watch(
+                () => [...this.form.selectedSlots],  // 使用展開運算子建立新陣列,確保能偵測到變化
+                (newSlots, oldSlots) => {
+                    // 只有在有選會議室的情況下才重新載入設備
+                    if (this.form.roomId && this.form.date && newSlots.length > 0) {
+                        console.log('🔄 時段變更,重新檢查設備可用性');
+
+                        // ✅ 重新載入設備前,先清空已選設備
+                        // 避免使用者選到已被佔用的設備
+                        this.form.selectedEquipment = [];
+                        this.form.selectedBooths = [];
+
+                        this.loadEquipmentByRoom();
+                    }
+                },
+                { deep: true }  // 深度監聽陣列內容變化
             );
         });
     }

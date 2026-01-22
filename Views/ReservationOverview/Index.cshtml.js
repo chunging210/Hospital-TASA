@@ -10,12 +10,14 @@ window.$config = {
         this.isAdmin = ref(false);
         this.currentUserId = ref('');
         this.activeTab = ref('personal');
+        this.minAdvanceDays = ref(7);  // ✅ 從設定檔讀取,預設7天
 
         /* ========= 搜尋與篩選 ========= */
         this.searchQuery = ref('');
         this.dateRange = ref('');
         this.approvalStatusFilter = ref('');
         this.paymentStatusFilter = ref('');
+        this.userStatusFilter = ref('');
 
         /* ========= 資料列表 ========= */
         this.allReservations = ref([]);
@@ -25,7 +27,7 @@ window.$config = {
         this.selectedItem = ref(null);
 
         /* ========= ✅ DOM Refs (重要!) ========= */
-        this.counterPayFiles = ref(null);  // ✅ 加上這個!
+        this.counterPayFiles = ref(null);
 
         /* ========= ✅ 付款表單資料 ========= */
         this.paymentForm = reactive({
@@ -54,7 +56,7 @@ window.$config = {
                 );
             }
 
-            // ✅ 審核狀態篩選 - 使用 helper 轉換
+            // ✅ 審核狀態篩選
             if (this.approvalStatusFilter.value) {
                 const targetStatus = EnumHelper.getReservationStatusText(this.approvalStatusFilter.value);
                 filtered = filtered.filter(item =>
@@ -62,7 +64,7 @@ window.$config = {
                 );
             }
 
-            // ✅ 付款狀態篩選 - 使用 helper 轉換
+            // ✅ 付款狀態篩選
             if (this.paymentStatusFilter.value) {
                 const targetStatus = EnumHelper.getPaymentStatusText(this.paymentStatusFilter.value);
                 filtered = filtered.filter(item =>
@@ -76,7 +78,7 @@ window.$config = {
         this.filteredPersonalReservations = computed(() => {
             let filtered = this.personalReservations.value;
 
-            // 🔍 關鍵字搜尋
+            // 關鍵字搜尋
             if (this.searchQuery.value) {
                 const query = this.searchQuery.value.toLowerCase();
                 filtered = filtered.filter(item =>
@@ -84,24 +86,47 @@ window.$config = {
                 );
             }
 
-            // ✅ 審核狀態篩選 - 使用 helper 轉換
-            if (this.approvalStatusFilter.value) {
-                const targetStatus = EnumHelper.getReservationStatusText(this.approvalStatusFilter.value);
-                filtered = filtered.filter(item =>
-                    item.approvalStatus === targetStatus
-                );
-            }
+            // ✅ 使用者友善狀態篩選
+            if (this.userStatusFilter.value) {
+                filtered = filtered.filter(item => {
+                    const userStatus = this.getUserFriendlyStatus(item);
 
-            // ✅ 付款狀態篩選 - 使用 helper 轉換
-            if (this.paymentStatusFilter.value) {
-                const targetStatus = EnumHelper.getPaymentStatusText(this.paymentStatusFilter.value);
-                filtered = filtered.filter(item =>
-                    item.paymentStatus === targetStatus
-                );
+                    switch (this.userStatusFilter.value) {
+                        case 'pending':
+                            return userStatus === '審核中';
+                        case 'payment':
+                            return userStatus === '待繳費';
+                        case 'reupload':
+                            return userStatus === '待重新上傳';
+                        case 'confirmed':
+                            return userStatus === '預約成功';
+                        case 'rejected':
+                            return userStatus === '已拒絕';
+                        case 'cancelled':
+                            return userStatus === '已取消';
+                        default:
+                            return true;
+                    }
+                });
             }
 
             return filtered;
         });
+
+        this.getUserFriendlyStatus = (item) => {
+            return EnumHelper.getUserFriendlyStatus(
+                item.approvalStatus,
+                item.paymentStatus
+            );
+        };
+        this.userStatusOptions = computed(() => {
+            return EnumHelper.getUserStatusFilterOptions();
+        });
+
+        this.getUserFriendlyStatusClass = (item) => {
+            const status = this.getUserFriendlyStatus(item);
+            return EnumHelper.getUserFriendlyStatusBadgeClass(status);
+        };
 
         /* ========= 樣式相關方法 ========= */
         this.getPaymentStatusClass = (status) => {
@@ -143,7 +168,8 @@ window.$config = {
             this.allReservations.value = (res.data || []).map(item => {
                 let paymentStatus;
 
-                if (item.Status === '審核拒絕' || item.Status === '已釋放' || item.Status === '待審核') {
+                // ✅ 根據預約狀態決定是否顯示付款狀態
+                if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
                     paymentStatus = '-';
                 } else {
                     paymentStatus = item.PaymentStatusText || '未付款';
@@ -176,7 +202,8 @@ window.$config = {
             this.personalReservations.value = (res.data || []).map(item => {
                 let paymentStatus;
 
-                if (item.Status === '審核拒絕' || item.Status === '已釋放' || item.Status === '待審核') {
+                // ✅ 根據預約狀態決定是否顯示付款狀態
+                if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
                     paymentStatus = '-';
                 } else {
                     paymentStatus = item.PaymentStatusText || '未付款';
@@ -202,7 +229,6 @@ window.$config = {
             });
         };
 
-
         this.isCounterPayment = (method) => {
             return EnumHelper.isCounterPayment(method);
         };
@@ -215,10 +241,8 @@ window.$config = {
             return EnumHelper.isCostSharingPayment(method);
         };
 
-        // ✅ 上傳臨櫃憑證 (修正版)
+        // ✅ 上傳臨櫃憑證
         this.submitCounterPayment = async () => {
-
-            // ✅ 修正:使用 ref 取得檔案
             const fileInput = this.counterPayFiles.value;
             if (!fileInput) {
                 console.error('❌ 找不到檔案輸入元素');
@@ -237,9 +261,7 @@ window.$config = {
             try {
                 const formData = new FormData();
 
-                console.log('reservationNo:', this.selectedItem.value.reservationNo);
-
-                // reservationIds 序列化成 JSON
+                // ✅ 使用 reservationNo
                 formData.append('reservationIds', JSON.stringify([this.selectedItem.value.reservationNo]));
                 formData.append('note', this.paymentForm.counterNote || '');
 
@@ -248,10 +270,8 @@ window.$config = {
                     formData.append('files', files[i]);
                 }
 
-
                 // ✅ 呼叫 API
-                const response = await global.api.payment.uploadcounter({ body: formData });
-
+                await global.api.payment.uploadcounter({ body: formData });
 
                 addAlert('憑證已上傳，等待審核', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
@@ -265,8 +285,6 @@ window.$config = {
 
             } catch (err) {
                 console.error('❌ 上傳憑證失敗:', err);
-                console.error('錯誤詳情:', err.message);
-                console.error('錯誤堆疊:', err.stack);
                 addAlert(`上傳憑證失敗: ${err.message || '未知錯誤'}`, { type: 'danger' });
             }
         };
@@ -312,7 +330,6 @@ window.$config = {
 
         /* ========= 詳情相關方法 ========= */
         this.openDetailDrawer = async (item) => {
-            // 基本資訊
             this.selectedItem.value = {
                 id: item.id,
                 reservationNo: item.reservationNo,
@@ -328,7 +345,9 @@ window.$config = {
                 paymentStatus: item.paymentStatus,
                 approvalStatus: item.approvalStatus,
                 rejectReason: item.rejectReason || '',
-                paymentRejectReason: item.paymentRejectReason || ''
+                paymentRejectReason: item.paymentRejectReason || '',
+
+                openedFrom: this.activeTab.value
             };
 
             // 如果是匯款,預填金額
@@ -339,15 +358,171 @@ window.$config = {
             this.bookingDrawerInstance.value?.show();
         };
 
+        /* ========= ✅ 權限控制方法 ========= */
+
+        // 計算距離預約日期的天數
+        this.getDaysUntilReservation = (dateStr) => {
+            const reservationDate = new Date(dateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            reservationDate.setHours(0, 0, 0, 0);
+            return Math.ceil((reservationDate - today) / (1000 * 60 * 60 * 24));
+        };
+
+        // 可以編輯
+        this.canEdit = (item) => {
+            return item.approvalStatus === '待審核';
+        };
+
+        // 可以取消
+        this.canCancel = (item) => {
+            // 待審核 → 可以取消
+            if (item.approvalStatus === '待審核') return true;
+
+            // 待繳費 → 可以取消
+            if (item.approvalStatus === '待繳費') return true;
+
+            // 待重新上傳 → 可以取消
+            if (item.paymentStatus === '待重新上傳') return true;
+
+            // 待查帳 或 已收款 (預約成功) → 需檢查時間
+            if (item.paymentStatus === '待查帳' || item.approvalStatus === '預約成功') {
+                const daysUntil = this.getDaysUntilReservation(item.reservationDate);
+                return daysUntil >= this.minAdvanceDays.value;  // ✅ 從設定檔讀取
+            }
+
+            return false;
+        };
+
+        // 可以刪除
+        this.canDelete = (item) => {
+            // 只有「待審核」和「審核拒絕」可以刪除
+            return ['待審核', '審核拒絕'].includes(item.approvalStatus);
+        };
+
+        // ✅ 判斷是否顯示操作按鈕區
+        this.shouldShowActionButtons = (item) => {
+            if (!item) return false;
+            return this.canEdit(item) || this.canCancel(item) || this.canDelete(item);
+        };
+
+        // 取得操作提示
+        this.getActionHint = (item) => {
+            if (!item) return '';
+
+            if (item.approvalStatus === '待審核') {
+                return '審核前可自由修改或取消';
+            }
+            if (item.approvalStatus === '待繳費') {
+                return '請於期限內上傳付款憑證';
+            }
+            if (item.paymentStatus === '待查帳') {
+                return '等待總務確認付款';
+            }
+            if (item.approvalStatus === '預約成功' || item.paymentStatus === '已收款') {
+                return '預約已確認';
+            }
+            if (item.paymentStatus === '待重新上傳') {
+                return '付款憑證有誤,請重新上傳';
+            }
+            if (item.approvalStatus === '審核拒絕') {
+                return '可刪除此紀錄或重新預約';
+            }
+
+            return '';
+        };
+
+        // 取得取消警告訊息
+        this.getCancelWarning = (item) => {
+            if (!item || !this.canCancel(item)) return '';
+
+            const daysUntil = this.getDaysUntilReservation(item.reservationDate);
+
+            if (item.approvalStatus === '待審核') {
+                return '取消後此預約將被刪除';
+            }
+            if (item.approvalStatus === '待繳費') {
+                return '取消後時段將釋放,需重新預約';
+            }
+            if (item.paymentStatus === '待查帳') {
+                return daysUntil >= this.minAdvanceDays.value ? '取消後將不退款' : '';
+            }
+            if (item.approvalStatus === '預約成功' || item.paymentStatus === '已收款') {
+                return daysUntil >= this.minAdvanceDays.value ? '取消將退款 80%,扣除 20% 手續費' : '';
+            }
+            if (item.paymentStatus === '待重新上傳') {
+                return '可選擇取消或重新上傳正確憑證';
+            }
+
+            return '';
+        };
+
+        /* ========= ✅ 操作功能方法 ========= */
+
+        // 編輯預約
+        this.editReservation = (item) => {
+            // ✅ 使用 id (Guid)
+            window.location.href = `/Conference/Create?id=${item.id}`;
+        };
+
+        // 確認取消預約
+        this.confirmCancel = async (item) => {
+            const warning = this.getCancelWarning(item);
+            const confirmText = warning
+                ? `${warning}\n\n確定要取消此預約嗎?`
+                : '確定要取消此預約嗎?';
+
+            if (!confirm(confirmText)) return;
+
+            try {
+                // ✅ 使用 id (Guid)
+                await global.api.reservations.cancel({
+                    body: { reservationId: item.id }
+                });
+
+                addAlert('預約已取消', { type: 'success' });
+                this.bookingDrawerInstance.value?.hide();
+                await this.loadPersonalReservations();
+
+            } catch (err) {
+                console.error('❌ 取消預約失敗:', err);
+                addAlert('取消預約失敗', { type: 'danger' });
+            }
+        };
+
+        // 確認刪除預約
+        this.confirmDelete = async (item) => {
+            const confirmMsg = item.approvalStatus === '待審核'
+                ? '確定要移除此預約嗎?\n\n移除後將從您的預約列表中消失,但資料仍會保留在系統中。'
+                : '確定要移除此紀錄嗎?\n\n移除後將從列表中消失。';
+
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                // ✅ 使用 id (Guid)
+                await global.api.reservations.delete({
+                    body: { reservationId: item.id }
+                });
+
+                addAlert('預約紀錄已刪除', { type: 'success' });
+                this.bookingDrawerInstance.value?.hide();
+                await this.loadPersonalReservations();
+
+            } catch (err) {
+                console.error('❌ 刪除預約失敗:', err);
+                addAlert('刪除預約失敗', { type: 'danger' });
+            }
+        };
+
         /* ========= Watch ========= */
         watch(
             () => this.activeTab.value,
             (newTab) => {
-                // ✅ 新增:重置所有篩選條件
+                // ✅ 重置所有篩選條件
                 this.searchQuery.value = '';
                 this.approvalStatusFilter.value = '';
                 this.paymentStatusFilter.value = '';
-
+                this.userStatusFilter.value = '';
                 // 載入對應資料
                 if (newTab === 'all') {
                     this.loadAllReservations();

@@ -1,5 +1,24 @@
 namespace TASA.Models.Enums
 {
+
+    /// <summary>
+    /// 會議狀態 (對應 ConferenceStatus 表)
+    /// </summary>
+    public enum ConferenceStatus : byte
+    {
+        /// <summary>已排程 - 預約成功,等待開會</summary>
+        Scheduled = 1,
+
+        /// <summary>進行中 - 會議時間內</summary>
+        InProgress = 2,
+
+        /// <summary>已完成 - 會議已結束</summary>
+        Completed = 3,
+
+        /// <summary>未出席 - 預約成功但未出席</summary>
+        NoShow = 4
+    }
+    
     /// <summary>
     /// 預約狀態 (Conference.ReservationStatus)
     /// </summary>

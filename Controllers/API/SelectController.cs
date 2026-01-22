@@ -14,19 +14,18 @@ namespace TASA.Controllers.API
         {
             return Ok(service.SelectServices.Room());
         }
-        
+
         [Authorize, HttpGet("roomlist")]
         public IActionResult RoomList([FromQuery] SysRoomQueryVM query)
-        {            
-            
+        {
+
             return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
         [HttpPost("equipmentbyroom")]
-        public IActionResult EquipmentByRoom([FromBody] EquipmentByRoomQueryVM query)
+        public IActionResult EquipmentByRoom([FromBody] SelectServices.EquipmentByRoomQueryVM query)
         {
-            
-            return Ok(service.SelectServices.EquipmentByRoom(query?.RoomId));
+            return Ok(service.SelectServices.EquipmentByRoom(query));
         }
 
 

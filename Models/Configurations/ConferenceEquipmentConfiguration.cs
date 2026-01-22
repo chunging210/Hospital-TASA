@@ -15,6 +15,8 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
 
         entity.HasIndex(e => e.ConferenceId, "idx_conference");
 
+        entity.HasIndex(e => new { e.EquipmentId, e.SlotDate, e.StartTime, e.EndTime }, "idx_equipment_date_time");
+
         entity.Property(e => e.Id)
             .HasColumnType("char(36)")
             .HasComment("ID");
@@ -29,9 +31,10 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
             .HasColumnType("char(36)")
             .HasComment("設備ID (包含攤位)");
 
-       entity.Property(e => e.EquipmentType)
+        entity.Property(e => e.EquipmentType)
+            .IsRequired()
             .HasMaxLength(1)
-            .HasComment("類型 1=設備 2=攤位");
+            .HasComment("類型 8=公有設備 9=攤位");
 
         entity.Property(e => e.EquipmentName)
             .IsRequired()
@@ -42,6 +45,31 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
             .HasColumnType("int(11)")
             .HasDefaultValueSql("'0'")
             .HasComment("設備價格快照");
+
+        entity.Property(e => e.SlotDate)
+            .IsRequired()
+            .HasComment("使用日期");
+
+        entity.Property(e => e.StartTime)
+            .IsRequired()
+            .HasComment("開始時間");
+
+        entity.Property(e => e.EndTime)
+            .IsRequired()
+            .HasComment("結束時間");
+
+        entity.Property(e => e.EquipmentStatus)
+            .HasColumnType("tinyint")
+            .HasDefaultValueSql("'1'")
+            .HasComment("狀態: 0=可用 1=鎖定中 2=已預約");
+
+        entity.Property(e => e.LockedAt)
+            .HasColumnType("datetime")
+            .HasComment("鎖定時間");
+
+        entity.Property(e => e.ReleasedAt)
+            .HasColumnType("datetime")
+            .HasComment("釋放時間");
 
         entity.Property(e => e.CreatedAt)
             .HasColumnType("datetime")

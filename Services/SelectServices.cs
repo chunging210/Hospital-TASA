@@ -22,14 +22,14 @@ namespace TASA.Services
             public uint Capacity { get; set; }
             public decimal Area { get; set; }
             public RoomStatus Status { get; set; }
-            public Guid? DepartmentId { get; set; } 
+            public Guid? DepartmentId { get; set; }
             public IEnumerable<string>? Images { get; set; }
 
             public int EquipmentCount { get; set; }
 
         }
 
-                public record BuildingVM
+        public record BuildingVM
         {
             public string Building { get; set; } = string.Empty;
             public List<FloorVM> Floors { get; set; } = new();
@@ -38,6 +38,9 @@ namespace TASA.Services
         public class EquipmentByRoomQueryVM
         {
             public Guid? RoomId { get; set; }
+            public string? Date { get; set; }                    // ✅ 新增:日期
+            public List<string>? SlotKeys { get; set; }            // ✅ 新增:時段Key列表
+            public string? ExcludeConferenceId { get; set; }       // ✅ 新增:排除的會議ID(編輯模式)
         }
 
         public record FloorVM
@@ -54,36 +57,37 @@ namespace TASA.Services
         }
 
         public record RoomByFloorQueryVM
-{
-    public string Building { get; init; } = string.Empty;
-    public string Floor { get; init; } = string.Empty;
-}
+        {
+            public string Building { get; init; } = string.Empty;
+            public string Floor { get; init; } = string.Empty;
+        }
 
-public record RoomSlotQueryVM
-{
-    public Guid RoomId { get; init; }
-    public DateOnly  Date { get; init; }   // yyyy-MM-dd
-}
+        public record RoomSlotQueryVM
+        {
+            public Guid RoomId { get; init; }
+            public DateOnly Date { get; init; }
+            public string? ExcludeConferenceId { get; set; }
+        }
 
-public record RoomSlotVM
-{
-    public Guid Id { get; set; } 
-    public string Key { get; init; } = string.Empty;
-    public string? Name { get; init; }          // Period 用
-    public TimeOnly StartTime { get; init; }
-    public TimeOnly EndTime { get; init; }
-    public decimal Price { get; init; }
-    public bool Occupied { get; init; }
-}
+        public record RoomSlotVM
+        {
+            public Guid Id { get; set; }
+            public string Key { get; init; } = string.Empty;
+            public string? Name { get; init; }          // Period 用
+            public TimeOnly StartTime { get; init; }
+            public TimeOnly EndTime { get; init; }
+            public decimal Price { get; init; }
+            public bool Occupied { get; init; }
+        }
 
-public record FloorsByBuildingQueryVM
-{
-    public Guid DepartmentId { get; init; }
-    public string Building { get; init; } = string.Empty;
-}
+        public record FloorsByBuildingQueryVM
+        {
+            public Guid DepartmentId { get; init; }
+            public string Building { get; init; } = string.Empty;
+        }
 
 
-  
+
         public IQueryable<IdNameVM> Room()
         {
             return db.SysRoom
@@ -106,7 +110,7 @@ public record FloorsByBuildingQueryVM
             if (room == null)
                 return [];
 
-            // 1️⃣ 可販售時段（只用 Period 定價）
+            // 1️⃣ 可販售時段
             var baseSlots = db.SysRoomPricePeriod
                 .AsNoTracking()
                 .Where(x =>
@@ -116,52 +120,62 @@ public record FloorsByBuildingQueryVM
                 )
                 .Select(x => new
                 {
-                    x.Id,               // ✅ 加上 ID
+                    x.Id,
                     x.Name,
-                    Start = x.StartTime, // TimeSpan
-                    End = x.EndTime,     // TimeSpan
+                    Start = x.StartTime,
+                    End = x.EndTime,
                     x.Price
                 })
                 .ToList();
 
-// 2️⃣ 已佔用時段（轉成 TimeSpan）
-var occupiedSlots = db.ConferenceRoomSlot
-    .AsNoTracking()
-    .Where(x =>
-        x.RoomId == query.RoomId &&
-        x.SlotDate == query.Date
-    )
-    .Select(x => new
-    {
-        StartTime = x.StartTime.ToTimeSpan(),  // ✅ 轉成 TimeSpan
-        EndTime = x.EndTime.ToTimeSpan()       // ✅ 轉成 TimeSpan
-    })
-    .ToList();
+            // 2️⃣ 已佔用時段 - ✅ 加上狀態過濾
+            var occupiedSlots = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Where(x =>
+                    x.RoomId == query.RoomId &&
+                    x.SlotDate == query.Date &&
+                    (x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)  // ✅ 只查鎖定中和已預約
+                )
+                .Select(x => new
+                {
+                    ConferenceId = x.ConferenceId,
+                    StartTime = x.StartTime.ToTimeSpan(),
+                    EndTime = x.EndTime.ToTimeSpan()
+                })
+                .ToList();
 
-// 3️⃣ 檢查是否被佔用
-var result = baseSlots
-    .OrderBy(x => x.Start)
-    .Select(s => new
-    {
-        s.Id,
-        s.Name,
-        s.Start,
-        s.End,
-        s.Price,
-        Occupied = occupiedSlots.Any(o =>
-        {
-            var oStart = o.StartTime;  // TimeSpan
-            var oEnd = o.EndTime;      // TimeSpan
+            // ✅ 編輯模式:排除正在編輯的預約
+            if (!string.IsNullOrEmpty(query.ExcludeConferenceId) &&
+                Guid.TryParse(query.ExcludeConferenceId, out var conferenceId))
+            {
+                occupiedSlots = occupiedSlots
+                    .Where(o => o.ConferenceId != conferenceId)
+                    .ToList();
+            }
 
-            return !(oEnd <= s.Start || oStart >= s.End);  // ✅ 都是 TimeSpan，可以比較
-        })
-    })
-    .ToList();
+            // 3️⃣ 檢查是否被佔用
+            var result = baseSlots
+                .OrderBy(x => x.Start)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name,
+                    s.Start,
+                    s.End,
+                    s.Price,
+                    Occupied = occupiedSlots.Any(o =>
+                    {
+                        var oStart = o.StartTime;
+                        var oEnd = o.EndTime;
+                        return !(oEnd <= s.Start || oStart >= s.End);
+                    })
+                })
+                .ToList();
 
             // 4️⃣ 轉成 RoomSlotVM
             return result.Select(s => new RoomSlotVM
             {
-                Id = s.Id,                              // ✅ 加上 ID
+                Id = s.Id,
                 Key = $"{s.Start:hh\\:mm\\:ss}-{s.End:hh\\:mm\\:ss}",
                 Name = s.Name,
                 StartTime = TimeOnly.FromTimeSpan(s.Start),
@@ -170,114 +184,113 @@ var result = baseSlots
                 Occupied = s.Occupied
             }).ToList();
         }
-        
-public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
-{
-    // ===== Debug 1：確認參數 =====
-    Console.WriteLine("=== RoomsByFloor Debug ===");
-    Console.WriteLine($"Building = '{query.Building}'");
-    Console.WriteLine($"Floor    = '{query.Floor}'");
-
-    // ===== Debug 2：先不加條件，看 DB 到底有什麼 =====
-    var all = db.SysRoom
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .Select(x => new
+        public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
         {
-            x.Id,
-            x.Name,
-            x.Building,
-            x.Floor,
-            x.Status
-        })
-        .ToList();
+            // ===== Debug 1：確認參數 =====
+            Console.WriteLine("=== RoomsByFloor Debug ===");
+            Console.WriteLine($"Building = '{query.Building}'");
+            Console.WriteLine($"Floor    = '{query.Floor}'");
 
-    Console.WriteLine($"SysRoom 總筆數 = {all.Count}");
+            // ===== Debug 2：先不加條件，看 DB 到底有什麼 =====
+            var all = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name,
+                    x.Building,
+                    x.Floor,
+                    x.Status
+                })
+                .ToList();
 
-    foreach (var r in all)
-    {
-        Console.WriteLine(
-            $"Room: {r.Name}, Building={r.Building}, Floor={r.Floor}, Status={r.Status}"
-        );
-    }
+            Console.WriteLine($"SysRoom 總筆數 = {all.Count}");
 
-    // ===== Debug 3：真正套條件 =====
-    var result = db.SysRoom
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .Where(x =>
-            x.Status != RoomStatus.Maintenance &&
-            x.Building == query.Building &&
-            x.Floor == query.Floor
-        )
-        .OrderBy(x => x.Name)
-        .Select(x => new RoomSelectVM
-        {
-            Id = x.Id,
-            Name = x.Name,
-            PricingType = x.PricingType
-        })
-        .ToList();
+            foreach (var r in all)
+            {
+                Console.WriteLine(
+                    $"Room: {r.Name}, Building={r.Building}, Floor={r.Floor}, Status={r.Status}"
+                );
+            }
 
-    Console.WriteLine($"符合條件筆數 = {result.Count}");
-    Console.WriteLine("==========================");
+            // ===== Debug 3：真正套條件 =====
+            var result = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x =>
+                    x.Status != RoomStatus.Maintenance &&
+                    x.Building == query.Building &&
+                    x.Floor == query.Floor
+                )
+                .OrderBy(x => x.Name)
+                .Select(x => new RoomSelectVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    PricingType = x.PricingType
+                })
+                .ToList();
 
-    return result;
-}
+            Console.WriteLine($"符合條件筆數 = {result.Count}");
+            Console.WriteLine("==========================");
 
-public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
-    {
-        var q = db.SysRoom
-            .AsNoTracking()
-            .WhereNotDeleted()
-            .WhereEnabled()
-            .Where(x => x.Status != RoomStatus.Maintenance);
-
-        if (query.DepartmentId.HasValue)
-        {
-            q = q.Where(x => x.DepartmentId == query.DepartmentId);
+            return result;
         }
 
-        // ✅ 加上分院篩選
-        if (query.DepartmentId.HasValue)
+        public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
         {
-            q = q.Where(x => x.DepartmentId == query.DepartmentId);
+            var q = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != RoomStatus.Maintenance);
+
+            if (query.DepartmentId.HasValue)
+            {
+                q = q.Where(x => x.DepartmentId == query.DepartmentId);
+            }
+
+            // ✅ 加上分院篩選
+            if (query.DepartmentId.HasValue)
+            {
+                q = q.Where(x => x.DepartmentId == query.DepartmentId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Building))
+            {
+                q = q.Where(x => x.Building == query.Building);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Floor))
+            {
+                q = q.Where(x => x.Floor == query.Floor);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                q = q.Where(x => x.Name.Contains(query.Keyword));
+            }
+
+            return q.Select(x => new RoomListVM
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Building = x.Building,
+                Floor = x.Floor,
+                DepartmentId = x.DepartmentId,
+                Capacity = x.Capacity,
+                Area = x.Area,
+                Status = x.Status,
+                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                Images = x.Images
+                    .Where(i => i.ImagePath != "")
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => i.ImagePath)
+            });
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Building))
-        {
-            q = q.Where(x => x.Building == query.Building);
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Floor))
-        {
-            q = q.Where(x => x.Floor == query.Floor);
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.Keyword))
-        {
-            q = q.Where(x => x.Name.Contains(query.Keyword));
-        }
-
-        return q.Select(x => new RoomListVM
-        {
-            Id = x.Id,
-            Name = x.Name,
-            Building = x.Building,
-            Floor = x.Floor,
-            DepartmentId = x.DepartmentId, 
-            Capacity = x.Capacity,
-            Area = x.Area,
-            Status = x.Status,
-            EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-            Images = x.Images
-                .Where(i => i.ImagePath != "")
-                .OrderBy(i => i.SortOrder)
-                .Select(i => i.ImagePath)
-        });
-    }
-
-public IQueryable<IdNameVM> Role()
+        public IQueryable<IdNameVM> Role()
         {
             return db.AuthRole
                 .AsNoTracking()
@@ -286,7 +299,7 @@ public IQueryable<IdNameVM> Role()
                 .Mapping<IdNameVM>();
         }
 
-public IQueryable<IdNameVM> User()
+        public IQueryable<IdNameVM> User()
         {
             return db.AuthUser
                 .AsNoTracking()
@@ -295,7 +308,7 @@ public IQueryable<IdNameVM> User()
                 .Mapping<IdNameVM>();
         }
 
-public record UserScheduleVM
+        public record UserScheduleVM
         {
             public record QueryVM(DateTime ScheduleDate, Guid? DepartmentId, bool? Contains, Guid[]? List, string Keyword);
             public record BusyTimeVM
@@ -311,7 +324,7 @@ public record UserScheduleVM
             }
         }
 
-public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM query)
+        public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM query)
         {
             var start = query.ScheduleDate.Date;
             var end = start.Set(hour: 23, minute: 59, second: 59);
@@ -401,6 +414,8 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
             public string? RoomName { get; set; }
             public decimal RentalPrice { get; set; }
             public bool IsEnabled { get; set; }
+
+            public bool Occupied { get; set; } = false;
         }
 
         private static string GetEquipmentTypeName(byte type)
@@ -422,7 +437,7 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Where(x => 
+                .Where(x =>
                     x.DepartmentId == departmentId &&
                     x.Status != RoomStatus.Maintenance &&
                     x.Building != null
@@ -431,7 +446,7 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
                 .Distinct()
                 .OrderBy(b => b)
                 .Select(b => new BuildingVM
-                { 
+                {
                     Building = b,
                     Floors = new List<FloorVM>()  // 先回傳空的，會由 loadFloorsByBuilding 填充
                 })
@@ -442,7 +457,7 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Where(x => 
+                .Where(x =>
                     x.DepartmentId == departmentId &&
                     x.Building == building &&
                     x.Status != RoomStatus.Maintenance &&
@@ -451,32 +466,193 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
                 .Select(x => x.Floor)
                 .Distinct()
                 .OrderBy(f => f)
-                .Select(f => new IdNameVM 
-                { 
+                .Select(f => new IdNameVM
+                {
                     Id = Guid.Empty,
-                    Name = f 
+                    Name = f
                 })
                 .ToList();
         }
 
 
-        public IEnumerable<EquipmentListVM> EquipmentByRoom(Guid? roomId = null)
+        public IEnumerable<EquipmentListVM> EquipmentByRoom(EquipmentByRoomQueryVM query)
         {
-            // ✅ 顯示 request 參數
-            Console.WriteLine($"[EquipmentByRoom] Request Start" + roomId);
-            Console.WriteLine($"  roomId: {(roomId.HasValue ? roomId.ToString() : "null (共用設備)")}");
-            
             try
             {
-                var result = db.Equipment
+                Console.WriteLine($"\n========== EquipmentByRoom Debug ==========");
+                Console.WriteLine($"RoomId: {query.RoomId}");
+                Console.WriteLine($"Date (string): {query.Date}");
+                Console.WriteLine($"SlotKeys: {string.Join(", ", query.SlotKeys ?? new List<string>())}");
+                Console.WriteLine($"ExcludeConferenceId: {query.ExcludeConferenceId}");
+
+                // ✅ 手動轉換 Date
+                DateOnly? dateOnly = null;
+                if (!string.IsNullOrEmpty(query.Date) && DateOnly.TryParse(query.Date, out var parsedDate))
+                {
+                    dateOnly = parsedDate;
+                    Console.WriteLine($"Date (parsed): {dateOnly}");
+                }
+
+                // 1️⃣ 取得可用的設備列表
+                var allEquipment = db.Equipment
                     .AsNoTracking()
                     .WhereNotDeleted()
-                    .Where(x => x.IsEnabled)  // 只取啟用的
-                    .Where(x => x.Type == 8 || x.Type == 9)  // 只取設備(8) 和 攤位(9)
-                    .Where(x => 
-                        x.RoomId == null ||  // 共用設備
-                        (roomId.HasValue && x.RoomId == roomId)  // 該房間專屬
+                    .Where(x => x.IsEnabled)
+                    .Where(x => x.Type == 8 || x.Type == 9)
+                    .Where(x =>
+                        x.RoomId == null ||
+                        (query.RoomId.HasValue && x.RoomId == query.RoomId)
                     )
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Name,
+                        x.ProductModel,
+                        x.Type,
+                        x.RoomId,
+                        RoomName = x.Room != null ? x.Room.Name : null,
+                        x.RentalPrice,
+                        x.IsEnabled
+                    })
+                    .ToList();
+
+                Console.WriteLine($"找到 {allEquipment.Count} 個設備");
+
+                // 2️⃣ 檢查設備佔用狀態
+                HashSet<Guid> occupiedEquipmentIds = new HashSet<Guid>();
+
+                if (dateOnly.HasValue && query.SlotKeys != null && query.SlotKeys.Any())  // ✅ 改用 dateOnly
+                {
+                    // 解析時段
+                    var timeRanges = query.SlotKeys
+                        .Select(key =>
+                        {
+                            var parts = key.Split('-');
+                            if (parts.Length == 2 &&
+                                TimeOnly.TryParse(parts[0], out var start) &&
+                                TimeOnly.TryParse(parts[1], out var end))
+                            {
+                                return new { Start = start, End = end };
+                            }
+                            return null;
+                        })
+                        .Where(x => x != null)
+                        .ToList();
+
+                    if (timeRanges.Any())
+                    {
+                        Console.WriteLine($"\n用戶選擇的時段:");
+                        foreach (var range in timeRanges)
+                        {
+                            Console.WriteLine($"  {range.Start} ~ {range.End}");
+                        }
+
+                        var equipmentIds = allEquipment.Select(x => x.Id).ToList();
+
+                        // 先找出當天所有的會議室時段
+                        var allConferenceSlots = db.ConferenceRoomSlot
+                            .AsNoTracking()
+                            .Where(x => x.SlotDate == dateOnly.Value)  // ✅ 改用 dateOnly
+                            .Select(x => new
+                            {
+                                x.ConferenceId,
+                                x.RoomId,
+                                x.StartTime,
+                                x.EndTime
+                            })
+                            .ToList();
+
+                        Console.WriteLine($"\n當天所有會議時段 ({allConferenceSlots.Count} 筆):");
+                        foreach (var slot in allConferenceSlots)
+                        {
+                            Console.WriteLine($"  Conference: {slot.ConferenceId}, Room: {slot.RoomId}, {slot.StartTime} ~ {slot.EndTime}");
+                        }
+
+                        // 檢查時間重疊
+                        var overlappingConferences = allConferenceSlots
+                            .Where(slot =>
+                            {
+                                bool hasOverlap = timeRanges.Any(range =>
+                                {
+                                    bool overlap = range.End > slot.StartTime && range.Start < slot.EndTime;
+
+                                    if (overlap)
+                                    {
+                                        Console.WriteLine($"  ⚠️ 時段重疊: 用戶 [{range.Start}~{range.End}] vs 會議 [{slot.StartTime}~{slot.EndTime}]");
+                                    }
+
+                                    return overlap;
+                                });
+                                return hasOverlap;
+                            })
+                            .Select(x => x.ConferenceId)
+                            .ToList();
+
+                        Console.WriteLine($"\n找到 {overlappingConferences.Count} 個重疊的會議");
+
+                        // 排除正在編輯的會議
+                        if (!string.IsNullOrEmpty(query.ExcludeConferenceId) &&
+                            Guid.TryParse(query.ExcludeConferenceId, out var conferenceId))
+                        {
+                            overlappingConferences = overlappingConferences
+                                .Where(c => c != conferenceId)
+                                .ToList();
+                            Console.WriteLine($"排除編輯中會議後,剩餘 {overlappingConferences.Count} 個");
+                        }
+
+                        if (overlappingConferences.Any())
+                        {
+                            // 查詢這些會議使用了哪些設備
+                            var occupiedEquipment = db.ConferenceEquipment
+                                .AsNoTracking()
+                                .Where(x =>
+                                    overlappingConferences.Contains(x.ConferenceId) &&
+                                    equipmentIds.Contains(x.EquipmentId) &&
+                                    x.SlotDate == dateOnly.Value  // ✅ 改用 dateOnly
+                                )
+                                .Select(x => new
+                                {
+                                    x.EquipmentId,
+                                    x.ConferenceId,
+                                    x.StartTime,
+                                    x.EndTime
+                                })
+                                .ToList();
+
+                            Console.WriteLine($"\n這些會議使用的設備 ({occupiedEquipment.Count} 筆):");
+                            foreach (var eq in occupiedEquipment)
+                            {
+                                Console.WriteLine($"  設備: {eq.EquipmentId}, 會議: {eq.ConferenceId}, {eq.StartTime} ~ {eq.EndTime}");
+                            }
+
+                            // 檢查每個設備的時間重疊
+                            foreach (var eq in occupiedEquipment)
+                            {
+                                bool hasOverlap = timeRanges.Any(range =>
+                                {
+                                    bool overlap = range.End > eq.StartTime && range.Start < eq.EndTime;
+
+                                    if (overlap)
+                                    {
+                                        Console.WriteLine($"  ⛔ 設備時段重疊: 用戶 [{range.Start}~{range.End}] vs 設備 [{eq.StartTime}~{eq.EndTime}]");
+                                    }
+
+                                    return overlap;
+                                });
+
+                                if (hasOverlap)
+                                {
+                                    occupiedEquipmentIds.Add(eq.EquipmentId);
+                                }
+                            }
+                        }
+
+                        Console.WriteLine($"\n最終佔用的設備數量: {occupiedEquipmentIds.Count}");
+                    }
+                }
+
+                // 3️⃣ 組合結果
+                var result = allEquipment
                     .Select(x => new EquipmentListVM
                     {
                         Id = x.Id,
@@ -484,24 +660,20 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
                         ProductModel = x.ProductModel,
                         TypeName = GetEquipmentTypeName(x.Type),
                         RoomId = x.RoomId,
-                        RoomName = x.Room != null ? x.Room.Name : null,
+                        RoomName = x.RoomName,
                         RentalPrice = x.RentalPrice,
-                        IsEnabled = x.IsEnabled
+                        IsEnabled = x.IsEnabled,
+                        Occupied = occupiedEquipmentIds.Contains(x.Id)
                     })
                     .ToList();
 
-                // ✅ 顯示查詢結果統計
-                Console.WriteLine($"[EquipmentByRoom] Found {result.Count()} items:");
-                Console.WriteLine($"  - 設備: {result.Count(x => x.TypeName != "攤位租借")} 個");
-                Console.WriteLine($"  - 攤位: {result.Count(x => x.TypeName == "攤位租借")} 個");
-                
-                // ✅ 詳細列出每一項
+                Console.WriteLine($"\n最終設備清單:");
                 foreach (var item in result)
                 {
-                    Console.WriteLine($"    [{item.TypeName}] {item.Name} (RoomId: {(item.RoomId.HasValue ? item.RoomId.ToString() : "null")}) - ${item.RentalPrice}");
+                    Console.WriteLine($"  [{item.TypeName}] {item.Name} - {(item.Occupied ? "已佔用 ⛔" : "可用 ✅")}");
                 }
 
-                Console.WriteLine($"[EquipmentByRoom] Request End\n");
+                Console.WriteLine($"========================================\n");
 
                 return result;
             }
@@ -512,7 +684,6 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
                 throw;
             }
         }
-
         public IQueryable<IdNameVM> ConferenceCreateBy()
         {
             return db.Conference
@@ -549,5 +720,5 @@ public IQueryable<UserScheduleVM.ReturnVM> UserSchedule(UserScheduleVM.QueryVM q
         }
     }
 
-    
+
 }

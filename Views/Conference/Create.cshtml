@@ -1,4 +1,3 @@
-
 <link rel="stylesheet" href="/css/createroom.css">
 
 <div id="app" class="main-content">
@@ -11,7 +10,8 @@
                         <div class="card-header mx-4 mt-3">
                             <div class="row align-items-center">
                                 <div class="col-xl-9 col-sm-12 text-branding align-middle">
-                                    <i class="mdi mdi-calendar-cursor"></i> 新增會議預約
+                                    <!-- ✅ 動態標題 -->
+                                    <i class="mdi mdi-calendar-cursor"></i> {{ isEditMode ? '編輯會議預約' : '新增會議預約' }}
                                 </div>
                                 <div class="col-xl-3 col-sm-12 df-box01">
                                     <div class="d-flex align-items-center me-3">
@@ -140,16 +140,10 @@
 
                                                         <!-- 分院 -->
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <select
-                                                                class="form-select"
-                                                                v-model="form.departmentId"
-                                                            >
+                                                            <select class="form-select" v-model="form.departmentId">
                                                                 <option :value="null">請選擇分院</option>
-                                                                <option
-                                                                    v-for="d in departments"
-                                                                    :key="d.Id"
-                                                                    :value="d.Id"
-                                                                >
+                                                                <option v-for="d in departments" :key="d.Id"
+                                                                    :value="d.Id">
                                                                     {{ d.Name }}
                                                                 </option>
                                                             </select>
@@ -157,17 +151,11 @@
 
                                                         <!-- 大樓 -->
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <select
-                                                                class="form-select"
-                                                                v-model="form.building"
-                                                                :disabled="!form.departmentId"
-                                                            >
+                                                            <select class="form-select" v-model="form.building"
+                                                                :disabled="!form.departmentId">
                                                                 <option value="">請選擇大樓</option>
-                                                                <option
-                                                                    v-for="b in buildings"
-                                                                    :key="b.Building"
-                                                                    :value="b.Building"
-                                                                >
+                                                                <option v-for="b in buildings" :key="b.Building"
+                                                                    :value="b.Building">
                                                                     {{ b.Building }}
                                                                 </option>
                                                             </select>
@@ -175,17 +163,11 @@
 
                                                         <!-- 樓層 -->
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <select
-                                                                class="form-select"
-                                                                v-model="form.floor"
-                                                                :disabled="!form.building"
-                                                            >
+                                                            <select class="form-select" v-model="form.floor"
+                                                                :disabled="!form.building">
                                                                 <option value="">請選擇樓層</option>
-                                                                <option
-                                                                    v-for="f in availableFloors"
-                                                                    :key="f"
-                                                                    :value="f"
-                                                                >
+                                                                <option v-for="f in availableFloors" :key="f"
+                                                                    :value="f">
                                                                     {{ f }}
                                                                 </option>
                                                             </select>
@@ -193,17 +175,11 @@
 
                                                         <!-- 會議室 -->
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <select
-                                                                class="form-select"
-                                                                v-model="form.roomId"
-                                                                :disabled="!form.floor"
-                                                            >
+                                                            <select class="form-select" v-model="form.roomId"
+                                                                :disabled="!form.floor">
                                                                 <option value="">請選擇會議室</option>
-                                                                <option
-                                                                    v-for="room in filteredRooms"
-                                                                    :key="room.Id"
-                                                                    :value="room.Id"
-                                                                >
+                                                                <option v-for="room in filteredRooms" :key="room.Id"
+                                                                    :value="room.Id">
                                                                     {{ room.Name }}
                                                                 </option>
                                                             </select>
@@ -227,7 +203,8 @@
                                                                 <div class="slot-time">
                                                                     <strong>{{ slot.Name || '時段' }}</strong>
                                                                     <div class="text-muted small">
-                                                                        {{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}
+                                                                        {{ slot.StartTime.slice(0,5) }} - {{
+                                                                        slot.EndTime.slice(0,5) }}
                                                                     </div>
                                                                 </div>
 
@@ -254,19 +231,31 @@
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
                                         <h6>公有設備加租</h6>
-                                        <p class="text-muted small">選擇需要的額外設備</p>
 
-                                        <div class="equipment-grid">
-                                            <div v-for="equipment in availableEquipment" :key="equipment.id"
-                                                class="equipment-item"
-                                                :class="{ selected: form.selectedEquipment.includes(equipment.id) }"
-                                                @@click="toggleEquipment(equipment.id)">
-                                                <i :class="['bx', equipment.icon, 'text-primary']"
-                                                    style="font-size: 24px;"></i><br>
-                                                <strong>{{ equipment.name }}</strong><br>
-                                                <small class="text-muted">{{ equipment.description }}</small><br>
-                                                <span class="equipment-price">+ ${{ equipment.price }}/天</span>
+                                        <!-- ✅ 簡化判斷:只判斷是否有選時段 -->
+                                        <div v-if="form.selectedSlots.length > 0">
+                                            <p class="text-muted small">選擇需要的額外設備</p>
+                                            <div class="equipment-grid">
+                                                <div v-for="equipment in availableEquipment" :key="equipment.id"
+                                                    class="equipment-item" :class="{ 
+                        selected: form.selectedEquipment.includes(equipment.id),
+                        occupied: equipment.occupied 
+                    }" @@click="toggleEquipment(equipment.id)">
+                                                    <i :class="['bx', equipment.icon, 'text-primary']"
+                                                        style="font-size: 24px;"></i><br>
+                                                    <strong>{{ equipment.name }}</strong><br>
+                                                    <small class="text-muted">{{ equipment.description }}</small><br>
+                                                    <span class="equipment-price">
+                                                        {{ equipment.occupied ? '已借用' : '+ $' + equipment.price + '/天'
+                                                        }}
+                                                    </span>
+                                                </div>
                                             </div>
+                                        </div>
+
+                                        <div v-else class="alert alert-light">
+                                            <i class="bx bx-info-circle"></i>
+                                            請先選擇時段後才能選擇設備
                                         </div>
                                     </div>
                                     <hr>
@@ -281,16 +270,29 @@
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
                                         <h6>展示攤位加租</h6>
-                                        <div class="equipment-grid">
-                                            <div v-for="booth in availableBooths" :key="booth.id" class="equipment-item"
-                                                :class="{ selected: form.selectedBooths.includes(booth.id) }"
-                                                @@click="toggleBooth(booth.id)">
-                                                <i :class="['bx', booth.icon, 'text-primary']"
-                                                    style="font-size: 24px;"></i><br>
-                                                <strong>{{ booth.name }}</strong><br>
-                                                <small class="text-muted">{{ booth.description }}</small><br>
-                                                <span class="equipment-price">+ ${{ booth.price }}/天</span>
+
+                                        <!-- ✅ 簡化判斷:只判斷是否有選時段 -->
+                                        <div v-if="form.selectedSlots.length > 0">
+                                            <div class="equipment-grid">
+                                                <div v-for="booth in availableBooths" :key="booth.id"
+                                                    class="equipment-item" :class="{ 
+                        selected: form.selectedBooths.includes(booth.id),
+                        occupied: booth.occupied 
+                    }" @@click="toggleBooth(booth.id)">
+                                                    <i :class="['bx', booth.icon, 'text-primary']"
+                                                        style="font-size: 24px;"></i><br>
+                                                    <strong>{{ booth.name }}</strong><br>
+                                                    <small class="text-muted">{{ booth.description }}</small><br>
+                                                    <span class="equipment-price">
+                                                        {{ booth.occupied ? '已借用' : '+ $' + booth.price + '/天' }}
+                                                    </span>
+                                                </div>
                                             </div>
+                                        </div>
+
+                                        <div v-else class="alert alert-light">
+                                            <i class="bx bx-info-circle"></i>
+                                            請先選擇時段後才能選擇攤位
                                         </div>
                                     </div>
                                     <hr>
@@ -433,9 +435,10 @@
 
                         <!-- Footer -->
                         <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
+                            <!-- ✅ 動態按鈕文字 -->
                             <button @@click="submitBooking"
                                 class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
-                                預約送出
+                                {{ isEditMode ? '更新預約' : '預約送出' }}
                             </button>
                         </div>
                     </div>

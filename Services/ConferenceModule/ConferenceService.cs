@@ -64,6 +64,7 @@ namespace TASA.Services.ConferenceModule
             public List<Guid> Guests { get; set; } = [];
             public List<GuestManualVM> GuestsManual { get; set; } = [];
             public List<Guid>? AttendeeIds { get; set; }
+            public string? ReservationNo { get; set; }
 
             public record GuestManualVM
             {
@@ -465,6 +466,8 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         public byte GetStatus(bool startNow, Conference conference)
         {
+
+
             if (conference.StartTime == null || conference.EndTime == null)
             {
                 return 1;

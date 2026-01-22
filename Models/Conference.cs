@@ -108,7 +108,7 @@ public partial class Conference
     /// 狀態 (會議進行狀態：未開始、進行中、已結束等)
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]
-    public byte Status { get; set; }
+    public byte? Status { get; set; }
 
     /// <summary>
     /// 預約狀態 (0=已釋放, 1=待審核, 2=待繳費, 3=預約成功, 4=審核拒絕)- ✅ 新增
@@ -237,6 +237,18 @@ public partial class Conference
     [Column(TypeName = "datetime")]
     public DateTime? DeleteAt { get; set; }
 
+    /// <summary>
+    /// 取消時間
+    /// </summary>
+    public DateTime? CancelledAt { get; set; }
+
+    /// <summary>
+    /// 取消者
+    /// </summary>
+    public Guid? CancelledBy { get; set; }
+
+
+
     /* ===============================
      * Navigation Properties
      * =============================== */
@@ -269,6 +281,9 @@ public partial class Conference
     [ForeignKey("ConferenceId")]
     [InverseProperty("Conference")]
     public virtual ICollection<SysRoom> Room { get; set; } = new List<SysRoom>();
+
+    // ✅ 如果有 Navigation Property,也可以加上:
+    public virtual AuthUser? CancelledByNavigation { get; set; }
 
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
