@@ -2,6 +2,11 @@
 import global from '/global.js';
 const { ref, reactive, onMounted, computed } = Vue;
 
+let currentUser = null;
+const isAdmin = ref(false);  // ✅ 改用 ref
+const userDepartmentId = ref(null);  // ✅ 改用 ref
+const userDepartmentName = ref('');  // ✅ 改用 ref
+
 class VM {
     Id = null;
     Name = '';
@@ -83,6 +88,25 @@ const department = new function () {
 }
 
 let imageIndices = reactive({});
+
+const loadCurrentUser = async () => {
+    try {
+        const userRes = await global.api.auth.me();
+        currentUser = userRes.data;
+        isAdmin.value = currentUser.IsAdmin || false;  // ✅ 用 .value
+        userDepartmentId.value = currentUser.DepartmentId;  // ✅ 用 .value
+        userDepartmentName.value = currentUser.DepartmentName || '';  // ✅ 用 .value
+
+        console.log('✅ 使用者資訊:', {
+            name: currentUser.Name,
+            isAdmin: isAdmin.value,  // ✅ 用 .value
+            departmentId: userDepartmentId.value,  // ✅ 用 .value
+            departmentName: userDepartmentName.value  // ✅ 用 .value
+        });
+    } catch (err) {
+        console.error('❌ 無法取得使用者資訊:', err);
+    }
+};
 
 const room = new function () {
     this.query = reactive({ keyword: '' });
@@ -266,7 +290,11 @@ const room = new function () {
             this.form.feeType = PricingType.Period;
             this.vm.PricingType = PricingType.Period;
             this.form.rentalType = BookingSettings.InternalOnly;
-            this.form.departmentId = null;
+            if (!isAdmin.value && userDepartmentId.value) {
+                this.form.departmentId = userDepartmentId.value;
+            } else {
+                this.form.departmentId = null;
+            }
             this.generateCreateTimeSlotDefaults();
             // this.generateHourlySlots();
             // this.timeSlots.splice(0);
@@ -531,6 +559,10 @@ window.$config = {
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.department = department;
+        this.isAdmin = isAdmin;
+        this.userDepartmentName = userDepartmentName;
+
+
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {
                 return null;
@@ -577,7 +609,9 @@ window.$config = {
             room.getList();
         };
 
-        onMounted(() => {
+        onMounted(async () => {
+
+            await loadCurrentUser();
             room.page = this.roompage.value;
 
             room.getList(1);
@@ -586,8 +620,12 @@ window.$config = {
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
-            department.getList();
-
+            
+            if (isAdmin.value) {
+                console.log('✅ 是管理者,載入分院列表');
+                department.getList();
+            }
+        
             const detailModalElement = document.getElementById('roomDetailModal');
             detailModalElement.addEventListener('hidden.bs.modal', () => {
                 room.stopCarousel();

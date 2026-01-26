@@ -9,7 +9,7 @@ class VM {
     Type = '';
     RoomId = null;
     Building = '';
-    Floor = '';             
+    Floor = '';
     RentalPrice = 0;
     Host = '';
     Port = null;
@@ -20,6 +20,12 @@ class VM {
     IsEnabled = true;
     DepartmentId = '';
 }
+
+let currentUser = null;
+const isAdmin = ref(false);
+const userDepartmentId = ref(null);
+const userDepartmentName = ref('');
+
 const isEditing = ref(false);
 const departments = ref([]);
 const selectedDepartment = ref('');
@@ -57,9 +63,12 @@ const equipment = new function () {
 
         if (!this.vm.Building) return;
 
+        // ✅ 使用 selectedDepartment 或 userDepartmentId
+        const deptId = selectedDepartment.value || userDepartmentId.value;
+
         global.api.select.floorsbybuilding({
             body: {
-                departmentId: selectedDepartment.value,
+                departmentId: deptId,
                 building: this.vm.Building
             }
         }).then(res => {
@@ -108,11 +117,34 @@ const equipment = new function () {
     this.getVM = async (id) => {
         if (!id) {
             // ===== 新增 =====
+            console.log('🆕 進入新增模式');
+            console.log('  🔑 isAdmin =', isAdmin.value);
+            console.log('  🏥 userDepartmentId =', userDepartmentId.value);
+
             isEditing.value = false;
             copy(this.vm, new VM());
-            selectedDepartment.value = '';
-            // ✅ 使用新增的清空方法
-            this.clearCascadeFields();
+
+            // ✅ 如果不是管理者,自動設定分院ID
+            if (!isAdmin.value && userDepartmentId.value) {
+                selectedDepartment.value = userDepartmentId.value;
+                this.vm.DepartmentId = userDepartmentId.value;
+                console.log('  ✅ 非管理者,自動設定分院ID:', userDepartmentId.value);
+
+                // ✅ 自動載入大樓列表
+                try {
+                    const bRes = await global.api.select.buildingsbydepartment({
+                        body: { departmentId: userDepartmentId.value }
+                    });
+                    copy(this.buildings, bRes.data || []);
+                } catch (err) {
+                    console.error('❌ 載入大樓失敗:', err);
+                }
+            } else {
+                selectedDepartment.value = '';
+                this.clearCascadeFields();
+                console.log('  ℹ️ 管理者,分院ID設為空');
+            }
+
             return;
         }
 
@@ -120,22 +152,18 @@ const equipment = new function () {
         isEditing.value = true;
 
         try {
-            // ✅ 先拿設備詳細資料
             const res = await global.api.admin.equipmentdetail({ body: { id } });
             copy(this.vm, res.data);
 
-            // ✅ 用設備本身的 DepartmentId
             const departmentId = this.vm.DepartmentId;
             selectedDepartment.value = departmentId || '';
 
-            // ✅ 載入大樓（用正確的 departmentId）
             if (departmentId) {
                 const bRes = await global.api.select.buildingsbydepartment({
                     body: { departmentId: departmentId }
                 });
                 copy(this.buildings, bRes.data || []);
 
-                // ✅ 載樓層
                 if (this.vm.Building) {
                     const fRes = await global.api.select.floorsbybuilding({
                         body: {
@@ -145,7 +173,6 @@ const equipment = new function () {
                     });
                     copy(this.floorOptions, fRes.data || []);
 
-                    // ✅ 載會議室
                     if (this.vm.Floor) {
                         const rRes = await global.api.select.roomsbyfloor({
                             body: {
@@ -157,7 +184,6 @@ const equipment = new function () {
                     }
                 }
             } else {
-                // ✅ 如果沒有 DepartmentId，清空相關欄位
                 this.clearCascadeFields();
             }
 
@@ -185,23 +211,32 @@ const equipment = new function () {
             return false;
         }
 
-        if (selectedDepartment.value) {
+        // 3️⃣ 取得實際的分院ID
+        const deptId = selectedDepartment.value || userDepartmentId.value;
 
-            if (!this.vm.Building || this.vm.Building === '') {
-                addAlert('已選擇分院，請選擇大樓', { type: 'warning' });
-                return false;
-            }
+        // ✅ 如果沒有分院ID,必須報錯
+        if (!deptId) {
+            addAlert('請選擇分院', { type: 'warning' });
+            return false;
+        }
 
+        // ✅ 新邏輯:如果選了大樓,就必須選到會議室
+        if (this.vm.Building && this.vm.Building !== '') {
+            // 選了大樓,就必須選樓層
             if (!this.vm.Floor || this.vm.Floor === '') {
-                addAlert('已選擇分院，請選擇樓層', { type: 'warning' });
+                addAlert('已選擇大樓,請選擇樓層', { type: 'warning' });
                 return false;
             }
 
+            // 選了樓層,就必須選會議室
             if (!this.vm.RoomId) {
-                addAlert('已選擇分院，請選擇會議室', { type: 'warning' });
+                addAlert('已選擇樓層,請選擇會議室', { type: 'warning' });
                 return false;
             }
         }
+
+        // ✅ 如果沒有選大樓,這就是"公有設備"(該分院的共用設備)
+        // 不需要額外驗證,只要有分院ID就可以
 
         // 4️⃣ 公有設備(8)/攤位租借(9) 必須有租借金額
         if ([8, 9].includes(Number(this.vm.Type)) && this.vm.RentalPrice <= 0) {
@@ -259,7 +294,9 @@ const equipment = new function () {
 
         const body = {
             ...this.vm,
-            Type: Number(this.vm.Type)
+            Type: Number(this.vm.Type),
+            DepartmentId: selectedDepartment.value || userDepartmentId.value || this.vm.DepartmentId
+
         };
 
         method({ body })
@@ -291,6 +328,24 @@ const equipment = new function () {
         }
     };
 };
+const loadCurrentUser = async () => {
+    try {
+        const userRes = await global.api.auth.me();
+        currentUser = userRes.data;
+        isAdmin.value = currentUser.IsAdmin || false;
+        userDepartmentId.value = currentUser.DepartmentId;
+        userDepartmentName.value = currentUser.DepartmentName || '';
+
+        console.log('✅ 使用者資訊:', {
+            name: currentUser.Name,
+            isAdmin: isAdmin.value,
+            departmentId: userDepartmentId.value,
+            departmentName: userDepartmentName.value
+        });
+    } catch (err) {
+        console.error('❌ 無法取得使用者資訊:', err);
+    }
+};
 
 window.$config = {
     setup() {
@@ -315,15 +370,27 @@ window.$config = {
             });
         });
 
-        onMounted(() => {
-            equipment.loadDepartments();
+        onMounted(async () => {
+
+            await loadCurrentUser();
+
+            // ✅ 只有管理者才載入所有分院
+            if (isAdmin.value) {
+                console.log('✅ 是管理者,載入分院列表');
+                equipment.loadDepartments();
+            } else {
+                console.log('⚠️ 不是管理者,跳過載入分院列表');
+            }
+
             equipment.getList();
         });
 
         return {
             equipment,
             departments,
-            selectedDepartment
+            selectedDepartment,
+            isAdmin,
+            userDepartmentName
         };
     }
 };

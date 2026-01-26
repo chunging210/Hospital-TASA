@@ -23,7 +23,7 @@
                     <div class="invalid-feedback">請輸入會議室名稱</div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3" v-if="isAdmin">
                     <label class="form-label form-label-custom">分院 <span class="text-danger">*</span></label>
                     <select v-model="form.departmentId" class="form-control" required>
                         <option :value="null">請選擇分院</option>

@@ -2,6 +2,11 @@
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch, toRaw } = Vue;
 
+let currentUser = null;
+const isAdmin = ref(false);
+const userDepartmentId = ref(null);
+const userDepartmentName = ref('');
+
 const buildings = ref([]);
 const selectedBuilding = ref('');
 const selectedFloor = ref('');
@@ -14,6 +19,25 @@ const floorOptions = computed(() => {
     );
     return b ? b.Floors : [];
 });
+
+const loadCurrentUser = async () => {
+    try {
+        const userRes = await global.api.auth.me();
+        currentUser = userRes.data;
+        isAdmin.value = currentUser.IsAdmin || false;
+        userDepartmentId.value = currentUser.DepartmentId;
+        userDepartmentName.value = currentUser.DepartmentName || '';
+
+        console.log('✅ 使用者資訊:', {
+            name: currentUser.Name,
+            isAdmin: isAdmin.value,
+            departmentId: userDepartmentId.value,
+            departmentName: userDepartmentName.value
+        });
+    } catch (err) {
+        console.error('❌ 無法取得使用者資訊:', err);
+    }
+};
 
 const room = new function () {
 
@@ -44,9 +68,12 @@ const room = new function () {
     this.loadFloorsByBuilding = (building) => {
         if (!building || !selectedDepartment.value) return;
 
+        const deptId = selectedDepartment.value || userDepartmentId.value;
+        if (!deptId) return;
+
         global.api.select.floorsbybuilding({
             body: {
-                departmentId: selectedDepartment.value,
+                departmentId: deptId,
                 building: building
             }
         })
@@ -224,6 +251,10 @@ window.$config = {
         this.floorOptions = floorOptions;
         this.departments = departments;  // ✅ 加上分院
         this.selectedDepartment = selectedDepartment;  // ✅ 加上分院選擇
+
+        this.isAdmin = isAdmin;
+        this.userDepartmentName = userDepartmentName;
+
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.hasDetailImages = room.hasDetailImages;
@@ -235,14 +266,38 @@ window.$config = {
             return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
         };
 
-        onMounted(() => {
+        onMounted(async () => {
+
+            await loadCurrentUser();
+
             room.loadDepartments();
 
             room.page = this.roompage.value;
-            room.getList({ page: 1, perPage: 6 });
+
+            if (isAdmin.value) {
+                console.log('✅ 是管理者,載入分院列表');
+                room.loadDepartments();
+                // 管理者預設顯示所有會議室
+                room.getList({ page: 1, perPage: 6 });
+            } else {
+                console.log('⚠️ 不是管理者,自動設定為自己的分院');
+                // 非管理者自動設定為自己的分院
+                if (userDepartmentId.value) {
+                    room.query.departmentId = userDepartmentId.value;
+                    selectedDepartment.value = userDepartmentId.value;
+
+                    // 載入該分院的大樓列表
+                    room.loadBuildingsByDepartment(userDepartmentId.value);
+                }
+                // 載入該分院的會議室
+                room.getList({ page: 1, perPage: 6 });
+            }
+
 
             watch(selectedDepartment, (departmentId) => {
-                // 只接受「有值的字串」
+
+                if (!isAdmin.value) return;
+
                 if (typeof departmentId !== 'string' || !departmentId) {
                     // 清空所有條件
                     room.query.departmentId = '';

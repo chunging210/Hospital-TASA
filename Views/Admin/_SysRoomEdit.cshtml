@@ -22,7 +22,7 @@
 
                     <!-- ✅ 分院、大樓、樓層同一列 -->
                     <div class="row g-2">
-                        <div class="col-md-4">
+                        <div class="col-md-4" v-if="isAdmin">
                             <label class="form-label">分院 <span class="text-danger">*</span></label>
                             <select v-model="room.vm.DepartmentId" class="form-select form-select-sm" required>
                                 <option :value="null">請選擇</option>

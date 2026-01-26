@@ -11,7 +11,7 @@
                         <i class="mdi mdi-home-city"></i> 會議室總覽
                     </div>
 
-                    <div class="col-auto">
+                    <div v-if="isAdmin" class="col-auto">
                         <select class="form-select" v-model="selectedDepartment" style="min-width: 180px;">
                             <option :value="null">請選擇分院...</option>
                             <option v-for="dept in departments" :key="dept.Id" :value="dept.Id">

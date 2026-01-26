@@ -5,6 +5,9 @@ const { ref, reactive, computed, onMounted, watch } = Vue;
 window.$config = {
     setup: () => new function () {
 
+        this.currentUser = ref(null);  // 儲存當前使用者資訊
+        this.isAdmin = ref(false);      // 是否為管理者
+
         /* ========= 編輯模式相關 ========= */
         this.isEditMode = ref(false);
         this.editingReservationId = ref(null);
@@ -39,6 +42,38 @@ window.$config = {
         this.rooms = ref([]);
         this.selectedRoom = ref(null);
         this.timeSlots = ref([]);
+
+
+        this.loadCurrentUser = async () => {
+            try {
+                const userRes = await global.api.auth.me();
+                this.currentUser.value = userRes.data;
+
+                this.initiatorName.value = this.currentUser.value.Name || '未知使用者';
+                this.initiatorId.value = this.currentUser.value.Id || '';
+                this.form.initiatorId = this.initiatorId.value;
+                this.form.attendees = [this.initiatorId.value];
+
+                // ✅ 判斷是否為管理者
+                this.isAdmin.value = this.currentUser.value.IsAdmin || false;
+
+                // ✅ 如果不是管理者,自動帶入使用者的分院ID
+                if (!this.isAdmin.value && this.currentUser.value.DepartmentId) {
+                    this.form.departmentId = this.currentUser.value.DepartmentId;
+                }
+
+                console.log('✅ 使用者資訊載入完成:', {
+                    name: this.currentUser.value.Name,
+                    isAdmin: this.isAdmin.value,
+                    departmentId: this.currentUser.value.DepartmentId,
+                    departmentName: this.currentUser.value.DepartmentName
+                });
+
+            } catch (err) {
+                console.error('❌ 無法取得使用者資訊:', err);
+                addAlert('無法取得使用者資訊', { type: 'danger' });
+            }
+        };
 
         /* ========= 計算樓層選項 ========= */
         this.availableFloors = computed(() => {
@@ -499,7 +534,13 @@ window.$config = {
 
         /* ====== Mounted ====== */
         onMounted(async () => {
-            this.loadDepartments();
+
+            await this.loadCurrentUser();
+
+            if (this.isAdmin.value) {
+                this.loadDepartments();
+            }
+
             await this.loadEquipmentByRoom();
 
             const params = new URLSearchParams(location.search);
@@ -550,6 +591,8 @@ window.$config = {
                 await this.loadEquipmentByRoom();
 
                 console.log('✅ 自動選好會議室', this.selectedRoom.value);
+            } else if (!this.isAdmin.value && this.form.departmentId) {
+                await this.loadBuildingsByDepartment(this.form.departmentId);
             }
 
             // Watch 監聽

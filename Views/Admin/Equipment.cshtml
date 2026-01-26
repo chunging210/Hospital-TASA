@@ -146,7 +146,7 @@
 
 
                     <!-- 分院 -->
-                    <div class="row mb-4">
+                    <div v-if="isAdmin" class="row mb-4">
                         <label class="col-sm-3 col-form-label">分院</label>
                         <div class="col-sm-9">
                             <select v-model="selectedDepartment" class="form-select">

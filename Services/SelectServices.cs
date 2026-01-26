@@ -3,10 +3,11 @@ using TASA.Extensions;
 using TASA.Models;
 using TASA.Models.Enums;
 using TASA.Program;
+using TASA.Services.AuthModule;
 
 namespace TASA.Services
 {
-    public class SelectServices(TASAContext db) : IService
+    public class SelectServices(TASAContext db, UserClaimsService userClaimsService) : IService
     {
         public record RoomVM : IdNameVM
         {
@@ -186,43 +187,29 @@ namespace TASA.Services
         }
         public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
         {
-            // ===== Debug 1：確認參數 =====
             Console.WriteLine("=== RoomsByFloor Debug ===");
             Console.WriteLine($"Building = '{query.Building}'");
             Console.WriteLine($"Floor    = '{query.Floor}'");
 
-            // ===== Debug 2：先不加條件，看 DB 到底有什麼 =====
-            var all = db.SysRoom
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Name,
-                    x.Building,
-                    x.Floor,
-                    x.Status
-                })
-                .ToList();
+            // ✅ 新增權限檢查
+            var currentUser = userClaimsService.Me();
 
-            Console.WriteLine($"SysRoom 總筆數 = {all.Count}");
-
-            foreach (var r in all)
-            {
-                Console.WriteLine(
-                    $"Room: {r.Name}, Building={r.Building}, Floor={r.Floor}, Status={r.Status}"
-                );
-            }
-
-            // ===== Debug 3：真正套條件 =====
-            var result = db.SysRoom
+            var roomQuery = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .Where(x =>
                     x.Status != RoomStatus.Maintenance &&
                     x.Building == query.Building &&
                     x.Floor == query.Floor
-                )
+                );
+
+            // ✅ 如果不是管理者,只能看自己分院的會議室
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            {
+                roomQuery = roomQuery.Where(x => x.DepartmentId == currentUser.DepartmentId);
+            }
+
+            var result = roomQuery
                 .OrderBy(x => x.Name)
                 .Select(x => new RoomSelectVM
                 {
@@ -237,23 +224,26 @@ namespace TASA.Services
 
             return result;
         }
-
         public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
         {
+
             var q = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
                 .Where(x => x.Status != RoomStatus.Maintenance);
 
-            if (query.DepartmentId.HasValue)
-            {
-                q = q.Where(x => x.DepartmentId == query.DepartmentId);
-            }
+            // ✅ 權限檢查:非管理者只能看自己分院
+            var currentUser = userClaimsService.Me();
 
-            // ✅ 加上分院篩選
-            if (query.DepartmentId.HasValue)
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
             {
+                // 強制過濾該使用者的分院
+                q = q.Where(x => x.DepartmentId == currentUser.DepartmentId);
+            }
+            else if (query.DepartmentId.HasValue)
+            {
+                // 管理者可以選擇分院
                 q = q.Where(x => x.DepartmentId == query.DepartmentId);
             }
 
@@ -434,6 +424,15 @@ namespace TASA.Services
         // 在 SelectServices 裡新增方法
         public List<BuildingVM> BuildingsByDepartment(Guid departmentId)
         {
+
+            var currentUser = userClaimsService.Me();
+
+            // 如果不是管理者,強制使用使用者的分院ID
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            {
+                departmentId = currentUser.DepartmentId.Value;
+            }
+
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
@@ -454,6 +453,15 @@ namespace TASA.Services
         }
         public List<IdNameVM> FloorsByBuilding(Guid departmentId, string building)
         {
+
+            var currentUser = userClaimsService.Me();
+
+            // 如果不是管理者,強制使用使用者的分院ID
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            {
+                departmentId = currentUser.DepartmentId.Value;
+            }
+
             return db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
