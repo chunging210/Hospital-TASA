@@ -14,6 +14,8 @@ builder.Services.AddDbContextFactory<TASAContext>(optionsAction);
 builder.Services.AddDbContext<TASAContext>(optionsAction);
 
 builder.Services.AddLazyResolution();
+builder.Services.AddHostedService<ReservationAutoManagementService>();
+
 ServiceCollectionServiceExtensions.AddScoped<TASAContext>(builder.Services);
 ServiceCollectionExtension.AddImplementationScoped<IService>(builder.Services);
 ServiceCollectionServiceExtensions.AddScoped<ServiceWrapper>(builder.Services);

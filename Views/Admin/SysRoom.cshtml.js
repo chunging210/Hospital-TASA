@@ -94,7 +94,6 @@ const room = new function () {
         description: '',
         capacity: null,
         area: null,
-        refundEnabled: true,
         feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
         departmentId: null
@@ -264,7 +263,6 @@ const room = new function () {
             this.form.description = '';
             this.form.capacity = null;
             this.form.area = null;
-            this.form.refundEnabled = true;
             this.form.feeType = PricingType.Period;
             this.vm.PricingType = PricingType.Period;
             this.form.rentalType = BookingSettings.InternalOnly;
@@ -310,7 +308,6 @@ const room = new function () {
 
             Status: status,
             PricingType: pricingType,
-            IsEnabled: source.IsEnabled ?? source.refundEnabled,
             BookingSettings: source.BookingSettings ?? source.rentalType,
             DepartmentId: source.DepartmentId ?? source.departmentId,
             Images: this.mediaFiles.map((m, idx) => ({

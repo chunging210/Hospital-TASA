@@ -84,7 +84,7 @@
 
                         }
 
-                        @if (user?.IsAdmin == true)
+                        @if (user?.IsAdmin == true || user?.IsDirector == true)
                         {
                             <li class="nav-item">
                                 <a href="/admin/authuser" class="nav-link icon-text-container">
