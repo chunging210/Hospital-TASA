@@ -121,15 +121,9 @@ window.$config = {
         };
 
         /* ====== 載入大樓 ====== */
-        this.loadBuildingsByDepartment = (departmentId) => {
-            if (!departmentId) {
-                this.buildings.value = [];
-                return;
-            }
-
-            global.api.select.buildingsbydepartment({
-                body: { departmentId: departmentId }
-            })
+        this.loadBuildingsByDepartment = () => {
+            // ✅ 後端會自動根據 UserContext 過濾,不傳參數
+            global.api.select.buildingsbydepartment()
                 .then(res => {
                     this.buildings.value = res.data || [];
                 })
@@ -138,15 +132,14 @@ window.$config = {
                 });
         };
 
+
         /* ====== 載入樓層 ====== */
         this.loadFloorsByBuilding = (building) => {
-            if (!building || !this.form.departmentId) return;
+            if (!building) return;
 
+            // ✅ 後端會自動過濾
             global.api.select.floorsbybuilding({
-                body: {
-                    departmentId: this.form.departmentId,
-                    building: building
-                }
+                body: { building: building }  // ✅ 只傳 building
             })
                 .then(res => {
                     const buildingItem = this.buildings.value.find(b => b.Building === building);
@@ -407,7 +400,7 @@ window.$config = {
 
                 // 填入會議室資訊
                 this.form.departmentId = data.DepartmentId;
-                await this.loadBuildingsByDepartment(data.DepartmentId);
+                await this.loadBuildingsByDepartment();  // ✅ 不傳參數
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.building = data.Building;
@@ -425,12 +418,10 @@ window.$config = {
                 await this.updateTimeSlots();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-
                 if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
-
-                    // 直接用 API 回傳的值
                     this.form.selectedSlots = data.SlotKeys;
                 }
+
                 // 載入設備
                 await this.loadEquipmentByRoom();
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -573,7 +564,7 @@ window.$config = {
             // 從「立即預約」進來
             else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
                 this.form.departmentId = presetDepartmentId;
-                await this.loadBuildingsByDepartment(presetDepartmentId);
+                await this.loadBuildingsByDepartment();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.building = presetBuilding;
@@ -617,7 +608,7 @@ window.$config = {
                     this.timeSlots.value = [];
                     this.form.selectedSlots = [];
 
-                    this.loadBuildingsByDepartment(departmentId);
+                    this.loadBuildingsByDepartment();
                 }
             );
 

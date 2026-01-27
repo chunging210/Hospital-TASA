@@ -2,11 +2,12 @@
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
-
+using TASA.Models.Auth;
 namespace TASA.Services.EquipmentModule
 {
     public class EquipmentService(TASAContext db, ServiceWrapper service) : IService
     {
+
         // ========= 列表 ViewModel =========
         public record ListVM
         {
@@ -34,11 +35,6 @@ namespace TASA.Services.EquipmentModule
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .WhereIf(!string.IsNullOrEmpty(query.Type), x => x.Type.ToString() == query.Type);
 
-            var currentUser = service.UserClaimsService.Me();
-            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
-            {
-                q = q.Where(x => x.DepartmentId == currentUser.DepartmentId);
-            }
 
             return q.Select(x => new ListVM
             {

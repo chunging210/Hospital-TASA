@@ -3,16 +3,53 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using TASA.Models.Configurations;
+using TASA.Models.Auth; 
 #nullable disable
 
 namespace TASA.Models;
 
 public partial class TASAContext : DbContext
 {
-    public TASAContext(DbContextOptions<TASAContext> options)
+        private readonly UserContext? _userContext;
+
+
+    public TASAContext(DbContextOptions<TASAContext> options, IHttpContextAccessor httpContextAccessor)
         : base(options)
     {
+        // ✅ 在建構子中就取得使用者資訊
+        if (httpContextAccessor.HttpContext != null)
+        {
+            var claims = httpContextAccessor.HttpContext.User;
+            if (claims?.Identity?.IsAuthenticated == true)
+            {
+                var userId = claims.FindFirst("id")?.Value;
+                var deptId = claims.FindFirst("departmentid")?.Value;
+                var isAdmin = claims.FindAll("authrole").Any(c => c.Value.Contains("ADMIN"));
+                var isDirector = claims.FindAll("authrole").Any(c => c.Value.Contains("DIRECTOR"));
+                var isAccountant = claims.FindAll("authrole").Any(c => c.Value.Contains("ACCOUNTANT"));
+
+                if (userId != null && Guid.TryParse(userId, out var userGuid))
+                {
+                    _userContext = new UserContext
+                    {
+                        UserId = userGuid,
+                        DepartmentId = string.IsNullOrEmpty(deptId) || deptId == Guid.Empty.ToString() 
+                            ? null 
+                            : Guid.Parse(deptId),
+                        DepartmentName = claims.FindFirst("departmentname")?.Value,
+                        IsAdmin = isAdmin,
+                        IsDirector = isDirector,
+                        IsAccountant = isAccountant
+                    };
+
+                    Console.WriteLine($"🔧 [TASAContext] 使用者: IsAdmin={_userContext.IsAdmin}, DepartmentId={_userContext.DepartmentId}");
+                }
+            }
+        }
     }
+
+    private bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
+    private Guid? CurrentUserDepartmentId => _userContext?.DepartmentId;
 
     public virtual DbSet<AuthForget> AuthForget { get; set; }
 

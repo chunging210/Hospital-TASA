@@ -1,4 +1,4 @@
-﻿// Admin/SysRoomCalendar
+﻿// Admin/SysRoomCalendar - Global Query Filter 版本
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch, toRaw } = Vue;
 
@@ -14,9 +14,7 @@ const departments = ref([]);
 const selectedDepartment = ref(null);
 
 const floorOptions = computed(() => {
-    const b = buildings.value.find(
-        x => x.Building === selectedBuilding.value
-    );
+    const b = buildings.value.find(x => x.Building === selectedBuilding.value);
     return b ? b.Floors : [];
 });
 
@@ -40,7 +38,6 @@ const loadCurrentUser = async () => {
 };
 
 const room = new function () {
-
     this.query = reactive({
         keyword: '',
         building: '',
@@ -63,25 +60,23 @@ const room = new function () {
             });
     };
 
-
-    /* ====== 載入樓層（根據分院+大樓） ====== */
+    /* ====== 載入樓層（根據大樓） ====== */
     this.loadFloorsByBuilding = (building) => {
-        if (!building || !selectedDepartment.value) return;
+        if (!building) return;
 
-        const deptId = selectedDepartment.value || userDepartmentId.value;
-        if (!deptId) return;
+        const payload = { building: building };  // ✅ 必須傳 building
 
-        global.api.select.floorsbybuilding({
-            body: {
-                departmentId: deptId,
-                building: building
-            }
-        })
+        // ✅ 如果有選擇分院,傳給後端
+        if (selectedDepartment.value) {
+            payload.departmentId = selectedDepartment.value;
+        }
+
+        console.log('📤 [loadFloorsByBuilding] payload:', payload);
+
+        global.api.select.floorsbybuilding({ body: payload })
             .then(res => {
-                const buildingItem = buildings.value.find(
-                    b => b.Building === building
-                );
-
+                console.log('✅ 樓層列表:', res.data);
+                const buildingItem = buildings.value.find(b => b.Building === building);
                 if (buildingItem) {
                     buildingItem.Floors = (res.data || []).map(f => f.Name);
                 }
@@ -91,14 +86,20 @@ const room = new function () {
             });
     };
 
-    /* ====== 載入大樓（根據分院） ====== */
-    this.loadBuildingsByDepartment = (departmentId) => {
-        global.api.select.buildingsbydepartment({
-            body: {
-                departmentId: departmentId
-            }
-        })
+    /* ====== 載入大樓 ====== */
+    this.loadBuildingsByDepartment = () => {
+        const payload = {};  // ✅ 修正:要先宣告 payload
+
+        // ✅ 如果有選擇分院,傳給後端
+        if (selectedDepartment.value) {
+            payload.departmentId = selectedDepartment.value;
+        }
+
+        console.log('📤 [loadBuildingsByDepartment] payload:', payload);
+
+        global.api.select.buildingsbydepartment({ body: payload })
             .then(res => {
+                console.log('✅ 大樓列表:', res.data);
                 buildings.value = res.data || [];
             })
             .catch(() => {
@@ -118,10 +119,7 @@ const room = new function () {
         if (payload?.perPage) this.page.data.perPage = payload.perPage;
 
         const rawQuery = { ...toRaw(this.query) };
-
-        const req = this.page.setHeaders({
-            body: rawQuery  // ⭐ 改成 body 而不是 params
-        });
+        const req = this.page.setHeaders({ body: rawQuery });
 
         global.api.select.roomlist(req)
             .then(this.page.setTotal)
@@ -131,16 +129,16 @@ const room = new function () {
             })
             .catch((error) => {
                 console.error('API 錯誤:', error.response?.data || error.message);
-                addAlert(`取得會議室失敗`, { type: 'danger' });
+                addAlert('取得會議室失敗', { type: 'danger' });
             });
     };
 
     /* ========= 詳細 ========= */
     this.detailRoom = ref(null);
     this.detailRoomCarouselIndex = ref(0);
-    this.carouselInterval = null;  // 輪播計時器
-    this.carouselDirection = 'next';  // 輪播方向
-    // ✅ 啟動自動輪播
+    this.carouselInterval = null;
+    this.carouselDirection = 'next';
+
     this.startCarousel = () => {
         if (this.carouselInterval) {
             clearInterval(this.carouselInterval);
@@ -153,10 +151,9 @@ const room = new function () {
             const length = this.detailRoom.value.Images.length;
             this.detailRoomCarouselIndex.value =
                 (this.detailRoomCarouselIndex.value + 1) % length;
-        }, 5000);  // 5 秒換一張
+        }, 5000);
     };
 
-    // ✅ 停止自動輪播
     this.stopCarousel = () => {
         if (this.carouselInterval) {
             clearInterval(this.carouselInterval);
@@ -185,7 +182,6 @@ const room = new function () {
         this.startCarousel();
     };
 
-    // ✅ 修改：下一張（加上停止/重啟輪播）
     this.nextDetailImage = () => {
         if (!this.hasDetailImages.value) return;
         this.stopCarousel();
@@ -244,13 +240,12 @@ window.$config = {
         this.room = room;
         this.roompage = ref(null);
 
-        /* expose 給 cshtml */
         this.buildings = buildings;
         this.selectedBuilding = selectedBuilding;
         this.selectedFloor = selectedFloor;
         this.floorOptions = floorOptions;
-        this.departments = departments;  // ✅ 加上分院
-        this.selectedDepartment = selectedDepartment;  // ✅ 加上分院選擇
+        this.departments = departments;
+        this.selectedDepartment = selectedDepartment;
 
         this.isAdmin = isAdmin;
         this.userDepartmentName = userDepartmentName;
@@ -267,39 +262,32 @@ window.$config = {
         };
 
         onMounted(async () => {
-
             await loadCurrentUser();
-
-            room.loadDepartments();
 
             room.page = this.roompage.value;
 
             if (isAdmin.value) {
                 console.log('✅ 是管理者,載入分院列表');
                 room.loadDepartments();
-                // 管理者預設顯示所有會議室
+                // ✅ 後端會自動過濾
                 room.getList({ page: 1, perPage: 6 });
             } else {
                 console.log('⚠️ 不是管理者,自動設定為自己的分院');
-                // 非管理者自動設定為自己的分院
                 if (userDepartmentId.value) {
                     room.query.departmentId = userDepartmentId.value;
                     selectedDepartment.value = userDepartmentId.value;
 
-                    // 載入該分院的大樓列表
-                    room.loadBuildingsByDepartment(userDepartmentId.value);
+                    // ✅ 後端會自動過濾,不傳參數
+                    room.loadBuildingsByDepartment();
                 }
-                // 載入該分院的會議室
                 room.getList({ page: 1, perPage: 6 });
             }
 
-
             watch(selectedDepartment, (departmentId) => {
 
-                if (!isAdmin.value) return;
+
 
                 if (typeof departmentId !== 'string' || !departmentId) {
-                    // 清空所有條件
                     room.query.departmentId = '';
                     room.query.building = '';
                     room.query.floor = '';
@@ -308,7 +296,6 @@ window.$config = {
                     selectedBuilding.value = '';
                     selectedFloor.value = '';
 
-                    // ⭐ 重新抓「全部會議室」
                     room.getList({ page: 1, perPage: 6 });
                     return;
                 }
@@ -319,14 +306,15 @@ window.$config = {
                 selectedBuilding.value = '';
                 selectedFloor.value = '';
 
-                room.loadBuildingsByDepartment(departmentId);
+                // ✅ 後端會自動過濾,不傳參數
+                room.loadBuildingsByDepartment();
                 room.getList({ page: 1, perPage: 6 });
             });
 
             watch(selectedBuilding, (newBuilding) => {
                 console.log('[watch selectedBuilding]', newBuilding);
                 room.query.building = newBuilding || '';
-                selectedFloor.value = '';  // ⭐ 自動清空樓層
+                selectedFloor.value = '';
                 room.query.floor = '';
                 room.loadFloorsByBuilding(newBuilding);
 

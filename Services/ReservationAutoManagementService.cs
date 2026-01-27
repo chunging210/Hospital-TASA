@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using TASA.Models;
-using ConferenceStatusEnum = TASA.Models.Enums.ConferenceStatus;  // 用別名避免衝突
+using ConferenceStatusEnum = TASA.Models.Enums.ConferenceStatus;
 using ReservationStatusEnum = TASA.Models.Enums.ReservationStatus;
 using SlotStatusEnum = TASA.Models.Enums.SlotStatus;
 
@@ -25,6 +25,9 @@ namespace TASA.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+
+            _logger.LogInformation("🚀 預約自動管理服務啟動");
+
             // 啟動時先執行一次
             await UpdateConferenceStatuses();
 
@@ -33,8 +36,8 @@ namespace TASA.Services
                 try
                 {
                     _executionCount++;
-
-                    // 每分鐘更新會議狀態(即將開始、進行中、休息中、已結束)
+                    _logger.LogInformation($"⏰ 第 {_executionCount} 次執行");
+                    // 每分鐘更新會議狀態
                     await UpdateConferenceStatuses();
 
                     // 每 4 次(4分鐘)檢查一次繳費逾期
@@ -43,7 +46,6 @@ namespace TASA.Services
                         await CheckAndCancelOverduePayments();
                     }
 
-                    // 每 1 分鐘執行一次
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
                 catch (Exception ex)
@@ -53,9 +55,6 @@ namespace TASA.Services
             }
         }
 
-        /// <summary>
-        /// 更新會議狀態(即將開始、進行中、休息中、已結束)
-        /// </summary>
         private async Task UpdateConferenceStatuses()
         {
             using var scope = _serviceProvider.CreateScope();
@@ -63,13 +62,14 @@ namespace TASA.Services
 
             var now = DateTime.Now;
 
-            // 只處理預約成功的會議
+            // ✅ 加上 IgnoreQueryFilters()
             var activeConferences = await dbContext.Conference
-                .Include(c => c.ConferenceRoomSlots)
-                .Where(c => c.ReservationStatus == ReservationStatusEnum.Confirmed)  // 預約成功
-                .Where(c => c.Status == null || c.Status <= 3)  // 排除已結束的
-                .ToListAsync();
-
+      .IgnoreQueryFilters()  // ← Background Service 不需要過濾
+      .Include(c => c.ConferenceRoomSlots)
+      .Where(c => c.ReservationStatus == ReservationStatusEnum.Confirmed)
+      .Where(c => c.Status == null || c.Status <= 3)
+      .ToListAsync();
+            _logger.LogInformation($"📊 找到 {activeConferences.Count} 筆需檢查的會議");
             int updated = 0;
 
             foreach (var conference in activeConferences)
@@ -81,7 +81,6 @@ namespace TASA.Services
 
                 if (!slots.Any()) continue;
 
-                // 取得所有時段的絕對時間
                 var slotTimes = slots.Select(s => new
                 {
                     Start = s.SlotDate.ToDateTime(s.StartTime),
@@ -93,13 +92,9 @@ namespace TASA.Services
 
                 byte? newStatus = null;
 
-                // 判斷狀態
                 if (now >= lastSlotEnd)
                 {
-                    // 所有時段都結束了 → 已完成
                     newStatus = (byte)ConferenceStatusEnum.Completed;
-
-                    // 更新實際結束時間
                     if (conference.FinishTime == null)
                     {
                         conference.FinishTime = lastSlotEnd;
@@ -107,32 +102,26 @@ namespace TASA.Services
                 }
                 else if (now >= firstSlotStart.AddMinutes(-10) && now < firstSlotStart)
                 {
-                    // 開始前 10 分鐘 → 已排程(即將開始)
                     newStatus = (byte)ConferenceStatusEnum.Scheduled;
                 }
                 else
                 {
-                    // 檢查是否在任何時段內
                     bool isInAnySlot = slotTimes.Any(st => now >= st.Start && now < st.End);
 
                     if (isInAnySlot)
                     {
-                        // 進行中
                         newStatus = (byte)ConferenceStatusEnum.InProgress;
                     }
                     else if (now >= firstSlotStart && now < lastSlotEnd)
                     {
-                        // 在時段之間的空檔 → 已排程(休息中)
                         newStatus = (byte)ConferenceStatusEnum.Scheduled;
                     }
                     else
                     {
-                        // 還沒開始 → 已排程
                         newStatus = (byte)ConferenceStatusEnum.Scheduled;
                     }
                 }
 
-                // 只在狀態改變時更新
                 if (conference.Status != newStatus)
                 {
                     conference.Status = newStatus;
@@ -147,9 +136,6 @@ namespace TASA.Services
             }
         }
 
-        /// <summary>
-        /// 檢查並取消繳費逾期的預約
-        /// </summary>
         private async Task CheckAndCancelOverduePayments()
         {
             using var scope = _serviceProvider.CreateScope();
@@ -157,32 +143,32 @@ namespace TASA.Services
 
             var now = DateTime.Now;
 
-            // ReservationStatus = PendingPayment 是待繳費
+            // ✅ 加上 IgnoreQueryFilters()
             var overdueReservations = await dbContext.Conference
+                .IgnoreQueryFilters()  // ← 重點!
                 .Include(c => c.ConferenceRoomSlots)
                 .Include(c => c.ConferenceEquipments)
                 .Where(c => c.PaymentDeadline.HasValue
                          && c.PaymentDeadline < now
-                         && c.ReservationStatus == ReservationStatusEnum.PendingPayment)  // 待繳費
+                         && c.ReservationStatus == ReservationStatusEnum.PendingPayment)
                 .ToListAsync();
+
+            _logger.LogInformation($"📊 找到 {overdueReservations.Count} 筆逾期預約");
 
             foreach (var conference in overdueReservations)
             {
-                // 釋放時段
                 foreach (var slot in conference.ConferenceRoomSlots)
                 {
-                    slot.SlotStatus = (byte)SlotStatusEnum.Available;  // 可預約
+                    slot.SlotStatus = (byte)SlotStatusEnum.Available;
                     slot.ReleasedAt = now;
                 }
 
-                // 釋放設備狀態
                 foreach (var equipment in conference.ConferenceEquipments)
                 {
-                    equipment.EquipmentStatus = 0;  // 可用
+                    equipment.EquipmentStatus = 0;
                     equipment.ReleasedAt = now;
                 }
 
-                // 更新預約狀態為「已取消」
                 conference.ReservationStatus = ReservationStatusEnum.Cancelled;
                 conference.CancelledAt = now;
                 conference.RejectReason = $"繳費期限 {conference.PaymentDeadline:yyyy-MM-dd HH:mm} 已過期,系統自動取消";

@@ -5,11 +5,14 @@ using TASA.Program;
 using System.Text.Json.Serialization;
 using TASA.Models.Enums;
 using System.Text.RegularExpressions;
+using TASA.Models.Auth;
 
 namespace TASA.Services.RoomModule
 {
     public class RoomService(TASAContext db, ServiceWrapper service) : IService
     {
+   
+
         public record ListVM
         {
             public uint No { get; set; }
@@ -37,19 +40,19 @@ namespace TASA.Services.RoomModule
 
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
-            var q = db.SysRoom
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .WhereIf(query.DepartmentId.HasValue, x =>
-                        x.DepartmentId == query.DepartmentId);
 
-            // ✅ 新增權限檢查:非管理者只能看自己分院
-            var currentUser = service.UserClaimsService.Me();
-            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
-            {
-                q = q.Where(x => x.DepartmentId == currentUser.DepartmentId);
-            }
+        Console.WriteLine("========== RoomService.List Debug ==========");
+        
+        // ✅ 不需要手動過濾!Query Filter 會自動處理!
+        var q = db.SysRoom
+            .AsNoTracking()
+            .WhereNotDeleted()
+            .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+            .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
+
+        var count = q.Count();
+        Console.WriteLine($"套用 Query Filter 後的筆數: {count}");
+        Console.WriteLine("===========================================");
 
             return q.Select(x => new ListVM
             {

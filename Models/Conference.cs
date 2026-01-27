@@ -247,7 +247,10 @@ public partial class Conference
     /// </summary>
     public Guid? CancelledBy { get; set; }
 
-
+    /// <summary>
+    /// 分院ID
+    /// </summary>
+    public Guid? DepartmentId { get; set; } 
 
     /* ===============================
      * Navigation Properties

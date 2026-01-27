@@ -93,14 +93,6 @@
                             <td>{{item.Department.join(',')}}</td>
                             <td>{{item.CreateByName}}</td>
                             <td class="hstack gap-3">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button v-if="item.CanEdit" @@click="conference.getVM(item.Id)"
-                                        class="btn btn-primary">編輯</button>
-                                    <button v-if="item.Recording7" @@click="recording.get(item.Id)"
-                                        class="btn btn-primary">錄製檔</button>
-                                    <button @@click="conference.copy(item.Id)" class="btn btn-primary">複製</button>
-                                    <button @@click="conference.delete(item.Id)" class="btn btn-danger">刪除</button>
-                                </div>
                                 <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
                                     class="btn btn-sm btn-secondary">ZeroTouch</button>
                             </td>

@@ -4,6 +4,7 @@ using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using TASA.Program.ModelState;
+using TASA.Models.Enums;
 using static TASA.Services.ConferenceModule.ConferenceService.InsertVM;
 
 namespace TASA.Services.ConferenceModule
@@ -54,6 +55,7 @@ namespace TASA.Services.ConferenceModule
             public decimal? TotalAmount { get; set; }
             public string? PaymentMethod { get; set; }
             public string? DepartmentCode { get; set; }
+            public Guid? DepartmentId { get; set; }
 
             // ===== 共用欄位 =====
             public List<Guid> Ecs { get; set; } = [];
@@ -116,6 +118,8 @@ namespace TASA.Services.ConferenceModule
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .Where(x => x.StartTime.HasValue && x.EndTime.HasValue)
+                .Where(x => x.ReservationStatus != ReservationStatus.Cancelled
+                 && x.ReservationStatus != ReservationStatus.Rejected)
                 .WhereIf(query.Start.HasValue, x => query.Start <= x.StartTime)
                 .WhereIf(query.End.HasValue, x => x.StartTime <= query.End)
                 .WhereIf(query.RoomId.HasValue, x => x.Room.Any(y => y.Id == query.RoomId))

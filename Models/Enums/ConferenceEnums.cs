@@ -18,7 +18,14 @@ namespace TASA.Models.Enums
         /// <summary>未出席 - 預約成功但未出席</summary>
         NoShow = 4
     }
-    
+
+    public enum AttachmentType : byte
+    {
+        Agenda = 1,      // 議程表
+        Document = 2,    // 會議文件
+    }
+
+
     /// <summary>
     /// 預約狀態 (Conference.ReservationStatus)
     /// </summary>

@@ -89,6 +89,8 @@ public partial class ConferenceTemplate
     /// </summary>
     public Guid CreateBy { get; set; }
 
+    public Guid? DepartmentId { get; set; }
+
     /// <summary>
     /// 刪除
     /// </summary>

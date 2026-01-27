@@ -729,6 +729,17 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         private Conference CreateConferenceEntity(Guid conferenceId, InsertVM vm, Guid userId)
         {
+
+            var room = db.SysRoom
+    .AsNoTracking()
+    .FirstOrDefault(r => r.Id == vm.RoomId!.Value);
+
+            if (room == null)
+                throw new HttpException("會議室不存在");
+
+            Console.WriteLine($"📝 [CreateReservation] 會議室: {room.Name}, 分院ID: {room.DepartmentId}");
+
+
             return new Conference
             {
                 Id = conferenceId,
@@ -743,6 +754,7 @@ namespace TASA.Services.ConferenceModule
                 DurationSS = vm.DurationSS ?? 0,
                 RRule = null,
                 Status = 1,
+                DepartmentId = room.DepartmentId,
                 ReservationStatus = ReservationStatus.PendingApproval,
                 ReviewedAt = null,
                 ReviewedBy = null,
@@ -778,8 +790,19 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         private void UpdateConferenceEntity(Conference conference, InsertVM vm)
         {
+            // ✅ 查詢會議室取得分院資訊
+            var room = db.SysRoom
+                .AsNoTracking()
+                .FirstOrDefault(r => r.Id == vm.RoomId!.Value);
+
+            if (room == null)
+                throw new HttpException("會議室不存在");
+
+            Console.WriteLine($"📝 [UpdateReservation] 會議室: {room.Name}, 分院ID: {room.DepartmentId}");
+
             conference.Name = vm.Name;
             conference.Description = vm.Description;
+            conference.DepartmentId = room.DepartmentId;  // ✅ 更新分院ID
             conference.PaymentMethod = vm.PaymentMethod;
             conference.DepartmentCode = vm.DepartmentCode;
             conference.RoomCost = (int)(vm.RoomCost ?? 0);
