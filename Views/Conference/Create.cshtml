@@ -10,7 +10,6 @@
                         <div class="card-header mx-4 mt-3">
                             <div class="row align-items-center">
                                 <div class="col-xl-9 col-sm-12 text-branding align-middle">
-                                    <!-- ✅ 動態標題 -->
                                     <i class="mdi mdi-calendar-cursor"></i> {{ isEditMode ? '編輯會議預約' : '新增會議預約' }}
                                 </div>
                                 <div class="col-xl-3 col-sm-12 df-box01">
@@ -110,7 +109,7 @@
                                                     </div>
                                                     <p class="text-muted small mt-2">
                                                         <i class="bx bx-info-circle"></i>
-                                                        暫時僅記錄發起人，其他與會人員可在會議建立後進行新增
+                                                        暫時僅記錄發起人,其他與會人員可在會議建立後進行新增
                                                     </p>
                                                 </div>
                                             </div>
@@ -189,9 +188,9 @@
 
                                                     <!-- 時段選擇 -->
                                                     <div v-if="form.roomId" class="mt-4">
-                                                        <label class="form-label">選擇時段（可多選）</label>
+                                                        <label class="form-label">選擇時段(可多選)</label>
                                                         <p class="text-muted small">
-                                                            點擊時段進行選擇，已被預約的時段無法選擇
+                                                            點擊時段進行選擇,已被預約的時段無法選擇
                                                         </p>
 
                                                         <div class="time-slot-grid">
@@ -232,7 +231,6 @@
                                     <div class="feed-item-list flex-grow-1">
                                         <h6>公有設備加租</h6>
 
-                                        <!-- ✅ 簡化判斷:只判斷是否有選時段 -->
                                         <div v-if="form.selectedSlots.length > 0">
                                             <p class="text-muted small">選擇需要的額外設備</p>
                                             <div class="equipment-grid">
@@ -271,7 +269,6 @@
                                     <div class="feed-item-list flex-grow-1">
                                         <h6>展示攤位加租</h6>
 
-                                        <!-- ✅ 簡化判斷:只判斷是否有選時段 -->
                                         <div v-if="form.selectedSlots.length > 0">
                                             <div class="equipment-grid">
                                                 <div v-for="booth in availableBooths" :key="booth.id"
@@ -294,6 +291,120 @@
                                             <i class="bx bx-info-circle"></i>
                                             請先選擇時段後才能選擇攤位
                                         </div>
+                                    </div>
+                                    <hr>
+                                </li>
+
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <i class="bx bx-file text-white font-size-20"></i>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list">
+                                        <form>
+                                            <div class="mb-3 row align-items-top">
+                                                <div class="col-sm-12 col-xl-auto pe-0">
+                                                    <label class="col-form-label pe-3">會議附件</label>
+                                                </div>
+                                                <div class="col-sm-12 col-xl-10">
+
+                                                    <!-- 議程表上傳 -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="bx bx-file-blank"></i> 議程表
+                                                            <span class="text-muted small">(選填)</span>
+                                                        </label>
+                                                        <div class="file-upload-area"
+                                                            :class="{ 'has-file': agendaFile }"
+                                                            @@click="triggerAgendaUpload" @@dragover.prevent
+                                                            @@drop.prevent="handleAgendaDrop">
+
+                                                            <!-- 未上傳狀態 -->
+                                                            <div v-if="!agendaFile" class="upload-placeholder">
+                                                                <i class="bx bx-cloud-upload"
+                                                                    style="font-size: 48px;"></i>
+                                                                <p class="mb-1">點擊上傳或拖曳檔案至此</p>
+                                                                <small class="text-muted">支援 PDF, DOC, DOCX 格式</small>
+                                                            </div>
+
+                                                            <!-- 已上傳狀態 -->
+                                                            <div v-else class="uploaded-file">
+                                                                <i class="bx bx-file text-success"
+                                                                    style="font-size: 32px;"></i>
+                                                                <div class="file-info">
+                                                                    <strong>{{ agendaFile.name }}</strong>
+                                                                    <small class="text-muted d-block">{{
+                                                                        formatFileSize(agendaFile.size) }}</small>
+                                                                </div>
+                                                                <button type="button" class="btn btn-sm btn-danger"
+                                                                    @@click.stop="removeAgendaFile">
+                                                                    <i class="bx bx-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <input type="file" ref="agendaInput"
+                                                            @@change="handleAgendaSelect" accept=".pdf,.doc,.docx"
+                                                            style="display: none;">
+                                                    </div>
+
+                                                    <!-- 會議文件上傳 -->
+                                                    <div class="mb-3">
+                                                        <label class="form-label">
+                                                            <i class="bx bx-folder"></i> 會議文件
+                                                            <span class="text-muted small">(選填,可多個)</span>
+                                                        </label>
+                                                        <div class="file-upload-area"
+                                                            :class="{ 'has-file': documentFiles.length > 0 }"
+                                                            @@click="triggerDocumentUpload" @@dragover.prevent
+                                                            @@drop.prevent="handleDocumentDrop">
+
+                                                            <!-- 未上傳狀態 -->
+                                                            <div v-if="documentFiles.length === 0"
+                                                                class="upload-placeholder">
+                                                                <i class="bx bx-cloud-upload"
+                                                                    style="font-size: 48px;"></i>
+                                                                <p class="mb-1">點擊上傳或拖曳檔案至此</p>
+                                                                <small class="text-muted">支援 PDF, DOC, DOCX, XLS, XLSX,
+                                                                    PPT, PPTX 格式</small>
+                                                            </div>
+
+                                                            <!-- 已上傳檔案列表 -->
+                                                            <div v-else class="uploaded-files-list">
+                                                                <div v-for="(file, index) in documentFiles" :key="index"
+                                                                    class="uploaded-file-item">
+                                                                    <i class="bx bx-file text-primary"
+                                                                        style="font-size: 24px;"></i>
+                                                                    <div class="file-info">
+                                                                        <strong>{{ file.name }}</strong>
+                                                                        <small class="text-muted d-block">{{
+                                                                            formatFileSize(file.size) }}</small>
+                                                                    </div>
+                                                                    <button type="button" class="btn btn-sm btn-danger"
+                                                                        @@click.stop="removeDocumentFile(index)">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-outline-primary mt-2"
+                                                                    @@click.stop="triggerDocumentUpload">
+                                                                    <i class="bx bx-plus"></i> 新增更多檔案
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <input type="file" ref="documentInput"
+                                                            @@change="handleDocumentSelect"
+                                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple
+                                                            style="display: none;">
+                                                    </div>
+
+                                                    <p class="text-muted small">
+                                                        <i class="bx bx-info-circle"></i>
+                                                        單一檔案大小限制 10MB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </form>
                                     </div>
                                     <hr>
                                 </li>
@@ -352,14 +463,14 @@
                                                 <h6><i class="bx bx-info-circle"></i> 匯款資訊</h6>
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>銀行：</strong>圖像科技銀行 (012)</p>
-                                                        <p class="mb-1"><strong>分行：</strong>內湖瑞光分行</p>
-                                                        <p class="mb-1"><strong>戶名：</strong>圖像科技股份有限公司</p>
+                                                        <p class="mb-1"><strong>銀行:</strong>圖像科技銀行 (012)</p>
+                                                        <p class="mb-1"><strong>分行:</strong>內湖瑞光分行</p>
+                                                        <p class="mb-1"><strong>戶名:</strong>圖像科技股份有限公司</p>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>帳號：</strong>012-68-789012345</p>
-                                                        <p class="mb-1"><strong>電話：</strong>(02) 8792-5678</p>
-                                                        <p class="mb-1"><strong>Swift：</strong>IMTCTWTP</p>
+                                                        <p class="mb-1"><strong>帳號:</strong>012-68-789012345</p>
+                                                        <p class="mb-1"><strong>電話:</strong>(02) 8792-5678</p>
+                                                        <p class="mb-1"><strong>Swift:</strong>IMTCTWTP</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -368,19 +479,19 @@
                                                 class="alert alert-warning">
                                                 <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
                                                 <div class="mb-2">
-                                                    <label class="form-label">部門代碼：</label>
+                                                    <label class="form-label">部門代碼:</label>
                                                     <input type="text" class="form-control form-control-sm"
                                                         v-model="form.departmentCode"
                                                         placeholder="請輸入部門代碼 (例: ADM-2024)">
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>科目：</strong>7201-會議室租用費</p>
-                                                        <p class="mb-1"><strong>中心：</strong>ADM-2024-Q1</p>
+                                                        <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
+                                                        <p class="mb-1"><strong>中心:</strong>ADM-2024-Q1</p>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>窗口：</strong>分機 2156</p>
-                                                        <p class="mb-1"><strong>權限：</strong>部門主管以上</p>
+                                                        <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
+                                                        <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
                                                     </div>
                                                 </div>
                                                 <small class="text-muted">超過 $5,000 需總經理簽核</small>
@@ -390,14 +501,14 @@
                                                 <h6><i class="bx bx-money"></i> 現金付款資訊</h6>
                                                 <div class="row">
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>地點：</strong>總部1樓出納組</p>
-                                                        <p class="mb-1"><strong>時間：</strong>週一至週五 09:00-17:00</p>
-                                                        <p class="mb-1"><strong>聯絡：</strong>分機 1234</p>
+                                                        <p class="mb-1"><strong>地點:</strong>總部1樓出納組</p>
+                                                        <p class="mb-1"><strong>時間:</strong>週一至週五 09:00-17:00</p>
+                                                        <p class="mb-1"><strong>聯絡:</strong>分機 1234</p>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <p class="mb-1"><strong>承辦：</strong>財務部出納組</p>
-                                                        <p class="mb-1"><strong>限額：</strong>單筆不超過 $10,000</p>
-                                                        <p class="mb-1"><strong>收據：</strong>現場開立正式收據</p>
+                                                        <p class="mb-1"><strong>承辦:</strong>財務部出納組</p>
+                                                        <p class="mb-1"><strong>限額:</strong>單筆不超過 $10,000</p>
+                                                        <p class="mb-1"><strong>收據:</strong>現場開立正式收據</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -418,13 +529,13 @@
                                             <h5>費用總計</h5>
                                             <div class="row">
                                                 <div class="col-md-8">
-                                                    <p class="mb-1">會議室費用：<span>${{ roomCost }}</span></p>
-                                                    <p class="mb-1">設備費用：<span>${{ equipmentCost }}</span></p>
-                                                    <p class="mb-1">攤位費用：<span>${{ boothCost }}</span></p>
+                                                    <p class="mb-1">會議室費用:<span>${{ roomCost }}</span></p>
+                                                    <p class="mb-1">設備費用:<span>${{ equipmentCost }}</span></p>
+                                                    <p class="mb-1">攤位費用:<span>${{ boothCost }}</span></p>
                                                     <hr>
                                                 </div>
                                                 <div class="col-md-4 text-end">
-                                                    <h4>總金額：<span>${{ totalAmount }}</span></h4>
+                                                    <h4>總金額:<span>${{ totalAmount }}</span></h4>
                                                 </div>
                                             </div>
                                         </div>
@@ -435,14 +546,188 @@
 
                         <!-- Footer -->
                         <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
-                            <!-- ✅ 動態按鈕文字 -->
-                            <button @@click="submitBooking"
+                            <button @@click="showConfirmationModal"
                                 class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
                                 {{ isEditMode ? '更新預約' : '預約送出' }}
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ 確認預約資訊的彈窗 Modal - PDF 版本 -->
+    <div v-if="showConfirmModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);"
+        tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+
+                <!-- Header -->
+                <div class="modal-header" style="border-bottom: none; padding: 24px 32px 8px;">
+                    <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 18px;">確認預約資訊</h5>
+                    <button type="button" class="btn-close" @@click="closeConfirmationModal"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body" style="padding: 16px 32px 24px; max-height: 70vh; overflow-y: auto;">
+
+                    <!-- 匯款資訊提示 (銀行匯款時才顯示) -->
+                    <div v-if="form.paymentMethod === 'transfer'"
+                        style="background: #f0f7ff; border-left: 3px solid #0066cc; border-radius: 4px; padding: 16px; margin-bottom: 20px;">
+                        <div style="color: #0066cc; font-weight: 600; font-size: 14px; margin-bottom: 8px;">
+                            銀行轉帳資訊
+                        </div>
+                        <div style="font-size: 13px; color: #555; line-height: 1.8;">
+                            <div>銀行:圖像科技銀行 (012)</div>
+                            <div>分行:內湖瑞光分行</div>
+                            <div>戶名:圖像科技股份有限公司</div>
+                            <div>帳號:012-68-789012345</div>
+                        </div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                            請於繳款後將轉帳憑證上傳至系統
+                        </div>
+                    </div>
+
+                    <!-- 預約資訊列表 -->
+                    <div style="font-size: 15px; line-height: 2.2; color: #333;">
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">會議名稱:</div>
+                            <div style="flex: 1; font-weight: 500;">{{ form.name }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="form.content">
+                            <div style="min-width: 110px; color: #666;">會議內容:</div>
+                            <div style="flex: 1;">{{ form.content }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">會議日期:</div>
+                            <div style="flex: 1;">{{ formatDate(form.date) }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">會議室:</div>
+                            <div style="flex: 1;">{{ getRoomFullName() }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">選擇時段:</div>
+                            <div style="flex: 1;">{{ getSelectedSlotsText() }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">會議室費用:</div>
+                            <div style="flex: 1;">${{ roomCost }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="equipmentCost > 0">
+                            <div style="min-width: 110px; color: #666;">設備費用:</div>
+                            <div style="flex: 1;">${{ equipmentCost }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="boothCost > 0">
+                            <div style="min-width: 110px; color: #666;">攤位費用:</div>
+                            <div style="flex: 1;">${{ boothCost }}</div>
+                        </div>
+
+                        <div style="border-top: 1px solid #e5e5e5; margin: 16px 0;"></div>
+
+                        <div style="display: flex; padding: 8px 0; font-size: 16px; font-weight: 600;">
+                            <div style="min-width: 110px; color: #666;">總金額:</div>
+                            <div style="flex: 1; color: #0066cc;">${{ totalAmount }}</div>
+                        </div>
+
+                    </div>
+
+                    <!-- ✅ 使用條款同意區塊 -->
+                    <div
+                        style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                        <label
+                            style="display: flex; align-items: flex-start; cursor: pointer; user-select: none; margin: 0;">
+                            <input type="checkbox" :checked="hasReadAgreement" disabled>
+                            <div style="flex: 1; font-size: 14px; line-height: 1.6;">
+                                <span style="color: #333;">我已詳細閱讀並同意</span>
+                                <a href="#" @@click.prevent="openAgreementPDF"
+                                    style="color: #0066cc; text-decoration: none; font-weight: 500; margin-left: 4px;">
+                                    《會議室使用聲明暨承諾書》
+                                    <i class="bx bx-link-external" style="font-size: 14px; vertical-align: middle;"></i>
+                                </a>
+                            </div>
+                        </label>
+                        <div style="margin-top: 8px; font-size: 12px; color: #6c757d; padding-left: 30px;">
+                            ⓘ 請點擊上方連結閱讀完整內容後再勾選同意
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer" style="border-top: none; padding: 16px 32px 24px; gap: 12px;">
+                    <button type="button" class="btn btn-secondary" @@click="closeConfirmationModal"
+                        style="flex: 1; padding: 10px 24px; border-radius: 6px; font-weight: 500;">
+                        返回修改
+                    </button>
+                    <button type="button" class="btn" @@click="submitBooking" :disabled="!hasReadAgreement" :style="{
+                                flex: 1, 
+                                padding: '10px 24px', 
+                                borderRadius: '6px', 
+                                fontWeight: 500,
+                                backgroundColor: hasReadAgreement ? '#0066cc' : '#6c757d',
+                                borderColor: hasReadAgreement ? '#0066cc' : '#6c757d',
+                                color: '#fff',
+                                cursor: hasReadAgreement ? 'pointer' : 'not-allowed',
+                                opacity: hasReadAgreement ? 1 : 0.65,
+                                transition: 'all 0.3s ease'
+                            }">
+                        確認送出
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ PDF 檢視器彈窗 -->
+    <div v-if="showAgreementPDF" class="modal fade show" backdrop="static" keyboard="false"
+        style="display: block; background: rgba(0,0,0,0.7);" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered agreement-modal">
+            <div class="modal-content" style="border-radius: 12px; border: none; height: 100%;">
+
+                <!-- Header -->
+                <div class="modal-header" style="border-bottom: 1px solid #dee2e6; padding: 16px 24px; flex-shrink: 0;">
+                    <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 17px;">
+                        會議室使用聲明暨承諾書
+                    </h5>
+                </div>
+
+                <!-- PDF 顯示區域 -->
+                <div class="modal-body"
+                    style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+
+
+                    <iframe ref="pdfIframe" class="agreement-iframe" :src="pdfViewerUrl" frameborder="0">
+                    </iframe>
+
+
+                    <!-- 底部提示條 -->
+                    <div
+                        style="padding: 16px 24px; background: #f8f9fa; border-top: 1px solid #dee2e6; flex-shrink: 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="font-size: 13px; color: #666;">
+                                <i class="bx bx-info-circle"
+                                    style="font-size: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                請仔細閱讀所有條款內容
+                            </div>
+                            <button type="button" class="btn btn-primary" @@click="confirmReadAgreement"
+                                :disabled="!canConfirmAgreement">
+                                我已閱讀完畢
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

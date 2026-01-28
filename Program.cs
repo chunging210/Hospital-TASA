@@ -35,7 +35,7 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 app.UseInfrastructure();
-
+app.UseStaticFiles();
 // MVC
 app.MapControllerRoute(name: "default", pattern: "{controller=Auth}/{action=Index}");
 

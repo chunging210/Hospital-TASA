@@ -113,6 +113,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<ConferencePaymentProof> ConferencePaymentProof { get; set; }
 
+    public virtual DbSet<ConferenceAttachment> ConferenceAttachment { get; set; }
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -152,6 +154,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SysConfigConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceEquipmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentProofConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

@@ -5,12 +5,20 @@ const { ref, reactive, computed, onMounted, watch } = Vue;
 window.$config = {
     setup: () => new function () {
 
-        this.currentUser = ref(null);  // 儲存當前使用者資訊
-        this.isAdmin = ref(false);      // 是否為管理者
+        this.currentUser = ref(null);
+        this.isAdmin = ref(false);
 
+        this.showAgreementPDF = ref(false);          // 控制 PDF 彈窗顯示
+        this.hasReadAgreement = ref(false);          // 是否已勾選同意
+        this.agreementPdfUrl = ref('');
+        this.canConfirmAgreement = ref(false);
+        this.hasOpenedAgreement = ref(false);
         /* ========= 編輯模式相關 ========= */
         this.isEditMode = ref(false);
         this.editingReservationId = ref(null);
+
+        /* ========= ✅ 確認彈窗相關 ========= */
+        this.showConfirmModal = ref(false);
 
         /* ========= 基本資料 ========= */
         this.initiatorName = ref('');
@@ -33,8 +41,142 @@ window.$config = {
             selectedEquipment: [],
             selectedBooths: [],
             paymentMethod: '',
-            departmentCode: ''
+            departmentCode: '',
+            attachments: []
         });
+
+        /* ========= 附件管理 ========= */
+        this.agendaFile = ref(null);
+        this.documentFiles = ref([]);
+        this.agendaInput = ref(null);
+        this.documentInput = ref(null);
+
+        this.formatFileSize = (bytes) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        };
+
+        this.closeAgreementPDF = () => {
+            this.showAgreementPDF.value = false;
+        };
+
+        /* ====== PDF 載入完成 ====== */
+        this.onPDFLoaded = () => {
+            console.log('✅ PDF 載入完成');
+        };
+
+        /* ====== 確認已閱讀完畢 ====== */
+        this.confirmReadAgreement = () => {
+            if (!this.hasOpenedAgreement.value) {
+                return;
+            }
+
+            this.hasReadAgreement.value = true;
+            this.showAgreementPDF.value = false;
+
+            addAlert('已確認閱讀使用聲明書', { type: 'success' });
+        };
+
+        this.pdfViewerUrl = computed(() =>
+            `/pdfjs/web/viewer.html?file=${encodeURIComponent('/files/agreement.pdf')}`
+        );
+
+        this.openAgreementPDF = () => {
+            this.hasOpenedAgreement.value = true;
+            this.showAgreementPDF.value = true;
+        };
+
+        this.validateFile = (file, maxSizeMB = 10) => {
+            const maxSize = maxSizeMB * 1024 * 1024;
+            if (file.size > maxSize) {
+                addAlert(`檔案 ${file.name} 超過 ${maxSizeMB}MB 限制`, { type: 'warning' });
+                return false;
+            }
+
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                addAlert(`檔案 ${file.name} 格式不支援`, { type: 'warning' });
+                return false;
+            }
+
+            return true;
+        };
+
+        this.fileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        /* ====== 議程表上傳 ====== */
+        this.triggerAgendaUpload = () => {
+            this.agendaInput.value?.click();
+        };
+
+        this.handleAgendaSelect = (event) => {
+            const file = event.target.files?.[0];
+            if (file && this.validateFile(file)) {
+                this.agendaFile.value = file;
+            }
+            event.target.value = '';
+        };
+
+        this.handleAgendaDrop = (event) => {
+            const file = event.dataTransfer.files?.[0];
+            if (file && this.validateFile(file)) {
+                this.agendaFile.value = file;
+            }
+        };
+
+        this.removeAgendaFile = () => {
+            this.agendaFile.value = null;
+        };
+
+        /* ====== 會議文件上傳 ====== */
+        this.triggerDocumentUpload = () => {
+            this.documentInput.value?.click();
+        };
+
+        this.handleDocumentSelect = (event) => {
+            const files = Array.from(event.target.files || []);
+            files.forEach(file => {
+                if (this.validateFile(file)) {
+                    this.documentFiles.value.push(file);
+                }
+            });
+            event.target.value = '';
+        };
+
+        this.handleDocumentDrop = (event) => {
+            const files = Array.from(event.dataTransfer.files || []);
+            files.forEach(file => {
+                if (this.validateFile(file)) {
+                    this.documentFiles.value.push(file);
+                }
+            });
+        };
+
+        this.removeDocumentFile = (index) => {
+            this.documentFiles.value.splice(index, 1);
+        };
 
         /* ========= 會議室資料 ========= */
         this.departments = ref([]);
@@ -42,7 +184,6 @@ window.$config = {
         this.rooms = ref([]);
         this.selectedRoom = ref(null);
         this.timeSlots = ref([]);
-
 
         this.loadCurrentUser = async () => {
             try {
@@ -54,10 +195,8 @@ window.$config = {
                 this.form.initiatorId = this.initiatorId.value;
                 this.form.attendees = [this.initiatorId.value];
 
-                // ✅ 判斷是否為管理者
                 this.isAdmin.value = this.currentUser.value.IsAdmin || false;
 
-                // ✅ 如果不是管理者,自動帶入使用者的分院ID
                 if (!this.isAdmin.value && this.currentUser.value.DepartmentId) {
                     this.form.departmentId = this.currentUser.value.DepartmentId;
                 }
@@ -109,6 +248,106 @@ window.$config = {
             return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
         });
 
+        /* ====== ✅ 確認彈窗相關功能 ====== */
+        this.showConfirmationModal = () => {
+            // 驗證
+            if (!this.form.name.trim()) {
+                addAlert('請填寫會議名稱', { type: 'warning' });
+                return;
+            }
+            if (!this.form.date) {
+                addAlert('請選擇會議日期', { type: 'warning' });
+                return;
+            }
+            if (!this.form.roomId) {
+                addAlert('請選擇會議室', { type: 'warning' });
+                return;
+            }
+            if (!this.form.selectedSlots.length) {
+                addAlert('請選擇時段', { type: 'warning' });
+                return;
+            }
+            if (!this.form.paymentMethod) {
+                addAlert('請選擇付款方式', { type: 'warning' });
+                return;
+            }
+            // ✅ 重置聲明書狀態
+            this.hasReadAgreement.value = false;
+            // 驗證通過,顯示彈窗
+            this.showConfirmModal.value = true;
+        };
+
+        this.closeConfirmationModal = () => {
+
+            this.showConfirmModal.value = false;
+            this.showAgreementPDF.value = false;
+
+            // ✅ 重置聲明書狀態
+            this.hasReadAgreement.value = false;
+        };
+
+        // ✅ 格式化日期顯示
+        this.formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'long'
+            });
+        };
+
+        // ✅ 取得會議室完整名稱
+        this.getRoomFullName = () => {
+            const dept = this.departments.value.find(d => d.Id === this.form.departmentId);
+            const room = this.rooms.value.find(r => r.Id === this.form.roomId);
+
+            if (this.isAdmin.value && dept) {
+                return `${dept.Name} - ${this.form.building} ${this.form.floor} ${room?.Name || ''}`;
+            }
+            return `${this.form.building} ${this.form.floor} ${room?.Name || ''}`;
+        };
+
+        // ✅ 取得選擇的時段文字
+        this.getSelectedSlotsText = () => {
+            const selectedSlots = this.timeSlots.value.filter(slot =>
+                this.form.selectedSlots.includes(slot.Key)
+            );
+
+            if (selectedSlots.length === 0) return '無';
+
+            selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+
+            return selectedSlots.map(slot => {
+                const startTime = slot.StartTime.slice(0, 5);
+                const endTime = slot.EndTime.slice(0, 5);
+                return `${slot.Name || ''} (${startTime} - ${endTime})`;
+            }).join(', ');
+        };
+
+        // ✅ 取得設備名稱
+        this.getEquipmentName = (equipmentId) => {
+            const equipment = this.availableEquipment.value.find(e => e.id === equipmentId);
+            return equipment ? `${equipment.name} (+$${equipment.price}/天)` : '未知設備';
+        };
+
+        // ✅ 取得攤位名稱
+        this.getBoothName = (boothId) => {
+            const booth = this.availableBooths.value.find(b => b.id === boothId);
+            return booth ? `${booth.name} (+$${booth.price}/天)` : '未知攤位';
+        };
+
+        // ✅ 取得付款方式文字
+        this.getPaymentMethodText = () => {
+            const methods = {
+                'transfer': '銀行匯款',
+                'cost-sharing': '成本分攤',
+                'cash': '現金付款'
+            };
+            return methods[this.form.paymentMethod] || '未選擇';
+        };
+
         /* ====== 載入分院 ====== */
         this.loadDepartments = () => {
             global.api.select.department()
@@ -122,7 +361,6 @@ window.$config = {
 
         /* ====== 載入大樓 ====== */
         this.loadBuildingsByDepartment = () => {
-            // ✅ 後端會自動根據 UserContext 過濾,不傳參數
             global.api.select.buildingsbydepartment()
                 .then(res => {
                     this.buildings.value = res.data || [];
@@ -132,14 +370,12 @@ window.$config = {
                 });
         };
 
-
         /* ====== 載入樓層 ====== */
         this.loadFloorsByBuilding = (building) => {
             if (!building) return;
 
-            // ✅ 後端會自動過濾
             global.api.select.floorsbybuilding({
-                body: { building: building }  // ✅ 只傳 building
+                body: { building: building }
             })
                 .then(res => {
                     const buildingItem = this.buildings.value.find(b => b.Building === building);
@@ -177,7 +413,6 @@ window.$config = {
 
         /* ====== 載入設備和攤位 ====== */
         this.loadEquipmentByRoom = async () => {
-            // ✅ 條件判斷
             if (!this.form.roomId || !this.form.date || !this.form.selectedSlots.length) {
                 console.warn('⏸ 條件不足,無法載入設備');
                 return;
@@ -187,7 +422,7 @@ window.$config = {
                 const body = {
                     roomId: this.form.roomId,
                     date: this.form.date,
-                    slotKeys: this.form.selectedSlots,  // ✅ 傳送所有選定的時段
+                    slotKeys: this.form.selectedSlots,
                     excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
                 };
 
@@ -203,7 +438,6 @@ window.$config = {
                     allData = [...shared, ...Object.values(byRoom).flat()];
                 }
 
-                // ✅ 後端已經標記好 Occupied 狀態
                 this.availableEquipment.value = allData
                     .filter(e => e.TypeName !== '攤位租借')
                     .map(e => ({
@@ -229,7 +463,6 @@ window.$config = {
                 console.log('✅ 設備:', this.availableEquipment.value);
                 console.log('✅ 攤位:', this.availableBooths.value);
 
-                // ✅ 過濾掉已選但現在變成 occupied 的設備
                 this.form.selectedEquipment = this.form.selectedEquipment.filter(id => {
                     const equipment = this.availableEquipment.value.find(e => e.id === id);
                     return equipment && !equipment.occupied;
@@ -338,7 +571,6 @@ window.$config = {
             }
         };
 
-
         this.calculateDuration = () => {
             if (!this.selectedRoom.value || !this.form.selectedSlots.length) {
                 return { hours: 0, minutes: 0 };
@@ -379,7 +611,7 @@ window.$config = {
             return hours * 3600 + minutes * 60 + seconds;
         };
 
-        /* ====== 載入預約資料（編輯模式） ====== */
+        /* ====== 載入預約資料(編輯模式) ====== */
         this.loadReservationData = async (reservationNo) => {
             try {
                 console.log('🔄 載入預約資料:', reservationNo);
@@ -391,16 +623,42 @@ window.$config = {
                 const data = res.data;
                 console.log('✅ 預約資料:', data);
 
-                // 填入基本資訊
                 this.form.name = data.ConferenceName || '';
                 this.form.content = data.Description || '';
                 this.form.date = data.ReservationDate || '';
                 this.form.paymentMethod = data.PaymentMethod || '';
                 this.form.departmentCode = data.DepartmentCode || '';
 
-                // 填入會議室資訊
+                if (data.Attachments && Array.isArray(data.Attachments)) {
+                    console.log('📎 載入附件:', data.Attachments);
+
+                    const agenda = data.Attachments.find(a => a.Type === 1);
+                    if (agenda) {
+                        this.agendaFile.value = {
+                            name: agenda.FileName,
+                            size: agenda.FileSize || 0,
+                            path: agenda.FilePath,
+                            id: agenda.Id,
+                            isExisting: true
+                        };
+                        console.log('✅ 議程表:', this.agendaFile.value);
+                    }
+
+                    const documents = data.Attachments.filter(a => a.Type === 2);
+                    if (documents.length > 0) {
+                        this.documentFiles.value = documents.map(doc => ({
+                            name: doc.FileName,
+                            size: doc.FileSize || 0,
+                            path: doc.FilePath,
+                            id: doc.Id,
+                            isExisting: true
+                        }));
+                        console.log('✅ 會議文件:', this.documentFiles.value);
+                    }
+                }
+
                 this.form.departmentId = data.DepartmentId;
-                await this.loadBuildingsByDepartment();  // ✅ 不傳參數
+                await this.loadBuildingsByDepartment();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.building = data.Building;
@@ -414,7 +672,6 @@ window.$config = {
                 this.form.roomId = data.RoomId;
                 this.selectedRoom.value = this.rooms.value.find(r => r.Id === data.RoomId) || null;
 
-                // 載入時段
                 await this.updateTimeSlots();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -422,11 +679,9 @@ window.$config = {
                     this.form.selectedSlots = data.SlotKeys;
                 }
 
-                // 載入設備
                 await this.loadEquipmentByRoom();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // 選取已預約的設備和攤位
                 if (data.EquipmentIds && Array.isArray(data.EquipmentIds)) {
                     this.form.selectedEquipment = [...data.EquipmentIds];
                 }
@@ -446,32 +701,44 @@ window.$config = {
         };
 
         /* ====== 提交預約 ====== */
-        this.submitBooking = () => {
+        this.submitBooking = async () => {
             console.log('🟢 submitBooking 開始執行');
 
-            // 驗證
-            if (!this.form.name.trim()) {
-                addAlert('請填寫會議名稱', { type: 'warning' });
-                return;
-            }
-            if (!this.form.date) {
-                addAlert('請選擇會議日期', { type: 'warning' });
-                return;
-            }
-            if (!this.form.roomId) {
-                addAlert('請選擇會議室', { type: 'warning' });
-                return;
-            }
-            if (!this.form.selectedSlots.length) {
-                addAlert('請選擇時段', { type: 'warning' });
-                return;
-            }
-            if (!this.form.paymentMethod) {
-                addAlert('請選擇付款方式', { type: 'warning' });
+
+            // ✅ 檢查是否已同意聲明書
+            if (!this.hasReadAgreement.value) {
+                addAlert('請先閱讀並同意使用聲明書', { type: 'warning' });
                 return;
             }
 
-            console.log('✅ 所有驗證通過');
+            // ✅ 關閉確認彈窗
+            this.showConfirmModal.value = false;
+
+            const attachments = [];
+
+            try {
+                if (this.agendaFile.value) {
+                    const base64 = await this.fileToBase64(this.agendaFile.value);
+                    attachments.push({
+                        type: 1,
+                        fileName: this.agendaFile.value.name,
+                        base64Data: base64
+                    });
+                }
+
+                for (const file of this.documentFiles.value) {
+                    const base64 = await this.fileToBase64(file);
+                    attachments.push({
+                        type: 2,
+                        fileName: file.name,
+                        base64Data: base64
+                    });
+                }
+            } catch (err) {
+                console.error('❌ 檔案轉換失敗:', err);
+                addAlert('檔案處理失敗,請重試', { type: 'danger' });
+                return;
+            }
 
             const payload = {
                 name: this.form.name,
@@ -490,7 +757,8 @@ window.$config = {
                 slotKeys: [...this.form.selectedSlots],
                 equipmentIds: [...this.form.selectedEquipment],
                 boothIds: [...this.form.selectedBooths],
-                attendeeIds: [this.initiatorId.value]
+                attendeeIds: [this.initiatorId.value],
+                attachments: attachments
             };
 
             if (this.isEditMode.value) {
@@ -506,10 +774,10 @@ window.$config = {
             apiCall
                 .then(res => {
                     const successMsg = this.isEditMode.value
-                        ? '預約已更新，請等待管理者審核！'
-                        : '預約已送出，請等待管理者審核！';
+                        ? '預約已更新,請等待管理者審核!'
+                        : '預約已送出,請等待管理者審核!';
 
-                    console.log('%c✅ 操作成功！', 'color: #00aa00; font-weight: bold; font-size: 14px;');
+                    console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                     addAlert(successMsg, { type: 'success' });
 
                     setTimeout(() => {
@@ -518,8 +786,8 @@ window.$config = {
                 })
                 .catch(err => {
                     const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
-                    console.error('%c❌ 操作失敗！', 'color: #aa0000; font-weight: bold; font-size: 14px;');
-                    addAlert(`${errorMsg}：${err.message || '未知錯誤'}`, { type: 'danger' });
+                    console.error('%c❌ 操作失敗!', 'color: #aa0000; font-weight: bold; font-size: 14px;');
+                    addAlert(`${errorMsg}:${err.message || '未知錯誤'}`, { type: 'danger' });
                 });
         };
 
@@ -541,7 +809,6 @@ window.$config = {
             const presetFloor = params.get('floor');
             const presetDepartmentId = params.get('departmentId');
 
-            // 載入使用者資訊
             try {
                 const userRes = await global.api.auth.me();
                 const currentUser = userRes.data;
@@ -554,15 +821,12 @@ window.$config = {
                 this.initiatorName.value = '未知使用者';
             }
 
-            // 編輯模式
             if (editId) {
                 console.log('📝 進入編輯模式');
                 this.isEditMode.value = true;
                 this.editingReservationId.value = editId;
                 await this.loadReservationData(editId);
-            }
-            // 從「立即預約」進來
-            else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
+            } else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
                 this.form.departmentId = presetDepartmentId;
                 await this.loadBuildingsByDepartment();
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -586,7 +850,6 @@ window.$config = {
                 await this.loadBuildingsByDepartment(this.form.departmentId);
             }
 
-            // Watch 監聽
             watch(
                 () => this.form.departmentId,
                 (departmentId) => {
@@ -662,7 +925,6 @@ window.$config = {
                 () => this.form.date,
                 () => {
                     this.updateTimeSlots();
-                    // ✅ 日期改變時也要重新檢查設備
                     if (this.form.roomId) {
                         this.loadEquipmentByRoom();
                     }
@@ -670,22 +932,26 @@ window.$config = {
             );
 
             watch(
-                () => [...this.form.selectedSlots],  // 使用展開運算子建立新陣列,確保能偵測到變化
+                () => [...this.form.selectedSlots],
                 (newSlots, oldSlots) => {
-                    // 只有在有選會議室的情況下才重新載入設備
                     if (this.form.roomId && this.form.date && newSlots.length > 0) {
                         console.log('🔄 時段變更,重新檢查設備可用性');
 
-                        // ✅ 重新載入設備前,先清空已選設備
-                        // 避免使用者選到已被佔用的設備
                         this.form.selectedEquipment = [];
                         this.form.selectedBooths = [];
 
                         this.loadEquipmentByRoom();
                     }
                 },
-                { deep: true }  // 深度監聽陣列內容變化
+                { deep: true }
             );
+
+            window.addEventListener('message', (event) => {
+                if (event.data?.type === 'PDF_REACHED_BOTTOM') {
+                    this.canConfirmAgreement.value = true;
+                    console.log('✅ PDF 已滑到底');
+                }
+            });
         });
     }
 };

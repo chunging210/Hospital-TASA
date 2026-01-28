@@ -68,6 +68,15 @@ namespace TASA.Services.ConferenceModule
             public List<Guid>? AttendeeIds { get; set; }
             public string? ReservationNo { get; set; }
 
+            public List<AttachmentVM>? Attachments { get; set; } 
+
+            public record AttachmentVM
+            {
+                public AttachmentType Type { get; set; }  // 1=議程表, 2=會議文件
+                public string FileName { get; set; } = string.Empty;
+                public string Base64Data { get; set; } = string.Empty;  // 或用 IFormFile
+            }
+
             public record GuestManualVM
             {
                 [RequiredI18n]

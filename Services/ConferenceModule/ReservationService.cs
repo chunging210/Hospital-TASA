@@ -37,6 +37,15 @@ namespace TASA.Services.ConferenceModule
             public int EquipmentCost { get; set; }
             public int BoothCost { get; set; }
             public int TotalAmount { get; set; }
+            public List<AttachmentDTO> Attachments { get; set; } = new();
+            public class AttachmentDTO
+            {
+                public Guid Id { get; set; }
+                public AttachmentType Type { get; set; }
+                public string FileName { get; set; } = string.Empty;
+                public string FilePath { get; set; } = string.Empty;
+                public long FileSize { get; set; }
+            }
         }
 
         public class RejectVM
@@ -312,6 +321,11 @@ namespace TASA.Services.ConferenceModule
             // 建立設備和攤位關聯
             CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, requestedSlots);
 
+            if (vm.Attachments != null && vm.Attachments.Any())
+            {
+                SaveAttachments(conferenceId, vm.Attachments, userId);
+            }
+
             db.SaveChanges();
 
             _ = service.LogServices.LogAsync("預約系統",
@@ -376,6 +390,22 @@ namespace TASA.Services.ConferenceModule
 
             // 建立新設備和攤位關聯
             CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, requestedSlots);
+
+            // 軟刪除舊附件
+            var oldAttachments = db.ConferenceAttachment
+                .Where(a => a.ConferenceId == conferenceId && a.DeleteAt == null)
+                .ToList();
+
+            foreach (var att in oldAttachments)
+            {
+                att.DeleteAt = DateTime.UtcNow;
+            }
+
+            if (vm.Attachments != null && vm.Attachments.Any())
+            {
+                SaveAttachments(conferenceId, vm.Attachments, userId);
+            }
+
 
             db.SaveChanges();
 
@@ -625,6 +655,19 @@ namespace TASA.Services.ConferenceModule
 
             var firstRoom = conference.ConferenceRoomSlots.FirstOrDefault()?.Room;
 
+
+            var attachments = db.ConferenceAttachment
+                   .Where(a => a.ConferenceId == conferenceId && a.DeleteAt == null)
+                   .Select(a => new GetReservationDetailDTO.AttachmentDTO
+                   {
+                       Id = a.Id,
+                       Type = a.AttachmentType,
+                       FileName = a.FileName,
+                       FilePath = a.FilePath,
+                       FileSize = a.FileSize ?? 0
+                   })
+                   .ToList();
+
             return new GetReservationDetailDTO
             {
                 ConferenceName = conference.Name,
@@ -644,7 +687,8 @@ namespace TASA.Services.ConferenceModule
                 RoomCost = conference.RoomCost,
                 EquipmentCost = conference.EquipmentCost,
                 BoothCost = conference.BoothCost,
-                TotalAmount = conference.TotalAmount
+                TotalAmount = conference.TotalAmount,
+                Attachments = attachments
             };
         }
 
@@ -852,6 +896,103 @@ namespace TASA.Services.ConferenceModule
                 db.ConferenceRoomSlot.Add(slot);
             }
         }
+
+        private void SaveAttachments(Guid conferenceId, List<InsertVM.AttachmentVM> attachments, Guid userId)
+        {
+            foreach (var attachment in attachments)
+            {
+                // ✅ 驗證檔案
+                if (string.IsNullOrWhiteSpace(attachment.Base64Data))
+                    continue;
+
+                // ✅ 儲存檔案到伺服器
+                var filePath = SaveFileToServer(attachment.FileName, attachment.Base64Data);
+
+                // ✅ 計算檔案大小
+                var fileBytes = Convert.FromBase64String(attachment.Base64Data);
+                var fileSize = fileBytes.Length;
+
+                // ✅ 取得 MIME Type
+                var mimeType = GetMimeType(attachment.FileName);
+
+                // ✅ 建立附件記錄
+                var attachmentEntity = new ConferenceAttachment
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = conferenceId,
+                    AttachmentType = attachment.Type,
+                    FileName = attachment.FileName,
+                    FilePath = filePath,
+                    FileSize = fileSize,
+                    MimeType = mimeType,
+                    UploadedAt = DateTime.UtcNow,
+                    UploadedBy = userId
+                };
+
+                db.ConferenceAttachment.Add(attachmentEntity);
+            }
+        }
+
+        /// <summary>
+        /// 儲存檔案到伺服器
+        /// </summary>
+        private string SaveFileToServer(string fileName, string base64Data)
+        {
+            try
+            {
+                // ✅ 產生唯一檔名
+                var fileExtension = Path.GetExtension(fileName);
+                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+
+                // ✅ 建立儲存路徑 (例如: /uploads/conference-attachments/2026/01/)
+                var yearMonth = DateTime.Now.ToString("yyyy/MM");
+                var uploadDir = Path.Combine("wwwroot", "uploads", "conference-attachments", yearMonth);
+
+                // ✅ 確保目錄存在
+                if (!Directory.Exists(uploadDir))
+                {
+                    Directory.CreateDirectory(uploadDir);
+                }
+
+                // ✅ 完整檔案路徑
+                var fullPath = Path.Combine(uploadDir, uniqueFileName);
+
+                // ✅ 將 Base64 解碼並儲存
+                var fileBytes = Convert.FromBase64String(base64Data);
+                File.WriteAllBytes(fullPath, fileBytes);
+
+                // ✅ 回傳相對路徑 (給前端用)
+                return $"/uploads/conference-attachments/{yearMonth}/{uniqueFileName}";
+            }
+            catch (Exception ex)
+            {
+                throw new HttpException($"檔案儲存失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 取得 MIME Type
+        /// </summary>
+        private string GetMimeType(string fileName)
+        {
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            return extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ".ppt" => "application/vnd.ms-powerpoint",
+                ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".txt" => "text/plain",
+                _ => "application/octet-stream"
+            };
+        }
+
 
         /// <summary>
         /// 建立設備和攤位關聯
