@@ -11,7 +11,7 @@ namespace TASA.Services.RoomModule
 {
     public class RoomService(TASAContext db, ServiceWrapper service) : IService
     {
-   
+
 
         public record ListVM
         {
@@ -41,18 +41,18 @@ namespace TASA.Services.RoomModule
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
 
-        Console.WriteLine("========== RoomService.List Debug ==========");
-        
-        // ✅ 不需要手動過濾!Query Filter 會自動處理!
-        var q = db.SysRoom
-            .AsNoTracking()
-            .WhereNotDeleted()
-            .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-            .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
+            Console.WriteLine("========== RoomService.List Debug ==========");
 
-        var count = q.Count();
-        Console.WriteLine($"套用 Query Filter 後的筆數: {count}");
-        Console.WriteLine("===========================================");
+            // ✅ 不需要手動過濾!Query Filter 會自動處理!
+            var q = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+                .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
+
+            var count = q.Count();
+            Console.WriteLine($"套用 Query Filter 後的筆數: {count}");
+            Console.WriteLine("===========================================");
 
             return q.Select(x => new ListVM
             {
@@ -516,13 +516,6 @@ namespace TASA.Services.RoomModule
                 throw new HttpException("此樓層已存在相同名稱的會議室");
             }
 
-            // ===== 4. 設定 Status 邏輯 =====
-            var status = vm.Status;
-            if (vm.BookingSettings == BookingSettings.Closed)
-            {
-                status = RoomStatus.Maintenance;
-            }
-
             // ===== 5. 建立會議室 =====
             var newSysRoom = new SysRoom()
             {
@@ -533,7 +526,7 @@ namespace TASA.Services.RoomModule
                 Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
                 Capacity = vm.Capacity,
                 Area = vm.Area,
-                Status = status,
+                Status = vm.Status,
                 PricingType = vm.PricingType,
                 BookingSettings = vm.BookingSettings,
                 DepartmentId = vm.DepartmentId,
@@ -700,16 +693,7 @@ namespace TASA.Services.RoomModule
             data.BookingSettings = vm.BookingSettings;
             data.DepartmentId = vm.DepartmentId;
             data.IsEnabled = vm.IsEnabled;
-
-            // ===== 5. 更新 Status 邏輯 =====
-            if (vm.BookingSettings == BookingSettings.Closed)
-            {
-                data.Status = RoomStatus.Maintenance;
-            }
-            else
-            {
-                data.Status = vm.Status;
-            }
+            data.Status = vm.Status;
 
             // ===== 6. 更新圖片 (可選) =====
             if (vm.Images != null)
@@ -793,7 +777,7 @@ namespace TASA.Services.RoomModule
             db.SaveChanges();
             _ = service.LogServices.LogAsync("會議室刪除", $"{data.Name}({data.Id})");
         }
-        
+
         private void SavePricingDetails(Guid roomId, PricingType pricingType, List<PricingDetailVM>? pricingDetails)
         {
             if (pricingDetails == null || pricingDetails.Count == 0)

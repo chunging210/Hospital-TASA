@@ -61,6 +61,7 @@ namespace TASA.Services
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public PricingType PricingType { get; set; }
+            public BookingSettings BookingSettings { get; set; }
         }
 
         public record RoomByFloorQueryVM
@@ -209,7 +210,8 @@ namespace TASA.Services
                 {
                     Id = x.Id,
                     Name = x.Name,
-                    PricingType = x.PricingType
+                    PricingType = x.PricingType,
+                    BookingSettings = x.BookingSettings
                 })
                 .ToList();
 
@@ -226,6 +228,17 @@ namespace TASA.Services
                 .WhereNotDeleted()
                 .WhereEnabled()
                 .Where(x => x.Status != RoomStatus.Maintenance);
+
+            if (!db.CurrentUserIsAdmin)
+            {
+                q = q.Where(x =>
+                    x.BookingSettings == BookingSettings.InternalAndExternal || // 1: 內外皆可
+                    x.BookingSettings == BookingSettings.Free || // 3: 免費
+                    (x.BookingSettings == BookingSettings.InternalOnly &&
+                     !db.CurrentUserIsNormal) // 0: 僅限內部 且 非外部人員
+                                              // BookingSettings.Closed (2) 會被自動排除
+                );
+            }
 
             if (query.DepartmentId.HasValue)
             {

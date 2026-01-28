@@ -11,9 +11,11 @@ namespace TASA.Models.Auth
 
         public Guid? DepartmentId { get; init; }
         public string? DepartmentName { get; init; }
-
+        public List<string> Roles { get; set; } = new();
         public bool IsAdmin { get; init; }
         public bool IsDirector { get; init; }
         public bool IsAccountant { get; init; }
+        public bool IsStaff { get; set; }
+        public bool IsNormal { get; set; }
     }
 }

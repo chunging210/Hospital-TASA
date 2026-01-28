@@ -315,9 +315,6 @@ const room = new function () {
             : this.form.feeType;
 
         let status = source.Status ?? RoomStatus.Available;
-        if (source.BookingSettings === BookingSettings.Closed) {
-            status = RoomStatus.Maintenance;
-        }
 
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
         const capacity = Number(source.Capacity ?? source.capacity ?? 0);
@@ -620,12 +617,12 @@ window.$config = {
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
-            
+
             if (isAdmin.value) {
                 console.log('✅ 是管理者,載入分院列表');
                 department.getList();
             }
-        
+
             const detailModalElement = document.getElementById('roomDetailModal');
             detailModalElement.addEventListener('hidden.bs.modal', () => {
                 room.stopCarousel();

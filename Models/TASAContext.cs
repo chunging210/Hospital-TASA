@@ -3,14 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using TASA.Models.Configurations;
-using TASA.Models.Auth; 
+using TASA.Models.Auth;
 #nullable disable
 
 namespace TASA.Models;
 
 public partial class TASAContext : DbContext
 {
-        private readonly UserContext? _userContext;
+    private readonly UserContext? _userContext;
 
 
     public TASAContext(DbContextOptions<TASAContext> options, IHttpContextAccessor httpContextAccessor)
@@ -24,22 +24,30 @@ public partial class TASAContext : DbContext
             {
                 var userId = claims.FindFirst("id")?.Value;
                 var deptId = claims.FindFirst("departmentid")?.Value;
+                var roles = claims.FindAll("authrole")
+    .Select(c => c.Value)
+    .ToList();
                 var isAdmin = claims.FindAll("authrole").Any(c => c.Value.Contains("ADMIN"));
                 var isDirector = claims.FindAll("authrole").Any(c => c.Value.Contains("DIRECTOR"));
                 var isAccountant = claims.FindAll("authrole").Any(c => c.Value.Contains("ACCOUNTANT"));
+                var isStaff = roles.Any(r => r.Contains("STAFF"));
+                var isNormal = roles.Any(r => r.Contains("NORMAL"));
 
                 if (userId != null && Guid.TryParse(userId, out var userGuid))
                 {
                     _userContext = new UserContext
                     {
                         UserId = userGuid,
-                        DepartmentId = string.IsNullOrEmpty(deptId) || deptId == Guid.Empty.ToString() 
-                            ? null 
+                        DepartmentId = string.IsNullOrEmpty(deptId) || deptId == Guid.Empty.ToString()
+                            ? null
                             : Guid.Parse(deptId),
                         DepartmentName = claims.FindFirst("departmentname")?.Value,
+                        Roles = roles,
                         IsAdmin = isAdmin,
                         IsDirector = isDirector,
-                        IsAccountant = isAccountant
+                        IsAccountant = isAccountant,
+                        IsStaff = isStaff, // ✅ 加入 IsStaff
+                        IsNormal = isNormal // ✅ 加入 IsNormal
                     };
 
                     Console.WriteLine($"🔧 [TASAContext] 使用者: IsAdmin={_userContext.IsAdmin}, DepartmentId={_userContext.DepartmentId}");
@@ -48,8 +56,12 @@ public partial class TASAContext : DbContext
         }
     }
 
-    private bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
+    internal bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
     private Guid? CurrentUserDepartmentId => _userContext?.DepartmentId;
+
+    internal bool CurrentUserIsNormal => _userContext?.IsNormal ?? true; // 預設為外部人員
+    internal bool CurrentUserIsStaff => _userContext?.IsStaff ?? false;
+    internal bool CurrentUserIsInternalStaff => _userContext != null && !_userContext.IsNormal;
 
     public virtual DbSet<AuthForget> AuthForget { get; set; }
 
@@ -108,7 +120,7 @@ public partial class TASAContext : DbContext
     public virtual DbSet<SysRoomImage> SysRoomImage { get; set; }
 
     public virtual DbSet<ConferenceRoomSlot> ConferenceRoomSlot { get; set; }
-    
+
     public virtual DbSet<SysConfig> SysConfig { get; set; }
 
     public virtual DbSet<ConferencePaymentProof> ConferencePaymentProof { get; set; }

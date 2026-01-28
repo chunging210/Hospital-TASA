@@ -224,10 +224,33 @@ window.$config = {
 
         /* ========= 費用計算 ========= */
         this.roomCost = computed(() => {
-            if (!this.form.selectedSlots.length) return 0;
-            return this.timeSlots.value
+            // ✅ 檢查是否為免費會議室
+            const room = this.selectedRoom.value;
+
+            console.group('💰 計算會議室費用');
+            console.log('會議室:', room?.Name);
+            console.log('BookingSettings:', room?.BookingSettings);
+
+            if (room && room.BookingSettings === 3) {  // BookingSettings.Free = 3
+                console.log('✅ 免費會議室,費用為 0');
+                console.groupEnd();
+                return 0;
+            }
+
+            // ✅ 一般收費會議室
+            if (!this.form.selectedSlots.length) {
+                console.log('⏸ 未選擇時段');
+                console.groupEnd();
+                return 0;
+            }
+
+            const cost = this.timeSlots.value
                 .filter(slot => this.form.selectedSlots.includes(slot.Key))
                 .reduce((sum, slot) => sum + slot.Price, 0);
+
+            console.log('💵 計算費用:', cost);
+            console.groupEnd();
+            return cost;
         });
 
         this.equipmentCost = computed(() => {
