@@ -23,7 +23,7 @@ namespace TASA.Controllers.API
         }
 
         [HttpPost("equipmentbyroom")]
-        public IActionResult EquipmentByRoom([FromBody] SelectServices.EquipmentByRoomQueryVM query)
+        public IActionResult EquipmentByRoom([FromBody] EquipmentByRoomQueryVM query)
         {
             return Ok(service.SelectServices.EquipmentByRoom(query));
         }
@@ -45,7 +45,7 @@ namespace TASA.Controllers.API
         [HttpPost("floorsbybuilding")]
         public IActionResult FloorsByBuilding([FromBody] FloorsByBuildingQueryVM query)
         {
-            return Ok(service.SelectServices.FloorsByBuilding( query.Building));
+            return Ok(service.SelectServices.FloorsByBuilding(query.Building));
         }
 
         [HttpPost("roomsbyfloor")]
@@ -58,6 +58,13 @@ namespace TASA.Controllers.API
         public IActionResult RoomSlots([FromBody] RoomSlotQueryVM query)
         {
             return Ok(service.SelectServices.RoomSlots(query));
+        }
+
+        [HttpPost("roombyschedule")]
+        public IActionResult RoomTodaySchedule([FromBody] RoomTodayScheduleQueryVM query)
+        {
+            var result = service.SelectServices.RoomTodaySchedule(query.RoomId);
+            return Ok(result);
         }
 
 

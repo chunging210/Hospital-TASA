@@ -94,6 +94,36 @@ namespace TASA.Services
             public string Building { get; init; } = string.Empty;
         }
 
+        public record RoomTodayScheduleVM
+        {
+            public string StartTime { get; set; } = string.Empty;  // "09:00"
+            public string EndTime { get; set; } = string.Empty;    // "11:00"
+            public string ConferenceName { get; set; } = string.Empty;
+            public string Status { get; set; } = string.Empty;     // "upcoming" | "ongoing" | "completed"
+        }
+
+        public record RoomTodayScheduleQueryVM
+        {
+            public Guid RoomId { get; set; }
+        }
+        private class RawSlot
+        {
+            public Guid ConferenceId { get; set; }
+            public string ConferenceName { get; set; } = string.Empty;
+            public TimeOnly StartTime { get; set; }
+            public TimeOnly EndTime { get; set; }
+            public byte? Status { get; set; }
+        }
+        private string GetDisplayStatus(byte? status)
+        {
+            return status switch
+            {
+                0 or 1 => "upcoming",    // 待報到 or 已排程 → 待開始
+                2 => "ongoing",          // 進行中
+                3 or 4 => "completed",   // 已完成 or 未出席 → 已完成
+                _ => "upcoming"
+            };
+        }
 
 
         public IQueryable<IdNameVM> Room()
@@ -277,7 +307,6 @@ namespace TASA.Services
                     .Select(i => i.ImagePath)
             });
         }
-
         public IQueryable<IdNameVM> Role()
         {
             return db.AuthRole
@@ -286,7 +315,6 @@ namespace TASA.Services
                 .WhereEnabled()
                 .Mapping<IdNameVM>();
         }
-
         public IQueryable<IdNameVM> User()
         {
             return db.AuthUser
@@ -352,6 +380,107 @@ namespace TASA.Services
                         .ToList(),
                 });
         }
+
+
+        public IEnumerable<RoomTodayScheduleVM> RoomTodaySchedule(Guid roomId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+
+            // 1️⃣ 取得原始時段 (已按時間排序)
+            var rawSlots = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Where(s => s.RoomId == roomId)
+                .Where(s => s.SlotDate == today)
+                .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+                .Where(s => s.ConferenceId.HasValue)
+                .OrderBy(s => s.StartTime)  // ✅ 重點:排序
+                .Select(s => new RawSlot
+                {
+                    ConferenceId = s.ConferenceId!.Value,
+                    ConferenceName = s.Conference.Name,
+                    StartTime = s.StartTime,
+                    EndTime = s.EndTime,
+                    Status = s.Conference.Status
+                })
+                .ToList();
+
+            Console.WriteLine($"📊 原始時段數量: {rawSlots.Count}");
+
+            // 2️⃣ 合併連續時段
+            var mergedSlots = MergeConsecutiveSlots(rawSlots);
+
+            Console.WriteLine($"📊 合併後時段數量: {mergedSlots.Count}");
+            Console.WriteLine($"============================================\n");
+
+            // 3️⃣ 轉換成 ViewModel
+            return mergedSlots.Select(s => new RoomTodayScheduleVM
+            {
+                StartTime = s.StartTime.ToString(@"HH\:mm"),  // ✅ 改用 HH (24小時制)
+                EndTime = s.EndTime.ToString(@"HH\:mm"),
+                ConferenceName = s.ConferenceName,
+                Status = GetDisplayStatus(s.Status)
+            });
+        }
+
+        // ✅ 3. 新增合併方法
+        private List<RawSlot> MergeConsecutiveSlots(List<RawSlot> slots)
+        {
+            if (slots.Count == 0) return new List<RawSlot>();
+
+            var merged = new List<RawSlot>();
+
+            // 初始化第一筆
+            var current = new RawSlot
+            {
+                ConferenceId = slots[0].ConferenceId,
+                ConferenceName = slots[0].ConferenceName,
+                StartTime = slots[0].StartTime,
+                EndTime = slots[0].EndTime,
+                Status = slots[0].Status
+            };
+
+            Console.WriteLine($"\n開始合併時段:");
+            Console.WriteLine($"  初始: {current.ConferenceName} {current.StartTime} - {current.EndTime}");
+
+            for (int i = 1; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+
+                // 檢查:同一個會議 且 時段連續
+                if (slot.ConferenceId == current.ConferenceId &&
+                    slot.StartTime == current.EndTime)
+                {
+                    // ✅ 合併:延長結束時間
+                    Console.WriteLine($"  ✅ 合併: {slot.StartTime} - {slot.EndTime} (連續)");
+                    current.EndTime = slot.EndTime;
+                }
+                else
+                {
+                    // ❌ 不連續:保存當前,開始新的
+                    Console.WriteLine($"  💾 保存: {current.ConferenceName} {current.StartTime} - {current.EndTime}");
+                    merged.Add(current);
+
+                    current = new RawSlot
+                    {
+                        ConferenceId = slot.ConferenceId,
+                        ConferenceName = slot.ConferenceName,
+                        StartTime = slot.StartTime,
+                        EndTime = slot.EndTime,
+                        Status = slot.Status
+                    };
+
+                    Console.WriteLine($"  🆕 開始新的: {current.ConferenceName} {current.StartTime} - {current.EndTime}");
+                }
+            }
+
+            // 最後一筆
+            Console.WriteLine($"  💾 保存最後一筆: {current.ConferenceName} {current.StartTime} - {current.EndTime}");
+            merged.Add(current);
+
+            return merged;
+        }
+
 
         public IQueryable<IdNameVM> Department(bool excludeTaipei = false)
         {

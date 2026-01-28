@@ -46,8 +46,70 @@ const room = new function () {
         isEnabled: true
     });
 
+    this.todaySchedule = ref([]);
+    this.scheduleRefreshInterval = null;
     this.list = reactive([]);
     this.page = {};
+
+    this.loadTodaySchedule = async (roomId) => {
+        if (!roomId) {
+            console.warn('⚠️ 沒有 roomId,無法載入今日時程');
+            return;
+        }
+
+        try {
+            console.log('📅 載入今日時程:', roomId);
+            const res = await global.api.select.roombyschedule({
+                body: { roomId: roomId }
+            });
+
+            this.todaySchedule.value = res.data || [];
+            console.log('✅ 今日時程:', this.todaySchedule.value);
+        } catch (err) {
+            console.error('❌ 載入今日時程失敗:', err);
+            this.todaySchedule.value = [];
+        }
+    };
+
+    this.startScheduleRefresh = (roomId) => {
+        // 清除舊的計時器
+        this.stopScheduleRefresh();
+
+        // 立即載入一次
+        this.loadTodaySchedule(roomId);
+
+        // 每 1 分鐘自動重新整理
+        this.scheduleRefreshInterval = setInterval(() => {
+            console.log('🔄 自動重新整理今日時程');
+            this.loadTodaySchedule(roomId);
+        }, 60000);
+    };
+
+    this.stopScheduleRefresh = () => {
+        if (this.scheduleRefreshInterval) {
+            clearInterval(this.scheduleRefreshInterval);
+            this.scheduleRefreshInterval = null;
+            console.log('⏹️ 停止自動重新整理');
+        }
+    };
+
+    this.getStatusBadgeClass = (status) => {
+        const classMap = {
+            'upcoming': 'bg-warning',   // 黃色
+            'ongoing': 'bg-danger',     // 紅色
+            'completed': 'bg-success'   // 綠色
+        };
+        return classMap[status] || 'bg-secondary';
+    };
+
+    this.getStatusText = (status) => {
+        const textMap = {
+            'upcoming': '待開始',
+            'ongoing': '進行中',
+            'completed': '已完成'
+        };
+        return textMap[status] || '未知';
+    };
 
     /* ====== 載入分院 ====== */
     this.loadDepartments = () => {
@@ -206,6 +268,8 @@ const room = new function () {
                 setTimeout(() => {
                     this.startCarousel();
                 }, 300);
+
+                this.loadTodaySchedule(id);
             })
             .catch(() => {
                 addAlert('取得會議室詳情失敗', { type: 'danger' });
@@ -249,6 +313,10 @@ window.$config = {
 
         this.isAdmin = isAdmin;
         this.userDepartmentName = userDepartmentName;
+
+        this.todaySchedule = room.todaySchedule;
+        this.getStatusBadgeClass = room.getStatusBadgeClass;
+        this.getStatusText = room.getStatusText;
 
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
@@ -330,6 +398,23 @@ window.$config = {
             if (detailModalElement) {
                 detailModalElement.addEventListener('hidden.bs.modal', () => {
                     room.stopCarousel();
+                    room.stopScheduleRefresh();
+                });
+
+                // ✅ 新增:監聽 Tab 切換事件
+                detailModalElement.addEventListener('shown.bs.tab', (event) => {
+                    const targetId = event.target.getAttribute('data-bs-target');
+
+                    if (targetId === '#schedule') {
+                        // 切換到今日時程 Tab,啟動自動重新整理
+                        console.log('📅 切換到今日時程 Tab');
+                        if (room.detailRoom.value?.Id) {
+                            room.startScheduleRefresh(room.detailRoom.value.Id);
+                        }
+                    } else {
+                        // 切換到其他 Tab,停止自動重新整理
+                        room.stopScheduleRefresh();
+                    }
                 });
             }
         });
