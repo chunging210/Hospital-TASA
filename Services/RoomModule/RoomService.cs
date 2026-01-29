@@ -28,9 +28,18 @@ namespace TASA.Services.RoomModule
             public List<string> Images { get; set; } = new();
             public DateTime CreateAt { get; set; }
             public int EquipmentCount { get; set; }
+            public List<RoomTodayScheduleVM>? TodaySchedule { get; set; }
 
         }
 
+
+            public record RoomTodayScheduleVM
+            {
+                public string StartTime { get; set; } = string.Empty;
+                public string EndTime { get; set; } = string.Empty;
+                public string ConferenceName { get; set; } = string.Empty;
+                public string Status { get; set; } = string.Empty;
+            }
 
         public record EquipmentVM
         {
@@ -38,42 +47,169 @@ namespace TASA.Services.RoomModule
             public string Name { get; set; } = string.Empty;
         }
 
-        public IQueryable<ListVM> List(BaseQueryVM query)
+        private class RawScheduleSlot
         {
+            public Guid RoomId { get; set; }
+            public Guid ConferenceId { get; set; }
+            public string ConferenceName { get; set; } = string.Empty;
+            public TimeOnly StartTime { get; set; }
+            public TimeOnly EndTime { get; set; }
+            public byte? Status { get; set; }
+        }
 
-            Console.WriteLine("========== RoomService.List Debug ==========");
+public IQueryable<ListVM> List(BaseQueryVM query)
+{
+    Console.WriteLine("========== RoomService.List Debug ==========");
 
-            // ✅ 不需要手動過濾!Query Filter 會自動處理!
-            var q = db.SysRoom
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
+    var q = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+        .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
 
-            var count = q.Count();
-            Console.WriteLine($"套用 Query Filter 後的筆數: {count}");
-            Console.WriteLine("===========================================");
+    var count = q.Count();
 
-            return q.Select(x => new ListVM
+    // ✅ 取得今天日期
+    var today = DateOnly.FromDateTime(DateTime.Now);
+
+    // ✅ 先取得會議室基本資料
+    var roomList = q.Select(x => new
+    {
+        x.No,
+        x.Id,
+        x.Name,
+        x.Building,
+        x.Floor,
+        x.Capacity,
+        x.Area,
+        x.Status,
+        x.IsEnabled,
+        x.CreateAt,
+        x.DepartmentId,
+        EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+        Images = x.Images
+            .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+            .OrderBy(img => img.SortOrder)
+            .Select(img => img.ImagePath)
+            .ToList()
+    }).ToList();
+
+    // ✅ 批次查詢所有會議室的今日時程
+    var roomIds = roomList.Select(r => r.Id).ToList();
+    
+    // ✅ 先查詢並轉換成 RawScheduleSlot
+    var allScheduleSlots = db.ConferenceRoomSlot
+        .AsNoTracking()
+        .Where(s => roomIds.Contains(s.RoomId))
+        .Where(s => s.SlotDate == today)
+        .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+        .Where(s => s.ConferenceId.HasValue)
+        .OrderBy(s => s.RoomId)  // ✅ 先按會議室排序
+        .ThenBy(s => s.StartTime)  // ✅ 再按時間排序
+        .Select(s => new RawScheduleSlot
+        {
+            RoomId = s.RoomId,
+            ConferenceId = s.ConferenceId!.Value,
+            ConferenceName = s.Conference.Name,
+            StartTime = s.StartTime,
+            EndTime = s.EndTime,
+            Status = s.Conference.Status
+        })
+        .ToList();  // ✅ 先執行查詢
+
+    // ✅ 在記憶體中按會議室分組並合併時段
+    var todaySchedules = allScheduleSlots
+        .GroupBy(s => s.RoomId)
+        .ToDictionary(
+            g => g.Key,
+            g => MergeSchedules(g.ToList())  // ✅ 現在型別正確了
+        );
+
+    // ✅ 組合最終結果
+    return roomList.Select(room => new ListVM
+    {
+        No = room.No,
+        Id = room.Id,
+        Name = room.Name,
+        Building = room.Building,
+        Floor = room.Floor,
+        Capacity = room.Capacity,
+        Area = room.Area,
+        Status = room.Status,
+        IsEnabled = room.IsEnabled,
+        CreateAt = room.CreateAt,
+        DepartmentId = room.DepartmentId,
+        EquipmentCount = room.EquipmentCount,
+        Images = room.Images,
+        TodaySchedule = todaySchedules.ContainsKey(room.Id) 
+            ? todaySchedules[room.Id] 
+            : new List<RoomTodayScheduleVM>()
+    }).AsQueryable();
+}
+
+        private List<RoomTodayScheduleVM> MergeSchedules(List<RawScheduleSlot> slots)
+        {
+            if (slots.Count == 0) return new List<RoomTodayScheduleVM>();
+
+            var merged = new List<RoomTodayScheduleVM>();
+            
+            var current = slots[0];  // ✅ 直接取第一個
+
+            for (int i = 1; i < slots.Count; i++)
             {
-                No = x.No,
-                Id = x.Id,
-                Name = x.Name,
-                Building = x.Building,
-                Floor = x.Floor,
-                Capacity = x.Capacity,
-                Area = x.Area,
-                Status = x.Status,
-                IsEnabled = x.IsEnabled,
-                CreateAt = x.CreateAt,
-                DepartmentId = x.DepartmentId,  // ✅ 確保這個欄位有回傳
-                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                Images = x.Images
-                    .Where(img => !string.IsNullOrEmpty(img.ImagePath))
-                    .OrderBy(img => img.SortOrder)
-                    .Select(img => img.ImagePath)
-                    .ToList()
+                var slot = slots[i];
+                
+                if (slot.ConferenceId == current.ConferenceId &&
+                    slot.StartTime == current.EndTime)
+                {
+                    // ✅ 合併連續時段 - 只更新結束時間
+                    current = new RawScheduleSlot
+                    {
+                        RoomId = current.RoomId,
+                        ConferenceId = current.ConferenceId,
+                        ConferenceName = current.ConferenceName,
+                        StartTime = current.StartTime,
+                        EndTime = slot.EndTime,  // ✅ 延長結束時間
+                        Status = current.Status
+                    };
+                }
+                else
+                {
+                    // ❌ 不連續,保存當前並開始新的
+                    merged.Add(new RoomTodayScheduleVM
+                    {
+                        StartTime = current.StartTime.ToString(@"HH\:mm"),
+                        EndTime = current.EndTime.ToString(@"HH\:mm"),
+                        ConferenceName = current.ConferenceName,
+                        Status = GetDisplayStatus(current.Status)
+                    });
+
+                    current = slot;  // ✅ 開始新的時段
+                }
+            }
+
+            // ✅ 保存最後一筆
+            merged.Add(new RoomTodayScheduleVM
+            {
+                StartTime = current.StartTime.ToString(@"HH\:mm"),
+                EndTime = current.EndTime.ToString(@"HH\:mm"),
+                ConferenceName = current.ConferenceName,
+                Status = GetDisplayStatus(current.Status)
             });
+
+            return merged;
+        }
+
+        // ✅ 新增輔助方法:狀態轉換
+        private string GetDisplayStatus(byte? status)
+        {
+            return status switch
+            {
+                0 or 1 => "upcoming",
+                2 => "ongoing",
+                3 or 4 => "completed",
+                _ => "upcoming"
+            };
         }
         // ✅ 查詢用：Images 只返回路徑字串
         public record DetailVM

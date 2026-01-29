@@ -5,6 +5,7 @@ using static TASA.Services.ConferenceModule.ReservationService;
 using static TASA.Services.ConferenceModule.ConferenceService;
 using static TASA.Services.ConferenceModule.PaymentService;
 using TASA.Models.Enums;
+using TASA.Extensions;
 
 namespace TASA.Controllers.API
 {
@@ -88,7 +89,7 @@ namespace TASA.Controllers.API
                 throw new HttpException("您沒有查看租借審核列表的權限");
             }
 
-            return Ok(service.ReservationService.AllList(query).ToList());
+            return Ok(service.ReservationService.AllList(query).ToPage(Request, Response));
         }
 
         // ===== 付款審核 (總務/管理者) - ✅ 使用 PaymentService =====
@@ -111,7 +112,7 @@ namespace TASA.Controllers.API
                 query.ReservationStatus = ReservationStatus.PendingPayment; // 預設只看待繳費
             }
 
-            return Ok(service.ReservationService.PendingCheckList(query).ToList());
+            return Ok(service.ReservationService.PendingCheckList(query).ToPage(Request, Response));
         }
 
         /// <summary>
@@ -168,7 +169,7 @@ namespace TASA.Controllers.API
                 throw new HttpException("您沒有查看所有預約的權限");
             }
 
-            return Ok(service.ReservationService.AllList(query).ToList());
+            return Ok(service.ReservationService.AllList(query).ToPage(Request, Response));
         }
 
         /// <summary>
@@ -179,7 +180,7 @@ namespace TASA.Controllers.API
         {
             var userId = GetCurrentUserId();
             query.UserId = userId;
-            return Ok(service.ReservationService.AllList(query).ToList());
+            return Ok(service.ReservationService.AllList(query).ToPage(Request, Response));
         }
 
         /// <summary>

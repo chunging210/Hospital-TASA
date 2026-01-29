@@ -1,6 +1,6 @@
 ﻿// Admin/Equipment - Global Query Filter 版本
 import global from '/global.js';
-const { ref, reactive, onMounted, watch } = Vue;
+const { ref, reactive, onMounted, watch, nextTick } = Vue;
 
 class VM {
     Id = null;
@@ -23,12 +23,14 @@ class VM {
 
 // ========= 全域狀態 =========
 let currentUser = null;
+let equipmentpageRef = null;  // ✅ 保留這個
 const isAdmin = ref(false);
 const userDepartmentId = ref(null);
 const userDepartmentName = ref('');
 const isEditing = ref(false);
 const departments = ref([]);
 const selectedDepartment = ref('');
+const equipmentpage = ref(null);  // ✅ 新增這個 ref
 
 // ========= 設備管理物件 =========
 const equipment = new function () {
@@ -36,7 +38,6 @@ const equipment = new function () {
         keyword: '',
         type: ''
     });
-
     this.list = reactive([]);
     this.buildings = reactive([]);
     this.floorOptions = reactive([]);
@@ -44,10 +45,34 @@ const equipment = new function () {
     this.vm = reactive(new VM());
 
     // ========= 取得列表 =========
-    this.getList = () => {
-        global.api.admin.equipmentlist({ body: this.query })
-            .then(response => copy(this.list, response.data))
-            .catch(error => addAlert('取得資料失敗', { type: 'danger', click: error.download }));
+    this.getList = async (pagination) => {
+        try {
+            console.log('🔍 getList - pagination:', pagination, 'pageRef:', !!equipmentpageRef);
+
+            const options = { body: this.query };
+
+            // ✅ 只有在 pagination=true 且 pageRef 存在時才使用分頁
+            const usePagination = pagination && equipmentpageRef;
+
+            const request = usePagination
+                ? global.api.admin.equipmentlist(
+                    equipmentpageRef.setHeaders(options)
+                )
+                : global.api.admin.equipmentlist(options);
+
+            const response = await request;
+
+            if (usePagination) {
+                equipmentpageRef.setTotal(response);
+            }
+
+            copy(this.list, response.data || []);
+            
+            console.log('✅ 設備列表更新完成,共', this.list.length, '筆');
+        } catch (error) {
+            console.error('❌ 取得設備列表失敗:', error);
+            addAlert('取得資料失敗', { type: 'danger', click: error.download });
+        }
     };
 
     // ========= 級聯選單 - 大樓變更 =========
@@ -257,7 +282,13 @@ const equipment = new function () {
         method({ body })
             .then(() => {
                 addAlert(this.vm.Id ? '編輯成功' : '新增成功');
-                this.getList();
+                
+                // ✅ 保存成功後重新載入列表
+                if (equipmentpageRef) {
+                    equipmentpageRef.go(1);
+                }
+                this.getList(!!equipmentpageRef);
+                
                 const modalElement = document.querySelector('#equipmentModal');
                 const modal = window.bootstrap?.Modal?.getInstance(modalElement);
                 if (modal) modal.hide();
@@ -273,7 +304,12 @@ const equipment = new function () {
             global.api.admin.equipmentdelete({ body: { id } })
                 .then(() => {
                     addAlert('刪除成功');
-                    this.getList();
+                    
+                    // ✅ 刪除成功後重新載入列表
+                    if (equipmentpageRef) {
+                        equipmentpageRef.go(1);
+                    }
+                    this.getList(!!equipmentpageRef);
                 })
                 .catch(error => {
                     addAlert(getMessage(error) || '刪除失敗', { type: 'danger', click: error.download });
@@ -305,7 +341,7 @@ const loadCurrentUser = async () => {
 // ========= Vue 配置 =========
 window.$config = {
     setup() {
-        // 監聽分院變更
+        // ✅ 監聽分院變更
         watch(selectedDepartment, (departmentId) => {
             if (isEditing.value) return;
 
@@ -321,25 +357,53 @@ window.$config = {
             // ✅ 後端會自動過濾
             global.api.select.buildingsbydepartment()
                 .then(res => copy(equipment.buildings, res.data || []));
+
+            // ✅ 重置分頁並重新載入
+            if (equipmentpageRef) {
+                equipmentpageRef.go(1);
+            }
+            equipment.getList(!!equipmentpageRef);
         });
 
-        onMounted(async () => {
-            await loadCurrentUser();
-
-            // 只有管理者才載入所有分院
-            if (isAdmin.value) {
-                console.log('✅ 是管理者,載入分院列表');
-                equipment.loadDepartments();
-            } else {
-                console.log('⚠️ 不是管理者,跳過載入分院列表');
+        // ✅ 監聽搜尋條件變更
+        watch([
+            () => equipment.query.keyword,
+            () => equipment.query.type
+        ], () => {
+            if (equipmentpageRef) {
+                equipmentpageRef.go(1);
             }
+            equipment.getList(!!equipmentpageRef);
+        });
 
-            equipment.getList();
+        // ✅ onMounted 初始化
+        onMounted(async () => {
+            console.log('🚀 設備管理頁面已掛載');
+            
+            // 1️⃣ 載入使用者資訊
+            await loadCurrentUser();
+            
+            // 2️⃣ 載入分院列表 (如果是管理員)
+            if (isAdmin.value) {
+                equipment.loadDepartments();
+            }
+            
+            // 3️⃣ 等待 DOM 渲染完成
+            await nextTick();
+            
+            // 4️⃣ 綁定分頁元件 ref
+            equipmentpageRef = equipmentpage.value;
+            
+            console.log('📌 Mounted - equipmentpageRef:', !!equipmentpageRef);
+            
+            // 5️⃣ 載入設備列表
+            await equipment.getList(!!equipmentpageRef);
         });
 
         return {
             equipment,
             departments,
+            equipmentpage,  // ✅ 必須 return 這個
             selectedDepartment,
             isAdmin,
             userDepartmentName

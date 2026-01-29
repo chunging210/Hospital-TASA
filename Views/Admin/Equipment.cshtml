@@ -90,6 +90,7 @@
                         </tr>
                     </tfoot>
                 </table>
+                <page ref="equipmentpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="equipment.getList"></page>
             </div>
         </div>
     </div>

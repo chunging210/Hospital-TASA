@@ -2,7 +2,13 @@
 import global from '/global.js';
 import * as EnumHelper from '/js/helper.js';
 
-const { ref, reactive, onMounted, computed, watch } = Vue;
+let approvalPageRef = null;
+let paymentPageRef = null;
+
+const { ref, reactive, onMounted, computed, watch, nextTick } = Vue;
+
+const approvalPage = ref(null);
+const paymentPage = ref(null);
 
 const reservation = new function () {
     // ========= 權限資料 =========
@@ -63,14 +69,12 @@ const reservation = new function () {
             const res = await global.api.reservations.permissions();
             console.log('🔐 使用者權限:', res.data);
 
-            // ✅ 修正:使用 PascalCase 屬性名稱
-            this.permissions.canApproveReservation = res.data.CanApproveReservation;  // ✅ 大寫 C
-            this.permissions.canApprovePayment = res.data.CanApprovePayment;        // ✅ 大寫 C
-            this.permissions.roles = res.data.Roles || [];                           // ✅ 大寫 R
+            this.permissions.canApproveReservation = res.data.CanApproveReservation;
+            this.permissions.canApprovePayment = res.data.CanApprovePayment;
+            this.permissions.roles = res.data.Roles || [];
 
             console.log('✅ 權限賦值完成:', this.permissions);
 
-            // ✅ 檢查是否至少有一個審核權限
             const hasAnyPermission = this.permissions.canApproveReservation || this.permissions.canApprovePayment;
 
             if (!hasAnyPermission) {
@@ -94,32 +98,45 @@ const reservation = new function () {
     // ========= 切換 Tab =========
     this.switchTab = (tab) => {
         this.activeTab.value = tab;
+
+        // ✅ 重置篩選條件
         this.query.keyword = '';
 
         if (tab === 'approval') {
-            this.query.reservationStatus = 1;  // ✅ 預設「待審核」
-            this.query.paymentStatus = null;     // 清空付款狀態
+            this.query.reservationStatus = 1;
+            this.query.paymentStatus = null;
+            
+            // ✅ 重置分頁並載入資料
+            if (approvalPageRef) {
+                approvalPageRef.go(1);
+            }
+            this.getApprovalList(!!approvalPageRef);
         } else if (tab === 'payment') {
-            this.query.reservationStatus = null;  // 清空租借狀態
-            this.query.paymentStatus = 2;       // ✅ 預設「待查帳」
+            this.query.reservationStatus = null;
+            this.query.paymentStatus = 2;
+            
+            // ✅ 重置分頁並載入資料
+            if (paymentPageRef) {
+                paymentPageRef.go(1);
+            }
+            this.getPaymentList(!!paymentPageRef);
         }
-
-        console.log('✅ 重設後的 query:', this.query);
-        this.getList();
     };
 
     // ========= 取得列表 (根據當前 Tab) =========
-    this.getList = async () => {
+    this.getList = async (pagination = false) => {
         if (this.activeTab.value === 'approval') {
-            await this.getApprovalList();
+            await this.getApprovalList(pagination);
         } else if (this.activeTab.value === 'payment') {
-            await this.getPaymentList();
+            await this.getPaymentList(pagination);
         }
     };
 
     // ========= 取得租借審核列表 =========
-    this.getApprovalList = async () => {
+    this.getApprovalList = async (pagination = false) => {
         try {
+            console.log('🔍 getApprovalList - pagination:', pagination, 'pageRef:', !!approvalPageRef);
+
             // ✅ 建立查詢參數
             const queryParams = {
                 keyword: this.query.keyword || ''
@@ -132,10 +149,21 @@ const reservation = new function () {
 
             console.log('🔍 租借審核查詢參數:', queryParams);
 
-            // ✅ 改用 body 而不是 params
-            const res = await global.api.reservations.reservationlist({
-                body: queryParams  // ✅ 這裡改成 body
-            });
+            const options = { body: queryParams };
+
+            // ✅ 根據 pagination 和 pageRef 決定是否使用分頁
+            const usePagination = pagination && approvalPageRef;
+
+            const request = usePagination
+                ? global.api.reservations.reservationlist(approvalPageRef.setHeaders(options))
+                : global.api.reservations.reservationlist(options);
+
+            const res = await request;
+
+            // ✅ 設定分頁總數
+            if (usePagination) {
+                approvalPageRef.setTotal(res);
+            }
 
             console.log('📋 API 回傳資料:', res.data);
 
@@ -172,8 +200,10 @@ const reservation = new function () {
     };
 
     // ========= 取得付款審核列表 =========
-    this.getPaymentList = async () => {
+    this.getPaymentList = async (pagination = false) => {
         try {
+            console.log('🔍 getPaymentList - pagination:', pagination, 'pageRef:', !!paymentPageRef);
+
             // ✅ 建立查詢參數
             const queryParams = {
                 keyword: this.query.keyword || ''
@@ -186,10 +216,21 @@ const reservation = new function () {
 
             console.log('🔍 付款審核查詢參數:', queryParams);
 
-            // ✅ 改用 body 而不是 params
-            const res = await global.api.reservations.paymentlist({
-                body: queryParams  // ✅ 這裡改成 body
-            });
+            const options = { body: queryParams };
+
+            // ✅ 根據 pagination 和 pageRef 決定是否使用分頁
+            const usePagination = pagination && paymentPageRef;
+
+            const request = usePagination
+                ? global.api.reservations.paymentlist(paymentPageRef.setHeaders(options))
+                : global.api.reservations.paymentlist(options);
+
+            const res = await request;
+
+            // ✅ 設定分頁總數
+            if (usePagination) {
+                paymentPageRef.setTotal(res);
+            }
 
             console.log('💰 API 回傳資料:', res.data);
 
@@ -205,6 +246,7 @@ const reservation = new function () {
                     paymentMethod: x.PaymentMethod,
                     paymentType: x.PaymentType,
                     filePath: x.FilePath,
+                    fileName: x.FileName,
                     uploadTime: x.UploadTime,
                     paymentStatusText: x.PaymentStatusText,
                     lastFiveDigits: x.LastFiveDigits,
@@ -343,7 +385,7 @@ const reservation = new function () {
 
             addAlert('租借審核通過!', { type: 'success' });
             this.closeDrawer('approvalDrawer');
-            await this.getApprovalList();
+            await this.getApprovalList(!!approvalPageRef);
 
         } catch (err) {
             console.error('❌ 審核失敗:', err);
@@ -363,7 +405,7 @@ const reservation = new function () {
 
             addAlert('已拒絕預約!', { type: 'success' });
             this.closeDrawer('approvalDrawer');
-            await this.getApprovalList();
+            await this.getApprovalList(!!approvalPageRef);
 
         } catch (err) {
             console.error('❌ 拒絕失敗:', err);
@@ -391,13 +433,13 @@ const reservation = new function () {
         try {
             await global.api.reservations.approvepayment({
                 body: {
-                    reservationId: this.currentPayment.id  // ✅ 改成 reservationId (camelCase)
+                    reservationId: this.currentPayment.id
                 }
             });
 
             addAlert('付款審核通過!', { type: 'success' });
             this.closeDrawer('paymentDrawer');
-            await this.getPaymentList();
+            await this.getPaymentList(!!paymentPageRef);
 
         } catch (err) {
             console.error('❌ 付款審核失敗:', err);
@@ -410,14 +452,14 @@ const reservation = new function () {
         try {
             await global.api.reservations.rejectpayment({
                 body: {
-                    reservationId: this.currentPayment.id,  // ✅ 改成 reservationId
+                    reservationId: this.currentPayment.id,
                     reason: this.paymentVm.rejectReason
                 }
             });
 
             addAlert('已退回付款憑證!', { type: 'success' });
             this.closeDrawer('paymentDrawer');
-            await this.getPaymentList();
+            await this.getPaymentList(!!paymentPageRef);
 
         } catch (err) {
             console.error('❌ 退回失敗:', err);
@@ -463,15 +505,58 @@ window.$config = {
             reservation.calculatePricing();
         });
 
-        // 初始化
+        // ✅ Watch 篩選條件變動
+        watch([
+            () => reservation.query.keyword,
+            () => reservation.query.reservationStatus
+        ], () => {
+            if (reservation.activeTab.value !== 'approval') return;
+            
+            if (approvalPageRef) {
+                approvalPageRef.go(1);
+            }
+            reservation.getApprovalList(!!approvalPageRef);
+        });
+
+        watch([
+            () => reservation.query.keyword,
+            () => reservation.query.paymentStatus
+        ], () => {
+            if (reservation.activeTab.value !== 'payment') return;
+            
+            if (paymentPageRef) {
+                paymentPageRef.go(1);
+            }
+            reservation.getPaymentList(!!paymentPageRef);
+        });
+
+        // ✅ 初始化
         onMounted(async () => {
             console.log('🚀 Vue 組件已掛載');
+            
             await reservation.loadPermissions();
-            await reservation.getList();
+            
+            // ✅ 等待 DOM 渲染完成
+            await nextTick();
+            
+            // ✅ 綁定分頁元件 ref
+            approvalPageRef = approvalPage.value;
+            paymentPageRef = paymentPage.value;
+            
+            console.log('📌 Mounted - approvalPageRef:', !!approvalPageRef, 'paymentPageRef:', !!paymentPageRef);
+            
+            // ✅ 根據當前 tab 載入資料
+            if (reservation.activeTab.value === 'approval') {
+                await reservation.getApprovalList(!!approvalPageRef);
+            } else if (reservation.activeTab.value === 'payment') {
+                await reservation.getPaymentList(!!paymentPageRef);
+            }
         });
 
         return {
             reservation,
+            approvalPage,
+            paymentPage,
             getPaymentMethodText,
             isCounterPayment,
             isTransferPayment,

@@ -80,8 +80,6 @@ namespace TASA.Controllers.API
         public IActionResult RoomList([FromQuery] BaseQueryVM query)
 
         {
-            Console.WriteLine($"PageNumber={query.PageNumber}, PageSize={query.PageSize}");
-
             return Ok(service.RoomService.List(query).ToPage(Request, Response));
         }
 
@@ -115,10 +113,11 @@ namespace TASA.Controllers.API
         /* --- */
 
         [HttpGet("equipmentlist")]
-        public IActionResult EquipmentList([FromQuery] EquipmentQueryVM  query)
+        public IActionResult EquipmentList([FromQuery] EquipmentQueryVM query)
         {
-            return Ok(service.EquipmentService.List(query));
+            return Ok(service.EquipmentService.List(query).ToPage(Request, Response));
         }
+
 
         [HttpGet("equipmentdetail")]
         public IActionResult EquipmentDetail(Guid id)
@@ -192,15 +191,7 @@ namespace TASA.Controllers.API
         [HttpPost("loginloglist")]
         public IActionResult LoginLogList([FromBody] LoginLogServices.QueryVM query)
         {
-            try
-            {
-                var result = service.LoginLogServices.List(query);
-                return Ok(result.ToPage(Request, Response));  // ✅ 直接用 ToPage
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
+            return Ok(service.LoginLogServices.List(query).ToPage(Request, Response));
         }
     }
 }

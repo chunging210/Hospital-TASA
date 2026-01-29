@@ -27,7 +27,7 @@
                     <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'approval'">
                         <select v-model.number="reservation.query.reservationStatus" @@change="reservation.getList"
                             class="form-select">
-                            <option :value="null">全部狀態</option> <!-- ✅ 改成 null -->
+                            <option :value="null">全部狀態</option>
                             <option :value="1">待審核</option>
                             <option :value="2">已核准 (待繳費)</option>
                             <option :value="4">已拒絕</option>
@@ -38,7 +38,7 @@
                     <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'payment'">
                         <select v-model.number="reservation.query.paymentStatus" @@change="reservation.getList"
                             class="form-select">
-                            <option :value="null">全部狀態</option> <!-- ✅ 改成 null -->
+                            <option :value="null">全部狀態</option>
                             <option :value="1">未付款</option>
                             <option :value="2">待查帳</option>
                             <option :value="3">已收款</option>
@@ -95,19 +95,16 @@
                                 <td>{{ item.roomName }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
                                 <td>
-                                    <!-- ✅ 動態狀態 Badge -->
                                     <span class="badge" :class="getApprovalStatusClass(item.status)">
                                         {{ item.status }}
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- ✅ 待審核顯示「審核」按鈕 -->
                                     <button v-if="item.status === '待審核'" class="btn btn-sm btn-primary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
                                         data-bs-target="#approvalDrawer">
                                         <span class="material-icons">edit</span> 審核
                                     </button>
-                                    <!-- ✅ 已處理顯示「查看」按鈕 -->
                                     <button v-else class="btn btn-sm btn-outline-secondary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
                                         data-bs-target="#approvalDrawer">
@@ -122,6 +119,9 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- ✅ 加入分頁元件 -->
+                    <page ref="approvalPage" @@reload="reservation.getApprovalList"></page>
                 </div>
 
                 <!-- ✅ 付款審核列表 -->
@@ -153,7 +153,6 @@
                                 <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
                                 <td>
-                                    <!-- ✅ 動態付款狀態 Badge -->
                                     <span class="badge" :class="getPaymentStatusClass(item.paymentStatusText)">
                                         {{ item.paymentStatusText }}
                                     </span>
@@ -167,7 +166,11 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <!-- ✅ 加入分頁元件 -->
+                    <page ref="paymentPage" @@reload="reservation.getPaymentList"></page>
                 </div>
+
             </div>
         </div>
     </div>
@@ -414,7 +417,6 @@
                         <strong>轉帳時間:</strong>
                         {{ reservation.currentPayment.transferAt || '-' }}
                     </p>
-                    <!-- ✅ 備註 -->
                     <p class="mb-0" v-if="reservation.currentPayment.note">
                         <strong>備註:</strong>
                         <span class="text-muted">{{ reservation.currentPayment.note }}</span>
@@ -431,10 +433,8 @@
                             @@click="viewFullImage(reservation.currentPayment.filePath)" />
                     </div>
                     <p class="text-muted small text-center mb-2">
-
                         {{ reservation.currentPayment.fileName }}
                     </p>
-                    <!-- ✅ 備註 -->
                     <p class="mb-0" v-if="reservation.currentPayment.note">
                         <strong>備註:</strong>
                         <span class="text-muted">{{ reservation.currentPayment.note }}</span>

@@ -3,6 +3,9 @@ import global from '/global.js';
 const { ref, reactive, computed, onMounted, watch, nextTick } = Vue;
 import * as EnumHelper from '/js/helper.js';
 
+let allReservationsPageRef = null;
+let personalReservationsPageRef = null;
+
 window.$config = {
     setup: () => new function () {
 
@@ -22,7 +25,10 @@ window.$config = {
         /* ========= 資料列表 ========= */
         this.allReservations = ref([]);
         this.personalReservations = ref([]);
-
+        this.loading = ref(false);
+        /* ========= ✅ Page Refs ========= */
+        this.allReservationsPage = ref(null);
+        this.personalReservationsPage = ref(null);
         /* ========= 選中項目 ========= */
         this.selectedItem = ref(null);
 
@@ -45,40 +51,17 @@ window.$config = {
 
         /* ========= 計算屬性 ========= */
         this.filteredAllReservations = computed(() => {
-            let filtered = this.allReservations.value;
+            return this.allReservations.value;  // ✅ 不篩選,直接回傳
+        });
 
-            // 🔍 關鍵字搜尋
-            if (this.searchQuery.value) {
-                const query = this.searchQuery.value.toLowerCase();
-                filtered = filtered.filter(item =>
-                    item.reservationNo.toLowerCase().includes(query) ||
-                    item.reserverName.toLowerCase().includes(query)
-                );
-            }
-
-            // ✅ 審核狀態篩選
-            if (this.approvalStatusFilter.value) {
-                const targetStatus = EnumHelper.getReservationStatusText(this.approvalStatusFilter.value);
-                filtered = filtered.filter(item =>
-                    item.approvalStatus === targetStatus
-                );
-            }
-
-            // ✅ 付款狀態篩選
-            if (this.paymentStatusFilter.value) {
-                const targetStatus = EnumHelper.getPaymentStatusText(this.paymentStatusFilter.value);
-                filtered = filtered.filter(item =>
-                    item.paymentStatus === targetStatus
-                );
-            }
-
-            return filtered;
+        this.filteredPersonalReservations = computed(() => {
+            return this.personalReservations.value;  // ✅ 不篩選,直接回傳
         });
 
         this.filteredPersonalReservations = computed(() => {
             let filtered = this.personalReservations.value;
 
-            // 關鍵字搜尋
+            // 關鍵字搜尋 (前端篩選)
             if (this.searchQuery.value) {
                 const query = this.searchQuery.value.toLowerCase();
                 filtered = filtered.filter(item =>
@@ -86,26 +69,19 @@ window.$config = {
                 );
             }
 
-            // ✅ 使用者友善狀態篩選
+            // ✅ 使用者友善狀態篩選 (前端篩選)
             if (this.userStatusFilter.value) {
                 filtered = filtered.filter(item => {
                     const userStatus = this.getUserFriendlyStatus(item);
 
                     switch (this.userStatusFilter.value) {
-                        case 'pending':
-                            return userStatus === '審核中';
-                        case 'payment':
-                            return userStatus === '待繳費';
-                        case 'reupload':
-                            return userStatus === '待重新上傳';
-                        case 'confirmed':
-                            return userStatus === '預約成功';
-                        case 'rejected':
-                            return userStatus === '已拒絕';
-                        case 'cancelled':
-                            return userStatus === '已取消';
-                        default:
-                            return true;
+                        case 'pending': return userStatus === '審核中';
+                        case 'payment': return userStatus === '待繳費';
+                        case 'reupload': return userStatus === '待重新上傳';
+                        case 'confirmed': return userStatus === '預約成功';
+                        case 'rejected': return userStatus === '已拒絕';
+                        case 'cancelled': return userStatus === '已取消';
+                        default: return true;
                     }
                 });
             }
@@ -162,71 +138,150 @@ window.$config = {
             }
         };
 
-        this.loadAllReservations = async () => {
-            const res = await global.api.reservations.list();
+        this.loadAllReservations = async (pagination) => {
+            try {
+                this.loading.value = true;
 
-            this.allReservations.value = (res.data || []).map(item => {
-                let paymentStatus;
+                // ✅ 準備查詢參數
+                const queryParams = {};
 
-                // ✅ 根據預約狀態決定是否顯示付款狀態
-                if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
-                    paymentStatus = '-';
-                } else {
-                    paymentStatus = item.PaymentStatusText || '未付款';
+                if (this.searchQuery.value) {
+                    queryParams.keyword = this.searchQuery.value;
                 }
 
-                return {
-                    id: item.Id,
-                    reservationNo: item.BookingNo,
-                    reserverName: item.ApplicantName,
-                    conferenceName: item.ConferenceName,
-                    reservationDate: item.Date,
-                    timeSlot: item.Time,
-                    roomName: item.RoomName,
-                    paymentDeadline: item.PaymentDeadline || '-',
-                    paymentMethod: item.PaymentMethod || '-',
-                    amount: item.TotalAmount,
-                    paymentStatus: paymentStatus,
-                    approvalStatus: item.Status,
-                    costCenter: item.DepartmentCode || '-',
-                    rejectReason: item.RejectReason || '',
-                    paymentRejectReason: item.PaymentRejectReason || '',
-                    slots: item.Slots || []
-                };
-            });
+                if (this.approvalStatusFilter.value) {
+                    queryParams.reservationStatus = this.approvalStatusFilter.value;
+                }
+
+                if (this.paymentStatusFilter.value) {
+                    queryParams.paymentStatus = this.paymentStatusFilter.value;
+                }
+
+                const options = { body: queryParams };
+
+                const request = pagination && allReservationsPageRef
+                    ? global.api.reservations.list(allReservationsPageRef.setHeaders(options))
+                    : global.api.reservations.list(options);
+
+                const response = await request;
+
+                if (pagination && allReservationsPageRef) {
+                    allReservationsPageRef.setTotal(response);
+                }
+
+                // ✅ 完整的資料處理
+                this.allReservations.value = (response.data || []).map(item => {
+                    let paymentStatus;
+
+                    if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
+                        paymentStatus = '-';
+                    } else {
+                        paymentStatus = item.PaymentStatusText || '未付款';
+                    }
+
+                    return {
+                        id: item.Id,
+                        reservationNo: item.BookingNo,
+                        reserverName: item.ApplicantName,
+                        conferenceName: item.ConferenceName,
+                        reservationDate: item.Date,
+                        timeSlot: item.Time,
+                        roomName: item.RoomName,
+                        paymentDeadline: item.PaymentDeadline || '-',
+                        paymentMethod: item.PaymentMethod || '-',
+                        amount: item.TotalAmount,
+                        paymentStatus: paymentStatus,
+                        approvalStatus: item.Status,
+                        costCenter: item.DepartmentCode || '-',
+                        rejectReason: item.RejectReason || '',
+                        paymentRejectReason: item.PaymentRejectReason || '',
+                        slots: item.Slots || []
+                    };
+                });
+
+            } catch (err) {
+                console.error('❌ 載入所有預約失敗:', err);
+                addAlert('載入預約資料失敗', { type: 'danger' });
+            } finally {
+                this.loading.value = false;
+            }
         };
 
-        this.loadPersonalReservations = async () => {
-            const res = await global.api.reservations.mylist();
+        // ✅ 修改 loadPersonalReservations
+        this.loadPersonalReservations = async (pagination) => {
+            try {
+                this.loading.value = true;
 
-            this.personalReservations.value = (res.data || []).map(item => {
-                let paymentStatus;
+                const queryParams = {};
 
-                // ✅ 根據預約狀態決定是否顯示付款狀態
-                if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
-                    paymentStatus = '-';
-                } else {
-                    paymentStatus = item.PaymentStatusText || '未付款';
+                if (this.searchQuery.value) {
+                    queryParams.keyword = this.searchQuery.value;
                 }
 
-                return {
-                    id: item.Id,
-                    reservationNo: item.BookingNo,
-                    reservationDate: item.Date,
-                    conferenceName: item.ConferenceName,
-                    timeSlot: item.Time,
-                    roomName: item.RoomName,
-                    paymentDeadline: item.PaymentDeadline || '-',
-                    paymentMethod: item.PaymentMethod || '-',
-                    amount: item.TotalAmount,
-                    paymentStatus: paymentStatus,
-                    approvalStatus: item.Status,
-                    costCenter: item.DepartmentCode || '-',
-                    rejectReason: item.RejectReason || '',
-                    paymentRejectReason: item.PaymentRejectReason || '',
-                    slots: item.Slots || []
-                };
-            });
+                // ✅ 使用者友善狀態 → 轉換成後端的狀態碼
+                if (this.userStatusFilter.value) {
+                    const mapping = {
+                        'pending': { reservationStatus: 1 },  // 待審核
+                        'payment': { reservationStatus: 2 },  // 待繳費
+                        'reupload': { paymentStatus: 4 },     // 待重新上傳
+                        'confirmed': { reservationStatus: 3 }, // 預約成功
+                        'rejected': { reservationStatus: 4 },  // 審核拒絕
+                        'cancelled': { reservationStatus: 5 }  // 已取消
+                    };
+
+                    const filter = mapping[this.userStatusFilter.value];
+                    if (filter) {
+                        Object.assign(queryParams, filter);
+                    }
+                }
+
+                const options = { body: queryParams };
+
+                const request = pagination && personalReservationsPageRef
+                    ? global.api.reservations.mylist(personalReservationsPageRef.setHeaders(options))
+                    : global.api.reservations.mylist(options);
+
+                const response = await request;
+
+                if (pagination && personalReservationsPageRef) {
+                    personalReservationsPageRef.setTotal(response);
+                }
+
+                // ✅ 完整的資料處理
+                this.personalReservations.value = (response.data || []).map(item => {
+                    let paymentStatus;
+
+                    if (item.Status === '審核拒絕' || item.Status === '已取消' || item.Status === '待審核') {
+                        paymentStatus = '-';
+                    } else {
+                        paymentStatus = item.PaymentStatusText || '未付款';
+                    }
+
+                    return {
+                        id: item.Id,
+                        reservationNo: item.BookingNo,
+                        reservationDate: item.Date,
+                        conferenceName: item.ConferenceName,
+                        timeSlot: item.Time,
+                        roomName: item.RoomName,
+                        paymentDeadline: item.PaymentDeadline || '-',
+                        paymentMethod: item.PaymentMethod || '-',
+                        amount: item.TotalAmount,
+                        paymentStatus: paymentStatus,
+                        approvalStatus: item.Status,
+                        costCenter: item.DepartmentCode || '-',
+                        rejectReason: item.RejectReason || '',
+                        paymentRejectReason: item.PaymentRejectReason || '',
+                        slots: item.Slots || []
+                    };
+                });
+
+            } catch (err) {
+                console.error('❌ 載入個人預約失敗:', err);
+                addAlert('載入預約資料失敗', { type: 'danger' });
+            } finally {
+                this.loading.value = false;
+            }
         };
 
         this.isCounterPayment = (method) => {
@@ -514,29 +569,71 @@ window.$config = {
             }
         };
 
+        this.switchTab = (tab) => {
+            // 1️⃣ 切換 Tab
+            this.activeTab.value = tab;
+
+            // 2️⃣ 重置所有篩選條件
+            this.searchQuery.value = '';
+            this.approvalStatusFilter.value = '';
+            this.paymentStatusFilter.value = '';
+            this.userStatusFilter.value = '';
+
+            // 3️⃣ 重置分頁到第一頁
+            if (tab === 'all' && allReservationsPageRef) {
+                allReservationsPageRef.go(1);
+                this.loadAllReservations(true);
+            } else if (tab === 'personal' && personalReservationsPageRef) {
+                personalReservationsPageRef.go(1);
+                this.loadPersonalReservations(true);
+            }
+        };
+
         /* ========= Watch ========= */
-        watch(
-            () => this.activeTab.value,
-            (newTab) => {
-                // ✅ 重置所有篩選條件
-                this.searchQuery.value = '';
-                this.approvalStatusFilter.value = '';
-                this.paymentStatusFilter.value = '';
-                this.userStatusFilter.value = '';
-                // 載入對應資料
-                if (newTab === 'all') {
-                    this.loadAllReservations();
-                } else if (newTab === 'personal') {
-                    this.loadPersonalReservations();
-                }
-            },
-            { immediate: true }
-        );
+        watch([
+            () => this.searchQuery.value,
+            () => this.approvalStatusFilter.value,
+            () => this.paymentStatusFilter.value
+        ], () => {
+            // ✅ 只在 'all' Tab 時才觸發
+            if (this.activeTab.value !== 'all') return;
+
+            if (allReservationsPageRef) {
+                allReservationsPageRef.go(1);
+            }
+            this.loadAllReservations(true);
+        });
+
+        // 個人預約的篩選
+        watch([
+            () => this.searchQuery.value,
+            () => this.userStatusFilter.value
+        ], () => {
+            // ✅ 只在 'personal' Tab 時才觸發
+            if (this.activeTab.value !== 'personal') return;
+
+            if (personalReservationsPageRef) {
+                personalReservationsPageRef.go(1);
+            }
+            this.loadPersonalReservations(true);
+        });
 
         /* ========= Mounted ========= */
         onMounted(async () => {
             await this.loadUserInfo();
             await nextTick();
+
+            // ✅ 初始化 Page Refs
+            allReservationsPageRef = this.allReservationsPage.value;
+            personalReservationsPageRef = this.personalReservationsPage.value;
+
+
+            if (this.activeTab.value === 'all') {
+                this.loadAllReservations(true);
+            } else {
+                this.loadPersonalReservations(true);
+            }
+
 
             const bookingDrawerEl = document.getElementById('bookingDrawer');
             if (bookingDrawerEl) {

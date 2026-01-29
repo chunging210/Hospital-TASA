@@ -66,13 +66,13 @@
                             <ul class="nav nav-tabs" role="tablist">
                                 <li class="nav-item" role="presentation" v-if="isAdmin">
                                     <button class="nav-link" :class="{ active: activeTab === 'all' }"
-                                        @@click="activeTab = 'all'" type="button">
+                                        @@click="switchTab('all')" type="button">
                                         所有預約
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" :class="{ active: activeTab === 'personal' }"
-                                        @@click="activeTab = 'personal'" type="button">
+                                        @@click="switchTab('personal')" type="button">
                                         個人預約
                                     </button>
                                 </li>
@@ -129,7 +129,12 @@
                                                     <td>{{ item.costCenter }}</td>
                                                 </tr>
                                             </tbody>
+
+
                                         </table>
+
+                                        <page ref="allReservationsPage" @@reload="loadAllReservations"></page>
+
                                     </div>
 
                                     <!-- 個人預約 Tab -->
@@ -173,6 +178,10 @@
                                                     </tr>
                                                 </tbody>
                                             </table>
+
+                                            <page ref="personalReservationsPage" @@reload="loadPersonalReservations">
+                                            </page>
+
                                         </div>
                                     </div>
 

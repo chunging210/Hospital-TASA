@@ -2,6 +2,8 @@
 import global from '/global.js';
 const { ref, reactive, onMounted } = Vue;
 
+let conferencepageRef = null;
+
 export const me = new function () {
     this.vm = reactive({});
     this.getVM = () => {
@@ -274,91 +276,53 @@ export const schedule = new function () {
 }
 
 export const conference = new function () {
-    this.query = reactive({ Start: new Date().format(), End: new Date().addDays(7).format(), RoomId: '', DepartmentId: '', UserId: '' });
+
+    this.query = reactive({
+        Start: new Date().format(),
+        End: new Date().addDays(7).format(),
+        RoomId: '',
+        DepartmentId: '',
+        UserId: '',
+        keyword: ''
+    });
+
     this.list = reactive([]);
-    this.getList = () => {
-        global.api.conference.list({ body: this.query })
-            .then((response) => {
-                copy(this.list, response.data);
-            });
-    }
-    this.offcanvas = {}
-    this.vm = reactive(new VM());
-    this.show = () => {
-        schedule.getList(1);
-        this.offcanvas.show();
-    }
-    this.getVM = (id) => {
-        template.getList();
-        visitor.manual.length = 0;
-        if (id) {
-            global.api.conference.detail({ body: { id } })
-                .then((response) => {
-                    if (new Date(response.data.StartTime) < new Date()) {
-                        addAlert('會議已開始，無法編輯', { type: 'danger' });
-                    } else {
-                        copy(this.vm, toVM(response.data));
-                        visitor.getList(1);
-                        this.show();
-                    }
-                })
-                .catch(error => {
-                    addAlert(getMessage(error), { type: 'danger', click: error.download });
-                });
-        } else {
-            copy(this.vm, new VM());
-            this.vm.CreateBy = me.vm.Name;
-            this.vm.User.push(me.vm.Id);
-            visitor.getList(1);
-            this.show();
+    this.loading = ref(false);
+
+    // ✅ 統一的新 getList
+    this.getList = async (pagination) => {
+        try {
+            this.loading.value = true;
+
+            const options = { body: this.query };
+
+            const request = pagination && conferencepageRef
+                ? global.api.conference.list(
+                    conferencepageRef.setHeaders(options)
+                )
+                : global.api.conference.list(options);
+
+            const response = await request;
+
+            if (pagination && conferencepageRef) {
+                conferencepageRef.setTotal(response);
+            }
+
+            copy(this.list, response.data || []);
+
+        } catch (err) {
+            addAlert('取得會議列表失敗', { type: 'danger' });
+        } finally {
+            this.loading.value = false;
         }
-    }
-    this.ecsShow = (roomid) => this.vm.Room.includes(roomid);
-    this.saved = () => { }
-    this.save = () => {
-        let body = { ...this.vm }
-        body.StartTime = new Date(body.StartTime);
-        let edit = this.vm.Id ? global.api.conference.update : global.api.conference.insert;
-        return edit({ body })
-            .then((response) => {
-                addAlert('操作成功');
-                this.getList();
-                visitor.manual.length = 0;
-                this.offcanvas.hide();
-            })
-            .then(this.saved)
-            .catch(error => {
-                addAlert(getMessage(error), { type: 'danger', click: error.download });
-            });
-    }
-    this.copy = (id) => {
-        template.getList();
-        global.api.conference.detail({ body: { id } })
-            .then((response) => {
-                copy(this.vm, toVM(response.data));
-                this.vm.Id = null;
-                this.vm.CreateBy = me.vm.Name;
-                this.vm.MCU = this.vm.MCU || 7;
-                this.vm.Recording = this.vm.UsageType == 2 ? this.vm.Recording : true;
-                this.vm.StartTime = new Date().format('yyyy-mm-dd HH:MM');
-                this.show();
-            });
-    }
-    this.deleted = () => { }
-    this.delete = (id) => {
-        if (confirm('確認刪除?')) {
-            global.api.conference.delete({ body: { id } })
-                .then((response) => {
-                    addAlert('操作成功');
-                    this.getList();
-                })
-                .then(this.deleted)
-                .catch(error => {
-                    addAlert(getMessage(error), { type: 'danger', click: error.download });
-                });
-        }
-    }
-}
+    };
+
+    // ✅ 所有 filter 都走這裡
+    this.onFilterChange = () => {
+        conferencepageRef?.go(1);
+        this.getList(true);
+    };
+};
 
 window.$config = {
     components: {},
@@ -368,6 +332,7 @@ window.$config = {
         this.department = department;
         this.createby = createby;
         this.conference = conference;
+        this.conferencepage = ref(null);
         this.conferenceoffcanvas = ref(null);
         this.template = template;
         this.mcu = mcu;
@@ -383,10 +348,13 @@ window.$config = {
             department.getList();
             department.getTree();
             createby.getList();
-            conference.getList();
 
 
-            conference.offcanvas = this.conferenceoffcanvas.value;
+            // ✅ 接 page ref
+            conferencepageRef = this.conferencepage.value;
+
+            // ✅ 第一次一定用 pagination
+            conference.getList(true);
             schedule.page = this.schedulepage.value;
             visitor.page = this.visitorpage.value;
 

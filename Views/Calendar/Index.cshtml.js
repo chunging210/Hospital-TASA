@@ -353,9 +353,10 @@ window.$config = {
 
             watch(selectedDepartment, (departmentId) => {
 
+                console.log('🏥 selectedDepartment =', departmentId);
 
-
-                if (typeof departmentId !== 'string' || !departmentId) {
+                // 只判斷「有沒有值」
+                if (!departmentId) {
                     room.query.departmentId = '';
                     room.query.building = '';
                     room.query.floor = '';
@@ -368,13 +369,15 @@ window.$config = {
                     return;
                 }
 
+                // ✅ 有選分院
                 room.query.departmentId = departmentId;
                 room.query.building = '';
                 room.query.floor = '';
+
+                buildings.value = [];
                 selectedBuilding.value = '';
                 selectedFloor.value = '';
 
-                // ✅ 後端會自動過濾,不傳參數
                 room.loadBuildingsByDepartment();
                 room.getList({ page: 1, perPage: 6 });
             });

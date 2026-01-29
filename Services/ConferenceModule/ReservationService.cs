@@ -128,6 +128,12 @@ namespace TASA.Services.ConferenceModule
                 queryable = queryable.Where(x => x.ReservationStatus == query.ReservationStatus.Value);
             }
 
+            // ✅ 篩選:付款狀態
+            if (query.PaymentStatus.HasValue)
+            {
+                queryable = queryable.Where(x => x.PaymentStatus == query.PaymentStatus.Value);
+            }
+
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||

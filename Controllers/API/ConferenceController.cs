@@ -14,7 +14,9 @@ namespace TASA.Controllers.API
         {
             query.Start = (query.Start ?? DateTime.Now).Date;
             query.End = (query.End ?? DateTime.Now).Date.Set(hour: 23, minute: 59, second: 59);
-            return Ok(service.ConferenceService.List(query));
+
+            return Ok( service.ConferenceService.List(query).ToPage(Request, Response)   // ✅ 補上這一行
+            );
         }
 
         [HttpGet("detail")]

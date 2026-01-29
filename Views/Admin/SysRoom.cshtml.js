@@ -122,6 +122,9 @@ const room = new function () {
         rentalType: BookingSettings.InternalOnly,
         departmentId: null
     });
+    // ✅ 新增:今日時程
+    this.todaySchedule = ref([]);
+    this.scheduleRefreshInterval = null;
 
     this.editModal = null;
     this.page = {};
@@ -133,6 +136,58 @@ const room = new function () {
     this.detailRoomCarouselIndex = ref(0);
     this.carouselInterval = null;
     this.carouselDirection = 'next';
+
+    // ✅ 載入今日時程
+    this.loadTodaySchedule = async (roomId) => {
+        if (!roomId) return;
+
+        try {
+            const res = await global.api.select.roombyschedule({
+                body: { roomId: roomId }
+            });
+            this.todaySchedule.value = res.data || [];
+        } catch (err) {
+            console.error('❌ 載入今日時程失敗:', err);
+            this.todaySchedule.value = [];
+        }
+    };
+
+    // ✅ 啟動自動重新整理
+    this.startScheduleRefresh = (roomId) => {
+        this.stopScheduleRefresh();
+        this.loadTodaySchedule(roomId);
+
+        this.scheduleRefreshInterval = setInterval(() => {
+            this.loadTodaySchedule(roomId);
+        }, 60000); // 每 1 分鐘
+    };
+
+    // ✅ 停止自動重新整理
+    this.stopScheduleRefresh = () => {
+        if (this.scheduleRefreshInterval) {
+            clearInterval(this.scheduleRefreshInterval);
+            this.scheduleRefreshInterval = null;
+        }
+    };
+
+    // ✅ 狀態轉換
+    this.getStatusBadgeClass = (status) => {
+        const classMap = {
+            'upcoming': 'bg-warning',
+            'ongoing': 'bg-danger',
+            'completed': 'bg-success'
+        };
+        return classMap[status] || 'bg-secondary';
+    };
+
+    this.getStatusText = (status) => {
+        const textMap = {
+            'upcoming': '待開始',
+            'ongoing': '進行中',
+            'completed': '已完成'
+        };
+        return textMap[status] || '未知';
+    };
 
     // ✅ 新增：啟動自動輪播
     this.startCarousel = () => {
@@ -517,6 +572,7 @@ const room = new function () {
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
                 this.startCarousel();
+                this.loadTodaySchedule(Id);
             })
             .catch(error => {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
@@ -558,7 +614,10 @@ window.$config = {
         this.department = department;
         this.isAdmin = isAdmin;
         this.userDepartmentName = userDepartmentName;
-
+        // ✅ 加上這些
+        this.todaySchedule = room.todaySchedule;
+        this.getStatusBadgeClass = room.getStatusBadgeClass;
+        this.getStatusText = room.getStatusText;
 
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {
@@ -624,9 +683,25 @@ window.$config = {
             }
 
             const detailModalElement = document.getElementById('roomDetailModal');
-            detailModalElement.addEventListener('hidden.bs.modal', () => {
-                room.stopCarousel();
-            });
+            if (detailModalElement) {
+                detailModalElement.addEventListener('hidden.bs.modal', () => {
+                    room.stopCarousel();
+                    room.stopScheduleRefresh(); // ✅ 停止時程重新整理
+                });
+
+                // ✅ 監聽 Tab 切換
+                detailModalElement.addEventListener('shown.bs.tab', (event) => {
+                    const targetId = event.target.getAttribute('data-bs-target');
+
+                    if (targetId === '#schedule') {
+                        if (room.detailRoom.value?.Id) {
+                            room.startScheduleRefresh(room.detailRoom.value.Id);
+                        }
+                    } else {
+                        room.stopScheduleRefresh();
+                    }
+                });
+            }
 
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
         });
