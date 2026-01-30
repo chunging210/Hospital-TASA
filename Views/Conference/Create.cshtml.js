@@ -454,8 +454,18 @@ window.$config = {
 
         /* ====== 載入大樓 ====== */
         this.loadBuildingsByDepartment = () => {
-            global.api.select.buildingsbydepartment()
+            const payload = {};
+
+            // ✅ 如果有選擇分院,傳給後端
+            if (this.form.departmentId) {
+                payload.departmentId = this.form.departmentId;
+            }
+
+            console.log('📤 [ConferenceCreate - loadBuildingsByDepartment] payload:', payload);
+
+            global.api.select.buildingsbydepartment({ body: payload })
                 .then(res => {
+                    console.log('✅ 大樓列表:', res.data);
                     this.buildings.value = res.data || [];
                 })
                 .catch(() => {
@@ -911,7 +921,7 @@ window.$config = {
             const presetBuilding = params.get('building');
             const presetFloor = params.get('floor');
             const presetDepartmentId = params.get('departmentId');
-
+            const presetDate = params.get('date');
             try {
                 const userRes = await global.api.auth.me();
                 const currentUser = userRes.data;
@@ -930,6 +940,12 @@ window.$config = {
                 this.editingReservationId.value = editId;
                 await this.loadReservationData(editId);
             } else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
+
+                if (presetDate) {
+                    this.form.date = presetDate;
+                    console.log('✅ 自動帶入搜尋日期:', presetDate);
+                }
+
                 this.form.departmentId = presetDepartmentId;
                 await this.loadBuildingsByDepartment();
                 await new Promise(resolve => setTimeout(resolve, 300));

@@ -1155,6 +1155,99 @@ body {
     font-weight: 500;
 }
 
+/* ===== 智慧搜尋 Modal 樣式 ===== */
+.smart-search-body {
+    font-size: 14px;
+}
+
+.section-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 14px;
+}
+
+.equipment-card {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.equipment-card:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+.equipment-card:has(input:checked) {
+    background-color: #e7f3ff;
+    border-color: #0d6efd;
+    box-shadow: 0 0 6px rgba(13, 110, 253, 0.3);
+}
+
+/* ===== 搜尋結果區域 ===== */
+.search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 20px;
+}
+
+.search-results-header h5 {
+    color: #495057;
+    margin: 0;
+    font-weight: 600;
+}
+
+.search-result-empty {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.search-result-empty i {
+    font-size: 64px;
+    color: #dee2e6;
+    margin-bottom: 20px;
+}
+
+.search-result-empty h5 {
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+
+.search-result-empty p {
+    color: #adb5bd;
+}
+
+/* ===== 響應式調整 - 智慧搜尋 ===== */
+@media (max-width: 768px) {
+    .equipment-card {
+        font-size: 12px;
+        padding: 10px;
+    }
+    
+    .equipment-card i {
+        font-size: 2em !important;
+    }
+    
+    .search-results-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .search-results-header .btn {
+        width: 100%;
+    }
+}
+
+
 /* ===== 響應式調整 ===== */
 @media (max-width: 992px) {
     .detail-image-column {

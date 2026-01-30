@@ -114,6 +114,12 @@ namespace TASA.Services
             public TimeOnly EndTime { get; set; }
             public byte? Status { get; set; }
         }
+
+        public record BuildingsByDepartmentQueryVM
+        {
+            public Guid? DepartmentId { get; set; }
+        }
+
         private string GetDisplayStatus(byte? status)
         {
             return status switch
@@ -541,8 +547,6 @@ namespace TASA.Services
             {
                 1 => "影像設備",
                 2 => "聲音設備",
-                3 => "控制設備",
-                4 => "分配器",
                 8 => "公有設備",
                 9 => "攤位租借",
                 _ => "未知"
@@ -555,6 +559,179 @@ namespace TASA.Services
             public string Name { get; set; } = string.Empty;
         }
 
+        public record SmartSearchQueryVM
+        {
+            public string? Date { get; set; }              // 會議日期 (yyyy-MM-dd)
+            public int? MinCapacity { get; set; }          // 最低人數需求
+            public List<byte>? EquipmentTypes { get; set; } // 設備類型 [1,2,8,9]
+            public string? Keyword { get; set; }           // 關鍵字
+            public string? Building { get; set; }          // 大樓
+            public string? Floor { get; set; }             // 樓層
+            public Guid? DepartmentId { get; set; }        // 分院ID (管理者可選)
+        }
+
+
+        public IQueryable<RoomListVM> SmartSearch(SmartSearchQueryVM query)
+        {
+            Console.WriteLine("\n========== SmartSearch Debug ==========");
+            Console.WriteLine($"Date: {query.Date}");
+            Console.WriteLine($"MinCapacity: {query.MinCapacity}");
+            Console.WriteLine($"EquipmentTypes: {string.Join(",", query.EquipmentTypes ?? new List<byte>())}");
+            Console.WriteLine($"Keyword: {query.Keyword}");
+            Console.WriteLine($"Building: {query.Building}");
+            Console.WriteLine($"Floor: {query.Floor}");
+            Console.WriteLine($"DepartmentId: {query.DepartmentId}");
+
+            // 1️⃣ 基礎篩選 (與 RoomList 相同)
+            var roomQuery = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != RoomStatus.Maintenance);
+
+            // 權限過濾
+            if (!db.CurrentUserIsAdmin)
+            {
+                roomQuery = roomQuery.Where(x =>
+                    x.BookingSettings == BookingSettings.InternalAndExternal ||
+                    x.BookingSettings == BookingSettings.Free ||
+                    (x.BookingSettings == BookingSettings.InternalOnly && !db.CurrentUserIsNormal)
+                );
+            }
+
+            // 分院篩選
+            if (query.DepartmentId.HasValue)
+            {
+                roomQuery = roomQuery.Where(x => x.DepartmentId == query.DepartmentId);
+            }
+
+            // 大樓篩選
+            if (!string.IsNullOrWhiteSpace(query.Building))
+            {
+                roomQuery = roomQuery.Where(x => x.Building == query.Building);
+            }
+
+            // 樓層篩選
+            if (!string.IsNullOrWhiteSpace(query.Floor))
+            {
+                roomQuery = roomQuery.Where(x => x.Floor == query.Floor);
+            }
+
+            // 關鍵字篩選
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                roomQuery = roomQuery.Where(x => x.Name.Contains(query.Keyword));
+            }
+
+            // 2️⃣ 人數篩選
+            if (query.MinCapacity.HasValue && query.MinCapacity > 0)
+            {
+                roomQuery = roomQuery.Where(x => x.Capacity >= query.MinCapacity);
+                Console.WriteLine($"✅ 人數篩選: Capacity >= {query.MinCapacity}");
+            }
+
+            // 3️⃣ 設備篩選 (OR 邏輯)
+            if (query.EquipmentTypes != null && query.EquipmentTypes.Any())
+            {
+                var roomIdsWithEquipment = db.Equipment
+                    .AsNoTracking()
+                    .WhereNotDeleted()
+                    .Where(e => e.IsEnabled)
+                    .Where(e => query.EquipmentTypes.Contains(e.Type))
+                    .Where(e => e.RoomId.HasValue)  // ✅ 只取綁定會議室的設備
+                    .Select(e => e.RoomId!.Value)
+                    .Distinct()
+                    .ToHashSet();
+
+                if (roomIdsWithEquipment.Any())
+                {
+                    roomQuery = roomQuery.Where(x => roomIdsWithEquipment.Contains(x.Id));
+                    Console.WriteLine($"✅ 設備篩選: 找到 {roomIdsWithEquipment.Count} 間有符合設備的會議室");
+                }
+                else
+                {
+                    // 沒有符合的設備,回傳空結果
+                    roomQuery = roomQuery.Where(x => false);
+                    Console.WriteLine($"⛔ 設備篩選: 找不到符合的設備");
+                }
+            }
+
+            // 4️⃣ 日期+時段可用性檢查
+            if (!string.IsNullOrEmpty(query.Date) && DateOnly.TryParse(query.Date, out var dateOnly))
+            {
+                Console.WriteLine($"✅ 日期篩選: {dateOnly}");
+
+                // 先取得所有符合條件的會議室ID
+                var roomIds = roomQuery.Select(x => x.Id).ToList();
+                Console.WriteLine($"   目前符合條件的會議室數量: {roomIds.Count}");
+
+                // 找出該日期「所有時段都被佔用」的會議室
+                var fullyOccupiedRoomIds = new HashSet<Guid>();
+
+                foreach (var roomId in roomIds)
+                {
+                    // 取得該會議室的開放時段數量
+                    var totalSlots = db.SysRoomPricePeriod
+                        .AsNoTracking()
+                        .Count(p =>
+                            p.RoomId == roomId &&
+                            p.IsEnabled &&
+                            p.DeleteAt == null
+                        );
+
+                    if (totalSlots == 0)
+                    {
+                        // 沒有開放時段,視為不可用
+                        fullyOccupiedRoomIds.Add(roomId);
+                        continue;
+                    }
+
+                    // 取得該日期已被預約/鎖定的時段數量
+                    var occupiedSlots = db.ConferenceRoomSlot
+                        .AsNoTracking()
+                        .Count(s =>
+                            s.RoomId == roomId &&
+                            s.SlotDate == dateOnly &&
+                            (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved)
+                        );
+
+                    // 如果所有時段都被佔用,加入排除清單
+                    if (occupiedSlots >= totalSlots)
+                    {
+                        fullyOccupiedRoomIds.Add(roomId);
+                        Console.WriteLine($"   ⛔ 會議室 {roomId} 當天時段全滿 ({occupiedSlots}/{totalSlots})");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"   ✅ 會議室 {roomId} 還有空檔 ({totalSlots - occupiedSlots}/{totalSlots})");
+                    }
+                }
+
+                // 排除完全沒空檔的會議室
+                roomQuery = roomQuery.Where(x => !fullyOccupiedRoomIds.Contains(x.Id));
+                Console.WriteLine($"   最終可用會議室數量: {roomQuery.Count()}");
+            }
+
+            Console.WriteLine("=======================================\n");
+
+            // 5️⃣ 回傳結果 (格式與 RoomList 相同)
+            return roomQuery.Select(x => new RoomListVM
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Building = x.Building,
+                Floor = x.Floor,
+                DepartmentId = x.DepartmentId,
+                Capacity = x.Capacity,
+                Area = x.Area,
+                Status = x.Status,
+                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                Images = x.Images
+                    .Where(i => i.ImagePath != "")
+                    .OrderBy(i => i.SortOrder)
+                    .Select(i => i.ImagePath)
+            });
+        }
 
         /// </summary>
         public List<CostCenterVM> CostCenters()
@@ -571,9 +748,11 @@ namespace TASA.Services
                 .ToList();
         }
 
-        // ✅ 1. BuildingsByDepartment - 加上 departmentId 參數
         public List<BuildingVM> BuildingsByDepartment(Guid? departmentId = null)
         {
+            Console.WriteLine($"📥 [BuildingsByDepartment] 收到參數: {departmentId}");
+            Console.WriteLine($"📥 [BuildingsByDepartment] 當前使用者 IsAdmin: {db.CurrentUserIsAdmin}");
+
             IQueryable<SysRoom> roomQuery = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
@@ -582,13 +761,22 @@ namespace TASA.Services
                     x.Building != null
                 );
 
-            // ✅ 加上分院過濾
+            // ✅ 如果明確傳入 departmentId,使用 IgnoreQueryFilters() 然後手動過濾
             if (departmentId.HasValue && departmentId.Value != Guid.Empty)
             {
-                roomQuery = roomQuery.Where(x => x.DepartmentId == departmentId);
+                roomQuery = roomQuery
+                    .IgnoreQueryFilters()  // ✅ 繞過 Global Filter
+                    .Where(x => x.DepartmentId == departmentId && x.DeleteAt == null);  // ✅ 手動過濾
+
+                Console.WriteLine($"✅ [BuildingsByDepartment] 使用明確指定的分院: {departmentId}");
+            }
+            else
+            {
+                // ✅ 沒有指定分院,使用 Global Filter 自動過濾
+                Console.WriteLine($"✅ [BuildingsByDepartment] 使用 Global Filter");
             }
 
-            return roomQuery
+            var result = roomQuery
                 .Select(x => x.Building!)
                 .Distinct()
                 .OrderBy(b => b)
@@ -598,11 +786,16 @@ namespace TASA.Services
                     Floors = new List<FloorVM>()
                 })
                 .ToList();
+
+            Console.WriteLine($"📤 [BuildingsByDepartment] 回傳 {result.Count} 個大樓");
+            return result;
         }
 
-        // ✅ 2. FloorsByBuilding - 加上 departmentId 參數
+        // ✅ 2. FloorsByBuilding - 同樣處理
         public List<IdNameVM> FloorsByBuilding(string building, Guid? departmentId = null)
         {
+            Console.WriteLine($"📥 [FloorsByBuilding] 收到參數 - Building: {building}, DepartmentId: {departmentId}");
+
             IQueryable<SysRoom> roomQuery = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
@@ -612,13 +805,21 @@ namespace TASA.Services
                     x.Floor != null
                 );
 
-            // ✅ 加上分院過濾
+            // ✅ 如果明確傳入 departmentId,繞過 Global Filter
             if (departmentId.HasValue && departmentId.Value != Guid.Empty)
             {
-                roomQuery = roomQuery.Where(x => x.DepartmentId == departmentId);
+                roomQuery = roomQuery
+                    .IgnoreQueryFilters()  // ✅ 繞過 Global Filter
+                    .Where(x => x.DepartmentId == departmentId && x.DeleteAt == null);  // ✅ 手動過濾
+
+                Console.WriteLine($"✅ [FloorsByBuilding] 使用明確指定的分院: {departmentId}");
+            }
+            else
+            {
+                Console.WriteLine($"✅ [FloorsByBuilding] 使用 Global Filter");
             }
 
-            return roomQuery
+            var result = roomQuery
                 .Select(x => x.Floor!)
                 .Distinct()
                 .OrderBy(f => f)
@@ -628,9 +829,10 @@ namespace TASA.Services
                     Name = f
                 })
                 .ToList();
+
+            Console.WriteLine($"📤 [FloorsByBuilding] 回傳 {result.Count} 個樓層");
+            return result;
         }
-
-
         public IEnumerable<EquipmentListVM> EquipmentByRoom(EquipmentByRoomQueryVM query)
         {
             try

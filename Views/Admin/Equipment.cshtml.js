@@ -67,7 +67,7 @@ const equipment = new function () {
             }
 
             copy(this.list, response.data || []);
-            
+
             console.log('✅ 設備列表更新完成,共', this.list.length, '筆');
         } catch (error) {
             console.error('❌ 取得設備列表失敗:', error);
@@ -136,10 +136,11 @@ const equipment = new function () {
 
             selectedDepartment.value = isAdmin.value ? '' : userDepartmentId.value;
 
-            // ✅ 後端會自動過濾
             if (selectedDepartment.value) {
                 try {
-                    const bRes = await global.api.select.buildingsbydepartment();
+                    const bRes = await global.api.select.buildingsbydepartment({
+                        body: { departmentId: selectedDepartment.value }
+                    });
                     copy(this.buildings, bRes.data || []);
                 } catch (err) {
                     console.error('❌ 載入大樓失敗:', err);
@@ -162,7 +163,9 @@ const equipment = new function () {
 
             if (departmentId) {
                 // ✅ 後端會自動過濾
-                const bRes = await global.api.select.buildingsbydepartment();
+                const bRes = await global.api.select.buildingsbydepartment({
+                    body: { departmentId: departmentId }
+                });
                 copy(this.buildings, bRes.data || []);
 
                 if (this.vm.Building) {
@@ -282,13 +285,13 @@ const equipment = new function () {
         method({ body })
             .then(() => {
                 addAlert(this.vm.Id ? '編輯成功' : '新增成功');
-                
+
                 // ✅ 保存成功後重新載入列表
                 if (equipmentpageRef) {
                     equipmentpageRef.go(1);
                 }
                 this.getList(!!equipmentpageRef);
-                
+
                 const modalElement = document.querySelector('#equipmentModal');
                 const modal = window.bootstrap?.Modal?.getInstance(modalElement);
                 if (modal) modal.hide();
@@ -304,7 +307,7 @@ const equipment = new function () {
             global.api.admin.equipmentdelete({ body: { id } })
                 .then(() => {
                     addAlert('刪除成功');
-                    
+
                     // ✅ 刪除成功後重新載入列表
                     if (equipmentpageRef) {
                         equipmentpageRef.go(1);
@@ -354,8 +357,10 @@ window.$config = {
 
             if (!departmentId) return;
 
-            // ✅ 後端會自動過濾
-            global.api.select.buildingsbydepartment()
+            // ✅ 傳入 departmentId
+            global.api.select.buildingsbydepartment({
+                body: { departmentId: departmentId }
+            })
                 .then(res => copy(equipment.buildings, res.data || []));
 
             // ✅ 重置分頁並重新載入
@@ -379,23 +384,23 @@ window.$config = {
         // ✅ onMounted 初始化
         onMounted(async () => {
             console.log('🚀 設備管理頁面已掛載');
-            
+
             // 1️⃣ 載入使用者資訊
             await loadCurrentUser();
-            
+
             // 2️⃣ 載入分院列表 (如果是管理員)
             if (isAdmin.value) {
                 equipment.loadDepartments();
             }
-            
+
             // 3️⃣ 等待 DOM 渲染完成
             await nextTick();
-            
+
             // 4️⃣ 綁定分頁元件 ref
             equipmentpageRef = equipmentpage.value;
-            
+
             console.log('📌 Mounted - equipmentpageRef:', !!equipmentpageRef);
-            
+
             // 5️⃣ 載入設備列表
             await equipment.getList(!!equipmentpageRef);
         });

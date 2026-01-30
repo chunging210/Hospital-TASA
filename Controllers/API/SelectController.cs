@@ -35,17 +35,19 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.Role());
         }
 
-        [HttpGet("buildingsbydepartment")]
-        public IActionResult BuildingsByDepartment()
+        [HttpPost("buildingsbydepartment")]
+        public IActionResult BuildingsByDepartment([FromBody] BuildingsByDepartmentQueryVM? query)
         {
-
-            return Ok(service.SelectServices.BuildingsByDepartment());
+            var departmentId = query?.DepartmentId;
+            var result = service.SelectServices.BuildingsByDepartment(departmentId);
+            return Ok(result);
         }
 
         [HttpPost("floorsbybuilding")]
         public IActionResult FloorsByBuilding([FromBody] FloorsByBuildingQueryVM query)
         {
-            return Ok(service.SelectServices.FloorsByBuilding(query.Building));
+            var result = service.SelectServices.FloorsByBuilding(query.Building, query.DepartmentId);
+            return Ok(result);
         }
 
         [HttpPost("roomsbyfloor")]
@@ -114,6 +116,13 @@ namespace TASA.Controllers.API
         public IActionResult CostCenters()
         {
             return Ok(service.SelectServices.CostCenters());
+        }
+
+        [HttpPost("smartsearch")]
+        public IActionResult SmartSearch([FromBody] SelectServices.SmartSearchQueryVM query)
+        {
+            var result = service.SelectServices.SmartSearch(query).ToList();
+            return Ok(result);
         }
     }
 }
