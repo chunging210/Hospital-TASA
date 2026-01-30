@@ -81,7 +81,14 @@ public partial class Equipment
 
     public Guid? RoomId { get; set; }
 
-    public int  RentalPrice { get; set; } = 0;
+    public int RentalPrice { get; set; } = 0;
+
+
+    /// <summary>
+    /// 分院ID (✅ 新增)
+    /// </summary>
+    public Guid? DepartmentId { get; set; }
+    
     /// <summary>
     /// 刪除
     /// </summary>
@@ -94,4 +101,11 @@ public partial class Equipment
 
     [ForeignKey("RoomId")]
     public virtual SysRoom? Room { get; set; }
+
+    /// <summary>
+    /// 分院導航屬性 (✅ 新增)
+    /// </summary>
+    [ForeignKey("DepartmentId")]
+    public virtual SysDepartment? Department { get; set; }
+
 }

@@ -187,7 +187,7 @@ namespace TASA.Services.ConferenceModule
                 ?? throw new HttpException("無法取得使用者資訊");
 
             var conference = await db.Conference
-                .Include(c => c.ConferencePaymentProofs)  // ✅ Navigation Property 用複數
+                .Include(c => c.ConferencePaymentProofs)
                 .FirstOrDefaultAsync(c => c.Id == vm.ReservationId)
                 ?? throw new HttpException("找不到該預約");
 
@@ -274,32 +274,6 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("付款審核",
                 $"退回付款 - {conference.Name} ({conference.Id}), 原因: {vm.Reason}");
-        }
-
-        /// <summary>
-        /// ✅ 批量批准
-        /// </summary>
-        public async Task BatchApprove(List<Guid> reservationIds)
-        {
-            foreach (var id in reservationIds)
-            {
-                await ApprovePayment(new ApprovePaymentVM { ReservationId = id });
-            }
-        }
-
-        /// <summary>
-        /// ✅ 批量退回
-        /// </summary>
-        public async Task BatchReject(List<Guid> reservationIds, string reason)
-        {
-            foreach (var id in reservationIds)
-            {
-                await RejectPayment(new RejectPaymentVM
-                {
-                    ReservationId = id,
-                    Reason = reason
-                });
-            }
         }
     }
 }

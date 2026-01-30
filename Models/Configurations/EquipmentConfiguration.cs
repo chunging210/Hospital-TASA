@@ -51,6 +51,19 @@ namespace TASA.Models.Configurations
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("Equipment_ibfk_2");
 
+            // ✅ 新增：分院 ID
+            entity.Property(e => e.DepartmentId)
+                .HasComment("分院ID（設備所屬分院）");
+
+            // ✅ 新增：分院關聯
+            entity.HasOne(d => d.Department)
+                .WithMany()
+                .HasForeignKey(d => d.DepartmentId)
+                .HasPrincipalKey(d => d.Id)  // ✅ 指定使用 Id (Guid) 而不是 No (uint)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("Equipment_ibfk_3");
+
+
             OnConfigurePartial(entity);
         }
 

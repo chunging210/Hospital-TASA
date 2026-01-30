@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace TASA.Models;
 
 [Index("ConferenceId", Name = "idx_conference")]
+[Index("EquipmentId", "SlotDate", "StartTime", "EndTime", Name = "idx_equipment_date_time")]
 public partial class ConferenceEquipment
 {
     /// <summary>
@@ -32,8 +33,9 @@ public partial class ConferenceEquipment
     public Guid EquipmentId { get; set; }
 
     /// <summary>
-    /// 類型 1=設備 2=攤位
+    /// 類型 8=公有設備 9=攤位
     /// </summary>
+    [Required]
     [StringLength(1)]
     public string EquipmentType { get; set; }
 
@@ -49,6 +51,42 @@ public partial class ConferenceEquipment
     /// </summary>
     [Column(TypeName = "int(11)")]
     public int EquipmentPrice { get; set; } = 0;
+
+    /// <summary>
+    /// 使用日期
+    /// </summary>
+    [Required]
+    public DateOnly SlotDate { get; set; }
+
+    /// <summary>
+    /// 開始時間
+    /// </summary>
+    [Required]
+    public TimeOnly StartTime { get; set; }
+
+    /// <summary>
+    /// 結束時間
+    /// </summary>
+    [Required]
+    public TimeOnly EndTime { get; set; }
+
+    /// <summary>
+    /// 狀態: 0=可用 1=鎖定中 2=已預約
+    /// </summary>
+    [Column(TypeName = "tinyint")]
+    public int EquipmentStatus { get; set; } = 1;
+
+    /// <summary>
+    /// 鎖定時間
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? LockedAt { get; set; }
+
+    /// <summary>
+    /// 釋放時間
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? ReleasedAt { get; set; }
 
     /// <summary>
     /// 建立時間

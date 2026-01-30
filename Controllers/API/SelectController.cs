@@ -14,19 +14,18 @@ namespace TASA.Controllers.API
         {
             return Ok(service.SelectServices.Room());
         }
-        
+
         [Authorize, HttpGet("roomlist")]
         public IActionResult RoomList([FromQuery] SysRoomQueryVM query)
-        {            
-            
+        {
+
             return Ok(service.SelectServices.RoomList(query).ToPage(Request, Response));
         }
 
         [HttpPost("equipmentbyroom")]
         public IActionResult EquipmentByRoom([FromBody] EquipmentByRoomQueryVM query)
         {
-            
-            return Ok(service.SelectServices.EquipmentByRoom(query?.RoomId));
+            return Ok(service.SelectServices.EquipmentByRoom(query));
         }
 
 
@@ -37,16 +36,16 @@ namespace TASA.Controllers.API
         }
 
         [HttpGet("buildingsbydepartment")]
-        public IActionResult BuildingsByDepartment([FromQuery] Guid departmentId)
+        public IActionResult BuildingsByDepartment()
         {
 
-            return Ok(service.SelectServices.BuildingsByDepartment(departmentId));
+            return Ok(service.SelectServices.BuildingsByDepartment());
         }
 
         [HttpPost("floorsbybuilding")]
         public IActionResult FloorsByBuilding([FromBody] FloorsByBuildingQueryVM query)
         {
-            return Ok(service.SelectServices.FloorsByBuilding(query.DepartmentId, query.Building));
+            return Ok(service.SelectServices.FloorsByBuilding(query.Building));
         }
 
         [HttpPost("roomsbyfloor")]
@@ -59,6 +58,13 @@ namespace TASA.Controllers.API
         public IActionResult RoomSlots([FromBody] RoomSlotQueryVM query)
         {
             return Ok(service.SelectServices.RoomSlots(query));
+        }
+
+        [HttpPost("roombyschedule")]
+        public IActionResult RoomTodaySchedule([FromBody] RoomTodayScheduleQueryVM query)
+        {
+            var result = service.SelectServices.RoomTodaySchedule(query.RoomId);
+            return Ok(result);
         }
 
 
@@ -102,6 +108,12 @@ namespace TASA.Controllers.API
         public IActionResult ECS()
         {
             return Ok(service.SelectServices.ECS());
+        }
+
+        [HttpGet("costcenters")]
+        public IActionResult CostCenters()
+        {
+            return Ok(service.SelectServices.CostCenters());
         }
     }
 }

@@ -2,6 +2,11 @@
 import global from '/global.js';
 const { ref, reactive, onMounted, computed } = Vue;
 
+let currentUser = null;
+const isAdmin = ref(false);  // ✅ 改用 ref
+const userDepartmentId = ref(null);  // ✅ 改用 ref
+const userDepartmentName = ref('');  // ✅ 改用 ref
+
 class VM {
     Id = null;
     Name = '';
@@ -84,6 +89,25 @@ const department = new function () {
 
 let imageIndices = reactive({});
 
+const loadCurrentUser = async () => {
+    try {
+        const userRes = await global.api.auth.me();
+        currentUser = userRes.data;
+        isAdmin.value = currentUser.IsAdmin || false;  // ✅ 用 .value
+        userDepartmentId.value = currentUser.DepartmentId;  // ✅ 用 .value
+        userDepartmentName.value = currentUser.DepartmentName || '';  // ✅ 用 .value
+
+        console.log('✅ 使用者資訊:', {
+            name: currentUser.Name,
+            isAdmin: isAdmin.value,  // ✅ 用 .value
+            departmentId: userDepartmentId.value,  // ✅ 用 .value
+            departmentName: userDepartmentName.value  // ✅ 用 .value
+        });
+    } catch (err) {
+        console.error('❌ 無法取得使用者資訊:', err);
+    }
+};
+
 const room = new function () {
     this.query = reactive({ keyword: '' });
     this.list = reactive([]);
@@ -94,11 +118,13 @@ const room = new function () {
         description: '',
         capacity: null,
         area: null,
-        refundEnabled: true,
         feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
         departmentId: null
     });
+    // ✅ 新增:今日時程
+    this.todaySchedule = ref([]);
+    this.scheduleRefreshInterval = null;
 
     this.editModal = null;
     this.page = {};
@@ -110,6 +136,58 @@ const room = new function () {
     this.detailRoomCarouselIndex = ref(0);
     this.carouselInterval = null;
     this.carouselDirection = 'next';
+
+    // ✅ 載入今日時程
+    this.loadTodaySchedule = async (roomId) => {
+        if (!roomId) return;
+
+        try {
+            const res = await global.api.select.roombyschedule({
+                body: { roomId: roomId }
+            });
+            this.todaySchedule.value = res.data || [];
+        } catch (err) {
+            console.error('❌ 載入今日時程失敗:', err);
+            this.todaySchedule.value = [];
+        }
+    };
+
+    // ✅ 啟動自動重新整理
+    this.startScheduleRefresh = (roomId) => {
+        this.stopScheduleRefresh();
+        this.loadTodaySchedule(roomId);
+
+        this.scheduleRefreshInterval = setInterval(() => {
+            this.loadTodaySchedule(roomId);
+        }, 60000); // 每 1 分鐘
+    };
+
+    // ✅ 停止自動重新整理
+    this.stopScheduleRefresh = () => {
+        if (this.scheduleRefreshInterval) {
+            clearInterval(this.scheduleRefreshInterval);
+            this.scheduleRefreshInterval = null;
+        }
+    };
+
+    // ✅ 狀態轉換
+    this.getStatusBadgeClass = (status) => {
+        const classMap = {
+            'upcoming': 'bg-warning',
+            'ongoing': 'bg-danger',
+            'completed': 'bg-success'
+        };
+        return classMap[status] || 'bg-secondary';
+    };
+
+    this.getStatusText = (status) => {
+        const textMap = {
+            'upcoming': '待開始',
+            'ongoing': '進行中',
+            'completed': '已完成'
+        };
+        return textMap[status] || '未知';
+    };
 
     // ✅ 新增：啟動自動輪播
     this.startCarousel = () => {
@@ -264,11 +342,14 @@ const room = new function () {
             this.form.description = '';
             this.form.capacity = null;
             this.form.area = null;
-            this.form.refundEnabled = true;
             this.form.feeType = PricingType.Period;
             this.vm.PricingType = PricingType.Period;
             this.form.rentalType = BookingSettings.InternalOnly;
-            this.form.departmentId = null;
+            if (!isAdmin.value && userDepartmentId.value) {
+                this.form.departmentId = userDepartmentId.value;
+            } else {
+                this.form.departmentId = null;
+            }
             this.generateCreateTimeSlotDefaults();
             // this.generateHourlySlots();
             // this.timeSlots.splice(0);
@@ -289,9 +370,6 @@ const room = new function () {
             : this.form.feeType;
 
         let status = source.Status ?? RoomStatus.Available;
-        if (source.BookingSettings === BookingSettings.Closed) {
-            status = RoomStatus.Maintenance;
-        }
 
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
         const capacity = Number(source.Capacity ?? source.capacity ?? 0);
@@ -310,7 +388,6 @@ const room = new function () {
 
             Status: status,
             PricingType: pricingType,
-            IsEnabled: source.IsEnabled ?? source.refundEnabled,
             BookingSettings: source.BookingSettings ?? source.rentalType,
             DepartmentId: source.DepartmentId ?? source.departmentId,
             Images: this.mediaFiles.map((m, idx) => ({
@@ -495,6 +572,7 @@ const room = new function () {
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
                 this.startCarousel();
+                this.loadTodaySchedule(Id);
             })
             .catch(error => {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
@@ -534,6 +612,13 @@ window.$config = {
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.department = department;
+        this.isAdmin = isAdmin;
+        this.userDepartmentName = userDepartmentName;
+        // ✅ 加上這些
+        this.todaySchedule = room.todaySchedule;
+        this.getStatusBadgeClass = room.getStatusBadgeClass;
+        this.getStatusText = room.getStatusText;
+
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {
                 return null;
@@ -580,7 +665,9 @@ window.$config = {
             room.getList();
         };
 
-        onMounted(() => {
+        onMounted(async () => {
+
+            await loadCurrentUser();
             room.page = this.roompage.value;
 
             room.getList(1);
@@ -589,12 +676,32 @@ window.$config = {
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
-            department.getList();
+
+            if (isAdmin.value) {
+                console.log('✅ 是管理者,載入分院列表');
+                department.getList();
+            }
 
             const detailModalElement = document.getElementById('roomDetailModal');
-            detailModalElement.addEventListener('hidden.bs.modal', () => {
-                room.stopCarousel();
-            });
+            if (detailModalElement) {
+                detailModalElement.addEventListener('hidden.bs.modal', () => {
+                    room.stopCarousel();
+                    room.stopScheduleRefresh(); // ✅ 停止時程重新整理
+                });
+
+                // ✅ 監聽 Tab 切換
+                detailModalElement.addEventListener('shown.bs.tab', (event) => {
+                    const targetId = event.target.getAttribute('data-bs-target');
+
+                    if (targetId === '#schedule') {
+                        if (room.detailRoom.value?.Id) {
+                            room.startScheduleRefresh(room.detailRoom.value.Id);
+                        }
+                    } else {
+                        room.stopScheduleRefresh();
+                    }
+                });
+            }
 
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
         });

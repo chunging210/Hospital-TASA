@@ -168,7 +168,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <!-- 時程頁 -->
                             <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
                                 <div class="schedule-section">
@@ -181,20 +180,25 @@
                                                 <tr>
                                                     <th>時間</th>
                                                     <th>會議名稱</th>
-                                                    <th>主辦單位</th>
                                                     <th>狀態</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-if="detailRoom?.Schedule && detailRoom.Schedule.length > 0"
-                                                    v-for="schedule in detailRoom.Schedule" :key="schedule.id">
-                                                    <td>{{ schedule.time }}</td>
-                                                    <td>{{ schedule.name }}</td>
-                                                    <td>{{ schedule.organizer }}</td>
-                                                    <td><span class="badge bg-info">{{ schedule.status }}</span></td>
+                                                <!-- ✅ 有資料 -->
+                                                <tr v-if="todaySchedule && todaySchedule.length > 0"
+                                                    v-for="(schedule, index) in todaySchedule" :key="index">
+                                                    <td>{{ schedule.StartTime }} - {{ schedule.EndTime }}</td>
+                                                    <td>{{ schedule.ConferenceName }}</td>
+                                                    <td>
+                                                        <span class="badge"
+                                                            :class="getStatusBadgeClass(schedule.Status)">
+                                                            {{ getStatusText(schedule.Status) }}
+                                                        </span>
+                                                    </td>
                                                 </tr>
+                                                <!-- ✅ 無資料 -->
                                                 <tr v-else>
-                                                    <td colspan="4" class="text-center text-muted">今日無安排</td>
+                                                    <td colspan="3" class="text-center text-muted">今日無會議</td>
                                                 </tr>
                                             </tbody>
                                         </table>

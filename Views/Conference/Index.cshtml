@@ -9,21 +9,22 @@
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <input v-model="conference.query.Start" @@change="conference.getList" type="date"
+                            <input v-model="conference.query.Start" @@change="conference.onFilterChange" type="date"
                                 class="form-control" placeholder="會議時間(起)">
                             <label>會議時間(起)</label>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <input v-model="conference.query.End" @@change="conference.getList" type="date"
+                            <input v-model="conference.query.End" @@change="conference.onFilterChange" type="date"
                                 class="form-control" placeholder="會議時間(訖)">
                             <label>會議時間(訖)</label>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <select v-model="conference.query.RoomId" @@change="conference.getList" class="form-select">
+                            <select v-model="conference.query.RoomId" @@change="conference.onFilterChange"
+                                class="form-select">
                                 <option value="">請選擇</option>
                                 <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
                             </select>
@@ -32,7 +33,7 @@
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <select v-model="conference.query.DepartmentId" @@change="conference.getList"
+                            <select v-model="conference.query.DepartmentId" @@change="conference.onFilterChange"
                                 class="form-select">
                                 <option value="">請選擇</option>
                                 <option v-for="{Id,Name} in department.list" :value="Id">{{Name}}</option>
@@ -42,7 +43,8 @@
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <select v-model="conference.query.UserId" @@change="conference.getList" class="form-select">
+                            <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
+                                class="form-select">
                                 <option value="">請選擇</option>
                                 <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
                             </select>
@@ -52,7 +54,7 @@
                     <div class="col-12 col-lg-2">
                         <div class="input-group">
                             <div class="form-floating">
-                                <input v-model="conference.query.keyword" @@blur="conference.getList" type="text"
+                                <input v-model="conference.query.keyword" @@blur="conference.onFilterChange" type="text"
                                     class="form-control" placeholder="關鍵字">
                                 <label>關鍵字</label>
                             </div>
@@ -80,7 +82,6 @@
                             <th>會議主席</th>
                             <th>承辦單位</th>
                             <th>發起會議者</th>
-                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -93,14 +94,6 @@
                             <td>{{item.Department.join(',')}}</td>
                             <td>{{item.CreateByName}}</td>
                             <td class="hstack gap-3">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button v-if="item.CanEdit" @@click="conference.getVM(item.Id)"
-                                        class="btn btn-primary">編輯</button>
-                                    <button v-if="item.Recording7" @@click="recording.get(item.Id)"
-                                        class="btn btn-primary">錄製檔</button>
-                                    <button @@click="conference.copy(item.Id)" class="btn btn-primary">複製</button>
-                                    <button @@click="conference.delete(item.Id)" class="btn btn-danger">刪除</button>
-                                </div>
                                 <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
                                     class="btn btn-sm btn-secondary">ZeroTouch</button>
                             </td>
@@ -112,6 +105,8 @@
                         </tr>
                     </tfoot>
                 </table>
+
+                <page ref="conferencepage" :per-page="20"  :per-page-option="[20,40,60]" @@reload="conference.getList"></page>
             </div>
         </div>
     </div>

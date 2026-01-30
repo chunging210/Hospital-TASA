@@ -27,8 +27,10 @@ namespace TASA.Services
         Lazy<PasswordServices> passwordServices,
         Lazy<PasswordMail> passwordMail,
         Lazy<UserClaimsService> userClaimsService,
+        Lazy<UserContextService> userContextService,
+
         Lazy<ConferenceService> conferenceService,
-        
+
         Lazy<ProfilesServices> profilesServices,
         Lazy<AuthUserServices> authUserServices,
         Lazy<AuthRoleServices> authRoleServices,
@@ -50,7 +52,8 @@ namespace TASA.Services
         Lazy<WebexMeetingService> webexMeetingService,
         Lazy<SeatSettingService> seatSettingService,
         Lazy<VisitorService> visitorService,
-        Lazy<SysConfigService> sysConfigService
+        Lazy<SysConfigService> sysConfigService,
+        Lazy<ReservationAutoManagementService> reservationAutoManagementService
 
     )
     {
@@ -66,6 +69,7 @@ namespace TASA.Services
         public RegisterServices RegisterServices => registerServices.Value;
         public PasswordMail PasswordMail => passwordMail.Value;
         public UserClaimsService UserClaimsService => userClaimsService.Value;
+        public UserContextService UserContextService => userContextService.Value;
 
         public ProfilesServices ProfilesServices => profilesServices.Value;
         public AuthUserServices AuthUserServices => authUserServices.Value;
@@ -92,6 +96,9 @@ namespace TASA.Services
 
         public VisitorService VisitorService => visitorService.Value;
         public SysConfigService SysConfigService => sysConfigService.Value;
+
+        public ReservationAutoManagementService ReservationAutoManagementService => reservationAutoManagementService.Value;
+
 
     }
 }

@@ -2,11 +2,12 @@
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
-
+using TASA.Models.Auth;
 namespace TASA.Services.EquipmentModule
 {
     public class EquipmentService(TASAContext db, ServiceWrapper service) : IService
     {
+
         // ========= 列表 ViewModel =========
         public record ListVM
         {
@@ -17,21 +18,23 @@ namespace TASA.Services.EquipmentModule
             public string? Building { get; set; }
             public string? Floor { get; set; }
             public string? RoomName { get; set; }
-            public int  RentalPrice { get; set; }
+            public int RentalPrice { get; set; }
             public bool IsEnabled { get; set; }
             public DateTime CreateAt { get; set; }
+            public Guid? DepartmentId { get; set; }
         }
 
         public IQueryable<ListVM> List(EquipmentQueryVM query)
         {
             Console.WriteLine("EquipmentService.List 被調用");
-            
+
             var q = db.Equipment
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereIf(query.IsEnabled.HasValue, x => x.IsEnabled == query.IsEnabled)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .WhereIf(!string.IsNullOrEmpty(query.Type), x => x.Type.ToString() == query.Type);
+
 
             return q.Select(x => new ListVM
             {
@@ -44,7 +47,8 @@ namespace TASA.Services.EquipmentModule
                 RoomName = x.Room != null ? x.Room.Name : null,
                 RentalPrice = x.RentalPrice,
                 IsEnabled = x.IsEnabled,
-                CreateAt = x.CreateAt
+                CreateAt = x.CreateAt,
+                DepartmentId = x.DepartmentId
             })
             .AsQueryable();
         }
@@ -59,18 +63,18 @@ namespace TASA.Services.EquipmentModule
             public Guid? RoomId { get; set; }
             public string? Building { get; set; }
             public string? Floor { get; set; }
-            public int  RentalPrice { get; set; }
+            public int RentalPrice { get; set; }
             public string? Host { get; set; }
             public int? Port { get; set; }
             public string? Account { get; set; }
             public string? Password { get; set; }
             public bool IsEnabled { get; set; } = true;
-            public Guid? DepartmentId { get; set; }  
+            public Guid? DepartmentId { get; set; }
         }
 
         public DetailVM? Detail(Guid id)
         {
-            return db.Equipment
+            var equipment = db.Equipment
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .Where(x => x.Id == id)
@@ -83,7 +87,7 @@ namespace TASA.Services.EquipmentModule
                     RoomId = x.RoomId,
                     Building = x.Room != null ? x.Room.Building : null,
                     Floor = x.Room != null ? x.Room.Floor : null,
-                    DepartmentId = x.Room != null ? x.Room.DepartmentId : null,
+                    DepartmentId = x.DepartmentId,
                     RentalPrice = x.RentalPrice,
                     Host = x.Host,
                     Port = x.Port,
@@ -92,7 +96,23 @@ namespace TASA.Services.EquipmentModule
                     IsEnabled = x.IsEnabled
                 })
                 .FirstOrDefault();
+
+            // ✅ 權限檢查:非管理者只能查看自己分院的設備
+            if (equipment != null)
+            {
+                var currentUser = service.UserClaimsService.Me();
+                if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+                {
+                    if (equipment.DepartmentId != currentUser.DepartmentId)
+                    {
+                        throw new HttpException("您沒有權限查看此設備");
+                    }
+                }
+            }
+
+            return equipment;
         }
+
         /// <summary>
         /// 統一驗證方法 - 新增/編輯都使用
         /// </summary>
@@ -101,9 +121,22 @@ namespace TASA.Services.EquipmentModule
             // ✅ 1️⃣ 驗證：RoomId 存在性（若有提供）
             if (vm.RoomId.HasValue)
             {
-                var room = db.SysRoom.FirstOrDefault(x => x.Id == vm.RoomId);
+                var room = db.SysRoom
+                    .WhereNotDeleted()
+                    .FirstOrDefault(x => x.Id == vm.RoomId);
+
                 if (room == null)
                     throw new HttpException("選擇的會議室不存在");
+
+                // ✅ 權限檢查:非管理者只能選擇自己分院的會議室
+                var currentUser = service.UserClaimsService.Me();
+                if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+                {
+                    if (room.DepartmentId != currentUser.DepartmentId)
+                    {
+                        throw new HttpException("您只能選擇自己分院的會議室");
+                    }
+                }
             }
 
             // ✅ 2️⃣ 驗證：公有設備(8)/攤位租借(9) 必須有租借金額
@@ -135,18 +168,43 @@ namespace TASA.Services.EquipmentModule
                 }
             }
         }
-
         /// <summary>
         /// 新增設備
         /// </summary>
         public void Insert(DetailVM vm)
         {
-            var userid = service.UserClaimsService.Me()?.Id;
-            if (userid == null)
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser?.Id == null)
                 throw new HttpException("無法取得使用者資訊");
 
             // ✅ 統一驗證
             ValidateEquipment(vm);
+
+            // ✅ 決定 DepartmentId
+            Guid? departmentId = null;
+
+            if (vm.RoomId.HasValue)
+            {
+                // 如果有會議室,用會議室的分院
+                var room = db.SysRoom
+                    .WhereNotDeleted()
+                    .FirstOrDefault(x => x.Id == vm.RoomId);
+                departmentId = room?.DepartmentId;
+            }
+            else
+            {
+                // 如果沒有會議室(公有設備),用使用者的分院
+                departmentId = currentUser.DepartmentId;
+            }
+
+            // ✅ 權限檢查:非管理者強制使用自己的分院
+            if (!currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            {
+                if (departmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您只能新增自己分院的設備");
+                }
+            }
 
             var newEquipment = new Equipment()
             {
@@ -155,6 +213,7 @@ namespace TASA.Services.EquipmentModule
                 ProductModel = vm.ProductModel,
                 Type = (byte)vm.Type,
                 RoomId = vm.RoomId,
+                DepartmentId = departmentId,  // ✅ 設定分院ID
                 RentalPrice = vm.RentalPrice,
                 Host = vm.Host,
                 Port = vm.Port,
@@ -162,16 +221,17 @@ namespace TASA.Services.EquipmentModule
                 Password = vm.Password,
                 IsEnabled = vm.IsEnabled,
                 CreateAt = DateTime.Now,
-                CreateBy = userid.Value
+                CreateBy = currentUser.Id.Value
             };
 
             db.Equipment.Add(newEquipment);
             db.SaveChanges();
 
-            var roomInfo = vm.RoomId.HasValue ? $"(會議室: {vm.RoomId})" : "(未指派會議室)";
-            _ = service.LogServices.LogAsync("設備新增", $"{newEquipment.Name}({newEquipment.Id}) {roomInfo} IsEnabled:{newEquipment.IsEnabled}");
+            var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
+            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "公有設備";
+            _ = service.LogServices.LogAsync("設備新增",
+                $"{newEquipment.Name}({newEquipment.Id}) {deptInfo} {roomInfo} IsEnabled:{newEquipment.IsEnabled}");
         }
-
         /// <summary>
         /// 編輯設備
         /// </summary>
@@ -187,13 +247,39 @@ namespace TASA.Services.EquipmentModule
             if (data == null)
                 throw new HttpException("設備不存在");
 
+            // ✅ 權限檢查:非管理者只能編輯自己分院的設備
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            {
+                if (data.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限編輯此設備");
+                }
+            }
+
             // ✅ 統一驗證
             ValidateEquipment(vm);
+
+            // ✅ 更新 DepartmentId
+            Guid? departmentId = null;
+            if (vm.RoomId.HasValue)
+            {
+                var room = db.SysRoom
+                    .WhereNotDeleted()
+                    .FirstOrDefault(x => x.Id == vm.RoomId);
+                departmentId = room?.DepartmentId;
+            }
+            else
+            {
+                // 公有設備:保持原有分院或使用使用者分院
+                departmentId = data.DepartmentId ?? currentUser?.DepartmentId;
+            }
 
             data.Name = vm.Name;
             data.ProductModel = vm.ProductModel;
             data.Type = (byte)vm.Type;
             data.RoomId = vm.RoomId;
+            data.DepartmentId = departmentId;  // ✅ 更新分院ID
             data.RentalPrice = vm.RentalPrice;
             data.Host = vm.Host;
             data.Port = vm.Port;
@@ -203,10 +289,11 @@ namespace TASA.Services.EquipmentModule
 
             db.SaveChanges();
 
-            var roomInfo = vm.RoomId.HasValue ? $"(會議室: {vm.RoomId})" : "(未指派會議室)";
-            _ = service.LogServices.LogAsync("設備編輯", $"{data.Name}({data.Id}) {roomInfo} IsEnabled:{data.IsEnabled}");
+            var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
+            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "公有設備";
+            _ = service.LogServices.LogAsync("設備編輯",
+                $"{data.Name}({data.Id}) {deptInfo} {roomInfo} IsEnabled:{data.IsEnabled}");
         }
-
         /// <summary>
         /// 刪除設備
         /// </summary>
@@ -216,12 +303,22 @@ namespace TASA.Services.EquipmentModule
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == id);
 
-            if (data != null)
+            if (data == null)
+                throw new HttpException("設備不存在");
+
+            // ✅ 權限檢查:非管理者只能刪除自己分院的設備
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser != null && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
             {
-                data.DeleteAt = DateTime.UtcNow;
-                db.SaveChanges();
-                _ = service.LogServices.LogAsync("設備刪除", $"{data.Name}({data.Id})");
+                if (data.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限刪除此設備");
+                }
             }
+
+            data.DeleteAt = DateTime.UtcNow;
+            db.SaveChanges();
+            _ = service.LogServices.LogAsync("設備刪除", $"{data.Name}({data.Id})");
         }
 
         /// <summary>
@@ -244,7 +341,8 @@ namespace TASA.Services.EquipmentModule
                     RoomName = x.Room != null ? x.Room.Name : null,
                     RentalPrice = x.RentalPrice,
                     IsEnabled = x.IsEnabled,
-                    CreateAt = x.CreateAt
+                    CreateAt = x.CreateAt,
+                    DepartmentId = x.DepartmentId
                 })
                 .AsQueryable();
         }

@@ -16,9 +16,9 @@ namespace TASA.Services.AuthModule
             var context = httpContextAccessor.HttpContext;
             var ip = context?.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim()
                 ?? context?.Request.Headers["X-Real-IP"].ToString()
-                ?? context?.Connection.RemoteIpAddress?.ToString() 
+                ?? context?.Connection.RemoteIpAddress?.ToString()
                 ?? "未知";
-            
+
             return ip;
         }
 
@@ -39,7 +39,7 @@ namespace TASA.Services.AuthModule
         {
             var context = httpContextAccessor.HttpContext;
             var userAgent = context?.Request.Headers["User-Agent"].ToString() ?? "未知";
-            
+
             var device = "未知";
             var browser = "未知";
 
@@ -101,8 +101,8 @@ namespace TASA.Services.AuthModule
             // 0️⃣ 密碼確認
             if (vm.Password != vm.ConfirmPassword)
             {
-                var failureInfo = new 
-                { 
+                var failureInfo = new
+                {
                     UserName = vm.Email,
                     Email = vm.Email,
                     IsSuccess = false,
@@ -128,8 +128,8 @@ namespace TASA.Services.AuthModule
 
             if (exists)
             {
-                var failureInfo = new 
-                { 
+                var failureInfo = new
+                {
                     UserName = vm.Email,
                     Email = vm.Email,
                     IsSuccess = false,
@@ -161,18 +161,39 @@ namespace TASA.Services.AuthModule
 
             // 3️⃣ 分院（可為 null）
             SysDepartment? department = null;
-            if (vm.DepartmentId.HasValue)
+            if (!vm.DepartmentId.HasValue)
             {
+                department = db.SysDepartment
+                    .AsNoTracking()
+                    .WhereNotDeleted()
+                    .FirstOrDefault(x => x.Sequence == 1);  // ✅ 假設台北總院 Sequence = 1
+
+                if (department == null)
+                {
+                    // 備用方案:用名稱搜尋
+                    department = db.SysDepartment
+                        .AsNoTracking()
+                        .WhereNotDeleted()
+                        .FirstOrDefault(x => x.Name.Contains("臺北總院"));
+                }
+
+                if (department == null)
+                {
+                    throw new HttpException("無法找到預設分院(臺北總院)");
+                }
+
+                Console.WriteLine($"✅ 院外人士註冊,自動設定為: {department.Name}");
+            }
+            else
+            {
+                // 如果有選擇分院,驗證分院是否存在
                 department = db.SysDepartment
                     .AsNoTracking()
                     .FirstOrDefault(x => x.Id == vm.DepartmentId.Value);
 
                 if (department == null)
                 {
-                    throw new HttpException("所選分院不存在")
-                    {
-                        StatusCode = HttpStatusCode.BadRequest
-                    };
+                    throw new HttpException("所選分院不存在");
                 }
             }
 
@@ -188,7 +209,7 @@ namespace TASA.Services.AuthModule
                 Name = vm.Name,
                 PasswordHash = hashVm.Hash,
                 PasswordSalt = hashVm.Salt,
-                DepartmentId = department?.Id,
+                DepartmentId = department.Id,
                 IsEnabled = true,
                 CreateAt = DateTime.Now,
             };
@@ -199,8 +220,8 @@ namespace TASA.Services.AuthModule
             db.SaveChanges();
 
             // 6️⃣ 紀錄 Log - ✅ 使用最上面宣告的 deviceInfo
-            var successInfo = new 
-            { 
+            var successInfo = new
+            {
                 UserName = user.Account,
                 Email = user.Email,
                 IsSuccess = true,

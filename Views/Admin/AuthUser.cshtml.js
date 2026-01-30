@@ -13,7 +13,7 @@ class VM {
 
 const tabs = new function () {
     this.select = ref('IsAdmin');
-    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '一般使用者', value: 'IsNormal' }, { text: '一般職員', value: 'IsStaff' }];
+    this.list = [{ text: '管理者', value: 'IsAdmin' }, { text: '主任', value: 'IsDirector' }, { text: '總務', value: 'IsAccountant' }, { text: '一般使用者', value: 'IsNormal' }, { text: '一般職員', value: 'IsStaff' }];
     this.click = (value) => {
         this.select.value = value;
     }
@@ -82,51 +82,6 @@ const authuser = new function () {
     }
 }
 
-// ✅ 新增：系統設定物件
-const sysConfig = new function () {
-    this.isRegistrationOpen = ref(false);  // 用 ref
-
-    this.getRegistrationStatus = () => {
-        console.log('🔍 取得註冊開關狀態...');
-        global.api.sysconfig.registrationstatus()
-            .then((response) => {
-                console.log('✅ API 回傳:', response);
-                // 正確取得 API 回傳的值
-                const isOpen = response.data?.isOpen ?? false;
-                this.isRegistrationOpen.value = isOpen;
-                console.log('📝 註冊已' + (isOpen ? '開放' : '關閉'));
-            })
-            .catch(error => {
-                console.error('❌ 取得註冊狀態失敗:', error);
-                this.isRegistrationOpen.value = false;
-            });
-    };
-
-    // 切換功能 - 保持原來的邏輯
-    this.toggleRegistration = (event) => {
-        const newValue = event.target.checked;  // 直接從 checkbox 取值
-        console.log('🔀 切換註冊開關:', newValue);
-
-        global.api.sysconfig.registrationtoggle({ body: { isOpen: newValue } })
-            .then((response) => {
-                console.log('✅ 設定已更新:', response);
-                // ✅ 成功後才更新狀態
-                this.isRegistrationOpen.value = newValue;
-                addAlert(response.message || '設定已更新', { type: 'success' });
-
-                // 通知其他頁面
-                window.dispatchEvent(new CustomEvent('registrationStatusChanged', {
-                    detail: { isOpen: newValue }
-                }));
-            })
-            .catch(error => {
-                console.error('❌ 更新失敗:', error);
-                addAlert(error.message || '更新失敗', { type: 'danger' });
-                // ❌ 失敗時不改變狀態，checkbox 會自動恢復原值
-            });
-    };
-}
-
 window.$config = {
     setup: () => new function () {
         this.tabs = tabs;
@@ -136,8 +91,6 @@ window.$config = {
         this.authuseroffcanvas = ref(null);
         this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
         this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
-        this.sysConfig = sysConfig;
-
 
         onMounted(() => {
             console.log('🚀 onMounted 開始');

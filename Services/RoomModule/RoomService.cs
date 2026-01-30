@@ -5,11 +5,14 @@ using TASA.Program;
 using System.Text.Json.Serialization;
 using TASA.Models.Enums;
 using System.Text.RegularExpressions;
+using TASA.Models.Auth;
 
 namespace TASA.Services.RoomModule
 {
     public class RoomService(TASAContext db, ServiceWrapper service) : IService
     {
+
+
         public record ListVM
         {
             public uint No { get; set; }
@@ -25,9 +28,18 @@ namespace TASA.Services.RoomModule
             public List<string> Images { get; set; } = new();
             public DateTime CreateAt { get; set; }
             public int EquipmentCount { get; set; }
+            public List<RoomTodayScheduleVM>? TodaySchedule { get; set; }
 
         }
 
+
+            public record RoomTodayScheduleVM
+            {
+                public string StartTime { get; set; } = string.Empty;
+                public string EndTime { get; set; } = string.Empty;
+                public string ConferenceName { get; set; } = string.Empty;
+                public string Status { get; set; } = string.Empty;
+            }
 
         public record EquipmentVM
         {
@@ -35,35 +47,170 @@ namespace TASA.Services.RoomModule
             public string Name { get; set; } = string.Empty;
         }
 
-        public IQueryable<ListVM> List(BaseQueryVM query)
+        private class RawScheduleSlot
         {
-            return db.SysRoom
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .WhereIf(query.DepartmentId.HasValue, x => 
-                        x.DepartmentId == query.DepartmentId)
-                .Select(x => new ListVM
-                {
-                    No = x.No,
-                    Id = x.Id,
-                    Name = x.Name,
-                    Building = x.Building,
-                    Floor = x.Floor,
-                    Capacity = x.Capacity,
-                    Area = x.Area,
-                    Status = x.Status,
-                    IsEnabled = x.IsEnabled,
-                    CreateAt = x.CreateAt,
-                    EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                    Images = x.Images
-                        .Where(img => !string.IsNullOrEmpty(img.ImagePath))
-                        .OrderBy(img => img.SortOrder)
-                        .Select(img => img.ImagePath)
-                        .ToList()
-                });
+            public Guid RoomId { get; set; }
+            public Guid ConferenceId { get; set; }
+            public string ConferenceName { get; set; } = string.Empty;
+            public TimeOnly StartTime { get; set; }
+            public TimeOnly EndTime { get; set; }
+            public byte? Status { get; set; }
         }
 
+public IQueryable<ListVM> List(BaseQueryVM query)
+{
+    Console.WriteLine("========== RoomService.List Debug ==========");
+
+    var q = db.SysRoom
+        .AsNoTracking()
+        .WhereNotDeleted()
+        .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+        .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
+
+    var count = q.Count();
+
+    // ✅ 取得今天日期
+    var today = DateOnly.FromDateTime(DateTime.Now);
+
+    // ✅ 先取得會議室基本資料
+    var roomList = q.Select(x => new
+    {
+        x.No,
+        x.Id,
+        x.Name,
+        x.Building,
+        x.Floor,
+        x.Capacity,
+        x.Area,
+        x.Status,
+        x.IsEnabled,
+        x.CreateAt,
+        x.DepartmentId,
+        EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+        Images = x.Images
+            .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+            .OrderBy(img => img.SortOrder)
+            .Select(img => img.ImagePath)
+            .ToList()
+    }).ToList();
+
+    // ✅ 批次查詢所有會議室的今日時程
+    var roomIds = roomList.Select(r => r.Id).ToList();
+    
+    // ✅ 先查詢並轉換成 RawScheduleSlot
+    var allScheduleSlots = db.ConferenceRoomSlot
+        .AsNoTracking()
+        .Where(s => roomIds.Contains(s.RoomId))
+        .Where(s => s.SlotDate == today)
+        .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+        .Where(s => s.ConferenceId.HasValue)
+        .OrderBy(s => s.RoomId)  // ✅ 先按會議室排序
+        .ThenBy(s => s.StartTime)  // ✅ 再按時間排序
+        .Select(s => new RawScheduleSlot
+        {
+            RoomId = s.RoomId,
+            ConferenceId = s.ConferenceId!.Value,
+            ConferenceName = s.Conference.Name,
+            StartTime = s.StartTime,
+            EndTime = s.EndTime,
+            Status = s.Conference.Status
+        })
+        .ToList();  // ✅ 先執行查詢
+
+    // ✅ 在記憶體中按會議室分組並合併時段
+    var todaySchedules = allScheduleSlots
+        .GroupBy(s => s.RoomId)
+        .ToDictionary(
+            g => g.Key,
+            g => MergeSchedules(g.ToList())  // ✅ 現在型別正確了
+        );
+
+    // ✅ 組合最終結果
+    return roomList.Select(room => new ListVM
+    {
+        No = room.No,
+        Id = room.Id,
+        Name = room.Name,
+        Building = room.Building,
+        Floor = room.Floor,
+        Capacity = room.Capacity,
+        Area = room.Area,
+        Status = room.Status,
+        IsEnabled = room.IsEnabled,
+        CreateAt = room.CreateAt,
+        DepartmentId = room.DepartmentId,
+        EquipmentCount = room.EquipmentCount,
+        Images = room.Images,
+        TodaySchedule = todaySchedules.ContainsKey(room.Id) 
+            ? todaySchedules[room.Id] 
+            : new List<RoomTodayScheduleVM>()
+    }).AsQueryable();
+}
+
+        private List<RoomTodayScheduleVM> MergeSchedules(List<RawScheduleSlot> slots)
+        {
+            if (slots.Count == 0) return new List<RoomTodayScheduleVM>();
+
+            var merged = new List<RoomTodayScheduleVM>();
+            
+            var current = slots[0];  // ✅ 直接取第一個
+
+            for (int i = 1; i < slots.Count; i++)
+            {
+                var slot = slots[i];
+                
+                if (slot.ConferenceId == current.ConferenceId &&
+                    slot.StartTime == current.EndTime)
+                {
+                    // ✅ 合併連續時段 - 只更新結束時間
+                    current = new RawScheduleSlot
+                    {
+                        RoomId = current.RoomId,
+                        ConferenceId = current.ConferenceId,
+                        ConferenceName = current.ConferenceName,
+                        StartTime = current.StartTime,
+                        EndTime = slot.EndTime,  // ✅ 延長結束時間
+                        Status = current.Status
+                    };
+                }
+                else
+                {
+                    // ❌ 不連續,保存當前並開始新的
+                    merged.Add(new RoomTodayScheduleVM
+                    {
+                        StartTime = current.StartTime.ToString(@"HH\:mm"),
+                        EndTime = current.EndTime.ToString(@"HH\:mm"),
+                        ConferenceName = current.ConferenceName,
+                        Status = GetDisplayStatus(current.Status)
+                    });
+
+                    current = slot;  // ✅ 開始新的時段
+                }
+            }
+
+            // ✅ 保存最後一筆
+            merged.Add(new RoomTodayScheduleVM
+            {
+                StartTime = current.StartTime.ToString(@"HH\:mm"),
+                EndTime = current.EndTime.ToString(@"HH\:mm"),
+                ConferenceName = current.ConferenceName,
+                Status = GetDisplayStatus(current.Status)
+            });
+
+            return merged;
+        }
+
+        // ✅ 新增輔助方法:狀態轉換
+        private string GetDisplayStatus(byte? status)
+        {
+            return status switch
+            {
+                0 or 1 => "upcoming",
+                2 => "ongoing",
+                3 or 4 => "completed",
+                _ => "upcoming"
+            };
+        }
         // ✅ 查詢用：Images 只返回路徑字串
         public record DetailVM
         {
@@ -78,7 +225,7 @@ namespace TASA.Services.RoomModule
             public PricingType PricingType { get; set; }  // ✅ Enum
             public bool IsEnabled { get; set; }
             public BookingSettings BookingSettings { get; set; }  // ✅ Enum
-            public Guid? DepartmentId { get; set; } 
+            public Guid? DepartmentId { get; set; }
             public DepartmentInfoVM? Department { get; set; }
             public List<string>? Images { get; set; }  // ✅ 改成字串陣列
             public List<PricingDetailVM>? PricingDetails { get; set; }
@@ -106,7 +253,7 @@ namespace TASA.Services.RoomModule
             public PricingType PricingType { get; set; }  // ✅ Enum
             public bool IsEnabled { get; set; }
             public BookingSettings BookingSettings { get; set; }  // ✅ Enum
-            public Guid? DepartmentId { get; set; } 
+            public Guid? DepartmentId { get; set; }
             public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
         }
@@ -142,7 +289,7 @@ namespace TASA.Services.RoomModule
             var room = db.SysRoom
                 .AsNoTracking()
                 .Include(x => x.Images)
-                .Include(x => x.Department) 
+                .Include(x => x.Department)
                 .Include(x => x.SysRoomPriceHourly)
                 .Include(x => x.SysRoomPricePeriod)
                 .Include(x => x.Equipment)
@@ -174,7 +321,7 @@ namespace TASA.Services.RoomModule
                     })
                     .ToList(),
 
-                 Department = room.Department != null ? new DepartmentInfoVM
+                Department = room.Department != null ? new DepartmentInfoVM
                 {
                     Id = room.Department.Id,
                     Name = room.Department.Name
@@ -207,7 +354,7 @@ namespace TASA.Services.RoomModule
             //     detailVM.PricingDetails = hourlyPricing;
             // }
             // else
-         if (room.PricingType == PricingType.Period)
+            if (room.PricingType == PricingType.Period)
             {
                 var periodPricing = room.SysRoomPricePeriod
                     .Where(x => x.DeleteAt == null)
@@ -330,7 +477,7 @@ namespace TASA.Services.RoomModule
         private void ValidatePricingDetails(PricingType pricingType, List<PricingDetailVM>? pricingDetails)
         {
 
-             Console.WriteLine($"🔍 [Debug] PricingType: {pricingType}");
+            Console.WriteLine($"🔍 [Debug] PricingType: {pricingType}");
             Console.WriteLine($"🔍 [Debug] PricingDetails Count: {pricingDetails?.Count ?? 0}");
             // 必須有勾選的時段或小時
             if (pricingDetails == null || pricingDetails.Count == 0)
@@ -340,7 +487,7 @@ namespace TASA.Services.RoomModule
 
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
-    Console.WriteLine($"🔍 [Debug] EnabledPricings Count: {enabledPricings.Count}");
+            Console.WriteLine($"🔍 [Debug] EnabledPricings Count: {enabledPricings.Count}");
 
             // 必須有至少一個被勾選的項目
             if (enabledPricings.Count == 0)
@@ -471,6 +618,25 @@ namespace TASA.Services.RoomModule
             // ===== 1. 驗證基本欄位 =====
             ValidateBasicFields(vm);
 
+            // ✅ 1.5 權限檢查:非管理者強制使用自己的分院ID
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser == null || currentUser.Id == null)
+            {
+                throw new HttpException("使用者未登入");
+            }
+
+            if (!currentUser.IsAdmin)
+            {
+                if (currentUser.DepartmentId == null)
+                {
+                    throw new HttpException("使用者沒有分院資訊,無法新增會議室");
+                }
+
+                // 強制覆蓋前端傳來的 DepartmentId
+                vm.DepartmentId = currentUser.DepartmentId.Value;
+            }
+
+
             // ===== 2. 設定預設值 =====
             SetDefaultValues(vm);
 
@@ -486,13 +652,6 @@ namespace TASA.Services.RoomModule
                 throw new HttpException("此樓層已存在相同名稱的會議室");
             }
 
-            // ===== 4. 設定 Status 邏輯 =====
-            var status = vm.Status;
-            if (vm.BookingSettings == BookingSettings.Closed)
-            {
-                status = RoomStatus.Maintenance;
-            }
-
             // ===== 5. 建立會議室 =====
             var newSysRoom = new SysRoom()
             {
@@ -503,7 +662,7 @@ namespace TASA.Services.RoomModule
                 Description = string.IsNullOrWhiteSpace(vm.Description) ? null : vm.Description.Trim(),
                 Capacity = vm.Capacity,
                 Area = vm.Area,
-                Status = status,
+                Status = vm.Status,
                 PricingType = vm.PricingType,
                 BookingSettings = vm.BookingSettings,
                 DepartmentId = vm.DepartmentId,
@@ -604,7 +763,7 @@ namespace TASA.Services.RoomModule
                 "image/webp" => ".webp",
                 "image/bmp" => ".bmp",
                 "image/svg+xml" => ".svg",
-                
+
                 // 視訊
                 "video/mp4" => ".mp4",
                 "video/webm" => ".webm",
@@ -613,7 +772,7 @@ namespace TASA.Services.RoomModule
                 "video/x-msvideo" => ".avi",
                 "video/x-matroska" => ".mkv",
                 "video/x-flv" => ".flv",
-                
+
                 _ => ".bin"
             };
         }
@@ -627,8 +786,28 @@ namespace TASA.Services.RoomModule
             if (data == null)
                 throw new HttpException("會議室不存在");
 
+
+            // ✅ 權限檢查:非管理者只能編輯自己分院的會議室
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser == null || currentUser.Id == null)
+            {
+                throw new HttpException("使用者未登入");
+            }
+
+            if (!currentUser.IsAdmin)
+            {
+                if (data.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限編輯此會議室");
+                }
+
+                // 強制保持原分院ID,不允許改變
+                vm.DepartmentId = data.DepartmentId;
+            }
+
             // ===== 1. 驗證基本欄位 =====
             ValidateBasicFields(vm);
+
 
             // ===== 2. 設定預設值 =====
             SetDefaultValues(vm);
@@ -650,16 +829,7 @@ namespace TASA.Services.RoomModule
             data.BookingSettings = vm.BookingSettings;
             data.DepartmentId = vm.DepartmentId;
             data.IsEnabled = vm.IsEnabled;
-
-            // ===== 5. 更新 Status 邏輯 =====
-            if (vm.BookingSettings == BookingSettings.Closed)
-            {
-                data.Status = RoomStatus.Maintenance;
-            }
-            else
-            {
-                data.Status = vm.Status;
-            }
+            data.Status = vm.Status;
 
             // ===== 6. 更新圖片 (可選) =====
             if (vm.Images != null)
@@ -714,30 +884,34 @@ namespace TASA.Services.RoomModule
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == id);
 
-            if (data != null)
+            if (data == null)
             {
-                data.DeleteAt = DateTime.UtcNow;
-                db.SaveChanges();
-
-                // var hourlyPrices = db.SysRoomPriceHourly
-                //     .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
-                //     .ToList();
-                // foreach (var price in hourlyPrices)
-                // {
-                //     price.DeleteAt = DateTime.UtcNow;
-                // }
-
-                var periodPrices = db.SysRoomPricePeriod
-                    .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
-                    .ToList();
-                foreach (var price in periodPrices)
-                {
-                    price.DeleteAt = DateTime.UtcNow;
-                }
-
-                db.SaveChanges();
-                _ = service.LogServices.LogAsync("會議室刪除", $"{data.Name}({data.Id})");
+                throw new HttpException("會議室不存在");
             }
+
+            // ✅ 權限檢查:非管理者只能刪除自己分院的會議室
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser != null && !currentUser.IsAdmin)
+            {
+                if (data.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限刪除此會議室");
+                }
+            }
+
+            data.DeleteAt = DateTime.UtcNow;
+            db.SaveChanges();
+
+            var periodPrices = db.SysRoomPricePeriod
+                .Where(x => x.RoomId == data.Id && x.DeleteAt == null)
+                .ToList();
+            foreach (var price in periodPrices)
+            {
+                price.DeleteAt = DateTime.UtcNow;
+            }
+
+            db.SaveChanges();
+            _ = service.LogServices.LogAsync("會議室刪除", $"{data.Name}({data.Id})");
         }
 
         private void SavePricingDetails(Guid roomId, PricingType pricingType, List<PricingDetailVM>? pricingDetails)

@@ -9,12 +9,15 @@
                     <div class="col-12 col-lg-4">
                         <div class="input-group">
                             <div class="form-floating">
-                                <input v-model="loginlog.query.keyword" @@blur="loginlog.getList" type="text"
-                                    class="form-control" placeholder="搜尋">
+                                <!-- ✅ 移除 @@blur,只用 watch -->
+                                <input v-model="loginlog.query.keyword" type="text" class="form-control"
+                                    placeholder="搜尋">
                                 <label>搜尋</label>
                             </div>
-                            <button @@click="loginlog.getList" class="btn btn-secondary"><span
-                                    class="material-icons">search</span></button>
+                            <!-- ✅ 改用 search 方法 -->
+                            <button @@click="loginlog.search" class="btn btn-secondary">
+                                <span class="material-icons">search</span>
+                            </button>
                         </div>
                     </div>
                     <div class="col-12 col-lg-4">
@@ -23,8 +26,10 @@
                                 placeholder="開始日期">
                             <span class="input-group-text">-</span>
                             <input v-model="loginlog.query.endDate" type="date" class="form-control" placeholder="結束日期">
-                            <button @@click="loginlog.getList" class="btn btn-secondary"><span
-                                    class="material-icons">search</span></button>
+                            <!-- ✅ 改用 search 方法 -->
+                            <button @@click="loginlog.search" class="btn btn-secondary">
+                                <span class="material-icons">search</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -37,9 +42,16 @@
                             role="button">{{item.text}}</div>
                     </li>
                 </ul>
-                <table class="table table-hover">
-                    <caption>登入日誌列表</caption>
 
+                <!-- ✅ 可選:加入 Loading 提示 -->
+                <div v-if="loginlog.loading.value" class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">載入中...</span>
+                    </div>
+                </div>
+
+                <table v-else class="table table-hover">
+                    <caption>登入日誌列表</caption>
                     <thead>
                         <tr class="table-light">
                             <th>登入時間</th>
@@ -50,11 +62,9 @@
                             <th>裝置 / 瀏覽器</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         <tr v-for="(item, index) in loginlog.list" :key="index">
                             <td>{{ item?.LoginTime ? new Date(item.LoginTime).toLocaleString('zh-TW') : '' }}</td>
-                            <!-- ✅ 使用者也加上省略號，避免超長 Email -->
                             <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 :title="item?.UserName">
                                 {{ item?.UserName }}
@@ -70,12 +80,10 @@
                                     失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
                                 </span>
                             </td>
-                            <!-- ✅ IP 位址加上省略號 + Tooltip -->
                             <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 :title="item?.IpAddress">
                                 {{ item?.IpAddress }}
                             </td>
-                            <!-- ✅ 裝置/瀏覽器也加上省略號 -->
                             <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 :title="(item?.DeviceInfo || '') + ' / ' + (item?.BrowserInfo || '')">
                                 {{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}
@@ -86,7 +94,10 @@
                         </tr>
                     </tbody>
                 </table>
-                <page ref="loginlogpage" @@reload="loginlog.getList(true)"></page>
+
+                <!-- ✅ Page 元件 - 使用標準寫法 -->
+                
+                <page ref="loginlogpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="loginlog.getList"></page>
             </div>
         </div>
     </div>

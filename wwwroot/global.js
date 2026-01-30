@@ -42,6 +42,8 @@ const global = new function () {
             roomsbyfloor: POST,
             roomslots: POST,
             equipmentbyroom: POST,
+            roombyschedule: POST,
+            costcenters: GET
         }),
         calendar: apiMethods('/api/calendar', {
             list: GET,
@@ -65,28 +67,28 @@ const global = new function () {
             reject: POST,              // 租借審核拒絕
 
             // ===== 付款審核 (總務/管理者) =====
-            paymentlist: GET,          // ✅ 新增:付款審核列表
-            approvepayment: POST,      // ✅ 新增:付款審核通過
-            rejectpayment: POST,       // ✅ 新增:付款審核拒絕
+            paymentlist: GET,
+            approvepayment: POST,
+            rejectpayment: POST,
 
             // ===== 預約總覽 (查詢) =====
-            list: GET,                 // 所有預約列表 (院內人員)
-            mylist: GET,               // 我的預約列表
+            list: GET,
+            mylist: GET,
 
             // ===== 權限 =====
-            permissions: GET,          // ✅ 新增:取得使用者權限
-
+            permissions: GET,
             // ===== 其他 (舊版,待整理) =====
-            pendingcheck: GET,         // 待查帳列表 (可能移除)
-            update: POST,              // 更新預約
+            pendingcheck: GET,
+            cancel: POST,
+            delete: POST,
+            detail: POST,
+            update: POST,
         }),
         payment: apiMethods('/api/payment', {
             uploadcounter: POST,
             transfer: POST,
             approve: POST,
-            reject: POST,
-            batchapprove: POST,
-            batchreject: POST,
+            reject: POST
         }),
         conferencetemplate: apiMethods('/api/conferencetemplate', {
             list: GET,

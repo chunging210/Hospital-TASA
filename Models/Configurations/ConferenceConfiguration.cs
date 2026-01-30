@@ -38,8 +38,9 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.RecurrenceId).HasComment("重複會議父ID");
             entity.Property(e => e.StartTime).HasComment("開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)"); // ✅ 修改註釋
             entity.Property(e => e.Status)
-                .HasDefaultValueSql("'1'")
-                .HasComment("狀態");
+                .HasColumnType("tinyint(1) unsigned")
+                .HasDefaultValue(null)
+                .HasComment("會議狀態 (1=已排程, 2=進行中, 3=已完成, 4=未出席)");
             entity.Property(e => e.UsageType).HasComment("會議種類 (1:一般 2:視訊)");
 
             // ✅ 新增預約狀態欄位
@@ -74,9 +75,9 @@ namespace TASA.Models.Configurations
                 .HasComment("付費方式");
 
             entity.Property(e => e.PaymentStatus)
-    .HasColumnType("int(11)")
+    .HasColumnType("tinyint(1) unsigned")
     .HasDefaultValue(PaymentStatus.Unpaid) // ✅ 改這裡
-    .HasComment("付款狀態 (1=未付款, 2=待查帳, 3=已收款)"); // ✅ 改註解
+    .HasComment("付款狀態 (1=未付款, 2=待查帳, 3=已收款, 4=待重新上傳)"); // ✅ 改註解
 
             entity.Property(e => e.PaymentNote)
                 .HasMaxLength(255)
@@ -125,7 +126,8 @@ namespace TASA.Models.Configurations
                 .HasConstraintName("Conference_ibfk_2");
 
             entity.HasOne(d => d.StatusNavigation).WithMany(p => p.Conference)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasForeignKey(d => d.Status)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("Conference_ibfk_1");
 
             // ✅ 新增：Conference → ConferenceRoomSlot 的關係
@@ -196,6 +198,21 @@ namespace TASA.Models.Configurations
                         j.IndexerProperty<Guid>("ConferenceId").HasComment("會議ID");
                         j.IndexerProperty<Guid>("RoomId").HasComment("會議室ID");
                     });
+            entity.Property(e => e.CancelledAt)
+                .HasColumnType("datetime")
+                .HasComment("取消時間");
+
+            entity.Property(e => e.CancelledBy)
+                .HasComment("取消者");
+
+            // ✅ 如果有 Navigation Property,也要加上關係設定
+            entity.HasOne(d => d.CancelledByNavigation)
+                .WithMany()
+                .HasPrincipalKey(p => p.Id)
+                .HasForeignKey(d => d.CancelledBy)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("Conference_ibfk_3");
+
 
             OnConfigurePartial(entity);
         }

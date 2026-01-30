@@ -29,7 +29,6 @@ namespace TASA.Services
             public string Type { get; set; } = string.Empty;
         }
 
-        // ✅ 改成 IQueryable<ListVM> 版本，支援 ToPage
         public IQueryable<ListVM> List(QueryVM query)
         {
             // ✅ 驗證日期參數
@@ -108,7 +107,7 @@ namespace TASA.Services
                     .ToList();
             }
 
-            // ✅ 改成回傳 IQueryable，這樣才能用 ToPage
+
             return result.AsQueryable();
         }
 

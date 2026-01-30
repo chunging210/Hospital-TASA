@@ -3,16 +3,65 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using TASA.Models.Configurations;
+using TASA.Models.Auth;
 #nullable disable
 
 namespace TASA.Models;
 
 public partial class TASAContext : DbContext
 {
-    public TASAContext(DbContextOptions<TASAContext> options)
+    private readonly UserContext? _userContext;
+
+
+    public TASAContext(DbContextOptions<TASAContext> options, IHttpContextAccessor httpContextAccessor)
         : base(options)
     {
+        // ✅ 在建構子中就取得使用者資訊
+        if (httpContextAccessor.HttpContext != null)
+        {
+            var claims = httpContextAccessor.HttpContext.User;
+            if (claims?.Identity?.IsAuthenticated == true)
+            {
+                var userId = claims.FindFirst("id")?.Value;
+                var deptId = claims.FindFirst("departmentid")?.Value;
+                var roles = claims.FindAll("authrole")
+    .Select(c => c.Value)
+    .ToList();
+                var isAdmin = claims.FindAll("authrole").Any(c => c.Value.Contains("ADMIN"));
+                var isDirector = claims.FindAll("authrole").Any(c => c.Value.Contains("DIRECTOR"));
+                var isAccountant = claims.FindAll("authrole").Any(c => c.Value.Contains("ACCOUNTANT"));
+                var isStaff = roles.Any(r => r.Contains("STAFF"));
+                var isNormal = roles.Any(r => r.Contains("NORMAL"));
+
+                if (userId != null && Guid.TryParse(userId, out var userGuid))
+                {
+                    _userContext = new UserContext
+                    {
+                        UserId = userGuid,
+                        DepartmentId = string.IsNullOrEmpty(deptId) || deptId == Guid.Empty.ToString()
+                            ? null
+                            : Guid.Parse(deptId),
+                        DepartmentName = claims.FindFirst("departmentname")?.Value,
+                        Roles = roles,
+                        IsAdmin = isAdmin,
+                        IsDirector = isDirector,
+                        IsAccountant = isAccountant,
+                        IsStaff = isStaff, // ✅ 加入 IsStaff
+                        IsNormal = isNormal // ✅ 加入 IsNormal
+                    };
+
+                    Console.WriteLine($"🔧 [TASAContext] 使用者: IsAdmin={_userContext.IsAdmin}, DepartmentId={_userContext.DepartmentId}");
+                }
+            }
+        }
     }
+
+    internal bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
+    private Guid? CurrentUserDepartmentId => _userContext?.DepartmentId;
+
+    internal bool CurrentUserIsNormal => _userContext?.IsNormal ?? true; // 預設為外部人員
+    internal bool CurrentUserIsStaff => _userContext?.IsStaff ?? false;
+    internal bool CurrentUserIsInternalStaff => _userContext != null && !_userContext.IsNormal;
 
     public virtual DbSet<AuthForget> AuthForget { get; set; }
 
@@ -71,11 +120,14 @@ public partial class TASAContext : DbContext
     public virtual DbSet<SysRoomImage> SysRoomImage { get; set; }
 
     public virtual DbSet<ConferenceRoomSlot> ConferenceRoomSlot { get; set; }
-    
+
     public virtual DbSet<SysConfig> SysConfig { get; set; }
 
     public virtual DbSet<ConferencePaymentProof> ConferencePaymentProof { get; set; }
 
+    public virtual DbSet<ConferenceAttachment> ConferenceAttachment { get; set; }
+
+    public virtual DbSet<CostCenter> CostCenter { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -115,6 +167,8 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SysConfigConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceEquipmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentProofConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.CostCenterConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

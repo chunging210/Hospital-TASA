@@ -14,6 +14,14 @@ namespace TASA.Controllers.API
         {
             var user = service.LoginServices.Login(vm);
             service.LoginServices.GenerateCookie(Response.Cookies, user);
+
+            // ✅ Debug: 檢查 Cookie
+            Console.WriteLine("========== 登入成功 Debug ==========");
+            Console.WriteLine($"UserId: {user.Id}");
+            Console.WriteLine($"UserName: {user.Name}");
+            Console.WriteLine($"Response.Cookies: {Response.Cookies.GetType()}");
+            Console.WriteLine("===================================");
+
             return Ok();
         }
 

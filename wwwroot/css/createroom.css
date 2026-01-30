@@ -141,3 +141,384 @@
     border-radius: 10px;
     margin: 20px 0;
 }
+
+/* ===== 已佔用（時段 / 設備 / 攤位）統一樣式 ===== */
+.occupied {
+    background-color: #f2f3f5 !important;
+    border: 1px solid #e0e0e0 !important;
+    color: #999 !important;
+    opacity: 0.75;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    /* 🔥 關鍵 */
+}
+
+/* icon 也變灰 */
+.occupied i {
+    color: #b5b5b5 !important;
+}
+
+/* 價格文字 */
+.occupied .equipment-price,
+.occupied .slot-price {
+    color: #999 !important;
+}
+
+.file-upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+}
+
+.file-upload-area:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.file-upload-area.has-file {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.upload-placeholder {
+    color: #64748b;
+}
+
+.upload-placeholder i {
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
+.uploaded-file {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+}
+
+.uploaded-file .file-info {
+    flex: 1;
+    text-align: left;
+}
+
+.uploaded-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.uploaded-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.uploaded-file-item .file-info {
+    flex: 1;
+    text-align: left;
+}
+
+.uploaded-file-item:hover {
+    background-color: #f8fafc;
+}
+
+
+/* ========= 確認預約資訊彈窗樣式 ========= */
+
+/* Modal 覆蓋層 */
+.modal.show {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Modal 內容動畫 */
+.modal-dialog {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Modal 內容區域 */
+.confirmation-details {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* 確認資訊區塊 */
+.confirmation-details>div {
+    transition: background-color 0.2s;
+}
+
+.confirmation-details>div:hover {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.5rem;
+    margin: -0.5rem;
+}
+
+/* 圖示樣式 */
+.confirmation-details .bx {
+    font-size: 1.25rem;
+}
+
+/* 標題樣式 */
+.confirmation-details h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* 內容文字樣式 */
+.confirmation-details p {
+    color: #6c757d;
+    line-height: 1.6;
+}
+
+.confirmation-details p strong {
+    color: #212529;
+    font-weight: 500;
+}
+
+/* 列表樣式 */
+.confirmation-details ul {
+    margin-left: 1.5rem;
+    color: #6c757d;
+}
+
+.confirmation-details ul li {
+    margin-bottom: 0.25rem;
+}
+
+/* 總金額區域 */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.bg-light h5,
+.bg-light h4 {
+    margin: 0;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+/* 分隔線樣式 */
+.confirmation-details hr {
+    margin: 1rem 0;
+    border-top: 1px solid #dee2e6;
+}
+
+/* 按鈕樣式 */
+.modal-footer .btn {
+    min-width: 100px;
+    font-weight: 500;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+}
+
+.modal-footer .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Alert 資訊框樣式 */
+.alert {
+    border-radius: 8px;
+    border: 1px solid;
+}
+
+.alert-info {
+    background-color: #cfe2ff;
+    border-color: #b6d4fe;
+    color: #084298;
+}
+
+.alert-info .bx {
+    color: #0d6efd;
+}
+
+.alert-info h6 {
+    color: #084298;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.alert-info p {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .confirmation-details {
+        max-height: 400px;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .modal-footer .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* 滾動條樣式 */
+.confirmation-details::-webkit-scrollbar {
+    width: 8px;
+}
+
+.confirmation-details::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.confirmation-details::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.confirmation-details::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Close 按鈕樣式 */
+.btn-close {
+    opacity: 0.5;
+}
+
+.btn-close:hover {
+    opacity: 1;
+}
+
+/* Modal Header 樣式 */
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.modal-title {
+    color: #212529;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+/* Modal Body 樣式 */
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Modal Footer 樣式 */
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+.agreement-modal {
+    height: 90vh;
+}
+
+.agreement-modal .modal-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.agreement-modal .modal-body {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+}
+
+.agreement-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.cost-center-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 4px;
+}
+
+.cost-center-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.cost-center-item:hover {
+    background-color: #f8f9fa;
+}
+
+.cost-center-item:last-child {
+    border-bottom: none;
+}
+
+.cost-center-item strong {
+    color: #495057;
+    margin-right: 8px;
+}
