@@ -3,9 +3,13 @@
 @import 'df-app.css';
 @import 'icons.css';
 @import 'vselect.css';
+@import 'createroom.css';
+@import 'reservation.css';
+@import 'sysconfig.css';
+@import 'syscroom.css';
 
 table caption {
-    display:none;
+    display: none;
 }
 
 .global-alert {
@@ -17,4 +21,8 @@ table caption {
     flex-direction: column;
     align-items: flex-end;
     gap: 10px;
+}
+
+html {
+    font-size: 125%;
 }

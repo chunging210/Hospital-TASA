@@ -114,7 +114,9 @@
                                 <div class="info-grid">
                                     <div class="info-item">
                                         <div class="info-icon">
-                                            <i class="mdi mdi-account-group"></i>
+                                            <span class="material-icons">
+                                                groups
+                                            </span>
                                         </div>
                                         <div class="info-label">容量</div>
                                         <div class="info-value">{{ detailRoom?.Capacity || '-' }}人</div>
@@ -128,7 +130,9 @@
                                     </div>
                                     <div class="info-item">
                                         <div class="info-icon">
-                                            <i class="mdi mdi-map-marker"></i>
+                                            <span class="material-icons">
+                                                location_on
+                                            </span>
                                         </div>
                                         <div class="info-label">位置</div>
                                         <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor
@@ -204,7 +208,7 @@
                                     <div class="mb-3">
                                         @* <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' : '時段制'
                                             }}</span> *@
-                                            <span class="badge bg-primary">時段制</span>
+                                        <span class="badge bg-primary">時段制</span>
                                     </div>
 
                                     <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"

@@ -49,110 +49,81 @@
             <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
                 <div class="collapse navbar-collapse" id="topnav-menu-content">
                     <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a href="/calendar" class="nav-link icon-text-container">
-                                <span class="material-icons font-size-16">grid_view</span>
-                                <span class="text">會議室總覽</span>
+                        <li class="nav-item dropdown">
+                            <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-icons">grid_view</span>
+                                <span class="text">會議管理</span>
+                                <div class="arrow-down"></div>
                             </a>
+                            <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+                                <a href="/calendar" class="dropdown-item">會議室總覽</a>
+                                <a href="/conference" class="dropdown-item">會議預約</a>
+                                <a href="/conferencetemplate" class="dropdown-item">會議範本</a>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a href="/conference" class="nav-link icon-text-container">
-                                <span class="material-icons font-size-16">grid_view</span>
-                                <span class="text">會議預約</span>
+                        <li class="nav-item dropdown">
+                            <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-icons">calendar_month</span>
+                                <span class="text">預約管理</span>
+                                <div class="arrow-down"></div>
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/conferencetemplate" class="nav-link icon-text-container">
-                                <span class="material-icons font-size-16">grid_view</span>
-                                <span class="text">會議範本</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="/reservationoverview" class="nav-link icon-text-container">
-                                <span class="material-icons font-size-16">calendar_today</span>
-                                <span class="text">預約總覽</span>
-                            </a>
+                            <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+                                <a href="/reservationoverview" class="dropdown-item">預約總覽</a>
+                                @if (user?.IsAdmin == true)
+                                {
+                                    <a href="/admin/reservation" class="dropdown-item">預約審核</a>
+                                }
+                            </div>
                         </li>
                         @if (user?.IsAdmin == true)
                         {
                             <li class="nav-item">
-                                <a href="/admin/authuser" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">grid_view</span>
-                                    <span class="text">使用者總覽</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="/admin/sysdepartment" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">grid_view</span>
-                                    <span class="text">單位總覽</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a href="/admin/sysroom" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">grid_view</span>
+                                    <span class="material-icons">meeting_room</span>
                                     <span class="text">會議室管理</span>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="/admin/reservation" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">assignment_turned_in</span>
-                                    <span class="text">預約審核</span>
-                                </a>
-                            </li>
-
-                            @* <li class="nav-item">
-                                <a href="/admin/seatsetting" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">badge</span>
-                                    <span class="text">電子桌牌設定</span>
-                                </a>
-                            </li> *@
-
-                            @* <li class="nav-item">
-                                <a href="/admin/visitor" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">people</span>
-                                    <span class="text">訪客總覽</span>
-                                </a>
-                            </li> *@
-                            <li class="nav-item">
                                 <a href="/admin/equipment" class="nav-link icon-text-container">
                                     <span class="material-icons font-size-16">grid_view</span>
-                                    <span class="text">設備總覽</span>
+                                    <span class="text">設備管理</span>
                                 </a>
                             </li>
+                            <li class="nav-item dropdown">
+                                <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="material-icons font-size-16">grid_view</span>
+                                    <span class="text">系統管理</span>
+                                    <div class="arrow-down"></div>
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+                                    <a href="/admin/authuser" class="dropdown-item">使用者總覽</a>
+                                    <a href="/admin/loginlog" class="dropdown-item">登入日誌</a>
+                                    <a href="/admin/sysconfig" class="dropdown-item">系統設定</a>
+
+                                </div>
+                            </li>
+                        }
+                        @if (service.SettingServices.GetSettings().UCNS.Ecs)
+                        {
 
                             <li class="nav-item">
-                                <a href="/admin/loginlog" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">history</span>
-                                    <span class="text">登入日誌</span>
+                                <a href="/admin/ecs" class="nav-link icon-text-container">
+                                    <span class="material-icons font-size-16">grid_view</span>
+                                    <span class="text">環控總覽</span>
                                 </a>
                             </li>
-
+                        }
+                        @if (service.SettingServices.GetSettings().UCNS.Webex)
+                        {
                             <li class="nav-item">
-                                <a href="/admin/sysconfig" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">settings</span>
-                                    <span class="text">系統設定</span>
+                                <a href="/admin/webex" class="nav-link icon-text-container">
+                                    <span class="material-icons font-size-16">grid_view</span>
+                                    <span class="text">Webex設定</span>
                                 </a>
                             </li>
-
-                            @if (service.SettingServices.GetSettings().UCNS.Ecs)
-                            {
-
-                                <li class="nav-item">
-                                    <a href="/admin/ecs" class="nav-link icon-text-container">
-                                        <span class="material-icons font-size-16">grid_view</span>
-                                        <span class="text">環控總覽</span>
-                                    </a>
-                                </li>
-                            }
-                            @if (service.SettingServices.GetSettings().UCNS.Webex)
-                            {
-                                <li class="nav-item">
-                                    <a href="/admin/webex" class="nav-link icon-text-container">
-                                        <span class="material-icons font-size-16">grid_view</span>
-                                        <span class="text">Webex設定</span>
-                                    </a>
-                                </li>
-                            }
                         }
                     </ul>
                 </div>

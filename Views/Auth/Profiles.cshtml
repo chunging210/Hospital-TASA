@@ -4,7 +4,8 @@
             <div class="card-header mx-4 mt-3">
                 <div class="row align-items-center">
                     <div class="col-xl-9 col-sm-12 text-branding align-middle">
-                        <i class="mdi mdi-account-settings"></i> 我的個人資料管理
+                        <span class="material-icons">manage_accounts</span>
+                        我的個人資料管理
                     </div>
                     <div class="col-xl-3 col-sm-12 df-box01">
                         <div class="d-flex align-items-center me-3"></div>
@@ -47,13 +48,15 @@
                                 <div class="row mb-4">
                                     <label class="col-md-1 col-form-label">修改密碼</label>
                                     <div class="col-md-11">
-                                        <input v-model="personal.vm.Password" type="password" class="form-control" placeholder="如不修改密碼請留空" />
+                                        <input v-model="personal.vm.Password" type="password" class="form-control"
+                                            placeholder="如不修改密碼請留空" />
                                     </div>
                                 </div>
                                 <div class="row mb-4">
                                     <label class="col-md-1 col-form-label">確認密碼</label>
                                     <div class="col-md-11">
-                                        <input v-model="personal.vm.Password2" type="password" class="form-control" placeholder="請再次輸入新密碼" />
+                                        <input v-model="personal.vm.Password2" type="password" class="form-control"
+                                            placeholder="請再次輸入新密碼" />
                                     </div>
                                 </div>
                                 <div class="row mb-4 text-danger">
@@ -64,10 +67,12 @@
                     </ol>
                 </div>
                 <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
-                    <button @@click="personal.save()" class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
+                    <button @@click="personal.save()"
+                        class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
                         確認修改(<u>S</u>)
                     </button>
-                    <button @@click="personal.resetPassword()" class="btn btn-secondary px-4 py-2 mt-4 mb-3 ms-2 font-size-14">
+                    <button @@click="personal.resetPassword()"
+                        class="btn btn-secondary px-4 py-2 mt-4 mb-3 ms-2 font-size-14">
                         清空密碼
                     </button>
                 </div>

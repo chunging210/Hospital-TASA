@@ -12,17 +12,18 @@
     gap: 3px;
 }
 
-    .icon-text-container .material-icons {
-        line-height: 1;
-        display: inline-block;
-        vertical-align: middle;
-    }
+.icon-text-container .material-icons {
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
+}
 
-    .icon-text-container .text {
-        line-height: 1;
-        display: inline-block;
-        vertical-align: middle;
-    }
+.icon-text-container .text {
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 18px;
+}
 
 .material-icons {
     font-family: 'Material Icons';

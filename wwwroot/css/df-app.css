@@ -9,11 +9,12 @@ File: Main Css File
     padding: 0.65rem;
     border: none;
     font-weight: 700;
+    font-size: 30px;
 }
 
-    .btn-branding:hover {
-        background-image: linear-gradient(to top left, #36e4cd, #3b76e1) !important;
-    }
+.btn-branding:hover {
+    background-image: linear-gradient(to top left, #36e4cd, #3b76e1) !important;
+}
 
 .vertical-menu {
     border-right: 0px !important;
@@ -33,7 +34,7 @@ File: Main Css File
     background-clip: text;
     color: transparent;
     font-size: 1.53125rem;
-    font-weight: 500;
+    font-weight: 600;
     font-family: "Work Sans", sans-serif;
     display: inline-block;
     white-space: wrap;
@@ -47,7 +48,7 @@ File: Main Css File
     border-color: #eff0f2 !important;
 }
 
-/* ¤â¾÷¼Ò¦¡ */
+/* ï¿½ï¿½ï¿½ï¿½Ò¦ï¿½ */
 @media (max-width: 767.98px) {
     .df-box01 {
         text-align: left;
@@ -81,7 +82,7 @@ File: Main Css File
     }
 }
 
-/* ¥­ªO¸ò¹q¸£¼Ò¦¡ */
+/* ï¿½ï¿½ï¿½Oï¿½ï¿½qï¿½ï¿½ï¿½Ò¦ï¿½ */
 @media (min-width: 768px) {
     .df-box01 {
         text-align: right;
@@ -110,31 +111,42 @@ File: Main Css File
 }
 
 .df-block {
-    height: 32px; /* ³]©w°Ï¶ô°ª«× */
-    width: auto; /* ³]©w°Ï¶ô´Ú«× */
+    height: 32px;
+    /* ï¿½]ï¿½wï¿½Ï¶ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    width: auto;
+    /* ï¿½]ï¿½wï¿½Ï¶ï¿½ï¿½Ú«ï¿½ */
     display: flex;
-    justify-content: center; /* ¤ô¥­¸m¤¤ */
-    align-items: center; /* ««ª½¸m¤¤ */
-    border: 0px solid #000; /* Ãä®Ø */
-    margin: 3 0px; /* °Ï¶ô¶¡¶Z */
-    background-color: rgba(0,0,0,0);
+    justify-content: center;
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½ï¿½ */
+    align-items: center;
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½mï¿½ï¿½ */
+    border: 0px solid #000;
+    /* ï¿½ï¿½ï¿½ */
+    margin: 3 0px;
+    /* ï¿½Ï¶ï¿½ï¿½ï¿½ï¿½Z */
+    background-color: rgba(0, 0, 0, 0);
 }
 
 .df-box04 {
-    float: right; /* °Ï¶ô¥k¹ï»ô */
-    width: 880px; /* ³]©w¼e«× */
+    float: right;
+    /* ï¿½Ï¶ï¿½ï¿½kï¿½ï¿½ï¿½ */
+    width: 880px;
+    /* ï¿½]ï¿½wï¿½eï¿½ï¿½ */
 }
 
 .df-block-100px {
-    width: 100px; /* ³]©w°Ï¶ô´Ú«× */
+    width: 100px;
+    /* ï¿½]ï¿½wï¿½Ï¶ï¿½ï¿½Ú«ï¿½ */
 }
 
 .df-block-70px {
-    width: 70px; /* ³]©w°Ï¶ô´Ú«× */
+    width: 70px;
+    /* ï¿½]ï¿½wï¿½Ï¶ï¿½ï¿½Ú«ï¿½ */
 }
 
 .df-block-auto {
-    width: auto; /* ³]©w°Ï¶ô´Ú«× */
+    width: auto;
+    /* ï¿½]ï¿½wï¿½Ï¶ï¿½ï¿½Ú«ï¿½ */
     white-space: nowrap;
 }
 
@@ -186,7 +198,9 @@ File: Main Css File
     display: block !important;
 }
 
-.form-control, .form-select, .form-check-input {
+.form-control,
+.form-select,
+.form-check-input {
     border-color: #d1d1d1;
 }
 

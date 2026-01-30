@@ -146,7 +146,7 @@ body {
 /* ===== 房間卡片 ===== */
 .room-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
     gap: 20px;
     margin: 10px;
 }
@@ -277,7 +277,7 @@ body {
 }
 
 .action-buttons .btn {
-    width: 200px;
+    width: 100%;
     font-size: 15px;
     font-weight: 500;
     border-radius: 10px;
@@ -404,7 +404,7 @@ body {
 }
 
 .info-label {
-    font-size: 12px;
+    font-size: 16px;
     color: #6c757d;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -412,7 +412,7 @@ body {
 }
 
 .info-value {
-    font-size: 14px;
+    font-size: 18px;
     color: #6c757d;
 }
 
@@ -874,7 +874,7 @@ body {
 
 /* ===== 詳情 Modal 容器 ===== */
 .room-detail-modal .modal-dialog {
-    max-width: 1040px;
+    max-width: 1140px;
 }
 
 .detail-image-column {
