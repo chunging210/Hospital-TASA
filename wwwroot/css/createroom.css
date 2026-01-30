@@ -244,6 +244,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -259,6 +260,7 @@
         transform: translateY(-50px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -273,11 +275,11 @@
 }
 
 /* 確認資訊區塊 */
-.confirmation-details > div {
+.confirmation-details>div {
     transition: background-color 0.2s;
 }
 
-.confirmation-details > div:hover {
+.confirmation-details>div:hover {
     background-color: #f8f9fa;
     border-radius: 8px;
     padding: 0.5rem;
@@ -394,20 +396,20 @@
     .modal-dialog {
         margin: 0.5rem;
     }
-    
+
     .confirmation-details {
         max-height: 400px;
     }
-    
+
     .modal-footer {
         flex-direction: column;
     }
-    
+
     .modal-footer .btn {
         width: 100%;
         margin-bottom: 0.5rem;
     }
-    
+
     .modal-footer .btn:last-child {
         margin-bottom: 0;
     }
@@ -484,4 +486,39 @@
     width: 100%;
     height: 100%;
     border: none;
+}
+
+.cost-center-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 4px;
+}
+
+.cost-center-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.cost-center-item:hover {
+    background-color: #f8f9fa;
+}
+
+.cost-center-item:last-child {
+    border-bottom: none;
+}
+
+.cost-center-item strong {
+    color: #495057;
+    margin-right: 8px;
 }

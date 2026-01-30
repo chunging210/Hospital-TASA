@@ -549,7 +549,27 @@ namespace TASA.Services
             };
         }
 
+        public class CostCenterVM
+        {
+            public string Code { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+        }
 
+
+        /// </summary>
+        public List<CostCenterVM> CostCenters()
+        {
+            return db.CostCenter
+                .AsNoTracking()
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Code)
+                .Select(c => new CostCenterVM
+                {
+                    Code = c.Code,
+                    Name = c.Name
+                })
+                .ToList();
+        }
 
         // ✅ 1. BuildingsByDepartment - 加上 departmentId 參數
         public List<BuildingVM> BuildingsByDepartment(Guid? departmentId = null)

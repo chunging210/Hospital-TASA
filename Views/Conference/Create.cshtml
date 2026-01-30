@@ -447,7 +447,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="col-md-4">
+                                            <div class="col-md-4" v-if="isInternalStaff || isAdmin">
                                                 <div class="payment-method"
                                                     :class="{ 'selected': form.paymentMethod === 'cost-sharing' }"
                                                     @@click="form.paymentMethod = 'cost-sharing'">
@@ -490,27 +490,51 @@
                                                 </div>
                                             </div>
 
-                                            <div v-if="form.paymentMethod === 'cost-sharing'"
-                                                class="alert alert-warning">
-                                                <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
-                                                <div class="mb-2">
-                                                    <label class="form-label">部門代碼:</label>
-                                                    <input type="text" class="form-control form-control-sm"
-                                                        v-model="form.departmentCode"
-                                                        placeholder="請輸入部門代碼 (例: ADM-2024)">
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
-                                                        <p class="mb-1"><strong>中心:</strong>ADM-2024-Q1</p>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
-                                                        <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
-                                                    </div>
-                                                </div>
-                                                <small class="text-muted">超過 $5,000 需總經理簽核</small>
-                                            </div>
+<div v-if="form.paymentMethod === 'cost-sharing'" class="alert alert-warning">
+    <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
+    
+    <div class="mb-3">
+        <label class="form-label">部門代碼<span class="text-danger">*</span></label>
+        
+        <!-- 可搜尋的輸入框 -->
+        <div class="position-relative">
+            <input 
+                type="text" 
+                class="form-control"
+                v-model="costCenterSearch"
+                @@input="filterCostCenters"
+                @@focus="showCostCenterDropdown = true"
+                placeholder="輸入代碼或名稱搜尋 (例: 00100 或 內科)"
+                autocomplete="off">
+            
+            <!-- 下拉選項列表 -->
+            <div v-if="showCostCenterDropdown && filteredCostCenters.length > 0"
+                class="cost-center-dropdown">
+                <div 
+                    v-for="center in filteredCostCenters" 
+                    :key="center.code"
+                    class="cost-center-item"
+                    @@click="selectCostCenter(center)">
+                    <strong>{{ center.code }}</strong> - {{ center.name }}
+                </div>
+                <div v-if="filteredCostCenters.length === 0" class="text-muted p-2">
+                    查無結果
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
+            <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
+            <small class="text-muted">超過 $5,000 需總經理簽核</small>
+        </div>
+    </div>
+</div>
 
                                             <div v-if="form.paymentMethod === 'cash'" class="alert alert-secondary">
                                                 <h6><i class="bx bx-money"></i> 現金付款資訊</h6>

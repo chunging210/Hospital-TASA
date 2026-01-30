@@ -109,5 +109,11 @@ namespace TASA.Controllers.API
         {
             return Ok(service.SelectServices.ECS());
         }
+
+        [HttpGet("costcenters")]
+        public IActionResult CostCenters()
+        {
+            return Ok(service.SelectServices.CostCenters());
+        }
     }
 }

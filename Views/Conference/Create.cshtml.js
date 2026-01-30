@@ -5,8 +5,63 @@ const { ref, reactive, computed, onMounted, watch } = Vue;
 window.$config = {
     setup: () => new function () {
 
+        this.costCenters = ref([]);                    // 所有成本中心
+        this.costCenterSearch = ref('');               // 搜尋關鍵字
+        this.filteredCostCenters = ref([]);            // 過濾後的結果
+        this.showCostCenterDropdown = ref(false);      // 是否顯示下拉選單
+        this.selectedCostCenter = ref(null);           // 已選擇的成本中心
+
+
+        // 載入成本中心列表
+        this.loadCostCenters = async () => {
+            try {
+                const res = await global.api.select.costcenters();
+                this.costCenters.value = (res.data || []).map(c => ({
+                    code: c.Code,
+                    name: c.Name
+                }));
+            } catch (err) {
+                console.error('❌ 載入成本中心失敗:', err);
+                addAlert('載入成本中心失敗', { type: 'danger' });
+            }
+        };
+
+        this.validateCostCenter = (code) => {
+            const exists = this.costCenters.value.some(c => c.code === code);
+            if (!exists) {
+                addAlert('無效的成本中心代碼', { type: 'warning' });
+                return false;
+            }
+            return true;
+        };
+
+        // 過濾成本中心
+        this.filterCostCenters = () => {
+            const keyword = this.costCenterSearch.value.toLowerCase().trim();
+
+            if (!keyword) {
+                this.filteredCostCenters.value = this.costCenters.value; // ✅ 顯示全部
+                return;
+            }
+
+            this.filteredCostCenters.value = this.costCenters.value.filter(center => {
+                const codeMatch = center.code.toLowerCase().includes(keyword);
+                const nameMatch = center.name.toLowerCase().includes(keyword);
+                return codeMatch || nameMatch;
+            }).slice(0, 20); // 限制最多顯示20筆
+        };
+
+        // 選擇成本中心
+        this.selectCostCenter = (center) => {
+            this.selectedCostCenter.value = center;
+            this.form.departmentCode = center.code;
+            this.costCenterSearch.value = `${center.code} - ${center.name}`;
+            this.showCostCenterDropdown.value = false;
+        };
+
         this.currentUser = ref(null);
         this.isAdmin = ref(false);
+        this.isInternalStaff = ref(false);
 
         this.showAgreementPDF = ref(false);          // 控制 PDF 彈窗顯示
         this.hasReadAgreement = ref(false);          // 是否已勾選同意
@@ -196,6 +251,7 @@ window.$config = {
                 this.form.attendees = [this.initiatorId.value];
 
                 this.isAdmin.value = this.currentUser.value.IsAdmin || false;
+                this.isInternalStaff.value = this.currentUser.value.IsStaff || false;
 
                 if (!this.isAdmin.value && this.currentUser.value.DepartmentId) {
                     this.form.departmentId = this.currentUser.value.DepartmentId;
@@ -204,6 +260,7 @@ window.$config = {
                 console.log('✅ 使用者資訊載入完成:', {
                     name: this.currentUser.value.Name,
                     isAdmin: this.isAdmin.value,
+                    isInternalStaff: this.isInternalStaff.value,
                     departmentId: this.currentUser.value.DepartmentId,
                     departmentName: this.currentUser.value.DepartmentName
                 });
@@ -294,6 +351,19 @@ window.$config = {
                 addAlert('請選擇付款方式', { type: 'warning' });
                 return;
             }
+
+            // ✅ 新增:如果選擇成本分攤,驗證成本中心代碼
+            if (this.form.paymentMethod === 'cost-sharing') {
+                if (!this.form.departmentCode) {
+                    addAlert('請選擇成本中心代碼', { type: 'warning' });
+                    return;
+                }
+                if (!this.validateCostCenter(this.form.departmentCode)) {
+                    return;
+                }
+            }
+
+
             // ✅ 重置聲明書狀態
             this.hasReadAgreement.value = false;
             // 驗證通過,顯示彈窗
@@ -818,6 +888,16 @@ window.$config = {
         onMounted(async () => {
 
             await this.loadCurrentUser();
+            await this.loadCostCenters();
+
+
+            // 點擊外部關閉下拉選單
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.position-relative')) {
+                    this.showCostCenterDropdown.value = false;
+                }
+            });
+
 
             if (this.isAdmin.value) {
                 this.loadDepartments();
