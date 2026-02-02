@@ -211,7 +211,7 @@ namespace TASA.Services.VisitorModule
                 LicensePlate = vm.LicensePlate,
                 CarType = vm.CarType,
                 IsEnabled = vm.IsEnabled,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
                 CreatedBy = userId.Value
             };
 
@@ -251,7 +251,7 @@ namespace TASA.Services.VisitorModule
             data.LicensePlate = vm.LicensePlate;
             data.CarType = vm.CarType;
             data.IsEnabled = vm.IsEnabled;
-            data.UpdatedAt = DateTime.UtcNow;
+            data.UpdatedAt = DateTime.Now;
             data.UpdatedBy = userId.Value;
 
             db.SaveChanges();
@@ -269,7 +269,7 @@ namespace TASA.Services.VisitorModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("訪客刪除", $"{data.CName}({data.Id})");
             }

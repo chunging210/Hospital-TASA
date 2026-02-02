@@ -1349,3 +1349,8 @@ body {
         width: 100%;
     }
 }
+
+.status-internal { background-color: #0dcaf0; color: white; }  /* 藍色 */
+.status-open { background-color: #198754; color: white; }      /* 綠色 */
+.status-closed { background-color: #6c757d; color: white; }    /* 灰色 */
+.status-free { background-color: #0d6efd; color: white; }    

@@ -29,6 +29,7 @@ namespace TASA.Services.RoomModule
             public DateTime CreateAt { get; set; }
             public int EquipmentCount { get; set; }
             public List<RoomTodayScheduleVM>? TodaySchedule { get; set; }
+            public BookingSettings BookingSettings { get; set; } 
 
         }
 
@@ -86,6 +87,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
         x.IsEnabled,
         x.CreateAt,
         x.DepartmentId,
+        x.BookingSettings,
         EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
         Images = x.Images
             .Where(img => !string.IsNullOrEmpty(img.ImagePath))
@@ -137,6 +139,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
         Area = room.Area,
         Status = room.Status,
         IsEnabled = room.IsEnabled,
+        BookingSettings = room.BookingSettings,
         CreateAt = room.CreateAt,
         DepartmentId = room.DepartmentId,
         EquipmentCount = room.EquipmentCount,
@@ -899,7 +902,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                 }
             }
 
-            data.DeleteAt = DateTime.UtcNow;
+            data.DeleteAt = DateTime.Now;
             db.SaveChanges();
 
             var periodPrices = db.SysRoomPricePeriod
@@ -907,7 +910,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                 .ToList();
             foreach (var price in periodPrices)
             {
-                price.DeleteAt = DateTime.UtcNow;
+                price.DeleteAt = DateTime.Now;
             }
 
             db.SaveChanges();
@@ -979,7 +982,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
             //         .ToList();
             //     foreach (var price in hourlyPrices)
             //     {
-            //         price.DeleteAt = DateTime.UtcNow;
+            //         price.DeleteAt = DateTime.Now;
             //     }
             // }
             // else
@@ -990,7 +993,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                     .ToList();
                 foreach (var price in periodPrices)
                 {
-                    price.DeleteAt = DateTime.UtcNow;
+                    price.DeleteAt = DateTime.Now;
                 }
             }
 

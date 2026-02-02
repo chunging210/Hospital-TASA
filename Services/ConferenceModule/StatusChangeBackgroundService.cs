@@ -24,7 +24,7 @@ namespace TASA.Services.ConferenceModule
         {
             var newLogBackground = new LogBackground
             {
-                Time = DateTime.UtcNow,
+                Time = DateTime.Now,
                 InfoType = "StatusChange",
                 Info = $"Status=>{status}|{name}"
             };
@@ -38,7 +38,7 @@ namespace TASA.Services.ConferenceModule
 
         private void Status2(ServiceWrapper service)
         {
-            var preparationTime = DateTime.UtcNow.AddMinutes(service.SettingServices.GetSettings().UCNS.BeforeStart);
+            var preparationTime = DateTime.Now.AddMinutes(service.SettingServices.GetSettings().UCNS.BeforeStart);
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
                     .Include(x => x.Ecs)
@@ -64,7 +64,7 @@ namespace TASA.Services.ConferenceModule
                     .Include(x => x.ConferenceWebex)
                     .Include(x => x.Room)
                     .WhereNotDeleted()
-                    .Where(x => DateTime.UtcNow >= x.StartTime && (x.Status == 1 || x.Status == 2))
+                    .Where(x => DateTime.Now >= x.StartTime && (x.Status == 1 || x.Status == 2))
                     .ToList();
             foreach (var item in conference)
             {
@@ -81,7 +81,7 @@ namespace TASA.Services.ConferenceModule
                     .Include(x => x.ConferenceWebex)
                     .Include(x => x.Room)
                     .WhereNotDeleted()
-                    .Where(x => DateTime.UtcNow >= (x.FinishTime ?? x.EndTime) && (x.Status == 1 || x.Status == 2 || x.Status == 3))
+                    .Where(x => DateTime.Now >= (x.FinishTime ?? x.EndTime) && (x.Status == 1 || x.Status == 2 || x.Status == 3))
                     .ToList();
             foreach (var item in conference)
             {

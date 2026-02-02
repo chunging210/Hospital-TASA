@@ -117,7 +117,7 @@ namespace TASA.Services.EcsModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = _ = service.LogServices.LogAsync("環控刪除", $"{data.Name}({data.Id})");
             }

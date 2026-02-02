@@ -88,7 +88,7 @@ namespace TASA.Services.AuthUserModule
                 Email = vm.Email,
                 DepartmentId = vm.DepartmentId,
                 IsEnabled = vm.IsEnabled,
-                CreateAt = DateTime.UtcNow,
+                CreateAt = DateTime.Now,
                 CreateBy = userId!.Value,
                 AuthRole = [.. db.AuthRole
                     .WhereNotDeleted()

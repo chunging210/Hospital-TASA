@@ -38,7 +38,7 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
-            query.Start ??= new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            query.Start ??= new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             query.End ??= query.Start.Value.AddMonths(1);
             var userId = service.UserClaimsService.Me()?.Id;
             var ConferencesIds = UserConferences(userId);
@@ -90,7 +90,7 @@ namespace TASA.Services.ConferenceModule
                 .WhereNotDeleted()
                 // ✅ 防呆：只查詢 StartTime 有值的會議
                 .Where(x => x.StartTime.HasValue)
-                .Where(x => x.StartTime >= DateTime.UtcNow && ConferencesIds.Contains(x.Id))
+                .Where(x => x.StartTime >= DateTime.Now && ConferencesIds.Contains(x.Id))
                 .OrderBy(x => x.StartTime)
                 .Take(length)
                 .Mapping(x => new RecentVM()

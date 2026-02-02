@@ -103,7 +103,7 @@ namespace TASA.Services.SeatSettingModule
                 existingData.FontSizeMedium = vm.FontSizeMedium;
                 existingData.FontSizeLarge = vm.FontSizeLarge;
                 existingData.IsEnabled = vm.IsEnabled;
-                existingData.UpdateAt = DateTime.UtcNow;   // DateTime.Now → DateTime.UtcNow
+                existingData.UpdateAt = DateTime.Now;   // DateTime.Now → DateTime.Now
                 existingData.UpdateBy = userId.Value;
 
                 db.SaveChanges();
@@ -121,7 +121,7 @@ namespace TASA.Services.SeatSettingModule
                     FontSizeMedium = vm.FontSizeMedium,
                     FontSizeLarge = vm.FontSizeLarge,
                     IsEnabled = vm.IsEnabled,
-                    CreateAt = DateTime.UtcNow,        // DateTime.Now → DateTime.UtcNow
+                    CreateAt = DateTime.Now,        // DateTime.Now → DateTime.Now
                     CreateBy = userId.Value,
                 };
 
@@ -227,7 +227,7 @@ namespace TASA.Services.SeatSettingModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;      // DateTime.Now → DateTime.UtcNow
+                data.DeleteAt = DateTime.Now;      // DateTime.Now → DateTime.Now
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("電子桌牌設定", $"刪除設定({data.Id})");
             }

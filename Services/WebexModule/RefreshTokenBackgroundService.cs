@@ -22,7 +22,7 @@ namespace TASA.Services.ConferenceModule
         //{
         //    var newLogBackground = new LogWebex
         //    {
-        //        Time = DateTime.UtcNow,
+        //        Time = DateTime.Now,
         //        InfoType = "StatusChange",
         //        Info = $"Status=>{status}|{name}"
         //    };
@@ -36,7 +36,7 @@ namespace TASA.Services.ConferenceModule
 
         private void Refresh(TASAContext db)
         {
-            var needRefreshTime = DateTime.UtcNow.AddDays(3);
+            var needRefreshTime = DateTime.Now.AddDays(3);
             var webex = db.Webex
                 .WhereNotDeleted()
                 .WhereEnabled()
@@ -52,9 +52,9 @@ namespace TASA.Services.ConferenceModule
                     if (access?.Errors?.Count == null || access?.Errors?.Count == 0)
                     {
                         item.Access_token = access?.Access_token ?? "";
-                        item.Expires = DateTime.UtcNow.AddSeconds(access?.Expires_in ?? 0);
+                        item.Expires = DateTime.Now.AddSeconds(access?.Expires_in ?? 0);
                         item.Refresh_token = access?.Refresh_token ?? "";
-                        item.Refresh_token_expires = DateTime.UtcNow.AddSeconds(access?.Refresh_token_expires_in ?? 0);
+                        item.Refresh_token_expires = DateTime.Now.AddSeconds(access?.Refresh_token_expires_in ?? 0);
                     }
                 }
                 catch (Exception ex)

@@ -32,6 +32,21 @@ const BookingSettings = {
     Closed: 2,
     Free: 3
 };
+const getBookingSettingsClass = (bookingSettings) => {
+    // ✅ 處理 null/undefined
+    if (bookingSettings === null || bookingSettings === undefined) {
+        return 'status-internal';  // 預設樣式
+    }
+
+    const classMap = {
+        [BookingSettings.InternalOnly]: 'status-internal',
+        [BookingSettings.InternalAndExternal]: 'status-open',
+        [BookingSettings.Closed]: 'status-closed',
+        [BookingSettings.Free]: 'status-free'
+    };
+    return classMap[bookingSettings] || 'status-internal';
+};
+
 
 const getStatusText = (status) => {
     const statusMap = {
@@ -58,13 +73,18 @@ const getPricingTypeText = (pricingType) => {
 };
 
 const getBookingSettingsText = (bookingSettings) => {
+    // ✅ 處理 null/undefined
+    if (bookingSettings === null || bookingSettings === undefined) {
+        return '未設定';  // 或改成 '僅限內部'(給預設值)
+    }
+
     const settingsMap = {
         [BookingSettings.InternalOnly]: '僅限內部',
         [BookingSettings.InternalAndExternal]: '內外皆可',
         [BookingSettings.Closed]: '不開放租借',
         [BookingSettings.Free]: '免費使用'
     };
-    return settingsMap[bookingSettings] || String(bookingSettings);
+    return settingsMap[bookingSettings] || '未設定';
 };
 
 
@@ -618,6 +638,7 @@ window.$config = {
         this.todaySchedule = room.todaySchedule;
         this.getStatusBadgeClass = room.getStatusBadgeClass;
         this.getStatusText = room.getStatusText;
+        this.getBookingSettingsClass = getBookingSettingsClass;
 
         this.currentDetailImage = computed(() => {
             if (!room.detailRoom.value || !room.detailRoom.value.Images) {

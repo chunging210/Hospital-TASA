@@ -96,22 +96,15 @@
                                     <span class="detail-label">面積</span>
                                     <span class="detail-value">{{ roomItem.Area }} ㎡</span>
                                 </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">使用狀態</span>
-                                    <span class="status-badge" :class="getStatusClass(roomItem.Status)">
-                                        {{ getStatusText(roomItem.Status) }}
-                                    </span>
-                                </div>
+<div class="detail-row">
+    <span class="detail-label">開放狀態</span>
+    <span class="status-badge" :class="getBookingSettingsClass(roomItem.BookingSettings)">
+        {{ getBookingSettingsText(roomItem.BookingSettings) }}
+    </span>
+</div>
                                 <div class="detail-row">
                                     <span class="detail-label">設備數量</span>
                                     <span class="detail-value">{{ roomItem.EquipmentCount || 0 }} 項設備</span>
-                                </div>
-                                <div class="detail-row">
-                                    <span class="detail-label">異常設備</span>
-                                    <span class="detail-value"
-                                        :class="roomItem.ErrorCount > 0 ? 'text-danger' : 'text-success'">
-                                        {{ roomItem.ErrorCount || 0 }} 項
-                                    </span>
                                 </div>
                             </div>
 

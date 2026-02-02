@@ -316,7 +316,7 @@ namespace TASA.Services.EquipmentModule
                 }
             }
 
-            data.DeleteAt = DateTime.UtcNow;
+            data.DeleteAt = DateTime.Now;
             db.SaveChanges();
             _ = service.LogServices.LogAsync("設備刪除", $"{data.Name}({data.Id})");
         }
