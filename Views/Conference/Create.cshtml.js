@@ -59,6 +59,15 @@ window.$config = {
             this.showCostCenterDropdown.value = false;
         };
 
+        this.minAdvanceBookingDays = ref(7);
+
+        // 最早可預約日期 computed
+        this.minBookingDate = computed(() => {
+            const today = new Date();
+            today.setDate(today.getDate() + this.minAdvanceBookingDays.value);
+            return today.toISOString().split('T')[0];
+        });
+
         this.currentUser = ref(null);
         this.isAdmin = ref(false);
         this.isInternalStaff = ref(false);
@@ -337,6 +346,10 @@ window.$config = {
             }
             if (!this.form.date) {
                 addAlert('請選擇會議日期', { type: 'warning' });
+                return;
+            }
+            if (this.form.date < this.minBookingDate.value) {
+                addAlert(`會議日期必須在 ${this.minAdvanceBookingDays.value} 天後（最早可選 ${this.minBookingDate.value}）`, { type: 'warning' });
                 return;
             }
             if (!this.form.roomId) {
@@ -899,6 +912,16 @@ window.$config = {
 
             await this.loadCurrentUser();
             await this.loadCostCenters();
+
+            // 載入系統設定（最早預約天數）
+            try {
+                const configRes = await global.api.sysconfig.getall();
+                if (configRes.data) {
+                    this.minAdvanceBookingDays.value = parseInt(configRes.data.MIN_ADVANCE_BOOKING_DAYS) || 7;
+                }
+            } catch (err) {
+                console.error('載入系統設定失敗:', err);
+            }
 
 
             // 點擊外部關閉下拉選單

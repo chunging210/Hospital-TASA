@@ -741,6 +741,12 @@ namespace TASA.Services.ConferenceModule
 
             if (!vm.ReservationDate.HasValue)
                 throw new HttpException("必須指定預約日期");
+
+            // 驗證預約日期不能早於今天 + MIN_ADVANCE_BOOKING_DAYS
+            var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays();
+            var minDate = DateTime.Today.AddDays(minAdvanceDays);
+            if (vm.ReservationDate.Value.Date < minDate)
+                throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
         }
 
         /// <summary>
