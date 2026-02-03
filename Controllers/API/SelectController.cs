@@ -76,6 +76,14 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.User());
         }
 
+        [HttpGet("internaluser")]
+        public IActionResult InternalUser([FromQuery] Guid? departmentId = null)
+        {
+                Console.WriteLine($"🔍 [Controller] 收到 departmentId: {departmentId}");  // ← 加這行!
+
+            return Ok(service.SelectServices.InternalUser(departmentId));
+        }
+
         [Authorize, HttpPost("userschedule")]
         public IActionResult UserSchedule(UserScheduleVM.QueryVM query)
         {

@@ -19,6 +19,9 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Ip).HasComment("IP");
             entity.Property(e => e.Time).HasComment("時間");
             entity.Property(e => e.UserId).HasComment("使用者ID");
+            entity.Property(e => e.DepartmentId).HasComment("分院ID");
+
+            entity.HasIndex(e => e.DepartmentId);
 
             OnConfigurePartial(entity);
         }

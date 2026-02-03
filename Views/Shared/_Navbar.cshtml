@@ -73,7 +73,12 @@
                                 <span class="text">預約總覽</span>
                             </a>
                         </li>
-                        @if (user?.IsAdmin == true || user?.IsAccountant == true || user?.IsDirector == true)
+                        @{
+                            var canApproveReservation = user?.Id != null &&
+                            service.AuthRoleServices.CanApproveReservation(user.Id.Value);
+                        }
+                        @if (user?.IsAdmin == true || user?.IsAccountant == true || user?.IsDirector == true ||
+                                                canApproveReservation)
                         {
                             <li class="nav-item">
                                 <a href="/admin/reservation" class="nav-link icon-text-container">

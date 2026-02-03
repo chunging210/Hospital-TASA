@@ -132,6 +132,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<CostCenter> CostCenter { get; set; }
 
+    public virtual DbSet<RoomManagerDelegate> RoomManagerDelegate { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -172,6 +174,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentProofConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.CostCenterConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.RoomManagerDelegateConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

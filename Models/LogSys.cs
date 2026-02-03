@@ -48,4 +48,10 @@ public partial class LogSys
     /// 使用者ID
     /// </summary>
     public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// 分院ID
+    /// </summary>
+    [Column(TypeName = "char(36)")]
+    public Guid? DepartmentId { get; set; }
 }

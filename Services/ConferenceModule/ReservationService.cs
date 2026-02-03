@@ -114,9 +114,31 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         public IQueryable<ReservationListVM> AllList(ReservationQueryVM query)
         {
+
+            var userId = service.UserClaimsService.Me()?.Id;
+
             var queryable = db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted();
+
+
+            if (userId.HasValue)
+    {
+        var userPermissions = service.AuthRoleServices.GetUserPermissions(userId.Value);
+        
+        // 如果使用者是會議室管理者，但不是 Admin/Director
+        if (userPermissions.IsRoomManager && 
+            !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+        {
+            var managedRoomIds = userPermissions.ManagedRoomIds;
+            
+            // ✅ 只顯示該使用者管理的會議室的預約
+            queryable = queryable.Where(c => 
+                c.ConferenceRoomSlots.Any(s => managedRoomIds.Contains(s.RoomId))
+            );
+        }
+    }
+
 
             if (query.UserId.HasValue)
             {

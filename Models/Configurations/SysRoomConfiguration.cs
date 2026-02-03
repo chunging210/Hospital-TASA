@@ -57,6 +57,16 @@ namespace TASA.Models.Configurations
                 .HasPrincipalKey(d => d.Id)  // ✅ 指定 SysDepartment 的 Id 作為 Principal Key
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK_SysRoom_SysDepartment");
+
+                    entity.Property(e => e.ManagerId)
+        .HasComment("會議室管理者ID");
+
+    entity.HasOne(e => e.Manager)
+        .WithMany()
+        .HasForeignKey(e => e.ManagerId)
+        .HasPrincipalKey(u => u.Id)
+        .OnDelete(DeleteBehavior.SetNull)
+        .HasConstraintName("FK_SysRoom_Manager");
                     }
         partial void OnConfigurePartial(EntityTypeBuilder<SysRoom> entity);
     }

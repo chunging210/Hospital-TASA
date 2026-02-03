@@ -106,6 +106,7 @@ namespace TASA.Services
         {
             public Guid RoomId { get; set; }
         }
+
         private class RawSlot
         {
             public Guid ConferenceId { get; set; }
@@ -119,6 +120,17 @@ namespace TASA.Services
         {
             public Guid? DepartmentId { get; set; }
         }
+
+        public record InternalUserVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? Email { get; set; }
+            public string? DepartmentName { get; set; }
+            public List<string> Roles { get; set; } = new();  // ✅ 角色列表
+            public string RoleDisplay { get; set; } = string.Empty;  // ✅ 角色顯示文字
+        }
+
 
         private string GetDisplayStatus(byte? status)
         {
@@ -328,6 +340,78 @@ namespace TASA.Services
                 .WhereNotDeleted()
                 .WhereEnabled()
                 .Mapping<IdNameVM>();
+        }
+
+
+        public IQueryable<InternalUserVM> InternalUser(Guid? departmentId = null)
+        {
+
+                if (departmentId == Guid.Empty)
+    {
+        Console.WriteLine($"🔍 [Controller] departmentId 是 Guid.Empty,改為 null");
+        departmentId = null;
+    }
+            Console.WriteLine($"📥 [InternalUser] departmentId: {departmentId}");
+
+            var query = db.AuthUser
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.AuthRole.Any() && !x.AuthRole.All(r => r.Code == "NORMAL"));
+
+            // 分院篩選
+            if (departmentId.HasValue && departmentId.Value != Guid.Empty)
+            {
+                query = query.Where(x => x.DepartmentId == departmentId.Value);
+            }
+
+            // ✅ 回傳含角色資訊的 ViewModel
+            return query
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name,
+                    x.Email,
+                    x.No,
+                    DepartmentName = x.Department != null ? x.Department.Name : null,
+                    DepartmentSequence = x.Department != null ? (int)x.Department.Sequence : 9999,  // ✅ 強制轉型
+                    Roles = x.AuthRole
+                        .Where(r => r.IsEnabled && r.DeleteAt == null)
+                        .Select(r => r.Code)
+                        .ToList()
+                })
+                .OrderBy(x => x.DepartmentSequence)
+                .ThenBy(x => x.No)
+                .AsEnumerable()  // ✅ 切到記憶體處理
+                .Select(x => new InternalUserVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Email = x.Email,
+                    DepartmentName = x.DepartmentName,
+                    Roles = x.Roles,
+                    RoleDisplay = GetRoleDisplayText(x.Roles)  // ✅ 轉換成中文
+                })
+                .AsQueryable();
+        }
+
+
+        private static string GetRoleDisplayText(List<string> roles)
+        {
+            var displayNames = new List<string>();
+
+            if (roles.Contains("ADMIN") || roles.Contains("ADMINN"))
+                displayNames.Add("管理者");
+            if (roles.Contains("DIRECTOR"))
+                displayNames.Add("主任");
+            if (roles.Contains("ACCOUNTANT"))
+                displayNames.Add("總務");
+            if (roles.Contains("STAFF"))
+                displayNames.Add("職員");
+
+            return displayNames.Count > 0
+                ? string.Join("、", displayNames)
+                : "員工";
         }
 
         public record UserScheduleVM
@@ -762,7 +846,7 @@ namespace TASA.Services
                 );
 
             // ✅ 如果明確傳入 departmentId,使用 IgnoreQueryFilters() 然後手動過濾
-            if (departmentId.HasValue && departmentId.Value != Guid.Empty)
+            if (departmentId.HasValue)
             {
                 roomQuery = roomQuery
                     .IgnoreQueryFilters()  // ✅ 繞過 Global Filter

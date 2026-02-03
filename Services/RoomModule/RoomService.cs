@@ -29,18 +29,18 @@ namespace TASA.Services.RoomModule
             public DateTime CreateAt { get; set; }
             public int EquipmentCount { get; set; }
             public List<RoomTodayScheduleVM>? TodaySchedule { get; set; }
-            public BookingSettings BookingSettings { get; set; } 
+            public BookingSettings BookingSettings { get; set; }
 
         }
 
 
-            public record RoomTodayScheduleVM
-            {
-                public string StartTime { get; set; } = string.Empty;
-                public string EndTime { get; set; } = string.Empty;
-                public string ConferenceName { get; set; } = string.Empty;
-                public string Status { get; set; } = string.Empty;
-            }
+        public record RoomTodayScheduleVM
+        {
+            public string StartTime { get; set; } = string.Empty;
+            public string EndTime { get; set; } = string.Empty;
+            public string ConferenceName { get; set; } = string.Empty;
+            public string Status { get; set; } = string.Empty;
+        }
 
         public record EquipmentVM
         {
@@ -58,110 +58,110 @@ namespace TASA.Services.RoomModule
             public byte? Status { get; set; }
         }
 
-public IQueryable<ListVM> List(BaseQueryVM query)
-{
-    Console.WriteLine("========== RoomService.List Debug ==========");
-
-    var q = db.SysRoom
-        .AsNoTracking()
-        .WhereNotDeleted()
-        .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-        .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
-
-    var count = q.Count();
-
-    // ✅ 取得今天日期
-    var today = DateOnly.FromDateTime(DateTime.Now);
-
-    // ✅ 先取得會議室基本資料
-    var roomList = q.Select(x => new
-    {
-        x.No,
-        x.Id,
-        x.Name,
-        x.Building,
-        x.Floor,
-        x.Capacity,
-        x.Area,
-        x.Status,
-        x.IsEnabled,
-        x.CreateAt,
-        x.DepartmentId,
-        x.BookingSettings,
-        EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-        Images = x.Images
-            .Where(img => !string.IsNullOrEmpty(img.ImagePath))
-            .OrderBy(img => img.SortOrder)
-            .Select(img => img.ImagePath)
-            .ToList()
-    }).ToList();
-
-    // ✅ 批次查詢所有會議室的今日時程
-    var roomIds = roomList.Select(r => r.Id).ToList();
-    
-    // ✅ 先查詢並轉換成 RawScheduleSlot
-    var allScheduleSlots = db.ConferenceRoomSlot
-        .AsNoTracking()
-        .Where(s => roomIds.Contains(s.RoomId))
-        .Where(s => s.SlotDate == today)
-        .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
-        .Where(s => s.ConferenceId.HasValue)
-        .OrderBy(s => s.RoomId)  // ✅ 先按會議室排序
-        .ThenBy(s => s.StartTime)  // ✅ 再按時間排序
-        .Select(s => new RawScheduleSlot
+        public IQueryable<ListVM> List(BaseQueryVM query)
         {
-            RoomId = s.RoomId,
-            ConferenceId = s.ConferenceId!.Value,
-            ConferenceName = s.Conference.Name,
-            StartTime = s.StartTime,
-            EndTime = s.EndTime,
-            Status = s.Conference.Status
-        })
-        .ToList();  // ✅ 先執行查詢
+            Console.WriteLine("========== RoomService.List Debug ==========");
 
-    // ✅ 在記憶體中按會議室分組並合併時段
-    var todaySchedules = allScheduleSlots
-        .GroupBy(s => s.RoomId)
-        .ToDictionary(
-            g => g.Key,
-            g => MergeSchedules(g.ToList())  // ✅ 現在型別正確了
-        );
+            var q = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+                .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
 
-    // ✅ 組合最終結果
-    return roomList.Select(room => new ListVM
-    {
-        No = room.No,
-        Id = room.Id,
-        Name = room.Name,
-        Building = room.Building,
-        Floor = room.Floor,
-        Capacity = room.Capacity,
-        Area = room.Area,
-        Status = room.Status,
-        IsEnabled = room.IsEnabled,
-        BookingSettings = room.BookingSettings,
-        CreateAt = room.CreateAt,
-        DepartmentId = room.DepartmentId,
-        EquipmentCount = room.EquipmentCount,
-        Images = room.Images,
-        TodaySchedule = todaySchedules.ContainsKey(room.Id) 
-            ? todaySchedules[room.Id] 
-            : new List<RoomTodayScheduleVM>()
-    }).AsQueryable();
-}
+            var count = q.Count();
+
+            // ✅ 取得今天日期
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            // ✅ 先取得會議室基本資料
+            var roomList = q.Select(x => new
+            {
+                x.No,
+                x.Id,
+                x.Name,
+                x.Building,
+                x.Floor,
+                x.Capacity,
+                x.Area,
+                x.Status,
+                x.IsEnabled,
+                x.CreateAt,
+                x.DepartmentId,
+                x.BookingSettings,
+                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                Images = x.Images
+                    .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+                    .OrderBy(img => img.SortOrder)
+                    .Select(img => img.ImagePath)
+                    .ToList()
+            }).ToList();
+
+            // ✅ 批次查詢所有會議室的今日時程
+            var roomIds = roomList.Select(r => r.Id).ToList();
+
+            // ✅ 先查詢並轉換成 RawScheduleSlot
+            var allScheduleSlots = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Where(s => roomIds.Contains(s.RoomId))
+                .Where(s => s.SlotDate == today)
+                .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+                .Where(s => s.ConferenceId.HasValue)
+                .OrderBy(s => s.RoomId)  // ✅ 先按會議室排序
+                .ThenBy(s => s.StartTime)  // ✅ 再按時間排序
+                .Select(s => new RawScheduleSlot
+                {
+                    RoomId = s.RoomId,
+                    ConferenceId = s.ConferenceId!.Value,
+                    ConferenceName = s.Conference.Name,
+                    StartTime = s.StartTime,
+                    EndTime = s.EndTime,
+                    Status = s.Conference.Status
+                })
+                .ToList();  // ✅ 先執行查詢
+
+            // ✅ 在記憶體中按會議室分組並合併時段
+            var todaySchedules = allScheduleSlots
+                .GroupBy(s => s.RoomId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => MergeSchedules(g.ToList())  // ✅ 現在型別正確了
+                );
+
+            // ✅ 組合最終結果
+            return roomList.Select(room => new ListVM
+            {
+                No = room.No,
+                Id = room.Id,
+                Name = room.Name,
+                Building = room.Building,
+                Floor = room.Floor,
+                Capacity = room.Capacity,
+                Area = room.Area,
+                Status = room.Status,
+                IsEnabled = room.IsEnabled,
+                BookingSettings = room.BookingSettings,
+                CreateAt = room.CreateAt,
+                DepartmentId = room.DepartmentId,
+                EquipmentCount = room.EquipmentCount,
+                Images = room.Images,
+                TodaySchedule = todaySchedules.ContainsKey(room.Id)
+                    ? todaySchedules[room.Id]
+                    : new List<RoomTodayScheduleVM>()
+            }).AsQueryable();
+        }
 
         private List<RoomTodayScheduleVM> MergeSchedules(List<RawScheduleSlot> slots)
         {
             if (slots.Count == 0) return new List<RoomTodayScheduleVM>();
 
             var merged = new List<RoomTodayScheduleVM>();
-            
+
             var current = slots[0];  // ✅ 直接取第一個
 
             for (int i = 1; i < slots.Count; i++)
             {
                 var slot = slots[i];
-                
+
                 if (slot.ConferenceId == current.ConferenceId &&
                     slot.StartTime == current.EndTime)
                 {
@@ -234,12 +234,22 @@ public IQueryable<ListVM> List(BaseQueryVM query)
             public List<PricingDetailVM>? PricingDetails { get; set; }
 
             public List<EquipmentVM>? Equipment { get; set; }
+            public Guid? ManagerId { get; set; }  // ✅ 加這個
+            public ManagerInfoVM? Manager { get; set; }  // ✅ 加這個
         }
 
         public record DepartmentInfoVM
         {
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
+        }
+
+
+        public record ManagerInfoVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; }
+            public string Email { get; set; }
         }
 
         // ✅ 新增/編輯用：接收完整的圖片物件
@@ -259,6 +269,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
             public Guid? DepartmentId { get; set; }
             public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
+            public Guid? ManagerId { get; set; }
         }
 
         [Serializable]
@@ -296,6 +307,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                 .Include(x => x.SysRoomPriceHourly)
                 .Include(x => x.SysRoomPricePeriod)
                 .Include(x => x.Equipment)
+                .Include(x => x.Manager)  // ✅ 已有
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == id);
 
@@ -314,13 +326,13 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                 PricingType = room.PricingType,
                 IsEnabled = room.IsEnabled,
                 BookingSettings = room.BookingSettings,
+
                 Equipment = room.Equipment
                     .Where(e => e.DeleteAt == null)
                     .Select(e => new EquipmentVM
                     {
                         Id = e.Id,
                         Name = e.Name,
-                        // Status = e.Status
                     })
                     .ToList(),
 
@@ -329,8 +341,18 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                     Id = room.Department.Id,
                     Name = room.Department.Name
                 } : null,
+
+                // ✅ 新增這段
+                ManagerId = room.ManagerId,
+                Manager = room.Manager != null ? new ManagerInfoVM
+                {
+                    Id = room.Manager.Id,
+                    Name = room.Manager.Name,
+                    Email = room.Manager.Email
+                } : null,
+
                 PricingDetails = new List<PricingDetailVM>(),
-                // ✅ 只提取路徑字串
+
                 Images = room.Images
                     .Where(img => !string.IsNullOrEmpty(img.ImagePath))
                     .OrderBy(img => img.SortOrder)
@@ -339,24 +361,6 @@ public IQueryable<ListVM> List(BaseQueryVM query)
             };
 
             // 取得收費詳情
-            // if (room.PricingType == PricingType.Hourly)
-            // {
-            //     var hourlyPricing = room.SysRoomPriceHourly
-            //         .Where(x => x.DeleteAt == null)
-            //         .OrderBy(x => x.StartTime)
-            //         .Select(x => new PricingDetailVM
-            //         {
-            //             Name = $"{x.StartTime:hh\\:mm} - {x.EndTime:hh\\:mm}",
-            //             StartTime = x.StartTime.ToString(@"hh\:mm"),
-            //             EndTime = x.EndTime.ToString(@"hh\:mm"),
-            //             Price = x.Price,
-            //             Enabled = x.IsEnabled
-            //         })
-            //         .ToList();
-
-            //     detailVM.PricingDetails = hourlyPricing;
-            // }
-            // else
             if (room.PricingType == PricingType.Period)
             {
                 var periodPricing = room.SysRoomPricePeriod
@@ -670,6 +674,7 @@ public IQueryable<ListVM> List(BaseQueryVM query)
                 BookingSettings = vm.BookingSettings,
                 DepartmentId = vm.DepartmentId,
                 IsEnabled = vm.IsEnabled,
+                ManagerId = vm.ManagerId,
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
             };
@@ -833,6 +838,33 @@ public IQueryable<ListVM> List(BaseQueryVM query)
             data.DepartmentId = vm.DepartmentId;
             data.IsEnabled = vm.IsEnabled;
             data.Status = vm.Status;
+            // 管理者變更時，軟刪除舊管理者的委派紀錄
+            if (data.ManagerId != vm.ManagerId && data.ManagerId.HasValue)
+            {
+                var oldManagerId = data.ManagerId.Value;
+                // 檢查舊管理者是否還管理其他房間
+                var stillManagesOtherRooms = db.SysRoom
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Any(r => r.ManagerId == oldManagerId
+                           && r.Id != data.Id
+                           && r.IsEnabled
+                           && r.DeleteAt == null);
+
+                if (!stillManagesOtherRooms)
+                {
+                    var delegates = db.RoomManagerDelegate
+                        .Where(d => d.ManagerId == oldManagerId
+                                 && d.IsEnabled
+                                 && d.DeleteAt == null)
+                        .ToList();
+                    foreach (var d in delegates)
+                    {
+                        d.DeleteAt = DateTime.Now;
+                    }
+                }
+            }
+            data.ManagerId = vm.ManagerId;
 
             // ===== 6. 更新圖片 (可選) =====
             if (vm.Images != null)

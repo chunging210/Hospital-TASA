@@ -7,7 +7,7 @@ namespace TASA.Services
 {
     public class LogServices(IDbContextFactory<TASAContext> dbContextFactory, IHttpContextAccessor httpContextAccessor, UserClaimsService userClaimsService) : IService
     {
-        public static async Task LogAsync(TASAContext db, string ip, string infoType, string info, Guid? userId)
+        public static async Task LogAsync(TASAContext db, string ip, string infoType, string info, Guid? userId, Guid? departmentId)
         {
             var newSysLog = new LogSys
             {
@@ -15,7 +15,8 @@ namespace TASA.Services
                 Time = DateTime.Now,
                 InfoType = infoType,
                 Info = info,
-                UserId = userId
+                UserId = userId,
+                DepartmentId = departmentId
             };
             db.LogSys.Add(newSysLog);
             await db.SaveChangesAsync();
@@ -24,9 +25,18 @@ namespace TASA.Services
         public async Task LogAsync(string infoType, string info)
         {
             var ip = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
-            var userId = userClaimsService.Me()?.Id;
+            var me = userClaimsService.Me();
+            var userId = me?.Id;
+            var departmentId = me?.DepartmentId;
             await using var db = dbContextFactory.CreateDbContext();
-            await LogAsync(db, ip, infoType, info, userId);
+            await LogAsync(db, ip, infoType, info, userId, departmentId);
+        }
+
+        public async Task LogAsync(string infoType, string info, Guid? userId, Guid? departmentId)
+        {
+            var ip = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "";
+            await using var db = dbContextFactory.CreateDbContext();
+            await LogAsync(db, ip, infoType, info, userId, departmentId);
         }
     }
 }

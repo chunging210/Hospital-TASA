@@ -98,7 +98,7 @@ namespace TASA.Services.AuthModule
                     BrowserInfo = deviceInfo.browser,
                     Timestamp = DateTime.Now
                 };
-                _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo));
+                _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo), user.Id, user.DepartmentId);
                 throw new HttpException("帳號已停用")
                 {
                     StatusCode = System.Net.HttpStatusCode.Unauthorized
@@ -150,15 +150,38 @@ namespace TASA.Services.AuthModule
                     BrowserInfo = deviceInfo.browser,
                     Timestamp = DateTime.Now
                 };
-                _ = service.LogServices.LogAsync("login_success", JsonConvert.SerializeObject(successInfo));
+                _ = service.LogServices.LogAsync("login_success", JsonConvert.SerializeObject(successInfo), user.Id, user.DepartmentId);
                 return user;
             }
         }
 
-        public void GenerateCookie(IResponseCookies cookies, AuthUser user)
-        {
-            Jwt.GenerateCookie(cookies, UserClaimsService.ToClaims(user));
-        }
+public void GenerateCookie(IResponseCookies cookies, AuthUser user)
+{
+    // 查詢使用者是否為會議室管理者
+    var isRoomManager = db.SysRoom
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Any(r => r.ManagerId == user.Id
+               && r.IsEnabled
+               && r.DeleteAt == null);
+
+    // 檢查是否為有效的代理人
+    if (!isRoomManager)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        isRoomManager = db.RoomManagerDelegate
+            .AsNoTracking()
+            .Any(d => d.DelegateUserId == user.Id
+                   && d.IsEnabled
+                   && d.DeleteAt == null
+                   && d.StartDate <= today
+                   && d.EndDate >= today);
+    }
+
+    var claims = UserClaimsService.ToClaims(user, isRoomManager);
+    
+    Jwt.GenerateCookie(cookies, claims);
+}
 
         public void DeleteCookie(IResponseCookies cookies)
         {

@@ -1,6 +1,6 @@
 ﻿// Admin/SysRoom
 import global from '/global.js';
-const { ref, reactive, onMounted, computed } = Vue;
+const { ref, reactive, onMounted, computed, watch } = Vue;
 
 let currentUser = null;
 const isAdmin = ref(false);  // ✅ 改用 ref
@@ -106,7 +106,57 @@ const department = new function () {
             });
     }
 }
+const manager = new function () {
+    this.list = reactive([]);
+    this.searchKeyword = ref('');
+    this.selectedManager = ref(null);
 
+    // ✅ 加上 departmentId 參數
+    // ✅ 修改這裡
+    this.getList = async (departmentId = null) => {
+        try {
+            console.log('🔍 [前端] 準備載入員工,分院ID:', departmentId);
+
+            // ✅ 關鍵:如果有 departmentId 才傳,否則不傳 body
+            const params = departmentId
+                ? { body: { departmentId } }  // ← 會自動轉成 ?departmentId=xxx
+                : {};
+
+            const response = await global.api.select.internaluser(params);
+
+            console.log('✅ [前端] API 回應:', response.data);
+
+            copy(this.list, response.data || []);
+            console.log(`✅ 載入內部員工列表: ${this.list.length} 人`);
+        } catch (err) {
+            console.error('❌ 取得員工列表失敗:', err);
+            this.list.splice(0);
+        }
+    };
+
+    // 搜尋使用者
+    this.filteredList = computed(() => {
+        if (!this.searchKeyword.value) return this.list;
+        const keyword = this.searchKeyword.value.toLowerCase();
+        return this.list.filter(u =>
+            u.Name?.toLowerCase().includes(keyword) ||
+            u.Email?.toLowerCase().includes(keyword) ||
+            u.RoleDisplay?.toLowerCase().includes(keyword)
+        );
+    });
+
+    // 選擇管理者
+    this.selectManager = (user) => {
+        this.selectedManager.value = user;
+        console.log('✅ 選擇管理者:', user.Name);
+    };
+
+    // 清除選擇
+    this.clearSelection = () => {
+        this.selectedManager.value = null;
+        this.searchKeyword.value = '';
+    };
+};
 let imageIndices = reactive({});
 
 const loadCurrentUser = async () => {
@@ -140,7 +190,8 @@ const room = new function () {
         area: null,
         feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
-        departmentId: null
+        departmentId: null,
+        managerId: null
     });
     // ✅ 新增:今日時程
     this.todaySchedule = ref([]);
@@ -297,11 +348,10 @@ const room = new function () {
     this.getVM = (Id) => {
         this.mediaFiles.splice(0);
         this.timeSlots.splice(0);
-        // this.hourlySlots.value = [];
 
         if (Id) {
             global.api.admin.roomdetail({ body: { Id } })
-                .then((response) => {
+                .then(async (response) => {  // ✅ 改成 async
                     this.vm.Id = response.data.Id;
                     this.vm.Name = response.data.Name;
                     this.vm.Building = response.data.Building;
@@ -314,7 +364,39 @@ const room = new function () {
                     this.vm.IsEnabled = response.data.IsEnabled;
                     this.vm.BookingSettings = response.data.BookingSettings;
                     this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
+                    this.vm.ManagerId = response.data.ManagerId;
 
+                    // ✅ 1. 先載入員工列表
+                    await manager.getList(this.vm.DepartmentId);
+
+                    // ✅ 2. 等員工列表載入完成後,再設定已選擇的管理者
+                    if (response.data.Manager) {
+                        // ✅ 從員工列表中找到對應的管理者(確保資料一致)
+                        const managerFromList = manager.list.find(
+                            u => u.Id === response.data.Manager.Id
+                        );
+
+                        if (managerFromList) {
+                            // ✅ 如果在列表中找到,用列表的資料
+                            manager.selectedManager.value = managerFromList;
+                            console.log('✅ [編輯] 從列表中找到管理者:', managerFromList.Name);
+                        } else {
+                            // ✅ 找不到的話,用 API 回傳的資料
+                            manager.selectedManager.value = {
+                                Id: response.data.Manager.Id,
+                                Name: response.data.Manager.Name,
+                                Email: response.data.Manager.Email,
+                                RoleDisplay: response.data.Manager.RoleDisplay || '員工'
+                            };
+                            console.log('⚠️ [編輯] 管理者不在列表中,使用 API 資料');
+                        }
+                    } else {
+                        // ✅ 沒有管理者,確保清空
+                        manager.clearSelection();
+                        console.log('✅ [編輯] 無管理者');
+                    }
+
+                    // ✅ 處理圖片
                     (response.data.Images || []).forEach((imgPath, idx) => {
                         this.mediaFiles.push({
                             Id: Date.now() + idx,
@@ -324,25 +406,9 @@ const room = new function () {
                         });
                     });
 
+                    // ✅ 處理時段
                     this.vm.Images = [];
                     this.vm.PricingDetails = response.data.PricingDetails || [];
-
-                    // if (response.data.PricingType === PricingType.Hourly) {
-                    //     const dbPricingMap = {};
-                    //     response.data.PricingDetails?.forEach(p => {
-                    //         const hour = parseInt(p.StartTime.split(':')[0]);
-                    //         dbPricingMap[hour] = {
-                    //             Id: p.Id,
-                    //             Checked: p.Enabled,
-                    //             Fee: p.Price
-                    //         };
-                    //     });
-
-                    //     this.hourlySlots.value = Array.from(
-                    //         { length: 12 },
-                    //         (_, i) => this.createHourlySlot(i + 8, dbPricingMap[i + 8])
-                    //     );
-                    // } else 
                     if (response.data.PricingType === PricingType.Period) {
                         this.timeSlots.splice(0);
                         response.data.PricingDetails?.forEach(p => {
@@ -350,12 +416,15 @@ const room = new function () {
                         });
                     }
 
-                    this.editModal.show();
+                    if (this.editModal) {
+                        this.editModal.show();
+                    }
                 })
                 .catch(error => {
                     addAlert('取得資料失敗', { type: 'danger', click: error.download });
                 });
         } else {
+            // ✅ 新增模式
             this.form.name = '';
             this.form.building = '';
             this.form.floor = '';
@@ -365,15 +434,22 @@ const room = new function () {
             this.form.feeType = PricingType.Period;
             this.vm.PricingType = PricingType.Period;
             this.form.rentalType = BookingSettings.InternalOnly;
+            this.generateCreateTimeSlotDefaults();
+
+            this.form.managerId = null;
+            manager.clearSelection();
+
             if (!isAdmin.value && userDepartmentId.value) {
                 this.form.departmentId = userDepartmentId.value;
+                manager.getList(userDepartmentId.value);
             } else {
                 this.form.departmentId = null;
+                manager.list.splice(0);
             }
-            this.generateCreateTimeSlotDefaults();
-            // this.generateHourlySlots();
-            // this.timeSlots.splice(0);
-            this.offcanvas.show();
+
+            if (this.offcanvas) {
+                this.offcanvas.show();
+            }
         }
     }
 
@@ -410,6 +486,7 @@ const room = new function () {
             PricingType: pricingType,
             BookingSettings: source.BookingSettings ?? source.rentalType,
             DepartmentId: source.DepartmentId ?? source.departmentId,
+            ManagerId: manager.selectedManager.value?.Id ?? source.ManagerId ?? source.managerId,
             Images: this.mediaFiles.map((m, idx) => ({
                 type: m.type,
                 src: m.src,
@@ -633,6 +710,7 @@ window.$config = {
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.department = department;
         this.isAdmin = isAdmin;
+        this.manager = manager;
         this.userDepartmentName = userDepartmentName;
         // ✅ 加上這些
         this.todaySchedule = room.todaySchedule;
@@ -687,33 +765,41 @@ window.$config = {
         };
 
         onMounted(async () => {
-
             await loadCurrentUser();
             room.page = this.roompage.value;
 
-            room.getList(1);
-
+            // ✅ 初始化 offcanvas 和 modal
+            room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
             room.editModal = new bootstrap.Modal(
                 document.getElementById('roomEditModal'),
                 { backdrop: 'static' }
             );
 
+            room.getList(1);
+
+            // ✅ 載入分院列表或員工
             if (isAdmin.value) {
                 console.log('✅ 是管理者,載入分院列表');
                 department.getList();
+                // ✅ Admin 初始不載入員工,等選擇分院後再載入
+            } else {
+                // ✅ 非管理者:直接載入自己分院的員工
+                if (userDepartmentId.value) {
+                    console.log('✅ 非管理者,載入自己分院員工:', userDepartmentId.value);
+                    manager.getList(userDepartmentId.value);
+                }
             }
 
+            // ✅ Modal 事件監聽
             const detailModalElement = document.getElementById('roomDetailModal');
             if (detailModalElement) {
                 detailModalElement.addEventListener('hidden.bs.modal', () => {
                     room.stopCarousel();
-                    room.stopScheduleRefresh(); // ✅ 停止時程重新整理
+                    room.stopScheduleRefresh();
                 });
 
-                // ✅ 監聽 Tab 切換
                 detailModalElement.addEventListener('shown.bs.tab', (event) => {
                     const targetId = event.target.getAttribute('data-bs-target');
-
                     if (targetId === '#schedule') {
                         if (room.detailRoom.value?.Id) {
                             room.startScheduleRefresh(room.detailRoom.value.Id);
@@ -724,7 +810,25 @@ window.$config = {
                 });
             }
 
-            room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
+            // ✅ 監聽「編輯模式」的分院變更
+            watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {
+                // ✅ 只有在「真正變更」且「是編輯模式」時才觸發
+                if (room.vm.Id && newDeptId && newDeptId !== oldDeptId) {
+                    console.log('✅ [編輯] 分院變更,重新載入員工:', newDeptId);
+                    manager.clearSelection();
+                    manager.getList(newDeptId);
+                }
+            });
+
+            // ✅ 監聽「新增模式」的分院變更
+            watch(() => room.form.departmentId, (newDeptId) => {
+                // ✅ 只有在「新增模式」且「是 Admin」時才觸發
+                if (!room.vm.Id && isAdmin.value && newDeptId) {
+                    console.log('✅ [新增] Admin 選擇分院,重新載入員工:', newDeptId);
+                    manager.clearSelection();
+                    manager.getList(newDeptId);
+                }
+            }, { immediate: false });
         });
     }
 }
