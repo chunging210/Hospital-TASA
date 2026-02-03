@@ -17,5 +17,6 @@ namespace TASA.Models.Auth
         public bool IsAccountant { get; init; }
         public bool IsStaff { get; set; }
         public bool IsNormal { get; set; }
+        public bool IsRoomManager { get; set; } 
     }
 }

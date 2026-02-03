@@ -75,7 +75,7 @@
                                                             <label class="col-form-label">會議日期</label>
                                                         </div>
                                                         <div class="col-sm-12 col-xl-auto">
-                                                            <input class="form-control" type="date" v-model="form.date">
+                                                            <input class="form-control" type="date" v-model="form.date" :min="minBookingDate">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -178,7 +178,7 @@
                                                         <div class="col-sm-12 col-xl-3">
                                                             <select class="form-select" v-model="form.roomId"
                                                                 :disabled="!form.floor">
-                                                                <option value="">請選擇會議室</option>
+                                                                <option value="null">請選擇會議室</option>
                                                                 <option v-for="room in filteredRooms" :key="room.Id"
                                                                     :value="room.Id">
                                                                     {{ room.Name }}

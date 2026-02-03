@@ -88,7 +88,7 @@ namespace TASA.Services.DepartmentModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("單位刪除", $"{data.Name}({data.Id})");
             }

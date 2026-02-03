@@ -16,6 +16,9 @@ public partial class TASAContext : DbContext
     public TASAContext(DbContextOptions<TASAContext> options, IHttpContextAccessor httpContextAccessor)
         : base(options)
     {
+
+        Database.ExecuteSqlRaw("SET time_zone = '+8:00'");
+        
         // ✅ 在建構子中就取得使用者資訊
         if (httpContextAccessor.HttpContext != null)
         {
@@ -129,6 +132,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<CostCenter> CostCenter { get; set; }
 
+    public virtual DbSet<RoomManagerDelegate> RoomManagerDelegate { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -169,6 +174,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentProofConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.CostCenterConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.RoomManagerDelegateConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

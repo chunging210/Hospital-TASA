@@ -54,10 +54,24 @@
             </div>
 
             <div class="card-body">
+                <!-- ✅ 搜尋結果標題 -->
+                <div v-if="isSearchMode" class="search-results-header mb-3">
+                    <h5>
+                        <i class="mdi mdi-magnify"></i>
+                        搜尋結果 ({{ room.list.length }} 筆)
+                    </h5>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" @@click="clearSearchResults">
+                        <i class="mdi mdi-arrow-left"></i> 返回總覽
+                    </button>
+                </div>
 
-                <!-- 無資料 -->
-                <div v-if="room.list.length === 0" class="text-center py-3 text-muted">
-                    查無資料
+                <!-- ✅ 無資料顯示 (統一處理) -->
+                <div v-if="room.list.length === 0" class="text-center py-5">
+                    <i class="mdi mdi-magnify mdi-48px text-muted"></i>
+                    <h5 class="text-muted mt-3">
+                        {{ isSearchMode ? '沒有找到符合條件的會議室' : '查無資料' }}
+                    </h5>
+                    <p v-if="isSearchMode" class="text-muted">請調整搜尋條件</p>
                 </div>
 
                 <!-- 會議室卡片 -->
@@ -141,8 +155,111 @@
                 </div>
 
                 <!-- 分頁 -->
-                <page ref="roompage" :per-page="6" :per-page-option="[6,9,12,18]" @@reload="room.getList">
-                </page>
+                <div v-if="!isSearchMode">
+                    <page ref="roompage" :per-page="6" :per-page-option="[6,9,12,18]" @@reload="room.getList">
+                    </page>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 智慧搜尋 Modal -->
+<div class="modal fade" id="smartSearchModal" tabindex="-1" aria-labelledby="smartSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="smartSearchModalLabel">
+                    <i class="mdi mdi-magnify"></i> 智慧搜尋
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body smart-search-body">
+                <!-- 第一排:會議時間 + 人數需求 -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="section-title">
+                            <i class="mdi mdi-calendar-outline text-primary me-2"></i>
+                            會議時間
+                        </h6>
+                        <input type="date" class="form-control" id="searchDate" v-model="smartSearch.date">
+                        <small class="text-muted">若不選擇日期,將顯示所有符合條件的會議室</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="section-title">
+                            <i class="mdi mdi-account-group text-success me-2"></i>
+                            人數需求
+                        </h6>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="searchCapacity"
+                                v-model.number="smartSearch.minCapacity" min="1" placeholder="例如:20">
+                            <span class="input-group-text">人</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二排:設備需求 -->
+                <div class="mb-4">
+                    <h6 class="section-title">
+                        <i class="mdi mdi-tools text-warning me-2"></i>
+                        設備需求
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="equipment-card">
+                                <input type="checkbox" class="form-check-input d-none" value="1"
+                                    v-model="smartSearch.equipmentTypes">
+                                <i class="mdi mdi-projector text-primary fs-3 me-2"></i> 影像設備
+                            </label>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="equipment-card">
+                                <input type="checkbox" class="form-check-input d-none" value="2"
+                                    v-model="smartSearch.equipmentTypes">
+                                <i class="mdi mdi-microphone text-success fs-3 me-2"></i> 音響設備
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第三排:關鍵字 + 地點 -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="section-title">
+                            <i class="mdi mdi-text-search text-info me-2"></i>
+                            關鍵字搜尋
+                        </h6>
+                        <input type="text" class="form-control" id="searchKeyword" v-model="smartSearch.keyword"
+                            placeholder="例如:演講廳、國際...">
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="section-title">
+                            <i class="mdi mdi-map-marker text-danger me-2"></i>
+                            地點
+                        </h6>
+                        <select class="form-select" id="searchBuilding" v-model="smartSearch.building">
+                            <option value="">不限大樓</option>
+                            <option v-for="b in buildings" :key="b.Building" :value="b.Building">
+                                {{ b.Building }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="mdi mdi-close"></i> 取消
+                </button>
+                <button type="button" class="btn btn-outline-danger" @@click="clearSmartSearch">
+                    <i class="mdi mdi-refresh"></i> 重置
+                </button>
+                <button type="button" class="btn btn-primary" @@click="performSmartSearch">
+                    <i class="mdi mdi-magnify"></i> 開始搜尋
+                </button>
             </div>
         </div>
     </div>

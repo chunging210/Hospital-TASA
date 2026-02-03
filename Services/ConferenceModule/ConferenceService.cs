@@ -12,7 +12,7 @@ namespace TASA.Services.ConferenceModule
     public class ConferenceService(TASAContext db, ServiceWrapper service) : IService
     {
         public SettingServices.SettingsModel.UCMSSettings ConferenceSettings { get { return service.SettingServices.GetSettings().UCNS; } }
-        public DateTime PreparationTime { get { return DateTime.UtcNow.AddMinutes(ConferenceSettings.BeforeStart); } }
+        public DateTime PreparationTime { get { return DateTime.Now.AddMinutes(ConferenceSettings.BeforeStart); } }
 
 
         public record InsertVM
@@ -283,7 +283,7 @@ namespace TASA.Services.ConferenceModule
 
             // 計算開始和結束時間
             var StartTime = vm.StartNow
-                ? DateTime.UtcNow.AddSeconds(ConferenceSettings.DelayStartTime)
+                ? DateTime.Now.AddSeconds(ConferenceSettings.DelayStartTime)
                 : vm.StartTime!.Value;
 
             var EndTime = StartTime
@@ -331,7 +331,7 @@ namespace TASA.Services.ConferenceModule
                 ConferenceUser = GetUsers(vm.User, vm.Host, vm.Recorder),
                 Department = [.. db.SysDepartment.Where(x => vm.Department.Contains(x.Id))],
                 CreateBy = userId!.Value,
-                CreateAt = DateTime.UtcNow,
+                CreateAt = DateTime.Now,
             };
 
             data.Status = GetStatus(vm.StartNow, data);
@@ -373,7 +373,7 @@ namespace TASA.Services.ConferenceModule
                 throw new HttpException(I18nMessgae.DataExists);
             }
 
-            var StartTime = vm.StartNow ? DateTime.UtcNow.AddSeconds(ConferenceSettings.DelayStartTime) : vm.StartTime!.Value;
+            var StartTime = vm.StartNow ? DateTime.Now.AddSeconds(ConferenceSettings.DelayStartTime) : vm.StartTime!.Value;
             var EndTime = StartTime.AddHours(vm.DurationHH!.Value).AddMinutes(vm.DurationSS!.Value);
 
             var used = db.Conference
@@ -486,16 +486,16 @@ namespace TASA.Services.ConferenceModule
                 return 1;
             }
 
-            if (DateTime.UtcNow > (conference.FinishTime?.ToUniversalTime() ?? conference.EndTime!.Value.ToUniversalTime()))
+            if (DateTime.Now > (conference.FinishTime?.ToUniversalTime() ?? conference.EndTime!.Value.ToUniversalTime()))
             {
                 return 4;
             }
-            if (startNow || DateTime.UtcNow > conference.StartTime!.Value.ToUniversalTime())
+            if (startNow || DateTime.Now > conference.StartTime!.Value.ToUniversalTime())
             {
                 service.JobService.DoEcs(conference);
                 return 3;
             }
-            if (DateTime.UtcNow.AddMinutes(ConferenceSettings.BeforeStart) > conference.StartTime!.Value.ToUniversalTime())
+            if (DateTime.Now.AddMinutes(ConferenceSettings.BeforeStart) > conference.StartTime!.Value.ToUniversalTime())
             {
                 service.JobService.DoEcs(conference);
                 return 2;
@@ -514,7 +514,7 @@ namespace TASA.Services.ConferenceModule
 
             if (data != null)
             {
-                data.FinishTime = DateTime.UtcNow;
+                data.FinishTime = DateTime.Now;
                 data.Status = 4;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("會議結束", $"{data.Name}({data.Id})");
@@ -532,7 +532,7 @@ namespace TASA.Services.ConferenceModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("會議刪除", $"{data.Name}({data.Id})");
             }
@@ -570,7 +570,7 @@ namespace TASA.Services.ConferenceModule
                         Email = guest.Email,
                         CompanyName = guest.CompanyName,
                         Phone = guest.Phone,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.Now,
                         CreatedBy = createdBy,
                     };
                     db.Visitor.Add(newVisitor);

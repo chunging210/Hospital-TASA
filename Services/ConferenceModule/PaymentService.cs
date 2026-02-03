@@ -95,7 +95,7 @@ namespace TASA.Services.ConferenceModule
                         PaymentType = "臨櫃",
                         Note = vm.Note,
                         Status = ProofStatus.PendingReview,
-                        UploadedAt = DateTime.UtcNow,
+                        UploadedAt = DateTime.Now,
                         UploadedBy = userId
                     };
 
@@ -156,10 +156,10 @@ namespace TASA.Services.ConferenceModule
                     PaymentType = "匯款",
                     LastFiveDigits = vm.Last5,
                     TransferAmount = vm.Amount,
-                    TransferAt = vm.TransferAt ?? DateTime.UtcNow,
+                    TransferAt = vm.TransferAt ?? DateTime.Now,
                     Note = vm.Note,
                     Status = ProofStatus.PendingReview,
-                    UploadedAt = DateTime.UtcNow,
+                    UploadedAt = DateTime.Now,
                     UploadedBy = userId
                 };
 
@@ -203,7 +203,7 @@ namespace TASA.Services.ConferenceModule
             foreach (var proof in proofs)
             {
                 proof.Status = ProofStatus.Approved;
-                proof.ReviewedAt = DateTime.UtcNow;
+                proof.ReviewedAt = DateTime.Now;
                 proof.ReviewedBy = userId;
             }
 
@@ -214,8 +214,8 @@ namespace TASA.Services.ConferenceModule
             // ✅ 如果全額付清,變更為「預約成功」
             conference.ReservationStatus = ReservationStatus.Confirmed;
 
-            conference.ApprovedAt = DateTime.UtcNow;
-            conference.PaidAt = DateTime.UtcNow;
+            conference.ApprovedAt = DateTime.Now;
+            conference.PaidAt = DateTime.Now;
             conference.Status = 1;
 
             // 設定會議時間
@@ -262,7 +262,7 @@ namespace TASA.Services.ConferenceModule
             foreach (var proof in proofs)
             {
                 proof.Status = ProofStatus.Rejected;
-                proof.ReviewedAt = DateTime.UtcNow;
+                proof.ReviewedAt = DateTime.Now;
                 proof.ReviewedBy = userId;
                 proof.RejectReason = vm.Reason;
             }

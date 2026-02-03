@@ -34,7 +34,7 @@ namespace TASA.Services.ConferenceModule
                 return ValidationResult.Success;
             }
 
-            if (startTime < DateTime.UtcNow)
+            if (startTime < DateTime.Now)
             {
                 return new ValidationResult("會議開始時間必須大於等於現在時間。");
             }

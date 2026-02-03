@@ -9,6 +9,7 @@ using TASA.Services.MailModule;
 using TASA.Services.RoomModule;
 using TASA.Services.SeatSettingModule;
 using TASA.Services.VisitorModule;
+using TASA.Services.DelegateModule;
 using TASA.Services.WebexModule;
 using TASA.Services;
 
@@ -53,7 +54,8 @@ namespace TASA.Services
         Lazy<SeatSettingService> seatSettingService,
         Lazy<VisitorService> visitorService,
         Lazy<SysConfigService> sysConfigService,
-        Lazy<ReservationAutoManagementService> reservationAutoManagementService
+        Lazy<ReservationAutoManagementService> reservationAutoManagementService,
+        Lazy<RoomManagerDelegateService> roomManagerDelegateService
 
     )
     {
@@ -99,6 +101,7 @@ namespace TASA.Services
 
         public ReservationAutoManagementService ReservationAutoManagementService => reservationAutoManagementService.Value;
 
+        public RoomManagerDelegateService RoomManagerDelegateService => roomManagerDelegateService.Value;
 
     }
 }

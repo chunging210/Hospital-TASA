@@ -98,9 +98,19 @@ public partial class SysRoom
     public BookingSettings BookingSettings { get; set; }
 
     public Guid? DepartmentId { get; set; }
-    
-    public SysDepartment? Department { get; set; } 
 
+    public SysDepartment? Department { get; set; }
+
+    /// <summary>
+    /// 會議室管理者ID
+    /// </summary>
+    public Guid? ManagerId { get; set; }
+
+    /// <summary>
+    /// 會議室管理者
+    /// </summary>
+    [ForeignKey("ManagerId")]
+    public virtual AuthUser? Manager { get; set; }
 
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();

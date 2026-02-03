@@ -1,4 +1,16 @@
-﻿<div class="page-content">
+﻿@inject TASA.Services.ServiceWrapper service
+@inject TASA.Models.TASAContext db
+@using Microsoft.EntityFrameworkCore
+@{
+    var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
+    var isDirectRoomManager = user?.Id != null && db.SysRoom
+    .AsNoTracking()
+    .IgnoreQueryFilters()
+    .Any(r => r.ManagerId == user.Id.Value && r.IsEnabled && r.DeleteAt == null);
+}
+<input type="hidden" id="userDepartmentId" value="@user?.DepartmentId" />
+<input type="hidden" id="userId" value="@user?.Id" />
+<div class="page-content">
     <div class="container-fluid">
         <div class="card">
             <div class="card-header mx-4 mt-3">
@@ -64,6 +76,57 @@
                                 </div>
                             </div>
                         </li>
+                        @if (isDirectRoomManager)
+                        {
+                            <li class="checkout-item">
+                                <div class="avatar checkout-icon p-1">
+                                    <div class="avatar-title rounded-circle bg-primary">
+                                        <i class="mdi mdi-account-switch text-white font-size-20"></i>
+                                    </div>
+                                </div>
+                                <div class="feed-item-list">
+                                    <h5 class="font-size-14 mb-3">代理人設定</h5>
+                                    <div class="row mb-4">
+                                        <label class="col-md-2 col-form-label">代理人</label>
+                                        <div class="col-md-10">
+                                            <select v-model="delegate.vm.DelegateUserId" class="form-select">
+                                                <option value="">-- 請選擇代理人 --</option>
+                                                <option v-for="u in delegate.users" :key="u.Id" :value="u.Id">
+                                                    {{u.Name}}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <label class="col-md-2 col-form-label">開始日期</label>
+                                        <div class="col-md-4">
+                                            <input v-model="delegate.vm.StartDate" type="date" class="form-control" />
+                                        </div>
+                                        <label class="col-md-2 col-form-label">結束日期</label>
+                                        <div class="col-md-4">
+                                            <input v-model="delegate.vm.EndDate" type="date" class="form-control" />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4" v-if="delegate.vm.Id">
+                                        <div class="col-md-12">
+                                            <span class="badge bg-success" v-if="delegate.isActive">委派中</span>
+                                            <span class="badge bg-secondary" v-else>未在委派期間</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <button @@click="delegate.save()" class="btn btn-branding text-white px-4 py-2">
+                                                儲存委派設定
+                                            </button>
+                                            <button @@click="delegate.remove()" class="btn btn-danger px-4 py-2 ms-2"
+                                                v-if="delegate.vm.Id">
+                                                取消委派
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        }
                     </ol>
                 </div>
                 <div class="border-1 border-top px-5 pb-3 mb-6 text-center">

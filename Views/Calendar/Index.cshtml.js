@@ -12,7 +12,17 @@ const selectedBuilding = ref('');
 const selectedFloor = ref('');
 const departments = ref([]);
 const selectedDepartment = ref(null);
+const smartSearch = reactive({
+    date: '',
+    minCapacity: null,
+    equipmentTypes: [],
+    keyword: '',
+    building: '',
+    departmentId: null
+});
 
+const isSearchMode = ref(false);  // 是否在搜尋模式
+const searchResults = reactive([]); // 搜尋結果
 const floorOptions = computed(() => {
     const b = buildings.value.find(x => x.Building === selectedBuilding.value);
     return b ? b.Floors : [];
@@ -36,6 +46,7 @@ const loadCurrentUser = async () => {
         console.error('❌ 無法取得使用者資訊:', err);
     }
 };
+
 
 const room = new function () {
     this.query = reactive({
@@ -150,9 +161,9 @@ const room = new function () {
 
     /* ====== 載入大樓 ====== */
     this.loadBuildingsByDepartment = () => {
-        const payload = {};  // ✅ 修正:要先宣告 payload
+        const payload = {};
 
-        // ✅ 如果有選擇分院,傳給後端
+        // ✅ 正確:在 SysRoomCalendar 中應該用 selectedDepartment.value
         if (selectedDepartment.value) {
             payload.departmentId = selectedDepartment.value;
         }
@@ -162,7 +173,7 @@ const room = new function () {
         global.api.select.buildingsbydepartment({ body: payload })
             .then(res => {
                 console.log('✅ 大樓列表:', res.data);
-                buildings.value = res.data || [];
+                buildings.value = res.data || [];  // ✅ 正確:直接用 buildings.value
             })
             .catch(() => {
                 addAlert('取得大樓列表失敗', { type: 'danger' });
@@ -294,8 +305,92 @@ const room = new function () {
             floor: item.Floor,
             departmentId: item.DepartmentId,
         });
-
+        // ✅ 如果在智慧搜尋模式且有選擇日期,自動帶入
+        if (isSearchMode.value && smartSearch.date) {
+            params.append('date', smartSearch.date);
+            console.log('🗓️ 自動帶入搜尋日期:', smartSearch.date);
+        }
         location.href = `/Conference/Create?${params.toString()}`;
+    };
+
+    /* ========= 智慧搜尋 ========= */
+    this.performSmartSearch = async () => {
+        try {
+            console.log('🔍 開始智慧搜尋...');
+
+            // 準備搜尋參數
+            const searchParams = {
+                date: smartSearch.date || null,
+                minCapacity: smartSearch.minCapacity || null,
+                equipmentTypes: smartSearch.equipmentTypes.length > 0
+                    ? smartSearch.equipmentTypes.map(t => parseInt(t))
+                    : null,
+                keyword: smartSearch.keyword || null,
+                building: smartSearch.building || null,
+                departmentId: selectedDepartment.value || null
+            };
+
+            console.log('📤 搜尋參數:', searchParams);
+
+            // 呼叫 API
+            const res = await global.api.select.smartsearch({ body: searchParams });
+
+            console.log('✅ 搜尋結果:', res.data);
+
+            // 清空原本的列表
+            this.list.splice(0);
+
+            // 填入搜尋結果
+            if (res.data && res.data.length > 0) {
+                res.data.forEach(x => this.list.push(x));
+            }
+
+            // 切換到搜尋模式
+            isSearchMode.value = true;
+
+            // 關閉 Modal
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById('smartSearchModal')
+            );
+            if (modal) {
+                modal.hide();
+            }
+
+            // 隱藏分頁
+            if (this.page && this.page.data) {
+                this.page.data.total = 0;
+            }
+
+            addAlert(`找到 ${res.data.length} 間符合條件的會議室`, {
+                type: res.data.length > 0 ? 'success' : 'warning'
+            });
+
+        } catch (error) {
+            console.error('❌ 智慧搜尋失敗:', error);
+            addAlert('智慧搜尋失敗,請稍後再試', { type: 'danger' });
+        }
+    };
+
+    this.clearSmartSearch = () => {
+        console.log('🔄 清空搜尋條件');
+        smartSearch.date = '';
+        smartSearch.minCapacity = null;
+        smartSearch.equipmentTypes = [];
+        smartSearch.keyword = '';
+        smartSearch.building = '';
+    };
+
+    this.clearSearchResults = () => {
+        console.log('↩️ 返回總覽');
+
+        // 清空搜尋條件
+        this.clearSmartSearch();
+
+        // 切換回正常模式
+        isSearchMode.value = false;
+
+        // 重新載入原本的列表
+        this.getList({ page: 1, perPage: 6 });
     };
 };
 
@@ -328,6 +423,13 @@ window.$config = {
             const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
             return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
         };
+
+        // ===== 智慧搜尋相關 =====
+        this.smartSearch = smartSearch;
+        this.isSearchMode = isSearchMode;
+        this.performSmartSearch = room.performSmartSearch;
+        this.clearSmartSearch = room.clearSmartSearch;
+        this.clearSearchResults = room.clearSearchResults;
 
         onMounted(async () => {
             await loadCurrentUser();

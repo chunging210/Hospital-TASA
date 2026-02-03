@@ -74,7 +74,33 @@ namespace TASA.Services.AuthUserModule
         /// </summary>
         public bool CanApproveReservation(Guid userId)
         {
-            return HasAnyRole(userId, "ADMIN", "ADMINN", "DIRECTOR");
+            // 原有權限：ADMIN / DIRECTOR
+            var hasRolePermission = HasAnyRole(userId, "ADMIN", "ADMINN", "DIRECTOR");
+            
+            if (hasRolePermission)
+                return true;
+            
+            // 檢查是否為任何會議室的管理者
+            var isRoomManager = db.SysRoom
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Any(r => r.ManagerId == userId
+                    && r.IsEnabled
+                    && r.DeleteAt == null);
+
+            if (isRoomManager) return true;
+
+            // 檢查是否為有效的代理人
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var isDelegate = db.RoomManagerDelegate
+                .AsNoTracking()
+                .Any(d => d.DelegateUserId == userId
+                       && d.IsEnabled
+                       && d.DeleteAt == null
+                       && d.StartDate <= today
+                       && d.EndDate >= today);
+
+            return isDelegate;
         }
 
         /// <summary>
@@ -105,18 +131,59 @@ namespace TASA.Services.AuthUserModule
         /// ✅ 取得使用者權限摘要 (前端用)
         /// </summary>
         public UserPermissionVM GetUserPermissions(Guid userId)
-        {
-            var roles = GetUserRoles(userId);
+{
+    var roles = GetUserRoles(userId);
+    
+    // 查詢使用者管理的會議室
+    var managedRoomIds = db.SysRoom
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Where(r => r.ManagerId == userId
+                 && r.IsEnabled
+                 && r.DeleteAt == null)
+        .Select(r => r.Id)
+        .ToList();
 
-            return new UserPermissionVM
-            {
-                Roles = roles,
-                CanApproveReservation = CanApproveReservation(userId),
-                CanApprovePayment = CanApprovePayment(userId),
-                IsInternalStaff = IsInternalStaff(userId),
-                IsExternalUser = IsExternalUser(userId)
-            };
-        }
+    // 合併被委派管理的會議室
+    var today = DateOnly.FromDateTime(DateTime.Now);
+    var delegatedManagerIds = db.RoomManagerDelegate
+        .AsNoTracking()
+        .Where(d => d.DelegateUserId == userId
+                 && d.IsEnabled
+                 && d.DeleteAt == null
+                 && d.StartDate <= today
+                 && d.EndDate >= today)
+        .Select(d => d.ManagerId)
+        .ToList();
+
+    if (delegatedManagerIds.Any())
+    {
+        var delegatedRoomIds = db.SysRoom
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(r => delegatedManagerIds.Contains(r.ManagerId!.Value)
+                     && r.IsEnabled
+                     && r.DeleteAt == null)
+            .Select(r => r.Id)
+            .ToList();
+
+        managedRoomIds = managedRoomIds.Union(delegatedRoomIds).Distinct().ToList();
+    }
+
+    var isRoomManager = managedRoomIds.Any();
+    var hasRolePermission = roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR");
+
+    return new UserPermissionVM
+    {
+        Roles = roles,
+        CanApproveReservation = hasRolePermission || isRoomManager,
+        CanApprovePayment = CanApprovePayment(userId),
+        IsInternalStaff = IsInternalStaff(userId),
+        IsExternalUser = IsExternalUser(userId),
+        IsRoomManager = isRoomManager,
+        ManagedRoomIds = managedRoomIds
+    };
+}
 
         /// <summary>
         /// 使用者權限 ViewModel
@@ -128,6 +195,9 @@ namespace TASA.Services.AuthUserModule
             public bool CanApprovePayment { get; set; }
             public bool IsInternalStaff { get; set; }
             public bool IsExternalUser { get; set; }
+
+    public bool IsRoomManager { get; set; }  // ✅ 新增
+    public List<Guid> ManagedRoomIds { get; set; } = new();  
         }
     }
 }

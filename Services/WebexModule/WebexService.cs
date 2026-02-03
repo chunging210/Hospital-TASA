@@ -100,7 +100,7 @@ namespace TASA.Services.WebexModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.UtcNow;
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("Webex刪除", $"{data.Name}({data.Id})");
             }

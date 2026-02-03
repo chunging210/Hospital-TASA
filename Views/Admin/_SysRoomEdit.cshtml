@@ -56,7 +56,7 @@
                     <!-- ✅ 容量、面積各佔一列 -->
                     <div class="row g-2">
                         <div class="col-md-5">
-                            <label class="form-label">容量（人） <span class="text-danger">*</span></label>
+                            <label class="form-label">人數 <span class="text-danger">*</span></label>
                             <input v-model.number="room.vm.Capacity" type="number" class="form-control form-control-sm"
                                 min="1">
                         </div>
@@ -235,6 +235,72 @@
                     </div>
                 </div>
 
+                <!-- 會議室管理者 -->
+                <div class="edit-form-section">
+                    <h6>會議室管理者</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label">指定管理者 (選填)</label>
+
+                        <!-- 已選擇的管理者 -->
+                        <div v-if="manager.selectedManager.value"
+                            class="alert alert-info d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <i class="mdi mdi-account-check"></i>
+                                <strong>{{ manager.selectedManager.value.Name }}</strong>
+                                <!-- ✅ 角色標籤 -->
+                                <span class="badge bg-white text-primary ms-2" style="font-size: 0.7rem;">
+                                    {{ manager.selectedManager.value.RoleDisplay }}
+                                </span>
+                                <small class="text-muted ms-2">{{ manager.selectedManager.value.Email }}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                @@click="manager.clearSelection()">
+                                <i class="mdi mdi-close"></i> 取消
+                            </button>
+                        </div>
+
+                        <!-- 搜尋管理者 -->
+                        <div v-else>
+                            <input v-model="manager.searchKeyword.value" type="text"
+                                class="form-control form-control-sm mb-2" placeholder="搜尋使用者姓名或 Email...">
+
+                            <div class="manager-list"
+                                style="max-height: 180px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
+                                <div v-for="user in manager.filteredList.value" :key="user.Id" class="p-2 border-bottom"
+                                    style="cursor: pointer; transition: background 0.2s;"
+                                    @@click="manager.selectManager(user)"
+                                    @@mouseover="$event.currentTarget.style.backgroundColor='#f8f9fa'"
+                                    @@mouseout="$event.currentTarget.style.backgroundColor='white'">
+                                    <div class="d-flex align-items-center">
+                                        <i class="mdi mdi-account-circle me-2 text-primary"></i>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-1">
+                                                <strong style="font-size: 0.9rem;">{{ user.Name }}</strong>
+                                                <!-- ✅ 角色標籤 -->
+                                                <span class="badge bg-primary" style="font-size: 0.65rem;">
+                                                    {{ user.RoleDisplay }}
+                                                </span>
+                                            </div>
+                                            <small class="text-muted d-block">{{ user.Email }}</small>
+                                            <small v-if="isAdmin && user.DepartmentName" class="text-muted">
+                                                <i class="mdi mdi-domain"></i> {{ user.DepartmentName }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="manager.filteredList.value.length === 0" class="p-3 text-center text-muted">
+                                    <i class="mdi mdi-account-search"></i> 查無使用者
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-text text-muted mt-2">
+                            <i class="mdi mdi-information-outline"></i> 預約審核通知將寄給指定管理者
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">

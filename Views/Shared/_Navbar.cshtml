@@ -71,7 +71,12 @@
                             </a>
                             <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
                                 <a href="/reservationoverview" class="dropdown-item">預約總覽</a>
-                                @if (user?.IsAdmin == true)
+                                @{
+                                    var canApproveReservation = user?.Id != null &&
+                                    service.AuthRoleServices.CanApproveReservation(user.Id.Value);
+                                }
+                                @if (user?.IsAdmin == true || user?.IsAccountant == true || user?.IsDirector == true ||
+                                                                canApproveReservation)
                                 {
                                     <a href="/admin/reservation" class="dropdown-item">預約審核</a>
                                 }

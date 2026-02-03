@@ -114,9 +114,31 @@ namespace TASA.Services.ConferenceModule
         /// </summary>
         public IQueryable<ReservationListVM> AllList(ReservationQueryVM query)
         {
+
+            var userId = service.UserClaimsService.Me()?.Id;
+
             var queryable = db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted();
+
+
+            if (userId.HasValue)
+    {
+        var userPermissions = service.AuthRoleServices.GetUserPermissions(userId.Value);
+        
+        // 如果使用者是會議室管理者，但不是 Admin/Director
+        if (userPermissions.IsRoomManager && 
+            !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+        {
+            var managedRoomIds = userPermissions.ManagedRoomIds;
+            
+            // ✅ 只顯示該使用者管理的會議室的預約
+            queryable = queryable.Where(c => 
+                c.ConferenceRoomSlots.Any(s => managedRoomIds.Contains(s.RoomId))
+            );
+        }
+    }
+
 
             if (query.UserId.HasValue)
             {
@@ -404,7 +426,7 @@ namespace TASA.Services.ConferenceModule
 
             foreach (var att in oldAttachments)
             {
-                att.DeleteAt = DateTime.UtcNow;
+                att.DeleteAt = DateTime.Now;
             }
 
             if (vm.Attachments != null && vm.Attachments.Any())
@@ -436,10 +458,10 @@ namespace TASA.Services.ConferenceModule
             var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays();
 
             conference.ReservationStatus = ReservationStatus.PendingPayment;
-            conference.ReviewedAt = DateTime.UtcNow;
+            conference.ReviewedAt = DateTime.Now;
             conference.ReviewedBy = reviewedBy;
-            conference.PaymentDeadline = DateTime.UtcNow.AddDays(deadlineDays);
-            conference.UpdateAt = DateTime.UtcNow;
+            conference.PaymentDeadline = DateTime.Now.AddDays(deadlineDays);
+            conference.UpdateAt = DateTime.Now;
 
             if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
             {
@@ -478,22 +500,22 @@ namespace TASA.Services.ConferenceModule
                 throw new HttpException("該預約不在待審核狀態");
 
             conference.ReservationStatus = ReservationStatus.Rejected;
-            conference.ReviewedAt = DateTime.UtcNow;
+            conference.ReviewedAt = DateTime.Now;
             conference.ReviewedBy = reviewedBy;
             conference.RejectReason = vm.Reason ?? "";
-            conference.UpdateAt = DateTime.UtcNow;
+            conference.UpdateAt = DateTime.Now;
 
             foreach (var slot in conference.ConferenceRoomSlots)
             {
                 slot.SlotStatus = SlotStatus.Available;
-                slot.ReleasedAt = DateTime.UtcNow;
+                slot.ReleasedAt = DateTime.Now;
             }
 
             // ✅ 設備釋放
             foreach (var equipment in conference.ConferenceEquipments)
             {
                 equipment.EquipmentStatus = 0;  // 可用
-                equipment.ReleasedAt = DateTime.UtcNow;
+                equipment.ReleasedAt = DateTime.Now;
             }
 
 
@@ -544,20 +566,20 @@ namespace TASA.Services.ConferenceModule
             }
 
             conference.ReservationStatus = ReservationStatus.Cancelled;
-            conference.CancelledAt = DateTime.UtcNow;
+            conference.CancelledAt = DateTime.Now;
             conference.CancelledBy = userId;
-            conference.UpdateAt = DateTime.UtcNow;
+            conference.UpdateAt = DateTime.Now;
 
             foreach (var slot in conference.ConferenceRoomSlots)
             {
                 slot.SlotStatus = SlotStatus.Available;
-                slot.ReleasedAt = DateTime.UtcNow;
+                slot.ReleasedAt = DateTime.Now;
             }
 
             foreach (var equipment in conference.ConferenceEquipments)
             {
                 equipment.EquipmentStatus = 0;  // 可用
-                equipment.ReleasedAt = DateTime.UtcNow;
+                equipment.ReleasedAt = DateTime.Now;
             }
 
 
@@ -588,8 +610,8 @@ namespace TASA.Services.ConferenceModule
             }
 
             // ✅ 軟刪除會議本體
-            conference.DeleteAt = DateTime.UtcNow;
-            conference.UpdateAt = DateTime.UtcNow;
+            conference.DeleteAt = DateTime.Now;
+            conference.UpdateAt = DateTime.Now;
 
             // ✅ 如果是「待審核」狀態,需要釋放資源
             if (conference.ReservationStatus == ReservationStatus.PendingApproval)
@@ -598,14 +620,14 @@ namespace TASA.Services.ConferenceModule
                 foreach (var slot in conference.ConferenceRoomSlots)
                 {
                     slot.SlotStatus = SlotStatus.Available;
-                    slot.ReleasedAt = DateTime.UtcNow;
+                    slot.ReleasedAt = DateTime.Now;
                 }
 
                 // 2️⃣ 釋放設備和攤位
                 foreach (var equipment in conference.ConferenceEquipments)
                 {
                     equipment.EquipmentStatus = 0;  // 可用
-                    equipment.ReleasedAt = DateTime.UtcNow;
+                    equipment.ReleasedAt = DateTime.Now;
                 }
             }
 
@@ -719,6 +741,12 @@ namespace TASA.Services.ConferenceModule
 
             if (!vm.ReservationDate.HasValue)
                 throw new HttpException("必須指定預約日期");
+
+            // 驗證預約日期不能早於今天 + MIN_ADVANCE_BOOKING_DAYS
+            var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays();
+            var minDate = DateTime.Today.AddDays(minAdvanceDays);
+            if (vm.ReservationDate.Value.Date < minDate)
+                throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
         }
 
         /// <summary>
@@ -819,8 +847,8 @@ namespace TASA.Services.ConferenceModule
                 BoothCost = (int)(vm.BoothCost ?? 0),
                 TotalAmount = (int)(vm.TotalAmount ?? 0),
                 CreateBy = userId,
-                CreateAt = DateTime.UtcNow,
-                UpdateAt = DateTime.UtcNow,
+                CreateAt = DateTime.Now, 
+                UpdateAt = DateTime.Now,
                 Email = null,
                 ConferenceUser = new List<ConferenceUser>
                 {
@@ -861,7 +889,7 @@ namespace TASA.Services.ConferenceModule
             conference.TotalAmount = (int)(vm.TotalAmount ?? 0);
             conference.DurationHH = vm.DurationHH ?? 0;
             conference.DurationSS = vm.DurationSS ?? 0;
-            conference.UpdateAt = DateTime.UtcNow;
+            conference.UpdateAt = DateTime.Now;
         }
 
         /// <summary>
@@ -896,7 +924,7 @@ namespace TASA.Services.ConferenceModule
                     Price = priceInfo?.Price ?? 0,  // ✅ 使用實際價格(沒找到就是 0)
                     PricingType = PricingType.Period,  // ✅ 時段計價
                     SlotStatus = SlotStatus.Locked,
-                    LockedAt = DateTime.UtcNow
+                    LockedAt = DateTime.Now
                 };
 
                 db.ConferenceRoomSlot.Add(slot);
@@ -931,7 +959,7 @@ namespace TASA.Services.ConferenceModule
                     FilePath = filePath,
                     FileSize = fileSize,
                     MimeType = mimeType,
-                    UploadedAt = DateTime.UtcNow,
+                    UploadedAt = DateTime.Now,
                     UploadedBy = userId
                 };
 
@@ -1040,8 +1068,8 @@ namespace TASA.Services.ConferenceModule
                             StartTime = start,    // ✅ 新增開始時間
                             EndTime = end,        // ✅ 新增結束時間
                             EquipmentStatus = 1,  // ✅ 鎖定中
-                            LockedAt = DateTime.UtcNow,
-                            CreatedAt = DateTime.UtcNow
+                            LockedAt = DateTime.Now,
+                            CreatedAt = DateTime.Now
                         });
                     }
                 }
@@ -1066,8 +1094,8 @@ namespace TASA.Services.ConferenceModule
                             StartTime = start,    // ✅ 新增開始時間
                             EndTime = end,        // ✅ 新增結束時間
                             EquipmentStatus = 1,  // ✅ 鎖定中
-                            LockedAt = DateTime.UtcNow,
-                            CreatedAt = DateTime.UtcNow
+                            LockedAt = DateTime.Now,
+                            CreatedAt = DateTime.Now
                         });
                     }
                 }
