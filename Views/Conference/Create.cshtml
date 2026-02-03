@@ -10,7 +10,9 @@
                         <div class="card-header mx-4 mt-3">
                             <div class="row align-items-center">
                                 <div class="col-xl-9 col-sm-12 text-branding align-middle">
-                                    <i class="mdi mdi-calendar-cursor"></i> {{ isEditMode ? '編輯會議預約' : '新增會議預約' }}
+                                    <span class="material-icons title-icons">edit_calendar</span> {{ isEditMode ?
+                                    '編輯會議預約' :
+                                    '新增會議預約' }}
                                 </div>
                                 <div class="col-xl-3 col-sm-12 df-box01">
                                     <div class="d-flex align-items-center me-3">
@@ -31,7 +33,7 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bxs-pencil text-white font-size-20"></i>
+                                            <span class="material-icons room-icons">edit_note</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list">
@@ -88,7 +90,7 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bxs-user text-white font-size-20"></i>
+                                            <span class="material-icons room-icons">groups</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list">
@@ -122,7 +124,7 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bxs-map text-white font-size-20"></i>
+                                            <span class="material-icons room-icons">edit_location_alt</span>
                                         </div>
                                     </div>
 
@@ -240,11 +242,11 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bx-cog text-white"></i>
+                                            <span class="material-icons room-icons">add_box</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
-                                        <h6>公有設備加租</h6>
+                                        <h5>公有設備加租</h5>
 
                                         <div v-if="form.selectedSlots.length > 0">
                                             <p class="text-muted small">選擇需要的額外設備</p>
@@ -278,11 +280,11 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bx-store text-white"></i>
+                                            <span class="material-icons room-icons">add_business</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
-                                        <h6>展示攤位加租</h6>
+                                        <h5>展示攤位加租</h5>
 
                                         <div v-if="form.selectedSlots.length > 0">
                                             <div class="equipment-grid">
@@ -313,7 +315,7 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bx-file text-white font-size-20"></i>
+                                            <span class="material-icons room-icons">drive_folder_upload</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list">
@@ -428,11 +430,11 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
-                                            <i class="bx bx-credit-card text-white"></i>
+                                            <span class="material-icons room-icons">paid</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
-                                        <h6>付費方式選擇</h6>
+                                        <h5>付費方式選擇</h5>
 
                                         <div class="row">
                                             <div class="col-md-4">
@@ -490,51 +492,48 @@
                                                 </div>
                                             </div>
 
-<div v-if="form.paymentMethod === 'cost-sharing'" class="alert alert-warning">
-    <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
-    
-    <div class="mb-3">
-        <label class="form-label">部門代碼<span class="text-danger">*</span></label>
-        
-        <!-- 可搜尋的輸入框 -->
-        <div class="position-relative">
-            <input 
-                type="text" 
-                class="form-control"
-                v-model="costCenterSearch"
-                @@input="filterCostCenters"
-                @@focus="showCostCenterDropdown = true"
-                placeholder="輸入代碼或名稱搜尋 (例: 00100 或 內科)"
-                autocomplete="off">
-            
-            <!-- 下拉選項列表 -->
-            <div v-if="showCostCenterDropdown && filteredCostCenters.length > 0"
-                class="cost-center-dropdown">
-                <div 
-                    v-for="center in filteredCostCenters" 
-                    :key="center.code"
-                    class="cost-center-item"
-                    @@click="selectCostCenter(center)">
-                    <strong>{{ center.code }}</strong> - {{ center.name }}
-                </div>
-                <div v-if="filteredCostCenters.length === 0" class="text-muted p-2">
-                    查無結果
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-6">
-            <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
-            <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
-            <small class="text-muted">超過 $5,000 需總經理簽核</small>
-        </div>
-    </div>
-</div>
+                                            <div v-if="form.paymentMethod === 'cost-sharing'"
+                                                class="alert alert-warning">
+                                                <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">部門代碼<span
+                                                            class="text-danger">*</span></label>
+
+                                                    <!-- 可搜尋的輸入框 -->
+                                                    <div class="position-relative">
+                                                        <input type="text" class="form-control"
+                                                            v-model="costCenterSearch" @@input="filterCostCenters"
+                                                            @@focus="showCostCenterDropdown = true"
+                                                            placeholder="輸入代碼或名稱搜尋 (例: 00100 或 內科)" autocomplete="off">
+
+                                                        <!-- 下拉選項列表 -->
+                                                        <div v-if="showCostCenterDropdown && filteredCostCenters.length > 0"
+                                                            class="cost-center-dropdown">
+                                                            <div v-for="center in filteredCostCenters"
+                                                                :key="center.code" class="cost-center-item"
+                                                                @@click="selectCostCenter(center)">
+                                                                <strong>{{ center.code }}</strong> - {{ center.name }}
+                                                            </div>
+                                                            <div v-if="filteredCostCenters.length === 0"
+                                                                class="text-muted p-2">
+                                                                查無結果
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
+                                                        <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
+                                                        <small class="text-muted">超過 $5,000 需總經理簽核</small>
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <div v-if="form.paymentMethod === 'cash'" class="alert alert-secondary">
                                                 <h6><i class="bx bx-money"></i> 現金付款資訊</h6>
@@ -560,7 +559,7 @@
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-success">
-                                            <i class="bx bx-calculator text-white"></i>
+                                            <span class="material-icons room-icons">price_check</span>
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
@@ -603,7 +602,7 @@
                         <!-- Footer -->
                         <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
                             <button @@click="showConfirmationModal"
-                                class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-14">
+                                class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-18">
                                 {{ isEditMode ? '更新預約' : '預約送出' }}
                             </button>
                         </div>
@@ -701,18 +700,18 @@
                     <div
                         style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
                         <label
-                            style="display: flex; align-items: flex-start; cursor: pointer; user-select: none; margin: 0;">
+                            style="display: flex; align-items: center; cursor: pointer; user-select: none; margin: 0;">
                             <input type="checkbox" :checked="hasReadAgreement" disabled>
-                            <div style="flex: 1; font-size: 14px; line-height: 1.6;">
+                            <div style="flex: 1; font-size: 14px; line-height: 1.6; margin-left: 5px;">
                                 <span style="color: #333;">我已詳細閱讀並同意</span>
                                 <a href="#" @@click.prevent="openAgreementPDF"
-                                    style="color: #0066cc; text-decoration: none; font-weight: 500; margin-left: 4px;">
+                                    style="color: #0066cc; text-decoration: none; font-weight: 500;">
                                     《會議室使用聲明暨承諾書》
                                     <i class="bx bx-link-external" style="font-size: 14px; vertical-align: middle;"></i>
                                 </a>
                             </div>
                         </label>
-                        <div style="margin-top: 8px; font-size: 12px; color: #6c757d; padding-left: 30px;">
+                        <div style="margin-top: 8px; font-size: 12px; color: #6c757d; padding-left: 15px;">
                             ⓘ 請點擊上方連結閱讀完整內容後再勾選同意
                         </div>
                     </div>

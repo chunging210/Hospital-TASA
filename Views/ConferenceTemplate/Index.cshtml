@@ -5,7 +5,7 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-                        <span class="material-icons">folder</span>會議範本
+                        <span class="material-icons">description</span>會議範本
                     </div>
                     <div class="col-auto d-flex align-items-center">
                         <button @@click="conference.getVM()" class="btn btn-primary">新增範本</button>
@@ -27,7 +27,7 @@
                     </thead>
                     <tbody>
                         <tr v-for="item in conference.list" @@dblclick="conference.detail(item.Id)" :key="item.Id">
-                            <td>{{item.Name}}</td>
+                            <td class="text-ellipsis">{{item.Name}}</td>
                             <td>{{item.DurationHH}}小時{{item.DurationSS}}分鐘</td>
                             <td>{{item.Room.join(',')}}</td>
                             <td>{{item.Host}}</td>

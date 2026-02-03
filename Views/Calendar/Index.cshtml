@@ -45,8 +45,8 @@
 
                     <!-- 智慧搜尋按鈕 -->
                     <div class="col-auto ms-auto">
-                        <button type="button" class="btn btn-outline-primary btn-rounded" data-bs-toggle="modal"
-                            data-bs-target="#smartSearchModal" style="font-size: 14px;">
+                        <button type="button" class="btn btn-outline-primary btn-rounded font-size-24"
+                            data-bs-toggle="modal" data-bs-target="#smartSearchModal">
                             智慧搜尋
                         </button>
                     </div>
@@ -119,16 +119,20 @@
                                     <span class="detail-label">面積</span>
                                     <span class="detail-value">{{ item.Area ?? '-' }} ㎡</span>
                                 </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">設備數量</span>
+                                    <span class="detail-value">{{ item.Area ?? '-' }} ㎡</span>
+                                </div>
                             </div>
 
                             <!-- 操作 -->
                             <div class="action-buttons mt-3">
                                 <button class="btn btn-view" @@click.stop="room.openDetail(item.Id)">
-                                    <span class="material-icons">visibility</span>
+                                    <span class="material-icons icons">visibility</span>
                                     了解更多
                                 </button>
                                 <button class="btn btn-edit" @@click.stop="room.goReserve(item)">
-                                    <span class="material-icons">calendar_add_on</span>
+                                    <span class="material-icons icons">event_available</span>
                                     立即預約
                                 </button>
                             </div>

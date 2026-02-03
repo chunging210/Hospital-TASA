@@ -259,14 +259,15 @@
     opacity: 0.6;
 }
 
-
-/* ✅ 側邊欄加大 */
-.offcanvas-large {
-    width: 600px !important;
-}
-
 @media (max-width: 768px) {
     .offcanvas-large {
         width: 90% !important;
     }
+}
+
+.text-ellipsis {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

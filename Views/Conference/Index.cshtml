@@ -5,7 +5,7 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-                        <span class="material-icons">folder</span>會議總覽
+                        <span class="material-icons">format_list_bulleted</span>會議總覽
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
@@ -86,7 +86,7 @@
                     </thead>
                     <tbody>
                         <tr v-for="item in conference.list" :key="item.Id">
-                            <td>{{item.Name}}</td>
+                            <td class="text-ellipsis">{{item.Name}}</td>
                             <td>{{item.StartTime.format('yyyy-mm-dd HH:MM')}}</td>
                             <td>{{item.DurationHH}}小時{{item.DurationSS}}分鐘</td>
                             <td>{{item.Room.join(',')}}</td>
@@ -106,7 +106,8 @@
                     </tfoot>
                 </table>
 
-                <page ref="conferencepage" :per-page="20"  :per-page-option="[20,40,60]" @@reload="conference.getList"></page>
+                <page ref="conferencepage" :per-page="20" :per-page-option="[20,40,60]" @@reload="conference.getList">
+                </page>
             </div>
         </div>
     </div>

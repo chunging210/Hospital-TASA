@@ -33,10 +33,11 @@ File: Main Css File
     background: linear-gradient(to top, #3b76e1, #36e4cd);
     background-clip: text;
     color: transparent;
-    font-size: 1.53125rem;
+    font-size: 2rem;
     font-weight: 600;
     font-family: "Work Sans", sans-serif;
-    display: inline-block;
+    display: flex;
+    align-items: center;
     white-space: wrap;
 }
 

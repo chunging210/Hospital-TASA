@@ -10,7 +10,7 @@
                         <div class="card-header mx-4 mt-3">
                             <div class="row align-items-center">
                                 <div class="col-xl-auto col-sm-12 text-branding align-middle">
-                                    <i class="mdi mdi-calendar-text-outline"></i> 預約總覽
+                                    <span class="material-icons">playlist_add_check</span> 預約總覽
                                 </div>
                                 <div class="col-xl-4 col-sm-12">
                                     <div class="search-box">
@@ -105,7 +105,7 @@
                                                     class="row-click" role="button" @@click="openDetailDrawer(item)">
                                                     <td>{{ item.reservationNo }}</td>
                                                     <td>{{ item.reserverName }}</td>
-                                                    <td>{{ item.conferenceName || '-' }}</td>
+                                                    <td class="text-ellipsis">{{ item.conferenceName || '-' }}</td>
                                                     <td>{{ item.reservationDate }}</td>
                                                     <td>{{ item.timeSlot }}</td>
                                                     <td>{{ item.roomName }}</td>
@@ -160,7 +160,7 @@
                                                         class="row-click" role="button"
                                                         @@click="openDetailDrawer(item)">
                                                         <td>{{ item.reservationNo }}</td>
-                                                        <td>{{ item.conferenceName || '-' }}</td>
+                                                        <td class="text-ellipsis">{{ item.conferenceName || '-' }}</td>
                                                         <td>{{ item.reservationDate }}</td>
                                                         <td>{{ item.timeSlot }}</td>
                                                         <td>{{ item.roomName }}</td>

@@ -16,20 +16,20 @@
     line-height: 1;
     display: inline-block;
     vertical-align: middle;
+    font-size: 24px;
 }
 
 .icon-text-container .text {
     line-height: 1;
     display: inline-block;
     vertical-align: middle;
-    font-size: 18px;
+    font-size: 24px;
 }
 
 .material-icons {
     font-family: 'Material Icons';
     font-weight: normal;
     font-style: normal;
-    font-size: 24px;
     line-height: 1;
     letter-spacing: normal;
     text-transform: none;
@@ -39,4 +39,9 @@
     direction: ltr;
     -webkit-font-feature-settings: 'liga';
     -webkit-font-smoothing: antialiased;
+    margin-right: 5px;
+}
+
+.title-icons {
+    font-size: 40px;
 }

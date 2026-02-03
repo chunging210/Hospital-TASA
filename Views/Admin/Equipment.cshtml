@@ -5,7 +5,7 @@
                 <div class="row align-items-center">
                     <!-- Title -->
                     <div class="col-auto text-branding align-middle">
-                        <i class="mdi mdi-archive"></i> 設備總覽
+                        <span class="material-icons">inventory</span> 設備總覽
                     </div>
 
                     <!-- 搜尋 -->
@@ -90,7 +90,8 @@
                         </tr>
                     </tfoot>
                 </table>
-                <page ref="equipmentpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="equipment.getList"></page>
+                <page ref="equipmentpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="equipment.getList">
+                </page>
             </div>
         </div>
     </div>

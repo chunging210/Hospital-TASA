@@ -73,27 +73,27 @@
                                 <button class="nav-link active" id="info-tab" data-bs-toggle="tab"
                                     data-bs-target="#info" type="button" role="tab" aria-controls="info"
                                     aria-selected="true">
-                                    <i class="mdi mdi-cog"></i> 基本資訊
+                                    <span class="material-icons icons">settings</span> 基本資訊
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="equipment-tab" data-bs-toggle="tab"
                                     data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment"
                                     aria-selected="false">
-                                    <i class="mdi mdi-tools"></i> 設備狀態
+                                    <span class="material-icons icons">construction</span> 設備狀態
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="schedule-tab" data-bs-toggle="tab"
                                     data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule"
                                     aria-selected="false">
-                                    <i class="mdi mdi-calendar-clock"></i> 今日時程
+                                    <span class="material-icons icons">today</span> 今日時程
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing"
                                     type="button" role="tab" aria-controls="pricing" aria-selected="false">
-                                    <i class="mdi mdi-currency-twd"></i> 收費標準
+                                    <span class="material-icons icons">paid</span> 收費標準
                                 </button>
                             </li>
                         </ul>
@@ -114,7 +114,7 @@
                                 <div class="info-grid">
                                     <div class="info-item">
                                         <div class="info-icon">
-                                            <span class="material-icons">
+                                            <span class="material-icons icons">
                                                 groups
                                             </span>
                                         </div>
@@ -123,14 +123,16 @@
                                     </div>
                                     <div class="info-item">
                                         <div class="info-icon">
-                                            <i class="mdi mdi-floor-plan"></i>
+                                            <span class="material-icons icons">
+                                                border_all
+                                            </span>
                                         </div>
                                         <div class="info-label">面積</div>
                                         <div class="info-value">{{ detailRoom?.Area || '-' }}㎡</div>
                                     </div>
                                     <div class="info-item">
-                                        <div class="info-icon">
-                                            <span class="material-icons">
+                                        <div class="info-icon ">
+                                            <span class="material-icons icons">
                                                 location_on
                                             </span>
                                         </div>
@@ -141,7 +143,9 @@
                                     <!-- ✅ 加上分院 -->
                                     <div class="info-item">
                                         <div class="info-icon">
-                                            <i class="mdi mdi-hospital-box"></i>
+                                            <span class="material-icons icons">
+                                                apartment
+                                            </span>
                                         </div>
                                         <div class="info-label">分院</div>
                                         <div class="info-value">{{ detailRoom?.Department?.Name || '-' }}</div>
@@ -152,9 +156,6 @@
                             <!-- 設備頁 -->
                             <div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
                                 <div class="equipment-status">
-                                    <h6 class="mb-3">
-                                        <i class="mdi mdi-tools text-warning"></i> 設備狀態
-                                    </h6>
                                     <div v-if="detailRoom?.Equipment?.length > 0">
                                         <div v-for="equipment in detailRoom.Equipment" :key="equipment.Id"
                                             class="equipment-item d-flex align-items-center mb-2">
@@ -171,9 +172,6 @@
                             <!-- 時程頁 -->
                             <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
                                 <div class="schedule-section">
-                                    <h6 class="mb-3">
-                                        <i class="mdi mdi-calendar-clock text-info"></i> 今日使用時程
-                                    </h6>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-bordered">
                                             <thead class="table-light">
