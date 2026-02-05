@@ -265,9 +265,9 @@ const equipment = new function () {
             }
         }
 
-        // 公有設備(8)/攤位租借(9) 必須有租借金額
+        // 設備加租(8)/攤位租借(9) 必須有租借金額
         if ([8, 9].includes(Number(this.vm.Type)) && this.vm.RentalPrice <= 0) {
-            addAlert('公有設備和攤位租借必須設定租借金額', { type: 'warning' });
+            addAlert('設備加租和攤位租借必須設定租借金額', { type: 'warning' });
             return false;
         }
 

@@ -22,6 +22,8 @@ namespace TASA.Services.ConferenceModule
         {
             public string ConferenceName { get; set; }
             public string Description { get; set; }
+            public string OrganizerUnit { get; set; }
+            public string Chairman { get; set; }
             public string ReservationDate { get; set; }
             public Guid DepartmentId { get; set; }
             public string Building { get; set; }
@@ -60,6 +62,8 @@ namespace TASA.Services.ConferenceModule
             public string BookingNo { get; set; }
             public string ApplicantName { get; set; }
             public string ConferenceName { get; set; }
+            public string OrganizerUnit { get; set; }
+            public string Chairman { get; set; }
             public string Date { get; set; }
             public string Time { get; set; }
             public string RoomName { get; set; }
@@ -176,6 +180,8 @@ namespace TASA.Services.ConferenceModule
                     BookingNo = x.Conference.Id.ToString().Substring(0, 8),
                     ApplicantName = x.Conference.CreateByNavigation.Name,
                     ConferenceName = x.Conference.Name,
+                    OrganizerUnit = x.Conference.OrganizerUnit,
+                    Chairman = x.Conference.Chairman,
 
                     Date = x.Conference.ConferenceRoomSlots.Any()
                             ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
@@ -270,6 +276,9 @@ namespace TASA.Services.ConferenceModule
                     Id = x.Conference.Id,
                     BookingNo = x.Conference.Id.ToString().Substring(0, 8),
                     ApplicantName = x.Conference.CreateByNavigation.Name,
+                    ConferenceName = x.Conference.Name,
+                    OrganizerUnit = x.Conference.OrganizerUnit,
+                    Chairman = x.Conference.Chairman,
 
                     Date = x.Conference.ConferenceRoomSlots.Any()
                         ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
@@ -700,6 +709,8 @@ namespace TASA.Services.ConferenceModule
             {
                 ConferenceName = conference.Name,
                 Description = conference.Description,
+                OrganizerUnit = conference.OrganizerUnit,
+                Chairman = conference.Chairman,
                 ReservationDate = conference.ConferenceRoomSlots.Any()
                     ? conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy-MM-dd")
                     : DateTime.Now.ToString("yyyy-MM-dd"),
@@ -826,6 +837,8 @@ namespace TASA.Services.ConferenceModule
                 MCU = null,
                 Recording = false,
                 Description = vm.Description,
+                OrganizerUnit = vm.OrganizerUnit,
+                Chairman = vm.Chairman,
                 StartTime = null,
                 EndTime = null,
                 DurationHH = vm.DurationHH ?? 0,
@@ -880,6 +893,8 @@ namespace TASA.Services.ConferenceModule
 
             conference.Name = vm.Name;
             conference.Description = vm.Description;
+            conference.OrganizerUnit = vm.OrganizerUnit;
+            conference.Chairman = vm.Chairman;
             conference.DepartmentId = room.DepartmentId;  // ✅ 更新分院ID
             conference.PaymentMethod = vm.PaymentMethod;
             conference.DepartmentCode = vm.DepartmentCode;

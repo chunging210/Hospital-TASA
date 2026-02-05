@@ -48,7 +48,7 @@ window.$config = {
                 const codeMatch = center.code.toLowerCase().includes(keyword);
                 const nameMatch = center.name.toLowerCase().includes(keyword);
                 return codeMatch || nameMatch;
-            }).slice(0, 20); // 限制最多顯示20筆
+            }); // 限制最多顯示20筆
         };
 
         // 選擇成本中心
@@ -94,6 +94,8 @@ window.$config = {
         this.form = reactive({
             name: '',
             content: '',
+            organizerUnit: '',
+            chairman: '',
             date: '',
             meetingType: 'physical',
             departmentId: null,
@@ -784,6 +786,8 @@ window.$config = {
 
                 this.form.name = data.ConferenceName || '';
                 this.form.content = data.Description || '';
+                this.form.organizerUnit = data.OrganizerUnit || '';
+                this.form.chairman = data.Chairman || '';
                 this.form.date = data.ReservationDate || '';
                 this.form.paymentMethod = data.PaymentMethod || '';
                 this.form.departmentCode = data.DepartmentCode || '';
@@ -902,6 +906,8 @@ window.$config = {
             const payload = {
                 name: this.form.name,
                 description: this.form.content,
+                organizerUnit: this.form.organizerUnit,
+                chairman: this.form.chairman,
                 usageType: 1,
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,

@@ -33,7 +33,7 @@ public partial class ConferenceEquipment
     public Guid EquipmentId { get; set; }
 
     /// <summary>
-    /// 類型 8=公有設備 9=攤位
+    /// 類型 8=設備加租 9=攤位
     /// </summary>
     [Required]
     [StringLength(1)]

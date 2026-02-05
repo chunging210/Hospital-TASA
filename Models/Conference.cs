@@ -250,7 +250,19 @@ public partial class Conference
     /// <summary>
     /// 分院ID
     /// </summary>
-    public Guid? DepartmentId { get; set; } 
+    public Guid? DepartmentId { get; set; }
+
+    /// <summary>
+    /// 承辦單位
+    /// </summary>
+    [StringLength(100)]
+    public string OrganizerUnit { get; set; }
+
+    /// <summary>
+    /// 會議主席
+    /// </summary>
+    [StringLength(100)]
+    public string Chairman { get; set; }
 
     /* ===============================
      * Navigation Properties

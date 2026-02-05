@@ -28,7 +28,7 @@
                             <option value="">產品類型</option>
                             <option value="1">影像設備</option>
                             <option value="2">聲音設備</option>
-                            <option value="8">公有設備</option>
+                            <option value="8">設備加租</option>
                             <option value="9">攤位租借</option>
                         </select>
                     </div>
@@ -127,7 +127,7 @@
                                 <option value="">請選擇類型</option>
                                 <option value="1">影像設備</option>
                                 <option value="2">聲音設備</option>
-                                <option value="8">公有設備</option>
+                                <option value="8">設備加租</option>
                                 <option value="9">攤位租借</option>
                             </select>
                         </div>
@@ -202,7 +202,7 @@
                         </div>
                     </div>
 
-                    <!-- 租借金額 (只在公有設備/攤位租借時顯示) -->
+                    <!-- 租借金額 (只在設備加租/攤位租借時顯示) -->
                     <div v-if="[8, 9].includes(equipment.vm.Type)" class="row mb-4">
                         <label class="col-sm-3 col-form-label">租借金額 <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
@@ -211,7 +211,7 @@
                                 <input v-model.number="equipment.vm.RentalPrice" type="number" class="form-control"
                                     placeholder="0" min="0" step="1">
                             </div>
-                            <small class="form-text text-muted">僅限公有設備/攤位租借使用</small>
+                            <small class="form-text text-muted">僅限設備加租/攤位租借使用</small>
                         </div>
                     </div>
 

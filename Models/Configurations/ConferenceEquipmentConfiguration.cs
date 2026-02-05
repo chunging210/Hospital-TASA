@@ -34,7 +34,7 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.EquipmentType)
             .IsRequired()
             .HasMaxLength(1)
-            .HasComment("類型 8=公有設備 9=攤位");
+            .HasComment("類型 8=設備加租 9=攤位");
 
         entity.Property(e => e.EquipmentName)
             .IsRequired()

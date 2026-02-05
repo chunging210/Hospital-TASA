@@ -210,7 +210,7 @@ namespace TASA.Services.AuthModule
                 PasswordHash = hashVm.Hash,
                 PasswordSalt = hashVm.Salt,
                 DepartmentId = department.Id,
-                IsEnabled = true,
+                IsEnabled = false,
                 CreateAt = DateTime.Now,
             };
 

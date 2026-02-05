@@ -89,6 +89,8 @@
                                                     <th class="align-middle">預約單號</th>
                                                     <th class="align-middle">預約者</th>
                                                     <th class="align-middle">會議名稱</th>
+                                                    <th class="align-middle">承辦單位</th>
+                                                    <th class="align-middle">會議主席</th>
                                                     <th class="align-middle">預約日期</th>
                                                     <th class="align-middle">時間</th>
                                                     <th class="align-middle">會議室</th>
@@ -106,6 +108,8 @@
                                                     <td>{{ item.reservationNo }}</td>
                                                     <td>{{ item.reserverName }}</td>
                                                     <td class="text-ellipsis">{{ item.conferenceName || '-' }}</td>
+                                                    <td>{{ item.organizerUnit || '-' }}</td>
+                                                    <td>{{ item.chairman || '-' }}</td>
                                                     <td>{{ item.reservationDate }}</td>
                                                     <td>{{ item.timeSlot }}</td>
                                                     <td>{{ item.roomName }}</td>
@@ -145,6 +149,8 @@
                                                     <tr>
                                                         <th class="align-middle">預約單號</th>
                                                         <th class="align-middle">會議名稱</th>
+                                                        <th class="align-middle">承辦單位</th>
+                                                        <th class="align-middle">會議主席</th>
                                                         <th class="align-middle">預約日期</th>
                                                         <th class="align-middle">時間</th>
                                                         <th class="align-middle">會議室</th>
@@ -161,6 +167,8 @@
                                                         @@click="openDetailDrawer(item)">
                                                         <td>{{ item.reservationNo }}</td>
                                                         <td class="text-ellipsis">{{ item.conferenceName || '-' }}</td>
+                                                        <td>{{ item.organizerUnit || '-' }}</td>
+                                                        <td>{{ item.chairman || '-' }}</td>
                                                         <td>{{ item.reservationDate }}</td>
                                                         <td>{{ item.timeSlot }}</td>
                                                         <td>{{ item.roomName }}</td>
@@ -219,6 +227,18 @@
                     <div class="row">
                         <label class="form-label col-md-3 fw-bold">會議名稱</label>
                         <label class="form-label col-md-9">{{ selectedItem.conferenceName || '-' }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <label class="form-label col-md-4 fw-bold">承辦單位</label>
+                        <label class="form-label col-md-8">{{ selectedItem.organizerUnit || '-' }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <label class="form-label col-md-4 fw-bold">會議主席</label>
+                        <label class="form-label col-md-8">{{ selectedItem.chairman || '-' }}</label>
                     </div>
                 </div>
                 <div class="col-md-6">

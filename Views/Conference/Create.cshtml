@@ -67,6 +67,24 @@
                                                 <label for="meetingContent" class="ms-2">會議內容</label>
                                             </div>
 
+                                            <!-- 承辦單位 & 會議主席 -->
+                                            <div class="row">
+                                                <div class="col-xl-6">
+                                                    <div class="form-floating mb-3">
+                                                        <input type="text" class="form-control" id="organizerUnit"
+                                                            placeholder="請填寫承辦單位" v-model="form.organizerUnit">
+                                                        <label for="organizerUnit" class="ms-2">承辦單位</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-xl-6">
+                                                    <div class="form-floating mb-3">
+                                                        <input type="text" class="form-control" id="chairman"
+                                                            placeholder="請填寫會議主席" v-model="form.chairman">
+                                                        <label for="chairman" class="ms-2">會議主席</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <!-- 會議日期 -->
                                             <div class="row">
                                                 <div class="col-xl-6">
@@ -238,7 +256,7 @@
                                     <hr>
                                 </li>
 
-                                <!-- 4. 公有設備加租 -->
+                                <!-- 4. 設備加租 -->
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
@@ -246,7 +264,7 @@
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
-                                        <h5>公有設備加租</h5>
+                                        <h5>設備加租</h5>
 
                                         <div v-if="form.selectedSlots.length > 0">
                                             <p class="text-muted small">選擇需要的額外設備</p>
@@ -281,7 +299,7 @@
                                     <hr>
                                 </li>
 
-                                <!-- 5. 展示攤位加租 -->
+                                <!-- 5. 攤位加租 -->
                                 <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
@@ -289,7 +307,7 @@
                                         </div>
                                     </div>
                                     <div class="feed-item-list flex-grow-1">
-                                        <h5>展示攤位加租</h5>
+                                        <h5>攤位加租</h5>
 
                                         <div v-if="form.selectedSlots.length > 0">
                                             <div class="equipment-grid">

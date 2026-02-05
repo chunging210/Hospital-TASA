@@ -66,20 +66,22 @@
                     <thead>
                         <tr class="table-light">
                             <th>會議名稱</th>
+                            <th>承辦單位</th>
+                            <th>會議主席</th>
                             <th>會議日期</th>
                             <th>時段</th>
                             <th>與會地點</th>
-                            <th>會議主席</th>
                             <th>發起會議者</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="item in conference.list" :key="item.Id">
                             <td class="text-ellipsis">{{item.Name}}</td>
+                            <td>{{item.OrganizerUnit || '-'}}</td>
+                            <td>{{item.Chairman || '-'}}</td>
                             <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
                             <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) + ' (' + item.SlotCount + '個時段)' : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM') : '-')}}</td>
                             <td>{{item.RoomLocation || '-'}}</td>
-                            <td>{{item.Host}}</td>
                             <td>{{item.CreateByName}}</td>
                             <td class="hstack gap-3">
                                 <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"

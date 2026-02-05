@@ -27,6 +27,8 @@ namespace TASA.Services.ConferenceModule
             public byte? UsageType { get; set; }
 
             public string? Description { get; set; }
+            public string? OrganizerUnit { get; set; }  // 承辦單位
+            public string? Chairman { get; set; }       // 會議主席
 
             // ===== 舊系統(即時會議/傳統會議)專用 =====
             public DateTime? StartTime { get; set; }
@@ -116,6 +118,9 @@ namespace TASA.Services.ConferenceModule
             public bool CanEdit { get; set; }
             public bool Recording7 { get; set; }
             public bool ZeroTouch { get; set; }
+
+            public string? OrganizerUnit { get; set; }
+            public string? Chairman { get; set; }
 
             // 新欄位：支援新預約系統
             public string? RoomLocation { get; set; }

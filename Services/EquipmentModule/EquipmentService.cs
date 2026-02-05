@@ -144,10 +144,10 @@ namespace TASA.Services.EquipmentModule
                 }
             }
 
-            // ✅ 2️⃣ 驗證：公有設備(8)/攤位租借(9) 必須有租借金額
+            // ✅ 2️⃣ 驗證：設備加租(8)/攤位租借(9) 必須有租借金額
             if ((vm.Type == 8 || vm.Type == 9) && vm.RentalPrice <= 0)
             {
-                throw new HttpException("公有設備和攤位租借必須設定租借金額");
+                throw new HttpException("設備加租和攤位租借必須設定租借金額");
             }
 
             // ✅ 3️⃣ 檢核重複（根據設備類型檢核不同欄位）
@@ -233,7 +233,7 @@ namespace TASA.Services.EquipmentModule
             }
             else
             {
-                // 如果沒有會議室(公有設備),用使用者的分院
+                // 如果沒有會議室(設備加租),用使用者的分院
                 departmentId = currentUser.DepartmentId;
             }
 
@@ -272,7 +272,7 @@ namespace TASA.Services.EquipmentModule
             db.SaveChanges();
 
             var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
-            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "公有設備";
+            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "設備加租";
             _ = service.LogServices.LogAsync("設備新增",
                 $"{newEquipment.Name}({newEquipment.Id}) {deptInfo} {roomInfo} IsEnabled:{newEquipment.IsEnabled}");
         }
@@ -315,7 +315,7 @@ namespace TASA.Services.EquipmentModule
             }
             else
             {
-                // 公有設備:保持原有分院或使用使用者分院
+                // 設備加租:保持原有分院或使用使用者分院
                 departmentId = data.DepartmentId ?? currentUser?.DepartmentId;
             }
 
@@ -346,7 +346,7 @@ namespace TASA.Services.EquipmentModule
             db.SaveChanges();
 
             var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
-            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "公有設備";
+            var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "設備加租";
             _ = service.LogServices.LogAsync("設備編輯",
                 $"{data.Name}({data.Id}) {deptInfo} {roomInfo} IsEnabled:{data.IsEnabled}");
         }
@@ -415,7 +415,7 @@ namespace TASA.Services.EquipmentModule
                 2 => "聲音設備",
                 3 => "控制設備",
                 4 => "分配器",
-                8 => "公有設備",
+                8 => "設備加租",
                 9 => "攤位租借",
                 _ => "未知"
             };
