@@ -24,7 +24,9 @@ namespace TASA.Services.MailModule
         {
             get
             {
-                return _http.HttpContext?.Request.Host.Value;
+                var request = _http.HttpContext?.Request;
+                if (request == null) return null;
+                return $"{request.Scheme}://{request.Host}/";
             }
         }
 

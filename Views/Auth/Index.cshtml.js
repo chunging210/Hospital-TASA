@@ -92,6 +92,31 @@ window.$config = {
             modal.show();
         };
 
+        /* ===== Forget Password ===== */
+        this.forgetForm = reactive({ Account: '' });
+
+        this.onClickForget = () => {
+            const modal = new bootstrap.Modal(
+                document.getElementById('forgetPasswordModal')
+            );
+            modal.show();
+        };
+
+        this.sendForgetMail = () => {
+            global.api.password.forgetmail({ body: this.forgetForm })
+                .then(() => {
+                    addAlert('已發送重置連結至您的信箱', { type: 'success' });
+                    const modal = bootstrap.Modal.getInstance(
+                        document.getElementById('forgetPasswordModal')
+                    );
+                    modal?.hide();
+                    this.forgetForm.Account = '';
+                })
+                .catch(error => {
+                    addAlert(error.details || error.message || '發送失敗，請確認帳號是否正確', { type: 'danger', click: error.download });
+                });
+        };
+
         /* ===== Register ===== */
         this.guestForm = reactive(new RegisterVM());
         this.sysConfig = sysConfig;

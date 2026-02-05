@@ -17,6 +17,12 @@ namespace TASA.Controllers.Mvc
             }
         }
 
+        public IActionResult Forget(Guid i)
+        {
+            ViewBag.TokenId = i;
+            return View();
+        }
+
         public IActionResult Profiles()
         {
             return View();

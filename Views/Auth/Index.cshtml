@@ -88,6 +88,11 @@
                                             </div>
                                         </div>
 
+                                        <div class="text-center mb-3">
+                                            <a href="javascript:void(0)" @@click="onClickForget" class="text-muted" style="font-size:0.9rem;">
+                                                忘記密碼？
+                                            </a>
+                                        </div>
 
                                         <div class="mb-3">
                                             <a href="/conference/list"
@@ -124,6 +129,37 @@
         <!-- end row -->
     </div>
     <!-- end container fluid -->
+
+    <div class="modal fade" id="forgetPasswordModal" tabindex="-1" aria-labelledby="forgetPasswordLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="forgetPasswordLabel">忘記密碼</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+                </div>
+                <form @@submit.prevent="sendForgetMail">
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">輸入您的帳號，系統將發送密碼重置連結至您的信箱</p>
+                        <div class="form-floating form-floating-custom mb-3">
+                            <input type="email" class="form-control" id="forgetEmail" placeholder="name@example.com"
+                                v-model="forgetForm.Account" required>
+                            <label for="forgetEmail">電子信箱</label>
+                            <div class="form-floating-icon">
+                                <span class="material-icons">email</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-soft-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-branding text-white" @@click="sendForgetMail">
+                            送出
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="guestRegisterModal" tabindex="-1" aria-labelledby="guestRegisterLabel"
         aria-hidden="true">

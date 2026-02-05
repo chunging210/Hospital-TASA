@@ -31,6 +31,10 @@ namespace TASA.Services.AuthModule
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Account == vm.Account);
+            if (user == null)
+            {
+                throw new HttpException("此信箱尚未註冊");
+            }
             service.LoginServices.IsEnabled(user);
             if (user != null)
             {
@@ -76,7 +80,9 @@ namespace TASA.Services.AuthModule
                 if (user != null)
                 {
                     forget.IsUsed = true;
-                    user.Password = vm.Password;
+                    var hashPassword = HashString.Hash(vm.Password);
+                    user.PasswordHash = hashPassword.Hash;
+                    user.PasswordSalt = hashPassword.Salt;
                     db.SaveChanges();
                     _ = _ = service.LogServices.LogAsync("忘記密碼", $"帳號 {user.Account} 變更密碼");
                     service.PasswordMail.PasswordChange(user.Email);
@@ -97,7 +103,9 @@ namespace TASA.Services.AuthModule
                 .FirstOrDefault(x => x.Id == userid);
             if (user != null)
             {
-                user.Password = vm.Password;
+                var hashPassword = HashString.Hash(vm.Password);
+                user.PasswordHash = hashPassword.Hash;
+                user.PasswordSalt = hashPassword.Salt;
                 db.SaveChanges();
                 _ = _ = service.LogServices.LogAsync("變更密碼", $"帳號 {user.Account} 變更密碼");
                 service.PasswordMail.PasswordChange(user.Email);

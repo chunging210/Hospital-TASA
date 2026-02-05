@@ -1,0 +1,79 @@
+@{
+    Layout = "_Page";
+}
+
+@section head {
+    <style>
+        .bg-overlay {
+            opacity: 0 !important;
+        }
+    </style>
+}
+
+<input type="hidden" id="tokenId" value="@ViewBag.TokenId" />
+
+<div id="app" v-cloak class="auth-page">
+    <div class="container-fluid mw-100 p-0">
+        <div class="row g-0 align-items-center">
+            <div class="col-12 col-lg-4">
+                <div class="row justify-content-center g-0">
+                    <div class="col-xl-9 p-4">
+                        <div class="card">
+                            <div class="card-body my-4">
+                                <div class="d-block auth-logo mb-4">
+                                    <img src="/images/auth/logo-ucms.png" alt="logo" height="42" class="auth-logo-dark">
+                                </div>
+                                <div class="my-5">
+                                    <div class="text-center">
+                                        <h5 class="mb-0">重設密碼</h5>
+                                        <p class="text-muted mt-2">請輸入您的新密碼</p>
+                                    </div>
+                                    <div class="mt-4 pt-2">
+                                        <div class="form-floating form-floating-custom mb-4">
+                                            <input v-model="vm.Password" type="password" class="form-control"
+                                                placeholder="新密碼">
+                                            <label>新密碼</label>
+                                            <div class="form-floating-icon">
+                                                <span class="material-icons">lock</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-floating form-floating-custom mb-4">
+                                            <input v-model="vm.ConfirmPassword" @@keyup.enter="resetPassword" type="password" class="form-control"
+                                                placeholder="確認密碼">
+                                            <label>確認密碼</label>
+                                            <div class="form-floating-icon">
+                                                <span class="material-icons">lock</span>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <button @@click="resetPassword"
+                                                class="btn-branding w-100 waves-effect waves-light text-white">
+                                                重設密碼
+                                            </button>
+                                        </div>
+                                        <div class="text-center">
+                                            <a href="/" class="text-muted" style="font-size:0.9rem;">
+                                                返回登入頁面
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    {{copyyear}} &copy; iMageTech <br>圖像科技股份有限公司
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-none d-lg-block col-lg-8">
+                <div class="auth-bg bg-white py-md-5 p-4 d-flex">
+                    <div class="bg-overlay bg-white"></div>
+                    <div class="row justify-content-center align-items-center">
+                        <img src="/images/auth/img2.png" class="img-fluid" alt="">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
