@@ -252,9 +252,9 @@
                                             <p class="text-muted small">選擇需要的額外設備</p>
                                             <div class="equipment-grid">
                                                 <div v-for="equipment in availableEquipment" :key="equipment.id"
-                                                    class="equipment-item" :class="{ 
+                                                    class="equipment-item" :class="{
                         selected: form.selectedEquipment.includes(equipment.id),
-                        occupied: equipment.occupied 
+                        occupied: equipment.occupied
                     }" @@click="toggleEquipment(equipment.id)">
                                                     <i :class="['bx', equipment.icon, 'text-primary']"
                                                         style="font-size: 24px;"></i><br>
@@ -264,6 +264,11 @@
                                                         {{ equipment.occupied ? '已借用' : '+ $' + equipment.price + '/天'
                                                         }}
                                                     </span>
+                                                    <br v-if="equipment.image">
+                                                    <a v-if="equipment.image" :href="equipment.image" target="_blank"
+                                                        class="small text-primary" @@click.stop>
+                                                        <i class="bx bx-image"></i> 查看照片
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
@@ -289,9 +294,9 @@
                                         <div v-if="form.selectedSlots.length > 0">
                                             <div class="equipment-grid">
                                                 <div v-for="booth in availableBooths" :key="booth.id"
-                                                    class="equipment-item" :class="{ 
+                                                    class="equipment-item" :class="{
                         selected: form.selectedBooths.includes(booth.id),
-                        occupied: booth.occupied 
+                        occupied: booth.occupied
                     }" @@click="toggleBooth(booth.id)">
                                                     <i :class="['bx', booth.icon, 'text-primary']"
                                                         style="font-size: 24px;"></i><br>
@@ -300,6 +305,11 @@
                                                     <span class="equipment-price">
                                                         {{ booth.occupied ? '已借用' : '+ $' + booth.price + '/天' }}
                                                     </span>
+                                                    <br v-if="booth.image">
+                                                    <a v-if="booth.image" :href="booth.image" target="_blank"
+                                                        class="small text-primary" @@click.stop>
+                                                        <i class="bx bx-image"></i> 查看照片
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>

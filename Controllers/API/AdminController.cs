@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 using TASA.Services;
 using TASA.Services.AuthUserModule;
 using TASA.Services.DepartmentModule;
@@ -126,16 +127,20 @@ namespace TASA.Controllers.API
         }
 
         [HttpPost("equipmentinsert")]
-        public IActionResult EquipmentInsert(EquipmentService.DetailVM vm)
+        public IActionResult EquipmentInsert([FromForm] string json, [FromForm] IFormFile? image)
         {
-            service.EquipmentService.Insert(vm);
+            var vm = JsonSerializer.Deserialize<EquipmentService.DetailVM>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new Exception("無法解析設備資料");
+            service.EquipmentService.Insert(vm, image);
             return Ok();
         }
 
         [HttpPost("equipmentupdate")]
-        public IActionResult EquipmentUpdate(EquipmentService.DetailVM vm)
+        public IActionResult EquipmentUpdate([FromForm] string json, [FromForm] IFormFile? image, [FromForm] bool removeImage = false)
         {
-            service.EquipmentService.Update(vm);
+            var vm = JsonSerializer.Deserialize<EquipmentService.DetailVM>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new Exception("無法解析設備資料");
+            service.EquipmentService.Update(vm, image, removeImage);
             return Ok();
         }
 

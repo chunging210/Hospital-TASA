@@ -116,26 +116,37 @@ namespace TASA.Services.ConferenceModule
             public bool CanEdit { get; set; }
             public bool Recording7 { get; set; }
             public bool ZeroTouch { get; set; }
+
+            // 新欄位：支援新預約系統
+            public string? RoomLocation { get; set; }
+            public DateOnly? SlotDate { get; set; }
+            public TimeOnly? SlotStart { get; set; }
+            public TimeOnly? SlotEnd { get; set; }
+            public int SlotCount { get; set; }
         }
 
         /// <summary>
-        /// 列表 - 只顯示舊系統會議
+        /// 列表 - 顯示所有會議（含舊系統與新預約系統）
         /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
             return db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Where(x => x.StartTime.HasValue && x.EndTime.HasValue)
                 .Where(x => x.ReservationStatus != ReservationStatus.Cancelled
                  && x.ReservationStatus != ReservationStatus.Rejected)
-                .WhereIf(query.Start.HasValue, x => query.Start <= x.StartTime)
-                .WhereIf(query.End.HasValue, x => x.StartTime <= query.End)
-                .WhereIf(query.RoomId.HasValue, x => x.Room.Any(y => y.Id == query.RoomId))
-                .WhereIf(query.DepartmentId.HasValue, x => x.Department.Any(y => y.Id == query.DepartmentId))
+                .WhereIf(query.Start.HasValue, x =>
+                    (x.StartTime.HasValue && query.Start <= x.StartTime) ||
+                    (!x.StartTime.HasValue && x.ConferenceRoomSlots.Any(s => s.SlotDate >= DateOnly.FromDateTime(query.Start!.Value.Date))))
+                .WhereIf(query.End.HasValue, x =>
+                    (x.StartTime.HasValue && x.StartTime <= query.End) ||
+                    (!x.StartTime.HasValue && x.ConferenceRoomSlots.Any(s => s.SlotDate <= DateOnly.FromDateTime(query.End!.Value.Date))))
+                .WhereIf(query.RoomId.HasValue, x =>
+                    x.Room.Any(y => y.Id == query.RoomId) ||
+                    x.ConferenceRoomSlots.Any(s => s.RoomId == query.RoomId))
                 .WhereIf(query.UserId.HasValue, x => x.CreateBy == query.UserId)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .OrderByDescending(x => x.StartTime)
+                .OrderByDescending(x => x.StartTime ?? x.CreateAt)
                 .Mapping(x => new ListVM()
                 {
                     Host = x.ConferenceUser.Where(y => y.IsHost).Select(y => y.User.Name).FirstOrDefault(),
@@ -145,6 +156,24 @@ namespace TASA.Services.ConferenceModule
                     CreateByName = x.CreateByNavigation.Name,
                     CanEdit = x.StartTime.HasValue && x.StartTime > PreparationTime,
                     Recording7 = x.Status == 4 && x.MCU == 7,
+
+                    // 新預約系統欄位
+                    RoomLocation = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots
+                            .OrderBy(s => s.StartTime)
+                            .Select(s => s.Room.Building + " " + s.Room.Floor + " " + s.Room.Name)
+                            .FirstOrDefault()
+                        : x.Room.Select(y => y.Name).FirstOrDefault(),
+                    SlotDate = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Min(s => (DateOnly?)s.SlotDate)
+                        : null,
+                    SlotStart = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Min(s => (TimeOnly?)s.StartTime)
+                        : null,
+                    SlotEnd = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Max(s => (TimeOnly?)s.EndTime)
+                        : null,
+                    SlotCount = x.ConferenceRoomSlots.Count(),
                 });
         }
 

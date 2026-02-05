@@ -281,7 +281,6 @@ export const conference = new function () {
         Start: new Date().format(),
         End: new Date().addDays(7).format(),
         RoomId: '',
-        DepartmentId: '',
         UserId: '',
         keyword: ''
     });
@@ -345,8 +344,6 @@ window.$config = {
         onMounted(() => {
             me.getVM();
             room.getList();
-            department.getList();
-            department.getTree();
             createby.getList();
 
 

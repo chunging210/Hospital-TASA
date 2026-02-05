@@ -33,16 +33,6 @@
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
-                            <select v-model="conference.query.DepartmentId" @@change="conference.onFilterChange"
-                                class="form-select">
-                                <option value="">請選擇</option>
-                                <option v-for="{Id,Name} in department.list" :value="Id">{{Name}}</option>
-                            </select>
-                            <label>承辦單位</label>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto">
-                        <div class="form-floating">
                             <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
                                 class="form-select">
                                 <option value="">請選擇</option>
@@ -76,22 +66,20 @@
                     <thead>
                         <tr class="table-light">
                             <th>會議名稱</th>
-                            <th>會議時間</th>
-                            <th>持續時間</th>
+                            <th>會議日期</th>
+                            <th>時段</th>
                             <th>與會地點</th>
                             <th>會議主席</th>
-                            <th>承辦單位</th>
                             <th>發起會議者</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="item in conference.list" :key="item.Id">
                             <td class="text-ellipsis">{{item.Name}}</td>
-                            <td>{{item.StartTime.format('yyyy-mm-dd HH:MM')}}</td>
-                            <td>{{item.DurationHH}}小時{{item.DurationSS}}分鐘</td>
-                            <td>{{item.Room.join(',')}}</td>
+                            <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
+                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) + ' (' + item.SlotCount + '個時段)' : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM') : '-')}}</td>
+                            <td>{{item.RoomLocation || '-'}}</td>
                             <td>{{item.Host}}</td>
-                            <td>{{item.Department.join(',')}}</td>
                             <td>{{item.CreateByName}}</td>
                             <td class="hstack gap-3">
                                 <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
@@ -101,7 +89,7 @@
                     </tbody>
                     <tfoot v-if="conference.list.length==0">
                         <tr>
-                            <td colspan="7" class="text-center">查無資料</td>
+                            <td colspan="6" class="text-center">查無資料</td>
                         </tr>
                     </tfoot>
                 </table>

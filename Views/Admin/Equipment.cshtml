@@ -215,6 +215,33 @@
                         </div>
                     </div>
 
+                    <!-- 設備照片 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">設備照片</label>
+                        <div class="col-sm-9">
+                            <!-- 預覽區 -->
+                            <div v-if="equipment.imageState.preview" class="mb-2 position-relative d-inline-block">
+                                <img :src="equipment.imageState.preview" alt="設備照片"
+                                    style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                    style="transform: translate(30%, -30%);"
+                                    @@click="equipment.removeImage">
+                                    <i class="mdi mdi-close"></i>
+                                </button>
+                            </div>
+                            <!-- 選檔按鈕 -->
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                    @@click="equipment.triggerImageUpload">
+                                    <i class="mdi mdi-camera"></i> {{ equipment.imageState.preview ? '更換照片' : '上傳照片' }}
+                                </button>
+                                <input type="file" id="equipmentImageInput" accept="image/*" style="display:none"
+                                    @@change="equipment.onImageSelect">
+                                <small class="form-text text-muted d-block mt-1">支援 JPG, PNG 格式，建議 2MB 以內</small>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 啟用 -->
                     @* <div class="row mb-4">
                         <label class="col-sm-3 col-form-label">啟用</label>

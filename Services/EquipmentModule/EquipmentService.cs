@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using TASA.Models.Auth;
 namespace TASA.Services.EquipmentModule
 {
-    public class EquipmentService(TASAContext db, ServiceWrapper service) : IService
+    public class EquipmentService(TASAContext db, ServiceWrapper service, IWebHostEnvironment env) : IService
     {
 
         // ========= 列表 ViewModel =========
@@ -22,6 +23,7 @@ namespace TASA.Services.EquipmentModule
             public bool IsEnabled { get; set; }
             public DateTime CreateAt { get; set; }
             public Guid? DepartmentId { get; set; }
+            public string? ImagePath { get; set; }
         }
 
         public IQueryable<ListVM> List(EquipmentQueryVM query)
@@ -48,7 +50,8 @@ namespace TASA.Services.EquipmentModule
                 RentalPrice = x.RentalPrice,
                 IsEnabled = x.IsEnabled,
                 CreateAt = x.CreateAt,
-                DepartmentId = x.DepartmentId
+                DepartmentId = x.DepartmentId,
+                ImagePath = x.ImagePath
             })
             .AsQueryable();
         }
@@ -70,6 +73,7 @@ namespace TASA.Services.EquipmentModule
             public string? Password { get; set; }
             public bool IsEnabled { get; set; } = true;
             public Guid? DepartmentId { get; set; }
+            public string? ImagePath { get; set; }
         }
 
         public DetailVM? Detail(Guid id)
@@ -93,7 +97,8 @@ namespace TASA.Services.EquipmentModule
                     Port = x.Port,
                     Account = x.Account,
                     Password = x.Password,
-                    IsEnabled = x.IsEnabled
+                    IsEnabled = x.IsEnabled,
+                    ImagePath = x.ImagePath
                 })
                 .FirstOrDefault();
 
@@ -169,9 +174,44 @@ namespace TASA.Services.EquipmentModule
             }
         }
         /// <summary>
+        /// 儲存設備照片
+        /// </summary>
+        private string? SaveImage(IFormFile? file)
+        {
+            if (file == null || file.Length == 0) return null;
+
+            var uploadPath = Path.Combine(env.WebRootPath, "uploads", "equipment-photos");
+            if (!Directory.Exists(uploadPath))
+                Directory.CreateDirectory(uploadPath);
+
+            var ext = Path.GetExtension(file.FileName);
+            var fileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                file.CopyTo(stream);
+            }
+
+            return $"/uploads/equipment-photos/{fileName}";
+        }
+
+        /// <summary>
+        /// 刪除舊照片檔案
+        /// </summary>
+        private void DeleteOldImage(string? imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath)) return;
+
+            var fullPath = Path.Combine(env.WebRootPath, imagePath.TrimStart('/'));
+            if (File.Exists(fullPath))
+                File.Delete(fullPath);
+        }
+
+        /// <summary>
         /// 新增設備
         /// </summary>
-        public void Insert(DetailVM vm)
+        public void Insert(DetailVM vm, IFormFile? imageFile = null)
         {
             var currentUser = service.UserClaimsService.Me();
             if (currentUser?.Id == null)
@@ -206,6 +246,9 @@ namespace TASA.Services.EquipmentModule
                 }
             }
 
+            // 儲存照片
+            var savedImagePath = SaveImage(imageFile);
+
             var newEquipment = new Equipment()
             {
                 Id = Guid.NewGuid(),
@@ -220,6 +263,7 @@ namespace TASA.Services.EquipmentModule
                 Account = vm.Account,
                 Password = vm.Password,
                 IsEnabled = vm.IsEnabled,
+                ImagePath = savedImagePath,
                 CreateAt = DateTime.Now,
                 CreateBy = currentUser.Id.Value
             };
@@ -235,7 +279,7 @@ namespace TASA.Services.EquipmentModule
         /// <summary>
         /// 編輯設備
         /// </summary>
-        public void Update(DetailVM vm)
+        public void Update(DetailVM vm, IFormFile? imageFile = null, bool removeImage = false)
         {
             if (!vm.Id.HasValue)
                 throw new HttpException("設備ID不能為空");
@@ -286,6 +330,18 @@ namespace TASA.Services.EquipmentModule
             data.Account = vm.Account;
             data.Password = vm.Password;
             data.IsEnabled = vm.IsEnabled;
+
+            // 處理照片
+            if (removeImage)
+            {
+                DeleteOldImage(data.ImagePath);
+                data.ImagePath = null;
+            }
+            else if (imageFile != null)
+            {
+                DeleteOldImage(data.ImagePath);
+                data.ImagePath = SaveImage(imageFile);
+            }
 
             db.SaveChanges();
 
@@ -342,7 +398,8 @@ namespace TASA.Services.EquipmentModule
                     RentalPrice = x.RentalPrice,
                     IsEnabled = x.IsEnabled,
                     CreateAt = x.CreateAt,
-                    DepartmentId = x.DepartmentId
+                    DepartmentId = x.DepartmentId,
+                    ImagePath = x.ImagePath
                 })
                 .AsQueryable();
         }

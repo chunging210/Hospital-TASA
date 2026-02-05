@@ -144,9 +144,10 @@ window.$config = {
             addAlert('已確認閱讀使用聲明書', { type: 'success' });
         };
 
-        this.pdfViewerUrl = computed(() =>
-            `/pdfjs/web/viewer.html?file=${encodeURIComponent('/files/agreement.pdf')}`
-        );
+        this.pdfViewerUrl = computed(() => {
+            const agreementPath = this.selectedRoom.value?.AgreementPath || '/files/agreement.pdf';
+            return `/pdfjs/web/viewer.html?file=${encodeURIComponent(agreementPath)}`;
+        });
 
         this.openAgreementPDF = () => {
             this.hasOpenedAgreement.value = true;
@@ -562,7 +563,8 @@ window.$config = {
                         icon: 'bx-cog',
                         description: e.ProductModel || '設備',
                         price: e.RentalPrice,
-                        occupied: e.Occupied || false
+                        occupied: e.Occupied || false,
+                        image: e.ImagePath || null
                     }));
 
                 this.availableBooths.value = allData
@@ -573,7 +575,8 @@ window.$config = {
                         icon: 'bx-store',
                         description: e.ProductModel || '攤位',
                         price: e.RentalPrice,
-                        occupied: e.Occupied || false
+                        occupied: e.Occupied || false,
+                        image: e.ImagePath || null
                     }));
 
                 console.log('✅ 設備:', this.availableEquipment.value);

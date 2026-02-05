@@ -330,7 +330,7 @@ window.$config = {
 
                 addAlert('憑證已上傳，等待審核', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations();
+                await this.loadPersonalReservations(true);
 
                 // 清空表單
                 this.paymentForm.counterNote = '';
@@ -369,7 +369,7 @@ window.$config = {
 
                 addAlert('匯款資訊已提交，等待審核', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations();
+                await this.loadPersonalReservations(true);
 
                 // 清空表單
                 this.paymentForm.last5 = '';
@@ -537,7 +537,7 @@ window.$config = {
 
                 addAlert('預約已取消', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations();
+                await this.loadPersonalReservations(true);
 
             } catch (err) {
                 console.error('❌ 取消預約失敗:', err);
@@ -561,7 +561,7 @@ window.$config = {
 
                 addAlert('預約紀錄已刪除', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations();
+                await this.loadPersonalReservations(true);
 
             } catch (err) {
                 console.error('❌ 刪除預約失敗:', err);

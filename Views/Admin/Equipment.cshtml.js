@@ -19,6 +19,7 @@ class VM {
     Password = '';
     IsEnabled = true;
     DepartmentId = '';
+    ImagePath = '';
 }
 
 // ========= 全域狀態 =========
@@ -43,6 +44,35 @@ const equipment = new function () {
     this.floorOptions = reactive([]);
     this.roomOptions = reactive([]);
     this.vm = reactive(new VM());
+    this.imageFile = null;           // 新選擇的檔案 (File object, 不需響應式)
+    this.imageState = reactive({ preview: '', removeFlag: false });  // 響應式圖片狀態
+
+    // ========= 圖片處理 =========
+    this.onImageSelect = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            addAlert('照片大小不能超過 2MB', { type: 'warning' });
+            event.target.value = '';
+            return;
+        }
+
+        this.imageFile = file;
+        this.imageState.removeFlag = false;
+        this.imageState.preview = URL.createObjectURL(file);
+        event.target.value = '';
+    };
+
+    this.removeImage = () => {
+        this.imageFile = null;
+        this.imageState.preview = '';
+        this.imageState.removeFlag = true;
+    };
+
+    this.triggerImageUpload = () => {
+        document.getElementById('equipmentImageInput')?.click();
+    };
 
     // ========= 取得列表 =========
     this.getList = async (pagination) => {
@@ -133,6 +163,9 @@ const equipment = new function () {
             // ===== 新增模式 =====
             isEditing.value = false;
             copy(this.vm, new VM());
+            this.imageFile = null;
+            this.imageState.preview = '';
+            this.imageState.removeFlag = false;
 
             selectedDepartment.value = isAdmin.value ? '' : userDepartmentId.value;
 
@@ -157,6 +190,11 @@ const equipment = new function () {
         try {
             const res = await global.api.admin.equipmentdetail({ body: { id } });
             copy(this.vm, res.data);
+
+            // 設定照片預覽
+            this.imageFile = null;
+            this.imageState.removeFlag = false;
+            this.imageState.preview = this.vm.ImagePath || '';
 
             const departmentId = this.vm.DepartmentId;
             selectedDepartment.value = departmentId || '';
@@ -276,13 +314,24 @@ const equipment = new function () {
 
         const method = this.vm.Id ? global.api.admin.equipmentupdate : global.api.admin.equipmentinsert;
 
-        const body = {
+        const jsonData = {
             ...this.vm,
             Type: Number(this.vm.Type),
             DepartmentId: selectedDepartment.value || userDepartmentId.value || this.vm.DepartmentId
         };
 
-        method({ body })
+        const formData = new FormData();
+        formData.append('json', JSON.stringify(jsonData));
+
+        if (this.imageFile) {
+            formData.append('image', this.imageFile);
+        }
+
+        if (this.imageState.removeFlag) {
+            formData.append('removeImage', 'true');
+        }
+
+        method({ body: formData })
             .then(() => {
                 addAlert(this.vm.Id ? '編輯成功' : '新增成功');
 

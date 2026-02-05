@@ -30,6 +30,11 @@ namespace TASA.Models.Configurations
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Equipment_ibfk_1");
 
+            // 設備照片路徑
+            entity.Property(e => e.ImagePath)
+                .HasMaxLength(500)
+                .HasComment("設備照片路徑");
+
             // ✅ 新增：產品型號
             entity.Property(e => e.ProductModel)
                 .HasMaxLength(100)

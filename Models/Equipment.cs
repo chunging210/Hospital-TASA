@@ -85,6 +85,12 @@ public partial class Equipment
 
 
     /// <summary>
+    /// 設備照片路徑
+    /// </summary>
+    [StringLength(500)]
+    public string? ImagePath { get; set; }
+
+    /// <summary>
     /// 分院ID (✅ 新增)
     /// </summary>
     public Guid? DepartmentId { get; set; }
