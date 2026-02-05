@@ -772,7 +772,7 @@
                     style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
 
 
-                    <iframe ref="pdfIframe" class="agreement-iframe" :src="pdfViewerUrl" frameborder="0">
+                    <iframe ref="pdfIframe" class="agreement-iframe" :key="pdfCacheBuster" :src="pdfViewerUrl" frameborder="0">
                     </iframe>
 
 

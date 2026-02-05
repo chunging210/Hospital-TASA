@@ -76,6 +76,7 @@ window.$config = {
         this.hasReadAgreement = ref(false);          // 是否已勾選同意
         this.agreementPdfUrl = ref('');
         this.canConfirmAgreement = ref(false);
+        this.pdfCacheBuster = ref(Date.now());
         this.hasOpenedAgreement = ref(false);
         /* ========= 編輯模式相關 ========= */
         this.isEditMode = ref(false);
@@ -124,34 +125,66 @@ window.$config = {
         };
 
         this.closeAgreementPDF = () => {
+            console.log('🔴 關閉 PDF 彈窗');
             this.showAgreementPDF.value = false;
+            this.canConfirmAgreement.value = false;
         };
+
 
         /* ====== PDF 載入完成 ====== */
         this.onPDFLoaded = () => {
             console.log('✅ PDF 載入完成');
         };
 
-        /* ====== 確認已閱讀完畢 ====== */
+        this.onPdfIframeLoaded = () => {
+            console.log('📄 PDF iframe 載入完成');
+
+            // ✅ 延遲發送重置訊息,確保 PDF.js 初始化完成
+            setTimeout(() => {
+                const iframe = this.$refs.pdfIframe;
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'RESET_SCROLL' }, '*');
+                    console.log('📨 已發送 RESET_SCROLL 訊息');
+                }
+            }, 800);
+        };
+
+
+
         this.confirmReadAgreement = () => {
             if (!this.hasOpenedAgreement.value) {
+                console.warn('⚠️ 尚未開啟過 PDF');
                 return;
             }
 
+            console.log('✅ 確認已閱讀');
             this.hasReadAgreement.value = true;
             this.showAgreementPDF.value = false;
-
             addAlert('已確認閱讀使用聲明書', { type: 'success' });
         };
 
         this.pdfViewerUrl = computed(() => {
             const agreementPath = this.selectedRoom.value?.AgreementPath || '/files/agreement.pdf';
-            return `/pdfjs/web/viewer.html?file=${encodeURIComponent(agreementPath)}`;
+            return `/pdfjs/web/viewer.html?file=${encodeURIComponent(agreementPath)}&t=${this.pdfCacheBuster.value}`;
         });
 
+
+
+
         this.openAgreementPDF = () => {
+            // 重置狀態
+            this.canConfirmAgreement.value = false;
             this.hasOpenedAgreement.value = true;
-            this.showAgreementPDF.value = true;
+            this.showAgreementPDF.value = false;
+
+            // 清除 pdfjs 記住的捲動位置
+            try { localStorage.removeItem('pdfjs.history'); } catch (e) {}
+
+            this.pdfCacheBuster.value = Date.now();
+
+            setTimeout(() => {
+                this.showAgreementPDF.value = true;
+            }, 50);
         };
 
         this.validateFile = (file, maxSizeMB = 10) => {
@@ -378,19 +411,26 @@ window.$config = {
             }
 
 
-            // ✅ 重置聲明書狀態
+            // ✅ 每次開啟確認彈窗，都重置所有聲明書狀態
             this.hasReadAgreement.value = false;
+            this.hasOpenedAgreement.value = false;
+            this.canConfirmAgreement.value = false;
+            this.showAgreementPDF.value = false;
+            this.pdfCacheBuster.value = Date.now();
+
             // 驗證通過,顯示彈窗
             this.showConfirmModal.value = true;
         };
 
         this.closeConfirmationModal = () => {
-
             this.showConfirmModal.value = false;
             this.showAgreementPDF.value = false;
 
-            // ✅ 重置聲明書狀態
+            // ✅ 關閉時也重置所有聲明書狀態
             this.hasReadAgreement.value = false;
+            this.hasOpenedAgreement.value = false;
+            this.canConfirmAgreement.value = false;
+            this.pdfCacheBuster.value = Date.now();
         };
 
         // ✅ 格式化日期顯示
