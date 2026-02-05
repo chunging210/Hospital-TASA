@@ -261,7 +261,7 @@ window.$config = {
                 this.form.attendees = [this.initiatorId.value];
 
                 this.isAdmin.value = this.currentUser.value.IsAdmin || false;
-                this.isInternalStaff.value = this.currentUser.value.IsStaff || false;
+                this.isInternalStaff.value = this.currentUser.value.IsInternal || false;
 
                 if (!this.isAdmin.value && this.currentUser.value.DepartmentId) {
                     this.form.departmentId = this.currentUser.value.DepartmentId;

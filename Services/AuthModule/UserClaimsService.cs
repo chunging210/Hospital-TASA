@@ -46,7 +46,8 @@ namespace TASA.Services.AuthModule
             public bool IsAdmin { get; set; }
             public bool IsDirector { get; set; }
             public bool IsAccountant { get; set; }
-            public bool IsRoomManager { get; set; } 
+            public bool IsRoomManager { get; set; }
+            public bool IsInternal { get; set; }
         };
 
 public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
@@ -81,7 +82,8 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
         IsAdmin = role.Any(x => x == AuthRoleServices.Admin),
         IsDirector = role.Any(x => x == AuthRoleServices.Director),
         IsAccountant = role.Any(x => x == AuthRoleServices.Accountant),
-        IsRoomManager = isRoomManager  // ✅ 新增
+        IsRoomManager = isRoomManager,  // ✅ 新增
+        IsInternal = !role.Any(x => x == AuthRoleServices.Normal)
     };
 }
 
