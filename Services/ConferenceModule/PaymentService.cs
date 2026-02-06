@@ -112,6 +112,18 @@ namespace TASA.Services.ConferenceModule
             _ = service.LogServices.LogAsync("付款憑證",
                 $"上傳臨櫃憑證 - 預約單: {string.Join(", ", vm.ReservationIds)}, 檔案數: {vm.Files.Count}");
 
+            // 寄送通知給總務
+            foreach (var reservationNo in vm.ReservationIds)
+            {
+                var conf = await db.Conference
+                    .Where(c => c.Id.ToString().StartsWith(reservationNo))
+                    .FirstOrDefaultAsync();
+                if (conf != null)
+                {
+                    service.ConferenceMail.PaymentProofUploaded(conf.Id, "臨櫃繳費");
+                }
+            }
+
             return proofIds;
         }
 
@@ -174,6 +186,18 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("付款憑證",
                 $"提交匯款資訊 - 預約單: {string.Join(", ", vm.ReservationIds)}, 末五碼: {vm.Last5}");
+
+            // 寄送通知給總務
+            foreach (var reservationNo in vm.ReservationIds)
+            {
+                var conf = await db.Conference
+                    .Where(c => c.Id.ToString().StartsWith(reservationNo))
+                    .FirstOrDefaultAsync();
+                if (conf != null)
+                {
+                    service.ConferenceMail.PaymentProofUploaded(conf.Id, "銀行匯款");
+                }
+            }
 
             return proofIds;
         }
@@ -238,6 +262,9 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("付款審核",
                 $"批准付款 - {conference.Name} ({conference.Id})");
+
+            // 寄送繳費審核通過通知給使用者
+            service.ConferenceMail.PaymentApproved(vm.ReservationId);
         }
 
         /// <summary>
@@ -274,6 +301,9 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("付款審核",
                 $"退回付款 - {conference.Name} ({conference.Id}), 原因: {vm.Reason}");
+
+            // 寄送繳費審核拒絕通知給使用者
+            service.ConferenceMail.PaymentRejected(vm.ReservationId, vm.Reason);
         }
     }
 }
