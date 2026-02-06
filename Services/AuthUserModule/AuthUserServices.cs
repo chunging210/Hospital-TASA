@@ -16,6 +16,7 @@ namespace TASA.Services.AuthUserModule
             public string Account { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public bool IsEnabled { get; set; }
+            public bool IsApproved { get; set; }
             public DateTime CreateAt { get; set; }
             public bool IsNormal { get; set; }
             public bool IsAdmin { get; set; }
@@ -113,12 +114,25 @@ namespace TASA.Services.AuthUserModule
                 .FirstOrDefault(x => x.Id == vm.Id);
             if (data != null)
             {
+                var wasEnabled = data.IsEnabled;
                 data.Name = vm.Name;
                 data.Email = vm.Email;
                 data.DepartmentId = vm.DepartmentId;
                 data.IsEnabled = vm.IsEnabled;
                 data.AuthRole = [.. db.AuthRole.WhereNotDeleted().Where(x => vm.Role.Contains(x.Id))];
-                db.SaveChanges();
+
+                // 從停用變啟用 → 標記已審核 + 寄信通知使用者
+                if (!wasEnabled && data.IsEnabled)
+                {
+                    data.IsApproved = true;
+                    db.SaveChanges();
+                    service.PasswordMail.AccountApproved(data.Email);
+                }
+                else
+                {
+                    db.SaveChanges();
+                }
+
                 var updateInfo = new { UserName = data.Name, Email = data.Email, Action = "update", IsEnabled = data.IsEnabled };
                 service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo)).Wait();
             }

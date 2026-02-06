@@ -415,7 +415,7 @@
                                     轉帳末五碼 <span class="text-danger">*</span>
                                 </label>
                                 <input type="text" class="form-control" v-model="paymentForm.last5" inputmode="numeric"
-                                    maxlength="5" placeholder="例如:12345" required>
+                                    maxlength="5" placeholder="例如:12345" required @@input="onlyNumbers('last5', $event)">
                                 <div class="form-text">請輸入 5 碼數字。</div>
                             </div>
                             <div class="col-6">

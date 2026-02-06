@@ -262,6 +262,7 @@ window.$config = {
                     return {
                         id: item.Id,
                         reservationNo: item.BookingNo,
+                        reserverName: item.ApplicantName,
                         reservationDate: item.Date,
                         conferenceName: item.ConferenceName,
                         organizerUnit: item.OrganizerUnit,
@@ -298,6 +299,12 @@ window.$config = {
 
         this.isCostSharingPayment = (method) => {
             return EnumHelper.isCostSharingPayment(method);
+        };
+
+        // 只允許輸入數字
+        this.onlyNumbers = (field, event) => {
+            const value = event.target.value.replace(/\D/g, '');
+            this.paymentForm[field] = value;
         };
 
         // ✅ 上傳臨櫃憑證

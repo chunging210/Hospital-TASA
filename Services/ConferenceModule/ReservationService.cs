@@ -163,7 +163,8 @@ namespace TASA.Services.ConferenceModule
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
-                    x.CreateByNavigation.Name.Contains(query.Keyword!))
+                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
+                    x.Id.ToString().StartsWith(query.Keyword!))
                 .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
                 .ThenByDescending(x => x.CreateAt)
                 .Select(x => new
@@ -261,7 +262,8 @@ namespace TASA.Services.ConferenceModule
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
-                    x.CreateByNavigation.Name.Contains(query.Keyword!))
+                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
+                    x.Id.ToString().StartsWith(query.Keyword!))
                 .OrderByDescending(x => x.CreateAt)
                 .Select(x => new
                 {
