@@ -384,12 +384,12 @@
 
                         <div class="mb-3">
                             <label class="form-label">
-                                {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單(影像或 PDF)' }}
+                                {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單' }}
                                 <span class="text-danger">*</span>
                             </label>
-                            <input class="form-control" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png,.pdf"
+                            <input class="form-control" type="file" ref="counterPayFiles" accept="image/jpeg,image/png,image/webp"
                                 multiple required>
-                            <div class="form-text">可上傳多檔;支援 JPG / PNG / PDF。</div>
+                            <div class="form-text">可上傳多檔;僅支援 JPG / PNG / WEBP 圖片格式</div>
                         </div>
 
                         <div class="mb-3">

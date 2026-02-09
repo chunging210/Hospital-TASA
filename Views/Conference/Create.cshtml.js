@@ -857,9 +857,9 @@ window.$config = {
             } catch (err) {
                 console.error('❌ 載入預約資料失敗:', err);
                 addAlert('載入預約資料失敗', { type: 'danger' });
-                // setTimeout(() => {
-                //     window.location.href = '/reservationoverview';
-                // }, 2000);
+                setTimeout(() => {
+                    window.location.href = '/reservationoverview';
+                }, 2000);
             }
         };
 
@@ -945,9 +945,9 @@ window.$config = {
                     console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                     addAlert(successMsg, { type: 'success' });
 
-                    // setTimeout(() => {
-                    //     window.location.href = '/reservationoverview';
-                    // }, 2000);
+                    setTimeout(() => {
+                        window.location.href = '/reservationoverview';
+                    }, 2000);
                 })
                 .catch(err => {
                     const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
