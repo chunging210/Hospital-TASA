@@ -1,15 +1,28 @@
 // Views/Admin/SysConfig.cshtml.js
 import global from '/global.js';
-const { reactive, onMounted } = Vue;
+const { reactive, ref, onMounted } = Vue;
 
 const sysConfig = new function () {
+    this.isAdmin = ref(false);  // 是否為管理員
+    this.departmentId = ref(null);  // 使用者的分院 ID
+
     this.settings = reactive({
         isRegistrationOpen: true,
         paymentDeadlineDays: 7,
         minAdvanceBookingDays: 7,
-        managerEmail: '',
-        autoRelease: true
+        managerEmail: ''
     });
+
+    // 載入用戶資訊
+    this.loadUserInfo = async () => {
+        try {
+            const res = await global.api.auth.me();
+            this.isAdmin.value = res.data.IsAdmin || false;
+            this.departmentId.value = res.data.DepartmentId || null;
+        } catch (err) {
+            console.error('❌ 無法取得使用者資訊:', err);
+        }
+    };
 
     // 載入設定 (GET /admin/api/sysconfig)
     this.loadSettings = () => {
@@ -23,7 +36,6 @@ const sysConfig = new function () {
                     this.settings.paymentDeadlineDays = parseInt(data.PAYMENT_DEADLINE_DAYS) || 7;
                     this.settings.minAdvanceBookingDays = parseInt(data.MIN_ADVANCE_BOOKING_DAYS) || 7;
                     this.settings.managerEmail = data.MANAGER_EMAIL || '';
-                    this.settings.autoRelease = data.AUTO_RELEASE_AFTER_DEADLINE === 'true';
                 }
             })
             .catch(error => {
@@ -35,22 +47,32 @@ const sysConfig = new function () {
     // 儲存設定 (POST /admin/api/sysconfig)
     this.saveSettings = () => {
         // 準備要更新的設定
-        const configs = [
-            { configKey: 'GUEST_REGISTRATION', configValue: this.settings.isRegistrationOpen.toString() },
+        const configs = [];
+
+        // 非 Admin 用戶需要傳遞 DepartmentId
+        const departmentId = this.isAdmin.value ? null : this.departmentId.value;
+
+        // 只有 Admin 才能修改「是否開啟訪客註冊」(全局設定)
+        if (this.isAdmin.value) {
+            configs.push({ configKey: 'GUEST_REGISTRATION', configValue: this.settings.isRegistrationOpen.toString() });
+        }
+
+        // 其他設定都可以修改
+        configs.push(
             { configKey: 'PAYMENT_DEADLINE_DAYS', configValue: this.settings.paymentDeadlineDays.toString() },
             { configKey: 'MIN_ADVANCE_BOOKING_DAYS', configValue: this.settings.minAdvanceBookingDays.toString() },
-            { configKey: 'MANAGER_EMAIL', configValue: this.settings.managerEmail },
-            { configKey: 'AUTO_RELEASE_AFTER_DEADLINE', configValue: this.settings.autoRelease.toString() }
-        ];
+            { configKey: 'MANAGER_EMAIL', configValue: this.settings.managerEmail }
+        );
 
-        console.log('[SysConfig] saveSettings() configs =', configs);
+        console.log('[SysConfig] saveSettings() configs =', configs, 'departmentId =', departmentId);
 
         // 逐一更新設定
         let updatePromises = configs.map(config => {
             return global.api.sysconfig.update({
                 body: {
                     configKey: config.configKey,
-                    configValue: config.configValue
+                    configValue: config.configValue,
+                    departmentId: departmentId
                 }
             });
         });
@@ -63,7 +85,9 @@ const sysConfig = new function () {
             })
             .catch(error => {
                 console.error('[SysConfig] 儲存失敗:', error);
-                addAlert('儲存設定失敗', { type: 'danger', click: error.download });
+                // 顯示後端回傳的錯誤訊息
+                const errorMsg = error?.response?.data?.message || '儲存設定失敗';
+                addAlert(errorMsg, { type: 'danger' });
             });
     };
 
@@ -75,7 +99,6 @@ const sysConfig = new function () {
         this.settings.paymentDeadlineDays = 7;
         this.settings.minAdvanceBookingDays = 7;
         this.settings.managerEmail = '';
-        this.settings.autoRelease = true;
 
         addAlert('已重設為預設值 (請記得儲存設定)', { type: 'info' });
     };
@@ -84,10 +107,12 @@ const sysConfig = new function () {
 window.$config = {
     setup: () => new function () {
         this.settings = sysConfig.settings;
+        this.isAdmin = sysConfig.isAdmin;
         this.saveSettings = sysConfig.saveSettings;
         this.resetSettings = sysConfig.resetSettings;
 
-        onMounted(() => {
+        onMounted(async () => {
+            await sysConfig.loadUserInfo();
             sysConfig.loadSettings();
         });
     }

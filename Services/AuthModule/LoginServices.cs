@@ -91,7 +91,7 @@ namespace TASA.Services.AuthModule
                 var failureInfo = new
                 {
                     UserName = user.Account,
-                    LoginMethod = GetLoginMethod(),
+                    // LoginMethod = GetLoginMethod(),
                     IsSuccess = false,
                     FailureReason = reason,
                     ClientIp = GetClientIp(),
@@ -124,7 +124,7 @@ namespace TASA.Services.AuthModule
                 var failureInfo = new 
                 { 
                     UserName = vm.Account, 
-                    LoginMethod = GetLoginMethod(),
+                    // LoginMethod = GetLoginMethod(),
                     IsSuccess = false, 
                     FailureReason = "密碼錯誤",
                     ClientIp = GetClientIp(),
@@ -144,7 +144,7 @@ namespace TASA.Services.AuthModule
                 var successInfo = new 
                 { 
                     UserName = user.Account,
-                    LoginMethod = GetLoginMethod(),
+                    // LoginMethod = GetLoginMethod(),
                     IsSuccess = true,
                     ClientIp = GetClientIp(),
                     DeviceInfo = deviceInfo.device,

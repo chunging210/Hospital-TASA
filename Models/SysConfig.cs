@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace TASA.Models;
 
 [Index("Id", Name = "Id", IsUnique = true)]
-[Index("ConfigKey", Name = "ConfigKey", IsUnique = true)]
+[Index("ConfigKey", "DepartmentId", Name = "IX_ConfigKey_DepartmentId", IsUnique = true)]
 public partial class SysConfig
 {
     /// <summary>
@@ -41,6 +41,11 @@ public partial class SysConfig
     public string ConfigValue { get; set; }
 
     /// <summary>
+    /// 分院ID (NULL = 全局預設值)
+    /// </summary>
+    public Guid? DepartmentId { get; set; }
+
+    /// <summary>
     /// 啟用
     /// </summary>
     public bool Enabled { get; set; } = true;
@@ -50,4 +55,11 @@ public partial class SysConfig
     /// </summary>
     [Column(TypeName = "datetime")]
     public DateTime? DeleteAt { get; set; }
+
+    /* ===============================
+     * Navigation Properties
+     * =============================== */
+
+    [ForeignKey("DepartmentId")]
+    public virtual SysDepartment? Department { get; set; }
 }

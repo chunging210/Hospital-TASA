@@ -469,7 +469,8 @@ namespace TASA.Services.ConferenceModule
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
-            var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays();
+            // ✅ 根據會議的分院 ID 取得繳費期限設定
+            var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
 
             conference.ReservationStatus = ReservationStatus.PendingPayment;
             conference.ReviewedAt = DateTime.Now;
@@ -774,8 +775,10 @@ namespace TASA.Services.ConferenceModule
             if (!vm.ReservationDate.HasValue)
                 throw new HttpException("必須指定預約日期");
 
-            // 驗證預約日期不能早於今天 + MIN_ADVANCE_BOOKING_DAYS
-            var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays();
+            // ✅ 根據會議室的分院 ID 取得最早預約天數設定
+            var room = db.SysRoom.AsNoTracking().FirstOrDefault(r => r.Id == vm.RoomId);
+            var departmentId = room?.DepartmentId;
+            var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays(departmentId);
             var minDate = DateTime.Today.AddDays(minAdvanceDays);
             if (vm.ReservationDate.Value.Date < minDate)
                 throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");

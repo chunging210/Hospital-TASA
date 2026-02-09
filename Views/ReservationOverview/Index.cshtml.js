@@ -17,7 +17,7 @@ window.$config = {
 
         /* ========= 搜尋與篩選 ========= */
         this.searchQuery = ref('');
-        this.dateRange = ref('');
+        // this.dateRange = ref('');
         this.approvalStatusFilter = ref('');
         this.paymentStatusFilter = ref('');
         this.userStatusFilter = ref('');

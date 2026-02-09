@@ -1366,6 +1366,159 @@ namespace TASA.Services.MailModule
         }
 
         /// <summary>
+        /// 繳費逾期自動取消通知 - 通知用戶預約已被系統自動取消
+        /// </summary>
+        public void PaymentOverdueCancelled(Guid conferenceId, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            Console.WriteLine($"📧 [PaymentOverdueCancelled] 開始處理，ConferenceId: {conferenceId}");
+
+            if (!Enable)
+            {
+                Console.WriteLine("📧 [PaymentOverdueCancelled] 信件服務未啟用，跳過");
+                return;
+            }
+
+            using var db = dbContextFactory.CreateDbContext();
+
+            var reservation = db.Conference
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .FirstOrDefault(c => c.Id == conferenceId);
+
+            if (reservation == null)
+            {
+                Console.WriteLine($"📧 [PaymentOverdueCancelled] 找不到預約資料，ConferenceId: {conferenceId}");
+                return;
+            }
+
+            var applicantEmail = reservation.CreateByNavigation?.Email;
+            var applicantName = reservation.CreateByNavigation?.Name ?? "使用者";
+
+            if (string.IsNullOrEmpty(applicantEmail))
+            {
+                Console.WriteLine("📧 [PaymentOverdueCancelled] ⚠️ 預約者沒有 Email，跳過");
+                return;
+            }
+
+            var roomSlot = reservation.ConferenceRoomSlots.FirstOrDefault();
+            var room = roomSlot?.Room;
+            var roomName = room != null ? $"{room.Building} {room.Floor} {room.Name}" : "未指定";
+            var slotDate = roomSlot?.SlotDate.ToString("yyyy/MM/dd") ?? "-";
+            var slotTime = reservation.ConferenceRoomSlots.Any()
+                ? $"{reservation.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {reservation.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                : "-";
+            var bookingNo = reservation.Id.ToString().Substring(0, 8);
+            var paymentDeadline = reservation.PaymentDeadline?.ToString("yyyy/MM/dd") ?? "-";
+
+            var mail = NewMailMessage();
+            mail.Subject = $"[預約已取消] 繳費逾期 - {reservation.Name}";
+            mail.Body = BuildPaymentOverdueCancelledBody(
+                applicantName,
+                bookingNo,
+                reservation.Name,
+                reservation.OrganizerUnit,
+                reservation.Chairman,
+                roomName,
+                slotDate,
+                slotTime,
+                reservation.TotalAmount,
+                paymentDeadline
+            );
+            mail.To.Add(applicantEmail);
+
+            Console.WriteLine($"📧 [PaymentOverdueCancelled] 準備寄信給預約者: {applicantEmail}");
+            try
+            {
+                SendAsync(mail, className, functionName).GetAwaiter().GetResult();
+                Console.WriteLine($"📧 [PaymentOverdueCancelled] ✅ 信件已發送: {applicantEmail}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"📧 [PaymentOverdueCancelled] ❌ 信件發送失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 建立繳費逾期取消郵件內容
+        /// </summary>
+        private string BuildPaymentOverdueCancelledBody(
+            string applicantName,
+            string bookingNo,
+            string conferenceName,
+            string organizerUnit,
+            string chairman,
+            string roomName,
+            string slotDate,
+            string slotTime,
+            int totalAmount,
+            string paymentDeadline)
+        {
+            return $@"
+<h3>親愛的 {applicantName} 您好：</h3>
+
+<div style='background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 15px 0;'>
+    <h4 style='margin: 0; color: #721c24;'>❌ 您的預約已被系統自動取消</h4>
+    <p style='margin: 10px 0 0 0; color: #721c24;'>因繳費期限（{paymentDeadline}）已過，系統已自動取消此預約，時段已釋放給其他人預約。</p>
+</div>
+
+<h4>📋 已取消的預約資訊</h4>
+<table style='border-collapse: collapse; width: 100%; max-width: 500px;'>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; width: 120px;'><strong>預約單號</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{bookingNo}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議名稱</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{conferenceName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>承辦單位</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{organizerUnit ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議主席</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{chairman ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議室</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{roomName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約日期</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotDate}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約時間</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotTime}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原應繳金額</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>NT$ {totalAmount:N0}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>繳費期限</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{paymentDeadline}（已過期）</td>
+    </tr>
+</table>
+
+<p style='margin-top: 20px;'>
+    如仍需使用會議室，請重新提交預約申請。
+</p>
+
+<p>
+    <a href='{BaseUrl}Conference/Create' style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>
+        重新預約
+    </a>
+</p>
+
+<p style='color: #666; margin-top: 30px;'>
+    如有任何問題，請聯繫場地管理單位。
+</p>
+";
+        }
+
+        /// <summary>
         /// 繳費期限提醒 - 通知預約者繳費期限快到了
         /// </summary>
         public void PaymentDeadlineReminder(Guid conferenceId, int daysUntilDeadline, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")

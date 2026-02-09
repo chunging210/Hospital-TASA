@@ -656,7 +656,7 @@
                 <div class="modal-body" style="padding: 16px 32px 24px; max-height: 70vh; overflow-y: auto;">
 
                     <!-- 匯款資訊提示 (銀行匯款時才顯示) -->
-                    <div v-if="form.paymentMethod === 'transfer'"
+                    @* <div v-if="form.paymentMethod === 'transfer'"
                         style="background: #f0f7ff; border-left: 3px solid #0066cc; border-radius: 4px; padding: 16px; margin-bottom: 20px;">
                         <div style="color: #0066cc; font-weight: 600; font-size: 14px; margin-bottom: 8px;">
                             銀行轉帳資訊
@@ -670,7 +670,7 @@
                         <div style="margin-top: 8px; font-size: 12px; color: #666;">
                             請於繳款後將轉帳憑證上傳至系統
                         </div>
-                    </div>
+                    </div> *@
 
                     <!-- 預約資訊列表 -->
                     <div style="font-size: 15px; line-height: 2.2; color: #333;">
@@ -678,6 +678,16 @@
                         <div style="display: flex; padding: 8px 0;">
                             <div style="min-width: 110px; color: #666;">會議名稱:</div>
                             <div style="flex: 1; font-weight: 500;">{{ form.name }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="form.organizerUnit">
+                            <div style="min-width: 110px; color: #666;">承辦單位:</div>
+                            <div style="flex: 1;">{{ form.organizerUnit }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="form.chairman">
+                            <div style="min-width: 110px; color: #666;">會議主席:</div>
+                            <div style="flex: 1;">{{ form.chairman }}</div>
                         </div>
 
                         <div style="display: flex; padding: 8px 0;" v-if="form.content">

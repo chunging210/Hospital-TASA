@@ -26,12 +26,13 @@
 
                 <hr> *@
 
-                <!-- 1. 使用者註冊設定 -->
-                <div class="setting-item">
+                <!-- 1. 使用者註冊設定 (只有 Admin 能看到) -->
+                <div class="setting-item" v-if="isAdmin">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="setting-label">
                                 <strong class="text-primary">是否開啟訪客註冊</strong>
+                                <small class="text-muted d-block mt-1">全局設定</small>
                             </div>
                         </div>
                         <div class="col-md-9">
@@ -68,14 +69,6 @@
                                     {{ settings.paymentDeadlineDays }} 天
                                 </div>
                             </div>
-
-                            <!-- 自動釋放開關 -->
-                            <label class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" v-model="settings.autoRelease">
-                                <span class="form-check-label text-muted">
-                                    逾期自動釋放預約
-                                </span>
-                            </label>
                         </div>
                     </div>
                 </div>
@@ -119,7 +112,7 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="setting-label">
-                                <strong class="text-primary">主管通知信箱</strong>
+                                <strong class="text-primary">主秘通知信箱</strong>
                                 <small class="text-muted d-block mt-1">接收預約通知的信箱</small>
                             </div>
                         </div>

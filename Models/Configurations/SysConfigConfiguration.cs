@@ -17,8 +17,16 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Id).HasComment("設定ID");
             entity.Property(e => e.ConfigKey).HasComment("設定鍵");
             entity.Property(e => e.ConfigValue).HasComment("設定值");
+            entity.Property(e => e.DepartmentId).HasComment("分院ID (NULL = 全局預設值)");
             entity.Property(e => e.Enabled).HasComment("啟用");
             entity.Property(e => e.DeleteAt).HasComment("刪除時間");
+
+            // 分院關聯 (指定用 Id 而非 No 作為 principal key)
+            entity.HasOne(e => e.Department)
+                .WithMany()
+                .HasForeignKey(e => e.DepartmentId)
+                .HasPrincipalKey(d => d.Id)
+                .OnDelete(DeleteBehavior.Restrict);
 
             OnConfigurePartial(entity);
         }
