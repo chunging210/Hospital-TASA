@@ -12,12 +12,12 @@
                                 <div class="col-xl-auto col-sm-12 text-branding align-middle">
                                     <span class="material-icons">playlist_add_check</span> 預約總覽
                                 </div>
-                                <div class="col-xl-4 col-sm-12">
+                                <div class="col-xl-3 col-sm-12">
                                     <div class="search-box">
                                         <div class="position-relative">
                                             <input type="text" class="form-control" v-model="searchQuery"
-                                                placeholder="搜尋預約單號、預約者...">
-                                            <i class="bx bx-search-alt search-icon"></i>
+                                                   placeholder="搜尋預約單號、預約者...">
+                                            <span class="material-icons search-icon">search</span>
                                         </div>
                                     </div>
                                 </div>
@@ -51,7 +51,7 @@
                                     <div class="col-xl-4 col-sm-12">
                                         <select class="form-select" v-model="userStatusFilter">
                                             <option v-for="opt in userStatusOptions" :key="opt.value"
-                                                :value="opt.value">
+                                                    :value="opt.value">
                                                 {{ opt.text }}
                                             </option>
                                         </select>
@@ -118,15 +118,15 @@
                                                     <td>NT${{ item.amount.toLocaleString() }}</td>
                                                     <td>
                                                         <span class="badge"
-                                                            :class="getApprovalStatusClass(item.approvalStatus)">
+                                                              :class="getApprovalStatusClass(item.approvalStatus)">
                                                             {{ item.approvalStatus }}
                                                         </span>
                                                     </td>
                                                     <td>
                                                         <span v-if="item.paymentStatus === '-'"
-                                                            class="text-muted">-</span>
+                                                              class="text-muted">-</span>
                                                         <span v-else class="badge"
-                                                            :class="getPaymentStatusClass(item.paymentStatus)">
+                                                              :class="getPaymentStatusClass(item.paymentStatus)">
                                                             {{ item.paymentStatus }}
                                                         </span>
                                                     </td>
@@ -179,7 +179,7 @@
                                                         <td>
                                                             <!-- ✅ 使用者友善狀態 -->
                                                             <span class="badge"
-                                                                :class="getUserFriendlyStatusClass(item)">
+                                                                  :class="getUserFriendlyStatusClass(item)">
                                                                 {{ getUserFriendlyStatus(item) }}
                                                             </span>
                                                         </td>
@@ -189,10 +189,8 @@
 
                                             <page ref="personalReservationsPage" @@reload="loadPersonalReservations">
                                             </page>
-
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -204,297 +202,288 @@
 
     <!-- ✅ 預約詳情 Offcanvas -->
     <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="bookingDrawer" ref="bookingDrawer">
-        <div class="offcanvas-header">
-            <h5 class="mb-0 fw-bold">
+        <div class="offcanvas-header" style="padding-bottom:0;">
+            <h4 class="mb-0 fw-bold">
                 預約詳情 <small class="text-muted ms-2">#{{ selectedItem?.reservationNo }}</small>
-            </h5>
+            </h4>
+            
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
+       
         <div class="offcanvas-body" v-if="selectedItem">
-            <form class="row g-3">
-                <!-- ========== 基本資訊 ========== -->
-                <div class="col-12">
-                    <h6 class="fw-bold border-bottom pb-2">基本資訊</h6>
-                </div>
-
-                <div class="col-md-12">
-                    <div class="row">
-                        <label class="form-label col-md-3 fw-bold">預約者</label>
-                        <label class="form-label col-md-9">{{ selectedItem.reserverName }}</label>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="row">
-                        <label class="form-label col-md-3 fw-bold">會議名稱</label>
-                        <label class="form-label col-md-9">{{ selectedItem.conferenceName || '-' }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">承辦單位</label>
-                        <label class="form-label col-md-8">{{ selectedItem.organizerUnit || '-' }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">會議主席</label>
-                        <label class="form-label col-md-8">{{ selectedItem.chairman || '-' }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">預約日期</label>
-                        <label class="form-label col-md-8">{{ selectedItem.reservationDate }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">時間</label>
-                        <label class="form-label col-md-8">{{ selectedItem.timeSlot }}</label>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="row">
-                        <label class="form-label col-md-3 fw-bold">會議室</label>
-                        <label class="form-label col-md-9">{{ selectedItem.roomName }}</label>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="row">
-                        <label class="form-label col-md-3 fw-bold">繳費截止日</label>
-                        <label class="form-label col-md-9">{{ selectedItem.paymentDeadline }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">付款方式</label>
-                        <label class="form-label col-md-8">{{ getPaymentMethodText(selectedItem.paymentMethod)
-                            }}</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <label class="form-label col-md-4 fw-bold">金額</label>
-                        <label class="form-label col-md-8">NT${{ selectedItem.amount?.toLocaleString() }}</label>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="row">
-                        <label class="form-label col-md-3 fw-bold">成本中心代碼</label>
-                        <label class="form-label col-md-9">{{ selectedItem.costCenter || '-' }}</label>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <h6 class="fw-bold border-bottom pb-2 mt-3">狀態資訊</h6>
-                </div>
-                <template v-if="selectedItem.openedFrom === 'personal'">
-                    <div class="col-md-12">
-                        <div class="row">
-                            <label class="form-label col-md-3 fw-bold">預約狀態</label>
-                            <label class="form-label col-md-9">
-                                <span class="badge" :class="getUserFriendlyStatusClass(selectedItem)">
-                                    {{ getUserFriendlyStatus(selectedItem) }}
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 審核拒絕原因 -->
-                    <div class="col-md-12" v-if="selectedItem.approvalStatus === '審核拒絕' && selectedItem.rejectReason">
-                        <div class="alert alert-danger" role="alert">
-                            <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因:</strong>
-                            <p class="mb-0 mt-2">{{ selectedItem.rejectReason }}</p>
-                        </div>
-                    </div>
-
-                    <!-- 付款憑證拒絕原因 -->
-                    <div class="col-md-12"
-                        v-if="selectedItem.paymentStatus === '待重新上傳' && selectedItem.paymentRejectReason">
-                        <div class="alert alert-warning" role="alert">
-                            <strong><i class="mdi mdi-alert me-2"></i>需要重新上傳:</strong>
-                            <p class="mb-0 mt-2">{{ selectedItem.paymentRejectReason }}</p>
-                        </div>
-                    </div>
-                </template>
-
-                <template v-if="selectedItem.openedFrom === 'all'">
-                    <div class="col-md-12">
-                        <div class="row">
-                            <label class="form-label col-md-3 fw-bold">審核狀態</label>
-                            <label class="form-label col-md-9">
-                                <span class="badge" :class="getApprovalStatusClass(selectedItem.approvalStatus)">
-                                    {{ selectedItem.approvalStatus }}
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 審核拒絕原因 -->
-                    <div class="col-md-12" v-if="selectedItem.approvalStatus === '審核拒絕' && selectedItem.rejectReason">
-                        <div class="alert alert-danger" role="alert">
-                            <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因:</strong>
-                            <p class="mb-0 mt-2">{{ selectedItem.rejectReason }}</p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-12 mt-2">
-                        <div class="row">
-                            <label class="form-label col-md-3 fw-bold">付款狀態</label>
-                            <label class="form-label col-md-9">
-                                <span v-if="selectedItem.paymentStatus === '-'" class="text-muted">-</span>
-                                <span v-else class="badge" :class="getPaymentStatusClass(selectedItem.paymentStatus)">
-                                    {{ selectedItem.paymentStatus }}
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 付款憑證拒絕原因 -->
-                    <div class="col-md-12"
-                        v-if="selectedItem.paymentStatus === '待重新上傳' && selectedItem.paymentRejectReason">
-                        <div class="alert alert-warning" role="alert">
-                            <strong><i class="mdi mdi-alert me-2"></i>付款憑證問題:</strong>
-                            <p class="mb-0 mt-2">{{ selectedItem.paymentRejectReason }}</p>
-                        </div>
-                    </div>
-                </template>
-
-                <!-- ========== 付款表單區 ========== -->
-                <!-- ✅ 只在「個人預約」Tab + 需要付款時顯示 -->
-                <template v-if="selectedItem.openedFrom === 'personal' && 
-    ((selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款') || 
-     selectedItem.paymentStatus === '待重新上傳')">
-
-                    <div class="col-12">
-                        <h6 class="fw-bold border-bottom pb-2 mt-3">付款資訊</h6>
-                    </div>
-
-                    <!-- 臨櫃付款欄位 -->
-                    <div v-if="isCounterPayment(selectedItem.paymentMethod)" class="col-12">
-                        <h6 class="fw-bold mb-3">
-                            <i class="mdi mdi-cash-register me-2"></i>
-                            {{ selectedItem.amount === 0 ? '上傳證明文件' : '臨櫃付費 - 上傳憑證' }}
-                        </h6>
-
-                        <div v-if="selectedItem.amount === 0" class="alert alert-info">
-                            <i class="mdi mdi-information me-2"></i>
-                            此預約為免費使用,請上傳證明文件(如:公文、許可證明等)
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">
-                                {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單(影像或 PDF)' }}
-                                <span class="text-danger">*</span>
-                            </label>
-                            <input class="form-control" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png,.pdf"
-                                multiple required>
-                            <div class="form-text">可上傳多檔;支援 JPG / PNG / PDF。</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">備註(選填)</label>
-                            <textarea class="form-control" v-model="paymentForm.counterNote" rows="2"
-                                placeholder="例:窗口、收據號碼…"></textarea>
-                        </div>
-
-                        <button type="button" class="btn btn-primary" @@click="submitCounterPayment">
-                            <i class="mdi mdi-upload me-1"></i> 上傳憑證
-                        </button>
-                    </div>
-
-                    <!-- 匯款付款欄位 -->
-                    <div v-if="isTransferPayment(selectedItem.paymentMethod)" class="col-12">
-                        <h6 class="fw-bold mb-3">
-                            <i class="mdi mdi-bank-transfer me-2"></i>匯款付費
-                        </h6>
-
-                        <div class="row g-3">
-                            <div class="col-6">
-                                <label class="form-label">
-                                    轉帳末五碼 <span class="text-danger">*</span>
-                                </label>
-                                <input type="text" class="form-control" v-model="paymentForm.last5" inputmode="numeric"
-                                    maxlength="5" placeholder="例如:12345" required>
-                                <div class="form-text">請輸入 5 碼數字。</div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">
-                                    金額 <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">NT$</span>
-                                    <input type="number" class="form-control" v-model="paymentForm.amount" min="1"
-                                        step="1" required>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">轉帳時間(選填)</label>
-                                <input type="datetime-local" class="form-control" v-model="paymentForm.transferAt">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">備註(選填)</label>
-                                <textarea class="form-control" v-model="paymentForm.transferNote" rows="2"
-                                    placeholder="例:銀行代碼、分行…"></textarea>
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn btn-primary mt-3" @@click="submitTransferPayment">
-                            <i class="mdi mdi-send me-1"></i> 送出匯款資訊
-                        </button>
-                    </div>
-
-                    <!-- 成本分攤提示 -->
-                    <div v-if="isCostSharingPayment(selectedItem.paymentMethod)" class="col-12">
-                        <div class="alert alert-info">
-                            <i class="mdi mdi-information me-2"></i>
-                            此預約採用「成本分攤」付款方式,無需手動上傳憑證。
-                        </div>
-                    </div>
-                </template>
-            </form>
-
-            <!-- ✅ 新增:操作按鈕區 -->
-            <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="border-top pt-3 mt-4">
-                <!-- 操作提示 -->
-                <div v-if="getActionHint(selectedItem)" class="alert alert-info py-2 px-3 mb-3">
-                    <small>
-                        <i class="mdi mdi-information me-1"></i>
-                        {{ getActionHint(selectedItem) }}
-                    </small>
-                </div>
-
-                <!-- 按鈕區 -->
-                <div class="d-flex flex-wrap gap-2 mb-3">
+             <!-- ✅ 新增:操作按鈕區 -->
+            <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="d-flex justify-content-end">
+                <div class="d-flex flex-wrap gap-2">
                     <!-- 編輯按鈕 -->
                     <button type="button" class="btn btn-outline-primary" v-if="canEdit(selectedItem)"
                         @@click="editReservation(selectedItem)">
-                        <i class="mdi mdi-pencil me-1"></i> 編輯預約
+                        <i class="mdi mdi-pencil me-1"></i> 編輯
                     </button>
-
                     <!-- 取消預約按鈕 -->
                     <button type="button" class="btn btn-outline-danger" v-if="canCancel(selectedItem)"
                         @@click="confirmCancel(selectedItem)">
-                        <i class="mdi mdi-close-circle me-1"></i> 取消預約
+                        <i class="mdi mdi-close-circle me-1"></i> 取消
                     </button>
-
                     <!-- 刪除按鈕 -->
                     <button type="button" class="btn btn-outline-secondary" v-if="canDelete(selectedItem)"
                         @@click="confirmDelete(selectedItem)">
-                        <i class="mdi mdi-delete me-1"></i> 移除紀錄
+                        <i class="mdi mdi-delete me-1"></i> 刪除
                     </button>
                 </div>
-
-                <!-- 取消警告訊息 -->
-                <div v-if="getCancelWarning(selectedItem)" class="alert alert-warning py-2 px-3 mb-0">
-                    <small>
-                        <i class="mdi mdi-alert me-1"></i>
-                        {{ getCancelWarning(selectedItem) }}
-                    </small>
-                </div>
             </div>
+            <form class="row g-3">
+                <!-- ========== 基本資訊 ========== -->
+                    <div class="col-12">
+                        <h5 class="d-flex align-items-center text-primary border-bottom">
+                            <span class="material-icons icons">error_outline</span>
+                            基本資訊
+                        </h5>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">預約者</span>
+                                <label class="form-label fw-bold">{{ selectedItem.reserverName }}</label>
+                            </div>
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">承辦單位</span>
+                                <label class="form-label fw-bold">{{ selectedItem.organizerUnit || '-' }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">會議名稱</span>
+                                <label class="form-label fw-bold">{{ selectedItem.conferenceName }}</label>
+                            </div>
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">會議主席</span>
+                                <label class="form-label fw-bold">{{ selectedItem.chairman || '-' }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h5 class="d-flex align-items-center text-primary border-bottom">
+                            <span class="material-icons icons">access_time</span>
+                            時間與地點
+                        </h5>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">預約日期</span>
+                                <label class="form-label fw-bold">{{ selectedItem.reservationDate }}</label>
+                            </div>
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">時間</span>
+                                <label class="form-label fw-bold">{{ selectedItem.timeSlot || '-' }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-12  d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">會議室</span>
+                                <label class="form-label fw-bold">{{ selectedItem.roomName }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h5 class="d-flex align-items-center text-primary border-bottom">
+                            <span class="material-icons icons">local_atm</span>
+                            付款資訊
+                        </h5>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">付款方式</span>
+                                <label class="form-label fw-bold">{{ getPaymentMethodText(selectedItem.paymentMethod)
+                                    }}</label>
+                            </div>
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">金額</span>
+                                <label class="form-label fw-bold">NT${{ selectedItem.amount?.toLocaleString() }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">繳費截止日</span>
+                                <label class="form-label fw-bold">{{ selectedItem.paymentDeadline }}</label>
+                            </div>
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">成本中心代碼</span>
+                                <label class="form-label fw-bold">{{ selectedItem.costCenter || '-' }}</label>
+                            </div>
+                        </div>
+                    </div>
+                    <template v-if="selectedItem.openedFrom === 'personal' && 
+                        ((selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款') || 
+                        selectedItem.paymentStatus === '待重新上傳')">
 
+                        <!-- 臨櫃付款欄位 -->
+                        <div v-if="isCounterPayment(selectedItem.paymentMethod)" class="col-12">
+                            
+                            <div v-if="selectedItem.amount === 0" class="alert alert-info">
+                                <i class="mdi mdi-information me-2"></i>
+                                此預約為免費使用,請上傳證明文件(如:公文、許可證明等)
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="form-label text-secondary font-size-18">
+                                    {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單(影像或 PDF)' }}
+                                    <span class="text-danger">*</span>
+                                </span>
+                                <input class="form-control fw-bold" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png,.pdf"
+                                       multiple required>
+                                <div class="form-text">可上傳多檔;支援 JPG / PNG / PDF。</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="form-label text-secondary font-size-18">備註(選填)</span>
+                                <textarea class="form-control fw-bold" v-model="paymentForm.counterNote" rows="2"
+                                          placeholder="例:窗口、收據號碼…"></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary" @@click="submitCounterPayment">
+                                    上傳憑證
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 匯款付款欄位 -->
+                        <div v-if="isTransferPayment(selectedItem.paymentMethod)" class="col-12">
+
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <span class="form-label text-secondary font-size-18">
+                                        轉帳末五碼 <span class="text-danger">*</span>
+                                    </span>
+                                    <input type="text" class="form-control fw-bold" v-model="paymentForm.last5" inputmode="numeric"
+                                           maxlength="5" placeholder="例如：12345" required>
+                                    <div class="form-text">請輸入 5 碼數字。</div>
+                                </div>
+                                <div class="col-6">
+                                    <span class="form-label text-secondary font-size-18">
+                                        金額 <span class="text-danger">*</span>
+                                    </span>
+                                    <div class="input-group">
+                                        <span class="input-group-text fw-bold">NT$</span>
+                                        <input type="number" class="form-control fw-bold" v-model="paymentForm.amount" min="1"
+                                               step="1" required>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <span class="form-label text-secondary font-size-18">轉帳時間(選填)</span>
+                                    <input type="datetime-local" class="form-control fw-bold" v-model="paymentForm.transferAt">
+                                </div>
+                                <div class="col-12">
+                                    <span class="form-label text-secondary font-size-18">備註(選填)</span>
+                                    <textarea class="form-control fw-bold" v-model="paymentForm.transferNote" rows="2"
+                                              placeholder="例:銀行代碼、分行…"></textarea>
+                                </div>
+                            </div>
+                            <div style="display: flex;justify-content: flex-end;margin-bottom: 20px">
+                                <button type="button" class="btn btn-primary mt-3" @@click="submitTransferPayment">
+                                    送出匯款資訊
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 成本分攤提示 -->
+                        <div v-if="isCostSharingPayment(selectedItem.paymentMethod)" class="col-12">
+                            <div class="alert alert-info">
+                                <i class="mdi mdi-information me-2"></i>
+                                此預約採用「成本分攤」付款方式,無需手動上傳憑證。
+                            </div>
+                        </div>
+                    </template>
+                <div>
+                    <div class="col-12">
+                        <h5 class="d-flex align-items-center text-primary border-bottom">
+                            <span class="material-icons icons">label_important_outline</span>
+                            狀態資訊
+                        </h5>
+                    </div>
+                    <template v-if="selectedItem.openedFrom === 'personal'">
+                        <div class="col-md-12">
+                            <div class="row">
+                                <label class="form-label col-md-3 fw-bold">預約狀態</label>
+                                <label class="form-label col-md-9">
+                                    <span class="badge" :class="getUserFriendlyStatusClass(selectedItem)">
+                                        {{ getUserFriendlyStatus(selectedItem) }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 審核拒絕原因 -->
+                        <div class="col-md-12" v-if="selectedItem.approvalStatus === '審核拒絕' && selectedItem.rejectReason">
+                            <div class="alert alert-danger" role="alert">
+                                <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因:</strong>
+                                <p class="mb-0 mt-2">{{ selectedItem.rejectReason }}</p>
+                            </div>
+                        </div>
+
+                        <!-- 付款憑證拒絕原因 -->
+                        <div class="col-md-12"
+                             v-if="selectedItem.paymentStatus === '待重新上傳' && selectedItem.paymentRejectReason">
+                            <div class="alert alert-warning" role="alert">
+                                <strong><i class="mdi mdi-alert me-2"></i>需要重新上傳:</strong>
+                                <p class="mb-0 mt-2">{{ selectedItem.paymentRejectReason }}</p>
+                            </div>
+                        </div>
+                </template>
+
+                <template v-if="selectedItem.openedFrom === 'all'">
+                        <div class="col-md-12">
+                            <div class="row">
+                                <label class="form-label col-md-3 fw-bold">審核狀態</label>
+                                <label class="form-label col-md-9">
+                                    <span class="badge" :class="getApprovalStatusClass(selectedItem.approvalStatus)">
+                                        {{ selectedItem.approvalStatus }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 審核拒絕原因 -->
+                        <div class="col-md-12" v-if="selectedItem.approvalStatus === '審核拒絕' && selectedItem.rejectReason">
+                            <div class="alert alert-danger" role="alert">
+                                <strong><i class="mdi mdi-alert-circle me-2"></i>拒絕原因:</strong>
+                                <p class="mb-0 mt-2">{{ selectedItem.rejectReason }}</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12 mt-2">
+                            <div class="row">
+                                <label class="form-label col-md-3 fw-bold">付款狀態</label>
+                                <label class="form-label col-md-9">
+                                    <span v-if="selectedItem.paymentStatus === '-'" class="text-muted">-</span>
+                                    <span v-else class="badge" :class="getPaymentStatusClass(selectedItem.paymentStatus)">
+                                        {{ selectedItem.paymentStatus }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 付款憑證拒絕原因 -->
+                        <div class="col-md-12"
+                             v-if="selectedItem.paymentStatus === '待重新上傳' && selectedItem.paymentRejectReason">
+                            <div class="alert alert-warning" role="alert">
+                                <strong><i class="mdi mdi-alert me-2"></i>付款憑證問題:</strong>
+                                <p class="mb-0 mt-2">{{ selectedItem.paymentRejectReason }}</p>
+                            </div>
+                        </div>
+                </template>
+                </div>
+                
+            </form>
+
+            </div>
         </div>
-    </div>
 
-</div>
+    </div>
