@@ -108,7 +108,48 @@ namespace TASA.Services
         /// </summary>
         public void UpdateConfig(string configKey, string configValue)
         {
+            // ✅ 驗證：最早預約天數必須大於繳費期限天數
+            if (configKey == "PAYMENT_DEADLINE_DAYS" || configKey == "MIN_ADVANCE_BOOKING_DAYS")
+            {
+                ValidateBookingAndPaymentDays(configKey, configValue);
+            }
+
             SetConfigValue(configKey, configValue);
+        }
+
+        /// <summary>
+        /// 驗證最早預約天數與繳費期限天數的關係
+        /// </summary>
+        private void ValidateBookingAndPaymentDays(string configKey, string newValue)
+        {
+            if (!int.TryParse(newValue, out int newDays))
+            {
+                throw new HttpException("請輸入有效的數字");
+            }
+
+            int minAdvanceBookingDays;
+            int paymentDeadlineDays;
+
+            if (configKey == "MIN_ADVANCE_BOOKING_DAYS")
+            {
+                // 正在修改最早預約天數，取得目前的繳費期限天數
+                minAdvanceBookingDays = newDays;
+                paymentDeadlineDays = GetPaymentDeadlineDays();
+            }
+            else
+            {
+                // 正在修改繳費期限天數，取得目前的最早預約天數
+                paymentDeadlineDays = newDays;
+                minAdvanceBookingDays = GetMinAdvanceBookingDays();
+            }
+
+            // 最早預約天數必須大於繳費期限天數
+            if (minAdvanceBookingDays <= paymentDeadlineDays)
+            {
+                throw new HttpException(
+                    $"最早預約天數（{minAdvanceBookingDays} 天）必須大於繳費期限天數（{paymentDeadlineDays} 天），" +
+                    $"否則可能發生會議已開始但尚未繳費的情況");
+            }
         }
 
         // ========== 1. 是否開放註冊 ==========

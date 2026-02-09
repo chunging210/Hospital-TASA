@@ -4,9 +4,9 @@ namespace TASA.Controllers.Mvc
 {
     public class SeatSettingController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
+        // public IActionResult Index()
+        // {
+        //     return View();
+        // }
     }
 }

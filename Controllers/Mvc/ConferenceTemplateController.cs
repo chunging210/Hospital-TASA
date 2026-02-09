@@ -4,9 +4,9 @@ namespace TASA.Controllers.Mvc
 {
     public class ConferenceTemplateController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
+        // public IActionResult Index()
+        // {
+        //     return View();
+        // }
     }
 }

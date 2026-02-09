@@ -68,6 +68,22 @@ namespace TASA.Services.RoomModule
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
 
+            // ✅ 會議室管理者過濾：只能看到自己管理的會議室
+            var userId = service.UserClaimsService.Me()?.Id;
+            if (userId.HasValue)
+            {
+                var userPermissions = service.AuthRoleServices.GetUserPermissions(userId.Value);
+
+                // 如果是會議室管理者，但不是 Admin/Director
+                if (userPermissions.IsRoomManager &&
+                    !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+                {
+                    var managedRoomIds = userPermissions.ManagedRoomIds;
+                    q = q.Where(x => managedRoomIds.Contains(x.Id));
+                    Console.WriteLine($"[RoomService.List] 會議室管理者過濾，只顯示 {managedRoomIds.Count} 間會議室");
+                }
+            }
+
             var count = q.Count();
 
             // ✅ 取得今天日期
