@@ -3198,7 +3198,9 @@ body[data-layout=horizontal][data-layout-size=boxed] .navbar-header {
     transform: translateY(-50%);
     fill: var(--bs-secondary-color);
     width: 16px;
-    height: 16px
+    height: 16px;
+    font-size: 16px;
+
 }
 
 .user-profile-img {
@@ -5829,14 +5831,6 @@ a.ck.ck-button:not(.ck-disabled):hover {
 .search-box .form-control {
     border-radius: 30px;
     padding-left: 40px
-}
-
-.search-box .search-icon {
-    font-size: 16px;
-    position: absolute;
-    left: 13px;
-    fill: #7f838b;
-    line-height: 38px
 }
 
 .product-list li a {

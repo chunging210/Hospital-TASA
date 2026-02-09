@@ -140,21 +140,21 @@
 }
 
 /* ===== Offcanvas 抽屜寬度調整 ===== */
-.offcanvas-large {
+/* .offcanvas-large {
     width: 600px !important;
     max-width: 90vw;
-}
+} */
 
 /* 響應式設計 */
-@media (min-width: 1200px) {
+@media (min-width: 1101px) {
     .offcanvas-large {
-        width: 700px !important;
+        width: 60% !important;
     }
 }
 
 @media (min-width: 1600px) {
     .offcanvas-large {
-        width: 800px !important;
+        width: 50% !important;
     }
 }
 
@@ -176,12 +176,18 @@
 }
 
 /* ===== 搜尋框樣式 ===== */
+.search-box .form-control {
+    padding-right: 36px;
+}
+
 .search-box .search-icon {
     position: absolute;
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: #6c757d;
+    pointer-events: none;
+    font-size: 20px;
 }
 
 /* ===== 工具列樣式 ===== */
