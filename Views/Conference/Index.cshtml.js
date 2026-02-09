@@ -1,6 +1,6 @@
 ﻿// Conference
 import global from '/global.js';
-const { ref, reactive, onMounted } = Vue;
+const { ref, reactive, onMounted, watch } = Vue;
 
 let conferencepageRef = null;
 
@@ -340,6 +340,9 @@ window.$config = {
         this.visitor = visitor;
         this.visitorpage = ref(null);
 
+        watch(() => conference.query.keyword, () => {
+            conference.onFilterChange();
+        });
 
         onMounted(() => {
             me.getVM();

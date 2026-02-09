@@ -3,30 +3,26 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header">
-                <div class="row">
+                <div class="row d-flex align-items-center">
                     <!-- 標題 -->
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">assignment_turned_in</span>預約審核
                     </div>
 
-                    <!-- 搜尋 -->
-                    <div class="col-12 col-lg-4">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="reservation.query.keyword" @@blur="reservation.getList" type="text"
-                                    class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+                    <div class="col-12 col-lg-3">
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="reservation.query.keyword"
+                                       placeholder="搜尋預約單號、申請人...">
+                                <span class="material-icons search-icon">search</span>
                             </div>
-                            <button @@click="reservation.getList" class="btn btn-secondary">
-                                <span class="material-icons">search</span>
-                            </button>
                         </div>
                     </div>
 
                     <!-- ✅ 租借審核狀態篩選 -->
                     <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'approval'">
                         <select v-model.number="reservation.query.reservationStatus" @@change="reservation.getList"
-                            class="form-select">
+                                class="form-select">
                             <option :value="null">全部狀態</option>
                             <option :value="1">待審核</option>
                             <option :value="2">已核准 (待繳費)</option>
@@ -37,7 +33,7 @@
                     <!-- ✅ 付款審核狀態篩選 -->
                     <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'payment'">
                         <select v-model.number="reservation.query.paymentStatus" @@change="reservation.getList"
-                            class="form-select">
+                                class="form-select">
                             <option :value="null">全部狀態</option>
                             <option :value="1">未付款</option>
                             <option :value="2">待查帳</option>
@@ -102,12 +98,12 @@
                                 <td>
                                     <button v-if="item.status === '待審核'" class="btn btn-sm btn-primary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
-                                        data-bs-target="#approvalDrawer">
+                                            data-bs-target="#approvalDrawer">
                                         <span class="material-icons">edit</span> 審核
                                     </button>
                                     <button v-else class="btn btn-sm btn-outline-secondary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
-                                        data-bs-target="#approvalDrawer">
+                                            data-bs-target="#approvalDrawer">
                                         <span class="material-icons">visibility</span> 查看
                                     </button>
                                 </td>
@@ -178,7 +174,7 @@
 
 <!-- ===== 租借審核抽屜 ===== -->
 <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="approvalDrawer"
-    aria-labelledby="approvalDrawerLabel">
+     aria-labelledby="approvalDrawerLabel">
     <div class="offcanvas-header">
         <h5 id="approvalDrawerLabel">租借審核 <small class="text-muted">{{ reservation.currentReview.bookingNo }}</small>
         </h5>
@@ -203,7 +199,7 @@
 
             <div class="slot-list">
                 <div v-for="(slot, index) in reservation.currentReview.slots" :key="slot.id"
-                    class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
+                     class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
                     <span class="badge bg-primary rounded-pill">{{ index + 1 }}</span>
                     <div class="flex-grow-1 small">
                         <div class="fw-bold">{{ slot.slotDate }}</div>
@@ -228,12 +224,12 @@
                     <div class="d-flex gap-4">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="approval-result" id="approval-approve"
-                                value="approve" v-model="reservation.vm.result">
+                                   value="approve" v-model="reservation.vm.result">
                             <label class="form-check-label" for="approval-approve">核准</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="approval-result" id="approval-reject"
-                                value="reject" v-model="reservation.vm.result">
+                                   value="reject" v-model="reservation.vm.result">
                             <label class="form-check-label" for="approval-reject">拒絕</label>
                         </div>
                     </div>
@@ -243,7 +239,7 @@
                 <div v-if="reservation.vm.result === 'reject'" class="col-12">
                     <label class="form-label">拒絕原因 <span class="text-danger">*</span></label>
                     <textarea class="form-control" v-model="reservation.vm.rejectReason" rows="2" placeholder="請填寫拒絕原因"
-                        required></textarea>
+                              required></textarea>
                 </div>
 
                 <!-- 折扣設定 -->
@@ -263,7 +259,7 @@
                             <label class="form-label">折扣％</label>
                             <div class="input-group">
                                 <input type="number" class="form-control"
-                                    v-model.number="reservation.vm.discountPercent" min="0" max="100" step="1">
+                                       v-model.number="reservation.vm.discountPercent" min="0" max="100" step="1">
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
@@ -271,7 +267,7 @@
                         <div v-if="reservation.vm.discountType === 'amount'" class="col-md-6">
                             <label class="form-label">折扣金額 (NT$)</label>
                             <input type="number" class="form-control" v-model.number="reservation.vm.discountAmount"
-                                min="0" step="1">
+                                   min="0" step="1">
                         </div>
 
                         <div v-if="reservation.vm.discountType !== 'none'" class="col-12">
@@ -280,7 +276,7 @@
                                 <span v-if="reservation.vm.discountType === 'free'" class="text-danger">*</span>
                             </label>
                             <textarea class="form-control" v-model="reservation.vm.discountReason" rows="2"
-                                :required="reservation.vm.discountType === 'free'"></textarea>
+                                      :required="reservation.vm.discountType === 'free'"></textarea>
                         </div>
 
                         <!-- 價格明細 -->
@@ -289,192 +285,192 @@
                                 <h6 class="mb-3">價格明細</h6>
                                 <ul class="list-unstyled mb-0">
                                     <li><span class="text-muted">原價:</span><strong>NT${{
-                                            reservation.pricing.original.toLocaleString() }}</strong></li>
-                                    <li><span class="text-muted">折扣:</span><strong>-NT${{
+                                        reservation.pricing.original.toLocaleString() }}</strong></li>
+                                        <li><span class="text-muted">折扣:</span><strong>-NT${{
                                             reservation.pricing.discount.toLocaleString() }}</strong></li>
-                                </ul>
-                                <hr class="my-2">
-                                <div class="d-flex justify-content-between">
-                                    <span class="fw-bold">合計:</span>
-                                    <strong class="text-primary">NT${{ reservation.pricing.final.toLocaleString()
-                                        }}</strong>
+                                        </ul>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-bold">合計:</span>
+                                            <strong class="text-primary">NT${{ reservation.pricing.final.toLocaleString()
+                                                }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- 按鈕 -->
+                            <div class="col-12 d-flex gap-2" style="justify-content: flex-end;">
+                                <button type="button" @@click="reservation.submitApprovalReview"
+                                        class="btn btn-primary">確認送出</button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">取消</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ✅ 已處理的狀態顯示 -->
+                    <div v-else>
+                        <div class="alert" :class="{
+                            'alert-success': reservation.currentReview.status === '待繳費',
+                            'alert-danger': reservation.currentReview.status === '審核拒絕'
+                            }">
+                            <h6 class="alert-heading">
+                                <span class="material-icons me-2">info</span>
+                                此預約已審核
+                            </h6>
+                            <p class="mb-0">
+                                <strong>狀態:</strong> {{ reservation.currentReview.status }}
+                            </p>
+                            <p v-if="reservation.currentReview.rejectReason" class="mb-0 mt-2">
+                                <strong>原因:</strong> {{ reservation.currentReview.rejectReason }}
+                            </p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 按鈕 -->
-                <div class="col-12 d-flex gap-2" style="justify-content: flex-end;">
-                    <button type="button" @@click="reservation.submitApprovalReview"
-                        class="btn btn-primary">確認送出</button>
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">取消</button>
+            <!-- ===== 付款審核抽屜 ===== -->
+            <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="paymentDrawer"
+                 aria-labelledby="paymentDrawerLabel">
+                <div class="offcanvas-header">
+                    <h5 id="paymentDrawerLabel">付款審核 <small class="text-muted">{{ reservation.currentPayment.bookingNo }}</small>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
                 </div>
-            </form>
-        </div>
-
-        <!-- ✅ 已處理的狀態顯示 -->
-        <div v-else>
-            <div class="alert" :class="{
-                'alert-success': reservation.currentReview.status === '待繳費',
-                'alert-danger': reservation.currentReview.status === '審核拒絕'
-            }">
-                <h6 class="alert-heading">
-                    <span class="material-icons me-2">info</span>
-                    此預約已審核
-                </h6>
-                <p class="mb-0">
-                    <strong>狀態:</strong> {{ reservation.currentReview.status }}
-                </p>
-                <p v-if="reservation.currentReview.rejectReason" class="mb-0 mt-2">
-                    <strong>原因:</strong> {{ reservation.currentReview.rejectReason }}
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== 付款審核抽屜 ===== -->
-<div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="paymentDrawer"
-    aria-labelledby="paymentDrawerLabel">
-    <div class="offcanvas-header">
-        <h5 id="paymentDrawerLabel">付款審核 <small class="text-muted">{{ reservation.currentPayment.bookingNo }}</small>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body">
-        <!-- 基本資料 -->
-        <div class="border rounded p-3 bg-body-tertiary mb-3">
-            <div class="row g-2 small">
-                <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentPayment.applicantName }}</div>
-                <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentPayment.roomName }}</div>
-                <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentPayment.date }}</div>
-                <div class="col-md-6"><strong>金額:</strong>NT${{ reservation.currentPayment.totalAmount?.toLocaleString()
-                    }}</div>
-            </div>
-        </div>
+                <div class="offcanvas-body">
+                    <!-- 基本資料 -->
+                    <div class="border rounded p-3 bg-body-tertiary mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentPayment.applicantName }}</div>
+                            <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentPayment.roomName }}</div>
+                            <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentPayment.date }}</div>
+                            <div class="col-md-6"><strong>金額:</strong>NT${{ reservation.currentPayment.totalAmount?.toLocaleString()
+                                }}</div>
+                            </div>
+                        </div>
 
 
-        <!-- ✅ 加入預約時段明細 -->
-        <div v-if="reservation.currentPayment.slots && reservation.currentPayment.slots.length > 0" class="mb-4">
-            <h6 class="mb-2">
-                <span class="material-icons">schedule</span>
-                預約時段明細
-            </h6>
+                        <!-- ✅ 加入預約時段明細 -->
+                        <div v-if="reservation.currentPayment.slots && reservation.currentPayment.slots.length > 0" class="mb-4">
+                            <h6 class="mb-2">
+                                <span class="material-icons">schedule</span>
+                                預約時段明細
+                            </h6>
 
-            <div class="slot-list">
-                <div v-for="(slot, index) in reservation.currentPayment.slots" :key="slot.id"
-                    class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
-                    <span class="badge bg-primary rounded-pill">{{ index + 1 }}</span>
-                    <div class="flex-grow-1 small">
-                        <div class="fw-bold">{{ slot.slotDate }}</div>
-                        <div class="text-muted">{{ slot.startTime }} ~ {{ slot.endTime }}</div>
-                    </div>
-                </div>
-            </div>
+                            <div class="slot-list">
+                                <div v-for="(slot, index) in reservation.currentPayment.slots" :key="slot.id"
+                                     class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
+                                    <span class="badge bg-primary rounded-pill">{{ index + 1 }}</span>
+                                    <div class="flex-grow-1 small">
+                                        <div class="fw-bold">{{ slot.slotDate }}</div>
+                                        <div class="text-muted">{{ slot.startTime }} ~ {{ slot.endTime }}</div>
+                                    </div>
+                                </div>
+                            </div>
 
-            <div class="mt-3 p-2 bg-light rounded text-center small">
-                <strong>共 {{ reservation.currentPayment.slots.length }} 個時段</strong>
-            </div>
-        </div>
+                            <div class="mt-3 p-2 bg-light rounded text-center small">
+                                <strong>共 {{ reservation.currentPayment.slots.length }} 個時段</strong>
+                            </div>
+                        </div>
 
-        <hr>
-        <!-- 付款資訊 -->
-        <div class="mb-4">
-            <h6 class="mb-2">
-                <span class="material-icons">payment</span>
-                付款資訊
-            </h6>
+                        <hr>
+                        <!-- 付款資訊 -->
+                        <div class="mb-4">
+                            <h6 class="mb-2">
+                                <span class="material-icons">payment</span>
+                                付款資訊
+                            </h6>
 
-            <div class="alert alert-info">
-                <p class="mb-2">
-                    <strong>付款方式:</strong>
-                    {{ getPaymentMethodText(reservation.currentPayment.paymentMethod) }}
-                </p>
-                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '臨櫃'">
-                    <strong>憑證上傳時間:</strong>
-                    {{ reservation.currentPayment.uploadTime || '-' }}
-                </p>
+                            <div class="alert alert-info">
+                                <p class="mb-2">
+                                    <strong>付款方式:</strong>
+                                    {{ getPaymentMethodText(reservation.currentPayment.paymentMethod) }}
+                                </p>
+                                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '臨櫃'">
+                                    <strong>憑證上傳時間:</strong>
+                                    {{ reservation.currentPayment.uploadTime || '-' }}
+                                </p>
 
-                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '匯款'">
-                    <strong>提交時間:</strong>
-                    {{ reservation.currentPayment.uploadTime || '-' }}
-                </p>
+                                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '匯款'">
+                                    <strong>提交時間:</strong>
+                                    {{ reservation.currentPayment.uploadTime || '-' }}
+                                </p>
 
-                <!-- ===== 匯款資訊 ===== -->
-                <template v-if="reservation.currentPayment.paymentType === '匯款'">
-                    <hr class="my-2">
-                    <h6 class="text-muted small mb-2">匯款資訊</h6>
-                    <p class="mb-1">
-                        <strong>轉帳末五碼:</strong>
-                        {{ reservation.currentPayment.lastFiveDigits || '-' }}
-                    </p>
-                    <p class="mb-1">
-                        <strong>轉帳金額:</strong>
-                        NT${{ reservation.currentPayment.transferAmount?.toLocaleString() || '-' }}
-                    </p>
-                    <p class="mb-1">
-                        <strong>轉帳時間:</strong>
-                        {{ reservation.currentPayment.transferAt || '-' }}
-                    </p>
-                    <p class="mb-0" v-if="reservation.currentPayment.note">
-                        <strong>備註:</strong>
-                        <span class="text-muted">{{ reservation.currentPayment.note }}</span>
-                    </p>
-                </template>
+                                <!-- ===== 匯款資訊 ===== -->
+                                <template v-if="reservation.currentPayment.paymentType === '匯款'">
+                                    <hr class="my-2">
+                                    <h6 class="text-muted small mb-2">匯款資訊</h6>
+                                    <p class="mb-1">
+                                        <strong>轉帳末五碼:</strong>
+                                        {{ reservation.currentPayment.lastFiveDigits || '-' }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>轉帳金額:</strong>
+                                        NT${{ reservation.currentPayment.transferAmount?.toLocaleString() || '-' }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>轉帳時間:</strong>
+                                        {{ reservation.currentPayment.transferAt || '-' }}
+                                    </p>
+                                    <p class="mb-0" v-if="reservation.currentPayment.note">
+                                        <strong>備註:</strong>
+                                        <span class="text-muted">{{ reservation.currentPayment.note }}</span>
+                                    </p>
+                                </template>
 
-                <!-- ===== 臨櫃 ===== -->
-                <template v-else-if="reservation.currentPayment.paymentType === '臨櫃'">
-                    <hr class="my-2">
-                    <h6 class="text-muted small mb-2">付款憑證</h6>
-                    <div class="text-center mb-2">
-                        <img :src="reservation.currentPayment.filePath" :alt="reservation.currentPayment.fileName"
-                            class="img-fluid rounded border" style="max-height: 400px; cursor: pointer;"
-                            @@click="viewFullImage(reservation.currentPayment.filePath)" />
-                    </div>
-                    <p class="text-muted small text-center mb-2">
-                        {{ reservation.currentPayment.fileName }}
-                    </p>
-                    <p class="mb-0" v-if="reservation.currentPayment.note">
-                        <strong>備註:</strong>
-                        <span class="text-muted">{{ reservation.currentPayment.note }}</span>
-                    </p>
-                </template>
-            </div>
-        </div>
+                                <!-- ===== 臨櫃 ===== -->
+                                <template v-else-if="reservation.currentPayment.paymentType === '臨櫃'">
+                                    <hr class="my-2">
+                                    <h6 class="text-muted small mb-2">付款憑證</h6>
+                                    <div class="text-center mb-2">
+                                        <img :src="reservation.currentPayment.filePath" :alt="reservation.currentPayment.fileName"
+                                             class="img-fluid rounded border" style="max-height: 400px; cursor: pointer;"
+                                        @@click="viewFullImage(reservation.currentPayment.filePath)" />
+                                    </div>
+                                    <p class="text-muted small text-center mb-2">
+                                        {{ reservation.currentPayment.fileName }}
+                                    </p>
+                                    <p class="mb-0" v-if="reservation.currentPayment.note">
+                                        <strong>備註:</strong>
+                                        <span class="text-muted">{{ reservation.currentPayment.note }}</span>
+                                    </p>
+                                </template>
+                            </div>
+                        </div>
 
-        <hr>
+                        <hr>
 
-        <form class="row g-3">
-            <!-- 審核決策 -->
-            <div class="col-12">
-                <label class="form-label">審核結果</label>
-                <div class="d-flex gap-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="payment-result" id="payment-approve"
-                            value="approve" v-model="reservation.paymentVm.result">
-                        <label class="form-check-label" for="payment-approve">批准收款</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="payment-result" id="payment-reject"
-                            value="reject" v-model="reservation.paymentVm.result">
-                        <label class="form-check-label" for="payment-reject">退回重審</label>
+                        <form class="row g-3">
+                            <!-- 審核決策 -->
+                            <div class="col-12">
+                                <label class="form-label">審核結果</label>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment-result" id="payment-approve"
+                                               value="approve" v-model="reservation.paymentVm.result">
+                                        <label class="form-check-label" for="payment-approve">批准收款</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment-result" id="payment-reject"
+                                               value="reject" v-model="reservation.paymentVm.result">
+                                        <label class="form-check-label" for="payment-reject">退回重審</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 退回原因 -->
+                            <div v-if="reservation.paymentVm.result === 'reject'" class="col-12">
+                                <label class="form-label">退回原因 <span class="text-danger">*</span></label>
+                                <textarea class="form-control" v-model="reservation.paymentVm.rejectReason" rows="3"
+                                          placeholder="請填寫退回原因,例如:金額不符、憑證不清楚等" required></textarea>
+                            </div>
+
+                            <!-- 按鈕 -->
+                            <div class="col-12 d-flex gap-2" style="justify-content: flex-end;">
+                                <button type="button" @@click="reservation.submitPaymentReview" class="btn btn-primary">確認送出</button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">取消</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
-
-            <!-- 退回原因 -->
-            <div v-if="reservation.paymentVm.result === 'reject'" class="col-12">
-                <label class="form-label">退回原因 <span class="text-danger">*</span></label>
-                <textarea class="form-control" v-model="reservation.paymentVm.rejectReason" rows="3"
-                    placeholder="請填寫退回原因,例如:金額不符、憑證不清楚等" required></textarea>
-            </div>
-
-            <!-- 按鈕 -->
-            <div class="col-12 d-flex gap-2" style="justify-content: flex-end;">
-                <button type="button" @@click="reservation.submitPaymentReview" class="btn btn-primary">確認送出</button>
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">取消</button>
-            </div>
-        </form>
-    </div>
-</div>

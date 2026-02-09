@@ -3,28 +3,28 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header">
-                <div class="row">
+                <div class="row d-flex align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">format_list_bulleted</span>會議總覽
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
                             <input v-model="conference.query.Start" @@change="conference.onFilterChange" type="date"
-                                class="form-control" placeholder="會議時間(起)">
+                                   class="form-control" placeholder="會議時間(起)">
                             <label>會議時間(起)</label>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
                             <input v-model="conference.query.End" @@change="conference.onFilterChange" type="date"
-                                class="form-control" placeholder="會議時間(訖)">
+                                   class="form-control" placeholder="會議時間(訖)">
                             <label>會議時間(訖)</label>
                         </div>
                     </div>
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
                             <select v-model="conference.query.RoomId" @@change="conference.onFilterChange"
-                                class="form-select">
+                                    class="form-select">
                                 <option value="">請選擇</option>
                                 <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
                             </select>
@@ -34,29 +34,26 @@
                     <div class="col-12 col-lg-auto">
                         <div class="form-floating">
                             <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
-                                class="form-select">
+                                    class="form-select">
                                 <option value="">請選擇</option>
                                 <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
                             </select>
                             <label>發起會議者</label>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-2">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="conference.query.keyword" @@blur="conference.onFilterChange" type="text"
-                                    class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+                    <div class="col-12 col-lg-3">
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="conference.query.keyword"
+                                       placeholder="搜尋關鍵字...">
+                                <span class="material-icons search-icon">search</span>
                             </div>
-                            <button @@click="conference.getList" class="btn btn-secondary"><span
-                                    class="material-icons">search</span></button>
                         </div>
                     </div>
                     <div class="col-auto d-flex align-items-center">
                         <a href="/Conference/Create" class="btn btn-primary">
                             新增會議
                         </a>
-                        @* <button @@click="conference.getVM()" class="btn btn-primary">新增會議</button> *@
                     </div>
                 </div>
             </div>
@@ -80,29 +77,31 @@
                             <td>{{item.OrganizerUnit || '-'}}</td>
                             <td>{{item.Chairman || '-'}}</td>
                             <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
-                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) + ' (' + item.SlotCount + '個時段)' : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM') : '-')}}</td>
-                            <td>{{item.RoomLocation || '-'}}</td>
-                            <td>{{item.CreateByName}}</td>
-                            <td class="hstack gap-3">
-                                <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
-                                    class="btn btn-sm btn-secondary">ZeroTouch</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot v-if="conference.list.length==0">
-                        <tr>
-                            <td colspan="6" class="text-center">查無資料</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) + ' (' +
+                                item.SlotCount + '個時段)' : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' +
+                                item.EndTime.format('HH:MM') : '-')}}</td>
+                                <td>{{item.RoomLocation || '-'}}</td>
+                                <td>{{item.CreateByName}}</td>
+                                <td class="hstack gap-3">
+                                    <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
+                                            class="btn btn-sm btn-secondary">ZeroTouch</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot v-if="conference.list.length==0">
+                            <tr>
+                                <td colspan="6" class="text-center">查無資料</td>
+                            </tr>
+                        </tfoot>
+                    </table>
 
-                <page ref="conferencepage" :per-page="20" :per-page-option="[20,40,60]" @@reload="conference.getList">
-                </page>
+                    <page ref="conferencepage" :per-page="20" :per-page-option="[20,40,60]" @@reload="conference.getList">
+                    </page>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@{
-    ViewBag.IsTemplate = false;
-}
+    @{
+        ViewBag.IsTemplate = false;
+    }

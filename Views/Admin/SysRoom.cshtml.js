@@ -759,11 +759,6 @@ window.$config = {
             return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
         };
 
-        this.clearSearch = () => {
-            room.query.keyword = '';
-            room.getList();
-        };
-
         onMounted(async () => {
             await loadCurrentUser();
             room.page = this.roompage.value;
@@ -809,6 +804,9 @@ window.$config = {
                     }
                 });
             }
+            watch(() => room.query.keyword, () => {
+                room.getList(1);
+            });
 
             // ✅ 監聽「編輯模式」的分院變更
             watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {
