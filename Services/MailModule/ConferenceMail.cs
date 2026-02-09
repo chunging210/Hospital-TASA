@@ -1176,5 +1176,366 @@ namespace TASA.Services.MailModule
 </p>
 ";
         }
+
+        /// <summary>
+        /// 取消預約退費通知 - 通知總務退費
+        /// </summary>
+        public void RefundNotify(Guid conferenceId, int daysUntilReservation, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            Console.WriteLine($"📧 [RefundNotify] 開始處理，ConferenceId: {conferenceId}");
+
+            if (!Enable)
+            {
+                Console.WriteLine("📧 [RefundNotify] 信件服務未啟用，跳過");
+                return;
+            }
+
+            using var db = dbContextFactory.CreateDbContext();
+
+            var reservation = db.Conference
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .FirstOrDefault(c => c.Id == conferenceId);
+
+            if (reservation == null)
+            {
+                Console.WriteLine($"📧 [RefundNotify] 找不到預約資料，ConferenceId: {conferenceId}");
+                return;
+            }
+
+            var applicantName = reservation.CreateByNavigation?.Name ?? "使用者";
+            var applicantEmail = reservation.CreateByNavigation?.Email ?? "-";
+            var departmentId = reservation.DepartmentId;
+
+            var roomSlot = reservation.ConferenceRoomSlots.FirstOrDefault();
+            var room = roomSlot?.Room;
+            var roomName = room != null ? $"{room.Building} {room.Floor} {room.Name}" : "未指定";
+            var slotDate = roomSlot?.SlotDate.ToString("yyyy/MM/dd") ?? "-";
+            var slotTime = reservation.ConferenceRoomSlots.Any()
+                ? $"{reservation.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {reservation.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                : "-";
+            var bookingNo = reservation.Id.ToString().Substring(0, 8);
+            var paymentMethod = reservation.PaymentMethod switch
+            {
+                "transfer" => "銀行匯款",
+                "cash" => "現金繳費",
+                "cost-sharing" => "成本分攤",
+                _ => reservation.PaymentMethod ?? "-"
+            };
+
+            // 找到該分院的總務人員 (ACCOUNTANT 角色)
+            var accountants = db.AuthUser
+                .Include(u => u.AuthRole)
+                .Where(u => u.DeleteAt == null
+                         && u.IsEnabled
+                         && u.DepartmentId == departmentId
+                         && u.AuthRole.Any(r => r.Code == "ACCOUNTANT"))
+                .ToList();
+
+            if (!accountants.Any())
+            {
+                accountants = db.AuthUser
+                    .Include(u => u.AuthRole)
+                    .Where(u => u.DeleteAt == null
+                             && u.IsEnabled
+                             && u.AuthRole.Any(r => r.Code == "ACCOUNTANT"))
+                    .ToList();
+            }
+
+            Console.WriteLine($"📧 [RefundNotify] 找到 {accountants.Count} 位總務人員");
+
+            foreach (var accountant in accountants)
+            {
+                if (string.IsNullOrEmpty(accountant.Email))
+                {
+                    Console.WriteLine($"📧 [RefundNotify] ⚠️ 總務 {accountant.Name} 沒有 Email，跳過");
+                    continue;
+                }
+
+                var mail = NewMailMessage();
+                mail.Subject = $"[預約取消退費通知] - {reservation.Name}";
+                mail.Body = BuildRefundNotifyBody(
+                    accountant.Name,
+                    applicantName,
+                    applicantEmail,
+                    bookingNo,
+                    reservation.Name,
+                    reservation.OrganizerUnit,
+                    reservation.Chairman,
+                    roomName,
+                    slotDate,
+                    slotTime,
+                    reservation.TotalAmount,
+                    paymentMethod,
+                    daysUntilReservation
+                );
+                mail.To.Add(accountant.Email);
+
+                Console.WriteLine($"📧 [RefundNotify] 準備寄信給總務: {accountant.Email}");
+                try
+                {
+                    SendAsync(mail, className, functionName).GetAwaiter().GetResult();
+                    Console.WriteLine($"📧 [RefundNotify] ✅ 信件已發送: {accountant.Email}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"📧 [RefundNotify] ❌ 信件發送失敗: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 建立退費通知郵件內容
+        /// </summary>
+        private string BuildRefundNotifyBody(
+            string accountantName,
+            string applicantName,
+            string applicantEmail,
+            string bookingNo,
+            string conferenceName,
+            string organizerUnit,
+            string chairman,
+            string roomName,
+            string slotDate,
+            string slotTime,
+            int totalAmount,
+            string paymentMethod,
+            int daysUntilReservation)
+        {
+            return $@"
+<h3>親愛的 {accountantName} 您好：</h3>
+
+<p>有一筆<strong style='color: #dc3545;'>已繳費的預約被取消</strong>，請協助辦理退費。</p>
+
+<h4>📋 預約資訊</h4>
+<table style='border-collapse: collapse; width: 100%; max-width: 500px;'>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; width: 120px;'><strong>預約單號</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{bookingNo}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>預約者</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{applicantName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>預約者信箱</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{applicantEmail}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議名稱</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{conferenceName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>承辦單位</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{organizerUnit ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議主席</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{chairman ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議室</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{roomName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約日期</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotDate}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約時間</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotTime}</td>
+    </tr>
+</table>
+
+<div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0;'>
+    <h4 style='margin: 0 0 10px 0; color: #856404;'>💰 退費資訊</h4>
+    <p style='margin: 5px 0;'><strong>已繳金額：</strong><span style='color: #dc3545; font-size: 1.2em;'>NT$ {totalAmount:N0}</span></p>
+    <p style='margin: 5px 0;'><strong>付款方式：</strong>{paymentMethod}</p>
+    <p style='margin: 5px 0;'><strong>取消時距離會議：</strong>{daysUntilReservation} 天</p>
+</div>
+
+<p style='color: #666;'>
+    請依據退費規定計算應退金額，並聯繫預約者辦理退費事宜。
+</p>
+
+<p style='color: #666; margin-top: 30px;'>
+    此為系統自動通知，請盡快處理，謝謝！
+</p>
+";
+        }
+
+        /// <summary>
+        /// 繳費期限提醒 - 通知預約者繳費期限快到了
+        /// </summary>
+        public void PaymentDeadlineReminder(Guid conferenceId, int daysUntilDeadline, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            Console.WriteLine($"📧 [PaymentDeadlineReminder] 開始處理，ConferenceId: {conferenceId}, 剩餘 {daysUntilDeadline} 天");
+
+            if (!Enable)
+            {
+                Console.WriteLine("📧 [PaymentDeadlineReminder] 信件服務未啟用，跳過");
+                return;
+            }
+
+            using var db = dbContextFactory.CreateDbContext();
+
+            var reservation = db.Conference
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .FirstOrDefault(c => c.Id == conferenceId);
+
+            if (reservation == null)
+            {
+                Console.WriteLine($"📧 [PaymentDeadlineReminder] 找不到預約資料，ConferenceId: {conferenceId}");
+                return;
+            }
+
+            var applicantEmail = reservation.CreateByNavigation?.Email;
+            var applicantName = reservation.CreateByNavigation?.Name ?? "使用者";
+
+            if (string.IsNullOrEmpty(applicantEmail))
+            {
+                Console.WriteLine("📧 [PaymentDeadlineReminder] ⚠️ 預約者沒有 Email，跳過");
+                return;
+            }
+
+            var roomSlot = reservation.ConferenceRoomSlots.FirstOrDefault();
+            var room = roomSlot?.Room;
+            var roomName = room != null ? $"{room.Building} {room.Floor} {room.Name}" : "未指定";
+            var slotDate = roomSlot?.SlotDate.ToString("yyyy/MM/dd") ?? "-";
+            var slotTime = reservation.ConferenceRoomSlots.Any()
+                ? $"{reservation.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {reservation.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                : "-";
+            var bookingNo = reservation.Id.ToString().Substring(0, 8);
+            var paymentDeadline = reservation.PaymentDeadline?.ToString("yyyy/MM/dd") ?? "-";
+            var paymentMethod = reservation.PaymentMethod switch
+            {
+                "transfer" => "銀行匯款",
+                "cash" => "現金繳費",
+                "cost-sharing" => "成本分攤",
+                _ => reservation.PaymentMethod ?? "-"
+            };
+
+            var mail = NewMailMessage();
+            mail.Subject = $"[繳費期限提醒] - {reservation.Name}";
+            mail.Body = BuildPaymentDeadlineReminderBody(
+                applicantName,
+                bookingNo,
+                reservation.Name,
+                reservation.OrganizerUnit,
+                reservation.Chairman,
+                roomName,
+                slotDate,
+                slotTime,
+                reservation.TotalAmount,
+                paymentDeadline,
+                paymentMethod,
+                daysUntilDeadline
+            );
+            mail.To.Add(applicantEmail);
+
+            Console.WriteLine($"📧 [PaymentDeadlineReminder] 準備寄信給預約者: {applicantEmail}");
+            try
+            {
+                SendAsync(mail, className, functionName).GetAwaiter().GetResult();
+                Console.WriteLine($"📧 [PaymentDeadlineReminder] ✅ 信件已發送: {applicantEmail}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"📧 [PaymentDeadlineReminder] ❌ 信件發送失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 建立繳費期限提醒郵件內容
+        /// </summary>
+        private string BuildPaymentDeadlineReminderBody(
+            string applicantName,
+            string bookingNo,
+            string conferenceName,
+            string organizerUnit,
+            string chairman,
+            string roomName,
+            string slotDate,
+            string slotTime,
+            int totalAmount,
+            string paymentDeadline,
+            string paymentMethod,
+            int daysUntilDeadline)
+        {
+            var urgencyText = daysUntilDeadline switch
+            {
+                0 => "今天是繳費期限的最後一天",
+                1 => "繳費期限只剩 1 天",
+                _ => $"繳費期限只剩 {daysUntilDeadline} 天"
+            };
+
+            var urgencyColor = daysUntilDeadline <= 1 ? "#dc3545" : "#ffc107";
+
+            return $@"
+<h3>親愛的 {applicantName} 您好：</h3>
+
+<div style='background-color: {(daysUntilDeadline <= 1 ? "#f8d7da" : "#fff3cd")}; border-left: 4px solid {urgencyColor}; padding: 15px; margin: 15px 0;'>
+    <h4 style='margin: 0; color: {(daysUntilDeadline <= 1 ? "#721c24" : "#856404")};'>⚠️ {urgencyText}！</h4>
+    <p style='margin: 10px 0 0 0;'>請盡快完成繳費，逾期預約將自動取消。</p>
+</div>
+
+<h4>📋 預約資訊</h4>
+<table style='border-collapse: collapse; width: 100%; max-width: 500px;'>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; width: 120px;'><strong>預約單號</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{bookingNo}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議名稱</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{conferenceName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>承辦單位</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{organizerUnit ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議主席</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{chairman ?? "-"}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議室</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{roomName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>預約日期</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotDate}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>預約時間</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotTime}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>應繳金額</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'><strong style='color: #dc3545;'>NT$ {totalAmount:N0}</strong></td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>繳費期限</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'><strong style='color: #dc3545;'>{paymentDeadline}</strong></td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>付款方式</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{paymentMethod}</td>
+    </tr>
+</table>
+
+<p style='margin-top: 20px;'>
+    <a href='{BaseUrl}ReservationOverview' style='display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>
+        立即前往繳費
+    </a>
+</p>
+
+<p style='color: #666; margin-top: 30px;'>
+    如有任何問題，請聯繫場地管理單位。
+</p>
+";
+        }
     }
 }

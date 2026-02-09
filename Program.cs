@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TASA.Models;
 using TASA.Program;
 using TASA.Services;
+using TASA.Services.ConferenceModule;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddDbContext<TASAContext>(options =>
 
 builder.Services.AddLazyResolution();
 builder.Services.AddHostedService<ReservationAutoManagementService>();
+builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 
 ServiceCollectionExtension.AddImplementationScoped<IService>(builder.Services);
 ServiceCollectionServiceExtensions.AddScoped<ServiceWrapper>(builder.Services);

@@ -559,6 +559,19 @@ namespace TASA.Services.ConferenceModule
             if (conference.CreateBy != userId)
                 throw new HttpException("您沒有權限取消此預約");
 
+            int daysUntilReservation = 0;
+            var earliestSlot = conference.ConferenceRoomSlots
+                .OrderBy(s => s.SlotDate)
+                .FirstOrDefault();
+
+            if (earliestSlot != null)
+            {
+                daysUntilReservation = (earliestSlot.SlotDate.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days;
+            }
+
+            // 記錄是否已繳費（用於後續寄送退費通知）
+            var hasPaid = conference.PaymentStatus == PaymentStatus.Paid;
+
             switch (conference.ReservationStatus)
             {
                 case ReservationStatus.PendingApproval:
@@ -566,17 +579,8 @@ namespace TASA.Services.ConferenceModule
                     break;
 
                 case ReservationStatus.Confirmed:
-                    var earliestSlot = conference.ConferenceRoomSlots
-                        .OrderBy(s => s.SlotDate)
-                        .FirstOrDefault();
-
-                    if (earliestSlot != null)
-                    {
-                        var daysUntilReservation = (earliestSlot.SlotDate.ToDateTime(TimeOnly.MinValue) - DateTime.Today).Days;
-
-                        if (daysUntilReservation < 3)
-                            throw new HttpException("距離使用不足 3 天,無法取消");
-                    }
+                    if (daysUntilReservation < 3)
+                        throw new HttpException("距離使用不足 3 天,無法取消");
                     break;
 
                 case ReservationStatus.Rejected:
@@ -607,6 +611,12 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("預約取消",
                 $"使用者取消預約 - {conference.Name} ({conference.Id})");
+
+            // 如果已繳費，通知總務退費
+            if (hasPaid)
+            {
+                service.ConferenceMail.RefundNotify(conferenceId, daysUntilReservation);
+            }
         }
 
         /// <summary>

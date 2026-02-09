@@ -147,6 +147,12 @@ public partial class Conference
     public DateTime? PaymentDeadline { get; set; }
 
     /// <summary>
+    /// 繳費提醒發送時間
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? PaymentReminderSentAt { get; set; }
+
+    /// <summary>
     /// 報到時間
     /// </summary>
     [Column(TypeName = "datetime")]
