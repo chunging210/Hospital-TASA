@@ -86,20 +86,21 @@ namespace TASA.Services.AuthModule
         {
             if (user?.IsEnabled == false)
             {
+                var reason = user.IsApproved ? "帳號已停用" : "帳號尚在審核中，請等待管理員核准";
                 var deviceInfo = GetDeviceInfo();
-                var failureInfo = new 
-                { 
-                    UserName = user.Account, 
+                var failureInfo = new
+                {
+                    UserName = user.Account,
                     LoginMethod = GetLoginMethod(),
-                    IsSuccess = false, 
-                    FailureReason = "帳號已停用",
+                    IsSuccess = false,
+                    FailureReason = reason,
                     ClientIp = GetClientIp(),
                     DeviceInfo = deviceInfo.device,
                     BrowserInfo = deviceInfo.browser,
                     Timestamp = DateTime.Now
                 };
                 _ = service.LogServices.LogAsync("login_failed", JsonConvert.SerializeObject(failureInfo), user.Id, user.DepartmentId);
-                throw new HttpException("帳號已停用")
+                throw new HttpException(reason)
                 {
                     StatusCode = System.Net.HttpStatusCode.Unauthorized
                 };

@@ -80,7 +80,7 @@ window.$config = {
                     location.href = '/api/auth/redirection';
                 })
                 .catch(error => {
-                    addAlert('登入失敗', { type: 'danger', click: error.download });
+                    addAlert(error.details || '登入失敗', { type: 'danger', click: error.download });
                     this.refreshCaptcha();
                 });
         }

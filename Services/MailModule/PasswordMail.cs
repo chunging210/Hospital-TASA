@@ -77,6 +77,62 @@ namespace TASA.Services.MailModule
         }
 
         /// <summary>
+        /// 新使用者註冊通知信（寄給主任/管理者）
+        /// </summary>
+        public void RegisterNotify(string userName, string userEmail, string departmentName, List<string> directorEmails, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            var validEmails = directorEmails
+                .Where(e => !string.IsNullOrWhiteSpace(e) && e.Contains('@'))
+                .ToList();
+
+            if (!Enable || validEmails.Count == 0)
+            {
+                return;
+            }
+
+            var mail = NewMailMessage();
+            mail.Subject = "新使用者註冊通知";
+            mail.Body = $@"
+<p>您好：</p>
+<p>有新使用者註冊，請至後台審核。</p>
+<p>姓名：{userName}</p>
+<p>Email：{userEmail}</p>
+<p>單位：{departmentName}</p>
+<p>請登入管理後台，前往「使用者總覽」進行審核。</p>";
+            foreach (var email in validEmails)
+            {
+                mail.To.Add(email);
+            }
+            Task.Run(async () =>
+            {
+                await SendAsync(mail, className, functionName);
+            });
+        }
+
+        /// <summary>
+        /// 帳號審核通過通知信（寄給使用者）
+        /// </summary>
+        public void AccountApproved(string email, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            if (!Enable)
+            {
+                return;
+            }
+
+            var mail = NewMailMessage();
+            mail.Subject = "帳號審核通過通知";
+            mail.Body = $@"
+<p>您好：</p>
+<p>您註冊的台北榮總會議預約系統已通過審核，現在可以登入系統。</p>
+<p><a href='{BaseUrl}'>點此前往登入</a></p>";
+            mail.To.Add(email);
+            Task.Run(async () =>
+            {
+                await SendAsync(mail, className, functionName);
+            });
+        }
+
+        /// <summary>
         /// 密碼變更通知信
         /// </summary>
         public void PasswordChange(string email, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")

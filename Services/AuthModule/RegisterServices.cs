@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
+using TASA.Services.AuthUserModule;
 using System.Net;
 using Newtonsoft.Json;
 
@@ -233,6 +234,30 @@ namespace TASA.Services.AuthModule
                 Timestamp = DateTime.Now
             };
             _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo));
+
+            // 7️⃣ 寄信通知分院主任（DIRECTOR），沒有則寄給 ADMIN
+            var directorEmails = db.AuthUser
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => x.IsEnabled && x.DepartmentId == department.Id)
+                .Where(x => x.AuthRole.Any(r => r.Code == AuthRoleServices.Director))
+                .Select(x => x.Email)
+                .Where(x => !string.IsNullOrEmpty(x))
+                .ToList();
+
+            if (directorEmails.Count == 0)
+            {
+                directorEmails = db.AuthUser
+                    .AsNoTracking()
+                    .WhereNotDeleted()
+                    .Where(x => x.IsEnabled)
+                    .Where(x => x.AuthRole.Any(r => r.Code == AuthRoleServices.Admin))
+                    .Select(x => x.Email)
+                    .Where(x => !string.IsNullOrEmpty(x))
+                    .ToList();
+            }
+
+            service.PasswordMail.RegisterNotify(user.Name, user.Email, department.Name, directorEmails);
         }
 
     }

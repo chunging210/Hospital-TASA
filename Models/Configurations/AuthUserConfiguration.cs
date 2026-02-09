@@ -24,6 +24,7 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.Email).HasComment("電子信箱	");
             entity.Property(e => e.Id).HasComment("使用者ID	");
             entity.Property(e => e.IsEnabled).HasComment("啟用");
+            entity.Property(e => e.IsApproved).HasDefaultValue(false).HasComment("已審核");
             entity.Property(e => e.Name).HasComment("名稱");
             entity.Property(e => e.Password).HasComment("密碼");
             entity.Property(e => e.PasswordHash).HasComment("密碼雜湊");

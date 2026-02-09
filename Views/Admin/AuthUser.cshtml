@@ -41,7 +41,7 @@
                             <th>姓名</th>
                             <th>帳號</th>
                             <th>Email</th>
-                            <th>啟用</th>
+                            <th>狀態</th>
                             <th>建立日期</th>
                             <th>操作</th>
                         </tr>
@@ -52,7 +52,11 @@
                             <td>{{item.Name}}</td>
                             <td>{{item.Account}}</td>
                             <td>{{item.Email}}</td>
-                            <td>{{item.IsEnabled?'V':''}}</td>
+                            <td>
+                                <span v-if="item.IsEnabled" class="badge bg-success">啟用</span>
+                                <span v-else-if="!item.IsApproved" class="badge bg-warning text-dark">待審核</span>
+                                <span v-else class="badge bg-danger">停用</span>
+                            </td>
                             <td>{{item.CreateAt.format()}}</td>
                             <td>
                                 <button @@click="authuser.getVM(item.Id)" class="btn btn-sm btn-secondary">編輯</button>

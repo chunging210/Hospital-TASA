@@ -82,6 +82,11 @@ public partial class AuthUser
     public bool IsEnabled { get; set; }
 
     /// <summary>
+    /// 已審核
+    /// </summary>
+    public bool IsApproved { get; set; }
+
+    /// <summary>
     /// 建立時間	
     /// </summary>
     [Column(TypeName = "datetime")]

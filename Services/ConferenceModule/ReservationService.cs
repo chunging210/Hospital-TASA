@@ -163,7 +163,8 @@ namespace TASA.Services.ConferenceModule
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
-                    x.CreateByNavigation.Name.Contains(query.Keyword!))
+                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
+                    x.Id.ToString().StartsWith(query.Keyword!))
                 .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
                 .ThenByDescending(x => x.CreateAt)
                 .Select(x => new
@@ -261,7 +262,8 @@ namespace TASA.Services.ConferenceModule
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
-                    x.CreateByNavigation.Name.Contains(query.Keyword!))
+                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
+                    x.Id.ToString().StartsWith(query.Keyword!))
                 .OrderByDescending(x => x.CreateAt)
                 .Select(x => new
                 {
@@ -367,6 +369,9 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("預約系統",
                 $"預約建立 - {conference.Name} ({conference.Id})，日期: {slotDate:yyyy/MM/dd}，共 {requestedSlots.Count} 個時段");
+
+            // 寄送預約通知信件
+            service.ConferenceMail.ReservationCreated(conferenceId);
 
             return conferenceId;
         }
@@ -492,6 +497,9 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("預約審核",
                 $"審核通過 - {conference.Name} ({conference.Id}), 折扣: {vm.DiscountAmount ?? 0}");
+
+            // 寄送審核通過通知
+            service.ConferenceMail.ReservationApproved(vm.ConferenceId, vm.DiscountAmount, vm.DiscountReason);
         }
 
         /// <summary>
@@ -532,6 +540,9 @@ namespace TASA.Services.ConferenceModule
 
             _ = service.LogServices.LogAsync("預約拒絕",
                 $"拒絕預約 - {conference.Name} ({conference.Id}) 原因: {vm.Reason}");
+
+            // 寄送審核拒絕通知
+            service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
         }
 
         /// <summary>
