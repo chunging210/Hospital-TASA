@@ -24,7 +24,7 @@
                                 @* <div class="col-xl-2 col-sm-10">
                                     <input type="text" class="form-control" v-model="dateRange" placeholder="選擇日期範圍" />
                                 </div> *@
-                                <template v-if="activeTab === 'all' && isAdmin">
+                                <template v-if="activeTab === 'all' && canViewAllReservations">
                                     <div class="col-xl-2 col-sm-12">
                                         <select class="form-select" v-model.number="approvalStatusFilter">
                                             <option value="">審核狀態</option>
@@ -64,7 +64,7 @@
                         <div class="card-body">
                             <!-- Tabs -->
                             <ul class="nav nav-tabs" role="tablist">
-                                <li class="nav-item" role="presentation" v-if="isAdmin">
+                                <li class="nav-item" role="presentation" v-if="canViewAllReservations">
                                     <button class="nav-link" :class="{ active: activeTab === 'all' }"
                                         @@click="switchTab('all')" type="button">
                                         所有預約
@@ -82,7 +82,7 @@
                                 <!-- Tab Content -->
                                 <div class="tab-content">
                                     <!-- 所有預約 Tab -->
-                                    <div v-show="activeTab === 'all' && isAdmin">
+                                    <div v-show="activeTab === 'all' && canViewAllReservations">
                                         <table class="table align-middle table-nowrap mb-0 table-hover">
                                             <thead class="table-light">
                                                 <tr>
@@ -211,7 +211,17 @@
         </div>
        
         <div class="offcanvas-body" v-if="selectedItem">
-            <!-- ✅ 新增:操作按鈕區 -->
+            <!-- ✅ 管理員操作按鈕區（所有預約） -->
+            <div v-if="activeTab === 'all' && canAdminCancel(selectedItem)" class="border-top pt-3 mt-4">
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-danger"
+                        @@click="confirmAdminCancel(selectedItem)">
+                        <i class="mdi mdi-close-circle me-1"></i> 取消預約
+                    </button>
+                </div>
+            </div>
+
+            <!-- ✅ 個人操作按鈕區（個人預約） -->
             <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="border-top pt-3 mt-4">
                 <!-- 操作提示 -->
                 <div v-if="getActionHint(selectedItem)" class="alert alert-info py-2 px-3 mb-3">
@@ -272,6 +282,15 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 會議內容 -->
+                    <div class="col-md-12" v-if="selectedItem.description">
+                        <div class="row">
+                            <div class="col-md-12 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">會議內容</span>
+                                <label class="form-label fw-bold" style="white-space: pre-wrap;">{{ selectedItem.description }}</label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="col-12">
                         <h5 class="d-flex align-items-center text-primary border-bottom">
                             <span class="material-icons icons">access_time</span>
@@ -298,6 +317,51 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 加租項目（設備、攤位、附件） -->
+                    <template v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0 || selectedItem.attachments?.length > 0">
+                        <div class="col-12">
+                            <h5 class="d-flex align-items-center text-primary border-bottom">
+                                <span class="material-icons icons">inventory_2</span>
+                                加租項目與附件
+                            </h5>
+                        </div>
+                        <!-- 加租設備 + 攤位加租 (同一行) -->
+                        <div class="col-md-12" v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0">
+                            <div class="row">
+                                <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.equipments?.length > 0">
+                                    <span class="form-label text-secondary font-size-18">加租設備</span>
+                                    <label class="form-label fw-bold">{{ selectedItem.equipments.join('、') }}</label>
+                                </div>
+                                <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.booths?.length > 0">
+                                    <span class="form-label text-secondary font-size-18">攤位加租</span>
+                                    <label class="form-label fw-bold">{{ selectedItem.booths.join('、') }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 議程表 + 會議文件 (同一行) -->
+                        <div class="col-md-12" v-if="selectedItem.attachments?.filter(a => a.Type === 'agenda').length > 0 || selectedItem.attachments?.filter(a => a.Type === 'document').length > 0">
+                            <div class="row">
+                                <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.attachments?.filter(a => a.Type === 'agenda').length > 0">
+                                    <span class="form-label text-secondary font-size-18">議程表</span>
+                                    <div>
+                                        <template v-for="(att, idx) in selectedItem.attachments.filter(a => a.Type === 'agenda')" :key="att.Id">
+                                            <a :href="att.FilePath" target="_blank" class="me-2">附件{{ idx + 1 }}</a>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.attachments?.filter(a => a.Type === 'document').length > 0">
+                                    <span class="form-label text-secondary font-size-18">會議文件</span>
+                                    <div>
+                                        <template v-for="(att, idx) in selectedItem.attachments.filter(a => a.Type === 'document')" :key="att.Id">
+                                            <a :href="att.FilePath" target="_blank" class="me-2">附件{{ idx + 1 }}</a>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
                     <div class="col-12">
                         <h5 class="d-flex align-items-center text-primary border-bottom">
                             <span class="material-icons icons">local_atm</span>
@@ -329,6 +393,20 @@
                             </div>
                         </div>
                     </div>
+                    <!-- ✅ 折扣資訊 -->
+                    <div class="col-md-12" v-if="selectedItem.discountAmount">
+                        <div class="alert alert-success py-2 px-3">
+                            <div class="d-flex align-items-center">
+                                <i class="mdi mdi-sale me-2"></i>
+                                <div>
+                                    <strong>已享有折扣：NT${{ selectedItem.discountAmount?.toLocaleString() }}</strong>
+                                    <span v-if="selectedItem.discountReason" class="ms-2 text-muted">
+                                        （{{ selectedItem.discountReason }}）
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <template v-if="selectedItem.openedFrom === 'personal' && 
                         ((selectedItem.approvalStatus === '待繳費' && selectedItem.paymentStatus === '未付款') || 
                         selectedItem.paymentStatus === '待重新上傳')">
@@ -343,12 +421,12 @@
 
                             <div class="mb-3">
                                 <span class="form-label text-secondary font-size-18">
-                                    {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單(影像或 PDF)' }}
+                                    {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單' }}
                                     <span class="text-danger">*</span>
                                 </span>
-                                <input class="form-control fw-bold" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png,.pdf"
+                                <input class="form-control fw-bold" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png"
                                        multiple required>
-                                <div class="form-text">可上傳多檔;支援 JPG / PNG / PDF。</div>
+                                <div class="form-text">可上傳多檔;支援 JPG / PNG。</div>
                             </div>
 
                             <div class="mb-3">
@@ -372,7 +450,8 @@
                                         轉帳末五碼 <span class="text-danger">*</span>
                                     </span>
                                     <input type="text" class="form-control fw-bold" v-model="paymentForm.last5" inputmode="numeric"
-                                           maxlength="5" placeholder="例如：12345" required>
+                                           maxlength="5" placeholder="例如：12345" required
+                                           @@input="paymentForm.last5 = $event.target.value.replace(/[^0-9]/g, '')">
                                     <div class="form-text">請輸入 5 碼數字。</div>
                                 </div>
                                 <div class="col-6">

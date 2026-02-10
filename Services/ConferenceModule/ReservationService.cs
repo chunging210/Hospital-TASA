@@ -97,6 +97,49 @@ namespace TASA.Services.ConferenceModule
             public SlotStatus SlotStatus { get; set; }
         }
 
+        /// <summary>
+        /// 預約總覽詳情 DTO（用於查看詳情，非編輯）
+        /// </summary>
+        public class ReservationDetailViewVM
+        {
+            public Guid Id { get; set; }
+            public string BookingNo { get; set; }
+            public string ApplicantName { get; set; }
+            public string ConferenceName { get; set; }
+            public string? Description { get; set; }  // 會議內容
+            public string OrganizerUnit { get; set; }
+            public string Chairman { get; set; }
+            public string Date { get; set; }
+            public string Time { get; set; }
+            public string RoomName { get; set; }
+            public int TotalAmount { get; set; }
+            public string Status { get; set; }
+            public string PaymentStatusText { get; set; }
+            public string? PaymentDeadline { get; set; }
+            public string? PaymentMethod { get; set; }
+            public string? DepartmentCode { get; set; }
+            public string? RejectReason { get; set; }
+            public string? PaymentRejectReason { get; set; }
+
+            // ✅ 折扣資訊
+            public int? DiscountAmount { get; set; }
+            public string? DiscountReason { get; set; }
+
+            // 新增欄位
+            public List<string> Equipments { get; set; } = new();  // 加租設備名稱列表
+            public List<string> Booths { get; set; } = new();  // 攤位加租名稱列表
+            public List<AttachmentViewVM> Attachments { get; set; } = new();  // 附件列表
+        }
+
+        public class AttachmentViewVM
+        {
+            public Guid Id { get; set; }
+            public string Type { get; set; }  // "agenda" 或 "document"
+            public string TypeText { get; set; }  // "議程表" 或 "會議文件"
+            public string FileName { get; set; }
+            public string FilePath { get; set; }
+        }
+
         public class CancelReservationVM
         {
             public Guid ReservationId { get; set; }
@@ -129,15 +172,18 @@ namespace TASA.Services.ConferenceModule
             if (userId.HasValue)
     {
         var userPermissions = service.AuthRoleServices.GetUserPermissions(userId.Value);
-        
-        // 如果使用者是會議室管理者，但不是 Admin/Director
-        if (userPermissions.IsRoomManager && 
-            !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+
+        // ✅ Admin / Director / Accountant 可以看到所有預約
+        var canViewAll = userPermissions.Roles.Any(r =>
+            r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR" || r == "ACCOUNTANT");
+
+        // 如果使用者是會議室管理者，但不是可看全部的角色
+        if (userPermissions.IsRoomManager && !canViewAll)
         {
             var managedRoomIds = userPermissions.ManagedRoomIds;
-            
+
             // ✅ 只顯示該使用者管理的會議室的預約
-            queryable = queryable.Where(c => 
+            queryable = queryable.Where(c =>
                 c.ConferenceRoomSlots.Any(s => managedRoomIds.Contains(s.RoomId))
             );
         }
@@ -478,8 +524,11 @@ namespace TASA.Services.ConferenceModule
             conference.PaymentDeadline = DateTime.Now.AddDays(deadlineDays);
             conference.UpdateAt = DateTime.Now;
 
+            // ✅ 存儲折扣資訊
             if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
             {
+                conference.DiscountAmount = vm.DiscountAmount.Value;
+                conference.DiscountReason = vm.DiscountReason;
                 conference.TotalAmount = Math.Max(0, conference.TotalAmount - vm.DiscountAmount.Value);
             }
 
@@ -556,9 +605,6 @@ namespace TASA.Services.ConferenceModule
                 .Include(c => c.ConferenceEquipments)
                 .FirstOrDefault(x => x.Id == conferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
-
-            if (conference.CreateBy != userId)
-                throw new HttpException("您沒有權限取消此預約");
 
             int daysUntilReservation = 0;
             var earliestSlot = conference.ConferenceRoomSlots
@@ -749,6 +795,101 @@ namespace TASA.Services.ConferenceModule
                 EquipmentCost = conference.EquipmentCost,
                 BoothCost = conference.BoothCost,
                 TotalAmount = conference.TotalAmount,
+                Attachments = attachments
+            };
+        }
+
+        /// <summary>
+        /// 取得預約詳情（用於查看，非編輯）
+        /// </summary>
+        public ReservationDetailViewVM GetReservationDetailView(Guid conferenceId)
+        {
+            var conference = db.Conference
+                .AsNoTracking()
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ConferencePaymentProofs.Where(p => p.DeleteAt == null))
+                .Where(c => c.Id == conferenceId && !c.DeleteAt.HasValue)
+                .FirstOrDefault();
+
+            if (conference == null)
+                throw new HttpException("找不到預約");
+
+            // 取得設備名稱（排除攤位，攤位 EquipmentType = "9"）
+            // 使用快照欄位 EquipmentName
+            var equipments = conference.ConferenceEquipments
+                .Where(e => e.EquipmentType != "9")
+                .Select(e => e.EquipmentName)
+                .Distinct()
+                .ToList();
+
+            // 取得攤位名稱
+            var booths = conference.ConferenceEquipments
+                .Where(e => e.EquipmentType == "9")
+                .Select(e => e.EquipmentName)
+                .Distinct()
+                .ToList();
+
+            // 取得附件
+            var attachments = db.ConferenceAttachment
+                .Where(a => a.ConferenceId == conferenceId && a.DeleteAt == null)
+                .Select(a => new AttachmentViewVM
+                {
+                    Id = a.Id,
+                    Type = a.AttachmentType == AttachmentType.Agenda ? "agenda" : "document",
+                    TypeText = a.AttachmentType == AttachmentType.Agenda ? "議程表" : "會議文件",
+                    FileName = a.FileName,
+                    FilePath = a.FilePath
+                })
+                .ToList();
+
+            // 取得最新的付款憑證拒絕原因
+            var latestProof = conference.ConferencePaymentProofs
+                .OrderByDescending(p => p.UploadedAt)
+                .FirstOrDefault();
+
+            return new ReservationDetailViewVM
+            {
+                Id = conference.Id,
+                BookingNo = conference.Id.ToString().Substring(0, 8),
+                ApplicantName = conference.CreateByNavigation?.Name ?? "-",
+                ConferenceName = conference.Name,
+                Description = conference.Description,
+                OrganizerUnit = conference.OrganizerUnit,
+                Chairman = conference.Chairman,
+                Date = conference.ConferenceRoomSlots.Any()
+                    ? conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                    : "-",
+                Time = conference.ConferenceRoomSlots.Any()
+                    ? $"{conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                      $"{conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                    : "-",
+                RoomName = conference.ConferenceRoomSlots
+                    .Select(s => s.Room?.Name)
+                    .FirstOrDefault() ?? "-",
+                TotalAmount = conference.TotalAmount,
+                Status = conference.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
+                         conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
+                         conference.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
+                         conference.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
+                         conference.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
+                PaymentStatusText = conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                                   conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+                                   conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
+                                   conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
+                PaymentDeadline = conference.PaymentDeadline.HasValue
+                    ? conference.PaymentDeadline.Value.ToString("yyyy/MM/dd")
+                    : null,
+                PaymentMethod = conference.PaymentMethod,
+                DepartmentCode = conference.DepartmentCode,
+                RejectReason = conference.RejectReason,
+                PaymentRejectReason = latestProof?.RejectReason,
+                DiscountAmount = conference.DiscountAmount,      // ✅ 折扣金額
+                DiscountReason = conference.DiscountReason,      // ✅ 折扣原因
+                Equipments = equipments,
+                Booths = booths,
                 Attachments = attachments
             };
         }

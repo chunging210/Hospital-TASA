@@ -224,6 +224,18 @@ public partial class Conference
     public int TotalAmount { get; set; } = 0;
 
     /// <summary>
+    /// 折扣金額
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int? DiscountAmount { get; set; }
+
+    /// <summary>
+    /// 折扣原因
+    /// </summary>
+    [Column(TypeName = "text")]
+    public string? DiscountReason { get; set; }
+
+    /// <summary>
     /// 建立時間
     /// </summary>
     [Column(TypeName = "datetime")]

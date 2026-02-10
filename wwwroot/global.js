@@ -74,6 +74,7 @@ const global = new function () {
             // ===== 預約總覽 (查詢) =====
             list: GET,
             mylist: GET,
+            detailview: (id) => fetch(`/api/reservations/detailview/${id}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
 
             // ===== 權限 =====
             permissions: GET,

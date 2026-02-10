@@ -379,7 +379,8 @@ const reservation = new function () {
             await global.api.reservations.approve({
                 body: {
                     conferenceId: this.currentReview.id,
-                    discountAmount: this.pricing.discount
+                    discountAmount: this.pricing.discount,
+                    discountReason: this.vm.discountReason || null  // ✅ 加入折扣原因
                 }
             });
 

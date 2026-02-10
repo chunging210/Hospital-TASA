@@ -196,6 +196,16 @@ namespace TASA.Controllers.API
         }
 
         /// <summary>
+        /// 取得預約詳情（用於查看，包含設備、附件等完整資訊）
+        /// </summary>
+        [HttpGet("detailview/{id}")]
+        public IActionResult GetReservationDetailView(Guid id)
+        {
+            var reservation = service.ReservationService.GetReservationDetailView(id);
+            return Ok(reservation);
+        }
+
+        /// <summary>
         /// ✅ 新增：更新預約
         /// </summary>
         [HttpPost("update")]

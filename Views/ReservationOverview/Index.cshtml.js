@@ -11,9 +11,18 @@ window.$config = {
 
         /* ========= 基本資料 ========= */
         this.isAdmin = ref(false);
+        this.isDirector = ref(false);      // ✅ 主任
+        this.isAccountant = ref(false);    // ✅ 總務
+        this.isRoomManager = ref(false);   // ✅ 房間管理者 / 代理人
         this.currentUserId = ref('');
         this.activeTab = ref('personal');
         this.minAdvanceDays = ref(7);  // ✅ 從設定檔讀取,預設7天
+
+        // ✅ 可以查看「所有預約」的權限（管理員、主任、總務、房間管理者、代理人）
+        this.canViewAllReservations = computed(() => {
+            return this.isAdmin.value || this.isDirector.value ||
+                   this.isAccountant.value || this.isRoomManager.value;
+        });
 
         /* ========= 搜尋與篩選 ========= */
         this.searchQuery = ref('');
@@ -125,11 +134,15 @@ window.$config = {
 
                 this.currentUserId.value = user.Id;
                 this.isAdmin.value = user.IsAdmin || false;
+                this.isDirector.value = user.IsDirector || false;
+                this.isAccountant.value = user.IsAccountant || false;
+                this.isRoomManager.value = user.IsRoomManager || false;
 
-                if (!this.isAdmin.value) {
-                    this.activeTab.value = 'personal';
-                } else {
+                // ✅ 可以看「所有預約」的人預設顯示 all，否則顯示 personal
+                if (this.canViewAllReservations.value) {
                     this.activeTab.value = 'all';
+                } else {
+                    this.activeTab.value = 'personal';
                 }
 
             } catch (err) {
@@ -396,34 +409,53 @@ window.$config = {
 
         /* ========= 詳情相關方法 ========= */
         this.openDetailDrawer = async (item) => {
-            this.selectedItem.value = {
-                id: item.id,
-                reservationNo: item.reservationNo,
-                reserverName: item.reserverName,
-                conferenceName: item.conferenceName,
-                organizerUnit: item.organizerUnit,
-                chairman: item.chairman,
-                reservationDate: item.reservationDate,
-                timeSlot: item.timeSlot,
-                roomName: item.roomName,
-                paymentDeadline: item.paymentDeadline,
-                paymentMethod: item.paymentMethod,
-                amount: item.amount,
-                costCenter: item.costCenter,
-                paymentStatus: item.paymentStatus,
-                approvalStatus: item.approvalStatus,
-                rejectReason: item.rejectReason || '',
-                paymentRejectReason: item.paymentRejectReason || '',
+            try {
+                // 調用 API 獲取完整詳情（包含設備、附件等）
+                const response = await global.api.reservations.detailview(item.id);
+                const detail = response.data;
 
-                openedFrom: this.activeTab.value
-            };
+                this.selectedItem.value = {
+                    id: detail.Id,
+                    reservationNo: detail.BookingNo,
+                    reserverName: detail.ApplicantName,
+                    conferenceName: detail.ConferenceName,
+                    description: detail.Description || '',  // 會議內容
+                    organizerUnit: detail.OrganizerUnit,
+                    chairman: detail.Chairman,
+                    reservationDate: detail.Date,
+                    timeSlot: detail.Time,
+                    roomName: detail.RoomName,
+                    paymentDeadline: detail.PaymentDeadline || '-',
+                    paymentMethod: detail.PaymentMethod,
+                    amount: detail.TotalAmount,
+                    costCenter: detail.DepartmentCode || '-',
+                    paymentStatus: detail.PaymentStatusText,
+                    approvalStatus: detail.Status,
+                    rejectReason: detail.RejectReason || '',
+                    paymentRejectReason: detail.PaymentRejectReason || '',
 
-            // 如果是匯款,預填金額
-            if (this.isTransferPayment(item.paymentMethod)) {
-                this.paymentForm.amount = item.amount;
+                    // 新增欄位
+                    equipments: detail.Equipments || [],  // 加租設備
+                    booths: detail.Booths || [],  // 攤位加租
+                    attachments: detail.Attachments || [],  // 附件
+
+                    // ✅ 折扣資訊
+                    discountAmount: detail.DiscountAmount || null,
+                    discountReason: detail.DiscountReason || '',
+
+                    openedFrom: this.activeTab.value
+                };
+
+                // 如果是匯款,預填金額
+                if (this.isTransferPayment(detail.PaymentMethod)) {
+                    this.paymentForm.amount = detail.TotalAmount;
+                }
+
+                this.bookingDrawerInstance.value?.show();
+            } catch (err) {
+                console.error('❌ 載入預約詳情失敗:', err);
+                addAlert('載入預約詳情失敗', { type: 'danger' });
             }
-
-            this.bookingDrawerInstance.value?.show();
         };
 
         /* ========= ✅ 權限控制方法 ========= */
@@ -579,6 +611,35 @@ window.$config = {
             } catch (err) {
                 console.error('❌ 刪除預約失敗:', err);
                 addAlert('刪除預約失敗', { type: 'danger' });
+            }
+        };
+
+        /* ========= ✅ 管理員操作功能 ========= */
+
+        // 管理員可以取消的狀態（排除已取消、審核拒絕）
+        this.canAdminCancel = (item) => {
+            if (!item) return false;
+            return !['已取消', '審核拒絕'].includes(item.approvalStatus);
+        };
+
+        // 管理員確認取消預約
+        this.confirmAdminCancel = async (item) => {
+            const confirmText = `確定要取消「${item.reserverName}」的預約嗎？\n\n預約單號：${item.reservationNo}\n會議名稱：${item.conferenceName}`;
+
+            if (!confirm(confirmText)) return;
+
+            try {
+                await global.api.reservations.cancel({
+                    body: { reservationId: item.id }
+                });
+
+                addAlert('預約已取消', { type: 'success' });
+                this.bookingDrawerInstance.value?.hide();
+                await this.loadAllReservations(true);
+
+            } catch (err) {
+                console.error('❌ 取消預約失敗:', err);
+                addAlert('取消預約失敗', { type: 'danger' });
             }
         };
 
