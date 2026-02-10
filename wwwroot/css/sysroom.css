@@ -991,6 +991,25 @@ body {
     white-space: nowrap;
 }
 
+.pricing-item-period-prices {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.pricing-item-period-prices .pricing-item-period-price {
+    margin-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pricing-item-period-prices .pricing-item-period-price small {
+    font-size: 11px;
+    font-weight: normal;
+}
+
 .pricing-item-hourly {
     display: flex;
     justify-content: space-between;

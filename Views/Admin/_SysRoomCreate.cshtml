@@ -149,16 +149,22 @@
                                     </div>
                                     <input v-model="slot.Name" type="text"
                                         class="form-control form-control-sm name-input" placeholder="時段名稱">
-                                    <input v-model="slot.StartTime" type="time"
-                                        class="form-control form-control-sm time-input">
+                                    <select v-model="slot.StartTime" class="form-select form-select-sm time-input">
+                                        <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                    </select>
                                     <span>-</span>
-                                    <input v-model="slot.EndTime" type="time"
-                                        class="form-control form-control-sm time-input">
+                                    <select v-model="slot.EndTime" class="form-select form-select-sm time-input">
+                                        <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                    </select>
                                     <div class="input-group price-input">
-                                        <span class="input-group-text">$</span>
+                                        <span class="input-group-text">平日$</span>
                                         <input v-model.number="slot.Price" type="number"
-                                            class="form-control form-control-sm" placeholder="費用" min="0">
-                                        <span class="input-group-text">元</span>
+                                            class="form-control form-control-sm" placeholder="平日" min="0">
+                                    </div>
+                                    <div class="input-group price-input">
+                                        <span class="input-group-text">假日$</span>
+                                        <input v-model.number="slot.HolidayPrice" type="number"
+                                            class="form-control form-control-sm" placeholder="假日" min="0">
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
                                         @@click="room.removeTimeSlot(index)">刪除</button>

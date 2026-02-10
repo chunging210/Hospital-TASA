@@ -94,6 +94,15 @@ const isVideoFile = (filePath) => {
     return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
 };
 
+// ✅ 生成 30 分鐘間隔的時間選項 (00:00, 00:30, 01:00, ..., 23:30)
+const timeOptions = [];
+for (let hour = 0; hour < 24; hour++) {
+    for (let min = 0; min < 60; min += 30) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+        timeOptions.push(timeStr);
+    }
+}
+
 const department = new function () {
     this.list = reactive([]);
     this.getList = () => {
@@ -321,6 +330,7 @@ const room = new function () {
             StartTime: data.StartTime ?? '09:00',
             EndTime: data.EndTime ?? '10:00',
             Price: data.Price ?? 0,
+            HolidayPrice: data.HolidayPrice ?? null,
             Enabled: data.Enabled ?? true
         };
     };
@@ -550,9 +560,9 @@ const room = new function () {
         this.timeSlots.splice(0);
 
         [
-            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000 },
-            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800 },
-            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200 }
+            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200 },
+            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800, HolidayPrice: 1000 },
+            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200, HolidayPrice: 1500 }
         ].forEach(s => {
             this.timeSlots.push(this.createPeriodSlot(s));
         });
@@ -615,6 +625,7 @@ const room = new function () {
                         StartTime: slot.StartTime,
                         EndTime: slot.EndTime,
                         Price: slot.Price,
+                        HolidayPrice: slot.HolidayPrice,
                         Enabled: true
                     });
                 }
@@ -746,6 +757,7 @@ window.$config = {
         this.imageIndices = imageIndices;
         this.roompage = ref(null);
         this.timeSlots = room.timeSlots;
+        this.timeOptions = timeOptions;  // ✅ 30 分鐘間隔的時間選項
         this.mediaFiles = room.mediaFiles;
         // this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;

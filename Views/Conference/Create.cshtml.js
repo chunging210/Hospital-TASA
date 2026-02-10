@@ -68,6 +68,22 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
+        // 判斷選擇的日期是否為假日（週六日）
+        this.isHoliday = computed(() => {
+            if (!this.form.date) return false;
+            const date = new Date(this.form.date);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6; // 0=週日, 6=週六
+        });
+
+        // 取得時段的顯示價格（根據平日/假日）
+        this.getSlotPrice = (slot) => {
+            if (this.isHoliday.value && slot.HolidayPrice) {
+                return slot.HolidayPrice;
+            }
+            return slot.Price;
+        };
+
         this.currentUser = ref(null);
         this.isAdmin = ref(false);
         this.isInternalStaff = ref(false);
@@ -332,6 +348,7 @@ window.$config = {
             console.group('💰 計算會議室費用');
             console.log('會議室:', room?.Name);
             console.log('BookingSettings:', room?.BookingSettings);
+            console.log('是否假日:', this.isHoliday.value);
 
             if (room && room.BookingSettings === 3) {  // BookingSettings.Free = 3
                 console.log('✅ 免費會議室,費用為 0');
@@ -346,9 +363,13 @@ window.$config = {
                 return 0;
             }
 
+            // ✅ 根據平日/假日計算費用
             const cost = this.timeSlots.value
                 .filter(slot => this.form.selectedSlots.includes(slot.Key))
-                .reduce((sum, slot) => sum + slot.Price, 0);
+                .reduce((sum, slot) => {
+                    const price = this.getSlotPrice(slot);
+                    return sum + price;
+                }, 0);
 
             console.log('💵 計算費用:', cost);
             console.groupEnd();

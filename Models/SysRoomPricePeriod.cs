@@ -43,10 +43,16 @@ public partial class SysRoomPricePeriod
     public TimeSpan EndTime { get; set; }
 
     /// <summary>
-    /// 價格
+    /// 價格 (平日)
     /// </summary>
     [Column(TypeName = "decimal(10,2)")]
     public decimal Price { get; set; }
+
+    /// <summary>
+    /// 假日價格
+    /// </summary>
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal? HolidayPrice { get; set; }
 
     /// <summary>
     /// 是否開放

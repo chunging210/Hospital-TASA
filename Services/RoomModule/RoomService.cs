@@ -313,6 +313,7 @@ namespace TASA.Services.RoomModule
             public string? StartTime { get; set; }
             public string? EndTime { get; set; }
             public decimal Price { get; set; }
+            public decimal? HolidayPrice { get; set; }
             public bool Enabled { get; set; }
         }
 
@@ -393,6 +394,7 @@ namespace TASA.Services.RoomModule
                         StartTime = x.StartTime.ToString(@"hh\:mm"),
                         EndTime = x.EndTime.ToString(@"hh\:mm"),
                         Price = x.Price,
+                        HolidayPrice = x.HolidayPrice,
                         Enabled = x.IsEnabled
                     })
                     .ToList();
@@ -1056,6 +1058,7 @@ namespace TASA.Services.RoomModule
                         StartTime = startTime,
                         EndTime = endTime,
                         Price = pricing.Price,
+                        HolidayPrice = pricing.HolidayPrice,
                         IsEnabled = pricing.Enabled,
                         CreateAt = DateTime.Now,
                         CreateBy = userid!.Value

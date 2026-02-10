@@ -242,7 +242,8 @@
                                                                         免費
                                                                     </span>
                                                                     <span v-else>
-                                                                        {{ slot.Occupied ? '已預約' : '$' + slot.Price }}
+                                                                        {{ slot.Occupied ? '已預約' : '$' + getSlotPrice(slot) }}
+                                                                        <small v-if="!slot.Occupied && isHoliday && slot.HolidayPrice" class="text-warning d-block">(假日價)</small>
                                                                     </span>
                                                                 </div>
                                                             </div>

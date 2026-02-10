@@ -151,15 +151,20 @@
                                 <input v-model="slot.Enabled" type="checkbox" class="form-check-input">
                                 <input v-model="slot.Name" class="form-control form-control-sm name-input"
                                     placeholder="時段名稱">
-                                <input v-model="slot.StartTime" type="time"
-                                    class="form-control form-control-sm time-input">
+                                <select v-model="slot.StartTime" class="form-select form-select-sm time-input">
+                                    <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                </select>
                                 <span>-</span>
-                                <input v-model="slot.EndTime" type="time"
-                                    class="form-control form-control-sm time-input">
+                                <select v-model="slot.EndTime" class="form-select form-select-sm time-input">
+                                    <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                </select>
                                 <div class="input-group input-group-sm price-input">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">平日$</span>
                                     <input v-model.number="slot.Price" type="number" class="form-control">
-                                    <span class="input-group-text">元</span>
+                                </div>
+                                <div class="input-group input-group-sm price-input">
+                                    <span class="input-group-text">假日$</span>
+                                    <input v-model.number="slot.HolidayPrice" type="number" class="form-control">
                                 </div>
                                 <button type="button" class="btn btn-outline-danger btn-sm remove-btn"
                                     @@click="room.removeTimeSlot(index)">
