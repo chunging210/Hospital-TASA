@@ -301,6 +301,37 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ✅ 聲明書設定 -->
+                <div class="edit-form-section">
+                    <h6>聲明書設定</h6>
+                    <div class="mb-3">
+                        <label class="form-label">上傳自訂聲明書 (PDF)</label>
+
+                        <!-- 目前已有的聲明書 -->
+                        <div v-if="room.vm.AgreementPath && !form.agreementFileName" class="alert alert-info py-2 mb-2">
+                            <i class="mdi mdi-file-pdf-box text-danger"></i>
+                            目前聲明書：
+                            <a :href="room.vm.AgreementPath" target="_blank" class="ms-1">查看</a>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                                    @@click="room.removeExistingAgreement()">移除</button>
+                        </div>
+
+                        <input type="file" class="form-control form-control-sm" accept=".pdf"
+                               @@change="room.handleAgreementUpload($event)">
+                        <div class="form-text text-muted">
+                            <i class="mdi mdi-information-outline"></i> 若未上傳，將使用系統預設聲明書
+                        </div>
+
+                        <!-- 新上傳的檔案 -->
+                        <div v-if="form.agreementFileName" class="alert alert-success mt-2 py-2">
+                            <i class="mdi mdi-file-pdf-box text-danger"></i>
+                            已選擇新檔案：{{ form.agreementFileName }}
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                                    @@click="room.clearAgreement()">移除</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">

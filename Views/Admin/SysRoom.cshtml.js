@@ -191,7 +191,9 @@ const room = new function () {
         feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
         departmentId: null,
-        managerId: null
+        managerId: null,
+        agreementBase64: null,      // ✅ 聲明書 Base64
+        agreementFileName: null     // ✅ 聲明書檔名
     });
     // ✅ 新增:今日時程
     this.todaySchedule = ref([]);
@@ -365,6 +367,11 @@ const room = new function () {
                     this.vm.BookingSettings = response.data.BookingSettings;
                     this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
                     this.vm.ManagerId = response.data.ManagerId;
+                    this.vm.AgreementPath = response.data.AgreementPath;  // ✅ 聲明書路徑
+
+                    // ✅ 編輯時清空新上傳的聲明書
+                    this.form.agreementBase64 = null;
+                    this.form.agreementFileName = null;
 
                     // ✅ 1. 先載入員工列表
                     await manager.getList(this.vm.DepartmentId);
@@ -437,6 +444,8 @@ const room = new function () {
             this.generateCreateTimeSlotDefaults();
 
             this.form.managerId = null;
+            this.form.agreementBase64 = null;    // ✅ 重設聲明書
+            this.form.agreementFileName = null;
             manager.clearSelection();
 
             if (!isAdmin.value && userDepartmentId.value) {
@@ -493,7 +502,9 @@ const room = new function () {
                 fileSize: m.src?.length ?? 0,
                 sortOrder: idx
             })),
-            PricingDetails: this.getPricingDetails()
+            PricingDetails: this.getPricingDetails(),
+            AgreementBase64: this.form.agreementBase64,      // ✅ 聲明書
+            AgreementFileName: this.form.agreementFileName   // ✅ 聲明書檔名
         };
 
         console.log('🔍 [SAVE normalized]', body);
@@ -658,6 +669,37 @@ const room = new function () {
     this.triggerMediaUpload = () => {
         document.getElementById('mediaUpload').click();
     }
+
+    // ✅ 聲明書上傳處理
+    this.handleAgreementUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            addAlert('請上傳 PDF 格式的檔案', { type: 'warning' });
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.form.agreementBase64 = e.target.result;
+            this.form.agreementFileName = file.name;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    };
+
+    // ✅ 清除已選擇的聲明書
+    this.clearAgreement = () => {
+        this.form.agreementBase64 = null;
+        this.form.agreementFileName = null;
+    };
+
+    // ✅ 移除現有聲明書（編輯時）
+    this.removeExistingAgreement = () => {
+        this.vm.AgreementPath = null;
+    };
 
     this.viewRoom = (Id) => {
         global.api.admin.roomdetail({ body: { Id } })

@@ -62,6 +62,7 @@ namespace TASA.Services
             public string Name { get; set; } = string.Empty;
             public PricingType PricingType { get; set; }
             public BookingSettings BookingSettings { get; set; }
+            public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
         }
 
         public record RoomByFloorQueryVM
@@ -259,7 +260,8 @@ namespace TASA.Services
                     Id = x.Id,
                     Name = x.Name,
                     PricingType = x.PricingType,
-                    BookingSettings = x.BookingSettings
+                    BookingSettings = x.BookingSettings,
+                    AgreementPath = x.AgreementPath  // ✅ 聲明書路徑
                 })
                 .ToList();
 
