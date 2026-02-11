@@ -1,146 +1,153 @@
 ﻿<div v-cloak>
-<div class="page-content">
-    <div class="container-fluid vstack gap-3">
-        <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-                        <span class="material-icons">folder</span>單位總覽
-                    </div>
-                    <div class="col-12 col-lg-2">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="department.query.keyword" @@blur="department.getList" type="text" class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+    <div class="page-content">
+        <div class="container-fluid vstack gap-3">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row d-flex align-items-center">
+                        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                            <span class="material-icons">folder</span>單位總覽
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <div class="search-box">
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" v-model="department.query.keyword"
+                                           placeholder="搜尋關鍵字...">
+                                    <span class="material-icons search-icon">search</span>
+                                </div>
                             </div>
-                            <button @@click="department.getList" class="btn btn-secondary"><span class="material-icons">search</span></button>
+                        </div>
+                        <div class="col-auto d-flex align-items-center ms-auto">
+                            <button @@click="department.getVM()" class="btn btn-primary">新增單位</button>
                         </div>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
-                        <button @@click="department.getVM()" class="btn btn-primary">新增單位</button>
-                    </div>
                 </div>
-            </div>
-            <div class="card-body">
-                <table class="table table-hover table-responsive">
-                    <caption>單位列表</caption>
-                    <thead>
-                        <tr class="table-light">
-                            <th>名稱</th>
-                            <th>啟用</th>
-                            <th>建立日期</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="item in department.list" @@dblclick="department.getVM(item.Id)" :key="item.Id">
-                            <td>{{item.Name}}</td>
-                            <td>{{item.IsEnabled?'V':''}}</td>
-                            <td>{{item.CreateAt.format()}}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button @@click="department.getVM(item.Id)" class="btn btn-sm btn-secondary">編輯</button>
-                                    <button @@click="department.delete(item.Id)" class="btn btn-sm btn-danger">刪除</button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot v-if="department.list.length==0">
-                        <tr>
-                            <td colspan="4" class="text-center">查無資料</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <div class="card-body">
+                    <table class="table table-hover table-responsive">
+                        <caption>單位列表</caption>
+                        <thead>
+                            <tr class="table-light">
+                                <th>名稱</th>
+                                <th>啟用</th>
+                                <th>建立日期</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in department.list" @@dblclick="department.getVM(item.Id)" :key="item.Id">
+                                <td>{{item.Name}}</td>
+                                <td>{{item.IsEnabled?'V':''}}</td>
+                                <td>{{item.CreateAt.format()}}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button @@click="department.getVM(item.Id)"
+                                        class="btn btn-sm btn-secondary">編輯</button>
+                                        <button @@click="department.delete(item.Id)"
+                                        class="btn btn-sm btn-danger">刪除</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot v-if="department.list.length==0">
+                            <tr>
+                                <td colspan="4" class="text-center">查無資料</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<offcanvas ref="departmentoffcanvas">
-    <template #header>
-        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-            <span class="material-icons">folder</span>單位管理
-        </div>
-    </template>
-    <template #footer>
-        <button @@click="department.save()" class="btn btn-branding text-white">
-            確認修改
-        </button>
-    </template>
-    <ol class="activity-checkout mb-0 px-4 mt-3">
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">edit</span>
-                </div>
+    <offcanvas ref="departmentoffcanvas">
+        <template #header>
+            <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                <span class="material-icons">folder</span>單位管理
             </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">名稱</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="department.vm.Name" type="text" class="form-control" placeholder="名稱" />
+        </template>
+        <template #footer>
+            <button @@click="department.save()" class="btn btn-branding text-white">
+                確認修改
+            </button>
+        </template>
+        <ol class="activity-checkout mb-0 px-4 mt-3">
+            <li class="checkout-item">
+                <div class="avatar checkout-icon p-1">
+                    <div class="avatar-title rounded-circle bg-primary">
+                        <span class="material-icons font-size-20">edit</span>
                     </div>
                 </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20"></span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">父單位</label>
-                    </div>
-                    <div class="col-12">
-                        <ul class="list-group">
-                            <li class="form-check form-check-inline ps-0">
-                                <label class="form-check-label">
-                                    <input v-model="department.vm.Parent" class="form-radio-primary" type="radio" :value="null" />
-                                    無
-                                </label>
-                            </li>
-                            <li v-for="{Id,Name,Children} in department.tree" class="form-check form-check-inline ps-0">
-                                <label class="form-check-label">
-                                    <input v-model="department.vm.Parent" class="form-radio-primary" type="radio" :value="Id" v-bind:disabled="Id==department.vm.Id" />
-                                    {{Name}}
-                                </label>
-                                <ul class="list-group">
-                                    <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
-                                        <label class="form-check-label">
-                                            <input v-model="department.vm.Parent" class="form-radio-primary" type="radio" :value="Id" disabled />
-                                            {{Name}}
-                                        </label>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
+                <div class="feed-item-list">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">名稱</label>
+                        </div>
+                        <div class="col-12">
+                            <input v-model="department.vm.Name" type="text" class="form-control" placeholder="名稱" />
+                        </div>
                     </div>
                 </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">check</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">啟用</label>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check">
-                            <input v-model="department.vm.IsEnabled" class="form-check-input" type="checkbox" :value="true">
-                        </label>
+            </li>
+            <li class="checkout-item">
+                <div class="avatar checkout-icon p-1">
+                    <div class="avatar-title rounded-circle bg-primary">
+                        <span class="material-icons font-size-20"></span>
                     </div>
                 </div>
-            </div>
-        </li>
-    </ol>
-</offcanvas>
+                <div class="feed-item-list">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">父單位</label>
+                        </div>
+                        <div class="col-12">
+                            <ul class="list-group">
+                                <li class="form-check form-check-inline ps-0">
+                                    <label class="form-check-label">
+                                        <input v-model="department.vm.Parent" class="form-radio-primary" type="radio"
+                                               :value="null" />
+                                        無
+                                    </label>
+                                </li>
+                                <li v-for="{Id,Name,Children} in department.tree"
+                                    class="form-check form-check-inline ps-0">
+                                    <label class="form-check-label">
+                                        <input v-model="department.vm.Parent" class="form-radio-primary" type="radio"
+                                               :value="Id" v-bind:disabled="Id==department.vm.Id" />
+                                        {{Name}}
+                                    </label>
+                                    <ul class="list-group">
+                                        <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
+                                            <label class="form-check-label">
+                                                <input v-model="department.vm.Parent" class="form-radio-primary"
+                                                       type="radio" :value="Id" disabled />
+                                                {{Name}}
+                                            </label>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="checkout-item">
+                <div class="avatar checkout-icon p-1">
+                    <div class="avatar-title rounded-circle bg-primary">
+                        <span class="material-icons font-size-20">check</span>
+                    </div>
+                </div>
+                <div class="feed-item-list">
+                    <div class="row align-items-center">
+                        <div class="col-sm-12 col-xl-auto pe-0">
+                            <label class="col-form-label pe-3">啟用</label>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-check">
+                                <input v-model="department.vm.IsEnabled" class="form-check-input" type="checkbox"
+                                       :value="true">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ol>
+    </offcanvas>
 </div>

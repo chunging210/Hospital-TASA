@@ -10,21 +10,18 @@
 
                     <!-- 搜尋 -->
                     <div class="col-auto">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="equipment.query.keyword" @@blur="equipment.getList" type="text"
-                                    class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="equipment.query.keyword"
+                                       placeholder="搜尋關鍵字...">
+                                <span class="material-icons search-icon">search</span>
                             </div>
-                            <button @@click="equipment.getList" class="btn btn-secondary"><span
-                                    class="material-icons">search</span></button>
                         </div>
                     </div>
-
                     <!-- 產品類型篩選 -->
                     <div class="col-auto">
                         <select v-model="equipment.query.type" @@change="equipment.getList" class="form-select"
-                            style="min-width: 150px;">
+                                style="min-width: 150px;">
                             <option value="">產品類型</option>
                             <option value="1">影像設備</option>
                             <option value="2">聲音設備</option>
@@ -66,184 +63,183 @@
                             <td>{{ item.ProductModel || '-' }}</td>
                             <td>{{ (item.Building && item.Floor && item.RoomName) ? `${item.Building} ${item.Floor} 樓/
                                 ${item.RoomName}` : '-' }}</td>
-                            <td>{{ item.RentalPrice > 0 ? 'NT$ ' + item.RentalPrice : '-' }}</td>
-                            @* <td>{{ item.IsEnabled ? '✓' : '' }}</td> *@
-                            <td>{{ item.CreateAt.format() }}</td>
-                            <td>
-                                <div class="d-flex gap-2">
-                                    <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-primary"
-                                        data-bs-toggle="modal" data-bs-target="#equipmentModal">
-                                        <i class="mdi mdi-pencil-outline"></i> 編輯
-                                    </button>
-                                    <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-danger">
-                                        <i class="mdi mdi-delete-outline"></i> 刪除
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tfoot v-if="equipment.list.length === 0">
-                        <tr>
-                            <td colspan="8" class="text-center">查無資料</td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <page ref="equipmentpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="equipment.getList">
-                </page>
+                                <td>{{ item.RentalPrice > 0 ? 'NT$ ' + item.RentalPrice : '-' }}</td>
+                                @* <td>{{ item.IsEnabled ? '✓' : '' }}</td> *@
+                                <td>{{ item.CreateAt.format() }}</td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-primary"
+                                            data-bs-toggle="modal" data-bs-target="#equipmentModal">
+                                            <i class="mdi mdi-pencil-outline"></i> 編輯
+                                        </button>
+                                        <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-danger">
+                                            <i class="mdi mdi-delete-outline"></i> 刪除
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot v-if="equipment.list.length === 0">
+                            <tr>
+                                <td colspan="8" class="text-center">查無資料</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <page ref="equipmentpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="equipment.getList">
+                    </page>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ===== 新增/編輯 Modal ===== -->
-<div class="modal fade" id="equipmentModal" tabindex="-1" aria-labelledby="equipmentModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <h5 class="modal-title" id="equipmentModalLabel">
-                    {{ equipment.vm.Id ? '編輯設備' : '新增設備' }}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+    <!-- ===== 新增/編輯 Modal ===== -->
+    <div class="modal fade" id="equipmentModal" tabindex="-1" aria-labelledby="equipmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title" id="equipmentModalLabel">
+                        {{ equipment.vm.Id ? '編輯設備' : '新增設備' }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
 
-            <!-- Modal Body -->
-            <div class="modal-body px-4 mt-3">
-                <form>
-                    <!-- 產品名稱 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">產品名稱 <span class="text-danger">*</span></label>
-                        <div class="col-sm-9">
-                            <input v-model="equipment.vm.Name" type="text" class="form-control" placeholder="例：投影機">
-                        </div>
-                    </div>
-
-
-                    <!-- 產品類型 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">產品類型 <span class="text-danger">*</span></label>
-                        <div class="col-sm-9">
-                            <select v-model.number="equipment.vm.Type" class="form-select">
-                                <option value="">請選擇類型</option>
-                                <option value="1">影像設備</option>
-                                <option value="2">聲音設備</option>
-                                <option value="8">設備加租</option>
-                                <option value="9">攤位租借</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 產品型號 -->
-                    <div v-if="equipment.vm.Type !== 9" class="row mb-4">
-                        <label class="col-sm-3 col-form-label">產品型號</label>
-                        <div class="col-sm-9">
-                            <input v-model="equipment.vm.ProductModel" type="text" class="form-control"
-                                placeholder="例：Epson EB-2250U">
-                        </div>
-                    </div>
-
-
-                    <!-- 分院 -->
-                    <div v-if="isAdmin" class="row mb-4">
-                        <label class="col-sm-3 col-form-label">分院</label>
-                        <div class="col-sm-9">
-                            <select v-model="selectedDepartment" class="form-select">
-                                <option value="">請選擇分院</option>
-                                <option v-for="d in departments" :key="d.Id" :value="d.Id">
-                                    {{ d.Name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 大樓名稱 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">大樓名稱</label>
-                        <div class="col-sm-9">
-                            <select v-model="equipment.vm.Building" @@change="equipment.onBuildingChange"
-                                class="form-select">
-                                <option value="">{{ selectedDepartment ? '請選擇大樓' : '請先選擇分院' }}</option>
-
-                                <option v-for="b in equipment.buildings" :key="b.Building" :value="b.Building">
-                                    {{ b.Building }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 樓層名稱 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">樓層</label>
-                        <div class="col-sm-9">
-                            <select v-model="equipment.vm.Floor" @@change="equipment.onFloorChange" class="form-select"
-                                :disabled="!equipment.vm.Building">
-                                <option value="">{{ equipment.vm.Building ? '請選擇樓層' : '請先選擇大樓' }}</option>
-
-
-                                <option v-for="f in equipment.floorOptions" :key="f.Name" :value="f.Name">
-                                    {{ f.Name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 會議室名稱 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">會議室名稱</label>
-                        <div class="col-sm-9">
-                            <select v-model="equipment.vm.RoomId" class="form-select" :disabled="!equipment.vm.Floor">
-                                <option :value="null">{{ equipment.vm.Floor ? '請選擇會議室' : '請先選擇樓層' }}</option>
-
-
-                                <option v-for="room in equipment.roomOptions" :key="room.Id" :value="room.Id">
-                                    {{ room.Name }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 租借金額 (只在設備加租/攤位租借時顯示) -->
-                    <div v-if="[8, 9].includes(equipment.vm.Type)" class="row mb-4">
-                        <label class="col-sm-3 col-form-label">租借金額 <span class="text-danger">*</span></label>
-                        <div class="col-sm-9">
-                            <div class="input-group">
-                                <span class="input-group-text">NT$</span>
-                                <input v-model.number="equipment.vm.RentalPrice" type="number" class="form-control"
-                                    placeholder="0" min="0" step="1">
+                <!-- Modal Body -->
+                <div class="modal-body px-4 mt-3">
+                    <form>
+                        <!-- 產品名稱 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">產品名稱 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input v-model="equipment.vm.Name" type="text" class="form-control" placeholder="例：投影機">
                             </div>
-                            <small class="form-text text-muted">僅限設備加租/攤位租借使用</small>
                         </div>
-                    </div>
 
-                    <!-- 設備照片 -->
-                    <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">設備照片</label>
-                        <div class="col-sm-9">
-                            <!-- 預覽區 -->
-                            <div v-if="equipment.imageState.preview" class="mb-2 position-relative d-inline-block">
-                                <img :src="equipment.imageState.preview" alt="設備照片"
-                                    style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
-                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
-                                    style="transform: translate(30%, -30%);"
-                                    @@click="equipment.removeImage">
-                                    <i class="mdi mdi-close"></i>
-                                </button>
+
+                        <!-- 產品類型 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">產品類型 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select v-model.number="equipment.vm.Type" class="form-select">
+                                    <option value="">請選擇類型</option>
+                                    <option value="1">影像設備</option>
+                                    <option value="2">聲音設備</option>
+                                    <option value="8">設備加租</option>
+                                    <option value="9">攤位租借</option>
+                                </select>
                             </div>
-                            <!-- 選檔按鈕 -->
-                            <div>
-                                <button type="button" class="btn btn-sm btn-outline-primary"
-                                    @@click="equipment.triggerImageUpload">
-                                    <i class="mdi mdi-camera"></i> {{ equipment.imageState.preview ? '更換照片' : '上傳照片' }}
-                                </button>
-                                <input type="file" id="equipmentImageInput" accept="image/*" style="display:none"
+                        </div>
+
+                        <!-- 產品型號 -->
+                        <div v-if="equipment.vm.Type !== 9" class="row mb-4">
+                            <label class="col-sm-3 col-form-label">產品型號</label>
+                            <div class="col-sm-9">
+                                <input v-model="equipment.vm.ProductModel" type="text" class="form-control"
+                                       placeholder="例：Epson EB-2250U">
+                            </div>
+                        </div>
+
+
+                        <!-- 分院 -->
+                        <div v-if="isAdmin" class="row mb-4">
+                            <label class="col-sm-3 col-form-label">分院</label>
+                            <div class="col-sm-9">
+                                <select v-model="selectedDepartment" class="form-select">
+                                    <option value="">請選擇分院</option>
+                                    <option v-for="d in departments" :key="d.Id" :value="d.Id">
+                                        {{ d.Name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 大樓名稱 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">大樓名稱</label>
+                            <div class="col-sm-9">
+                                <select v-model="equipment.vm.Building" @@change="equipment.onBuildingChange"
+                                        class="form-select">
+                                    <option value="">{{ selectedDepartment ? '請選擇大樓' : '請先選擇分院' }}</option>
+
+                                    <option v-for="b in equipment.buildings" :key="b.Building" :value="b.Building">
+                                        {{ b.Building }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 樓層名稱 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">樓層</label>
+                            <div class="col-sm-9">
+                                <select v-model="equipment.vm.Floor" @@change="equipment.onFloorChange" class="form-select"
+                                        :disabled="!equipment.vm.Building">
+                                    <option value="">{{ equipment.vm.Building ? '請選擇樓層' : '請先選擇大樓' }}</option>
+
+
+                                    <option v-for="f in equipment.floorOptions" :key="f.Name" :value="f.Name">
+                                        {{ f.Name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 會議室名稱 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">會議室名稱</label>
+                            <div class="col-sm-9">
+                                <select v-model="equipment.vm.RoomId" class="form-select" :disabled="!equipment.vm.Floor">
+                                    <option :value="null">{{ equipment.vm.Floor ? '請選擇會議室' : '請先選擇樓層' }}</option>
+
+
+                                    <option v-for="room in equipment.roomOptions" :key="room.Id" :value="room.Id">
+                                        {{ room.Name }}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 租借金額 (只在設備加租/攤位租借時顯示) -->
+                        <div v-if="[8, 9].includes(equipment.vm.Type)" class="row mb-4">
+                            <label class="col-sm-3 col-form-label">租借金額 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <div class="input-group">
+                                    <span class="input-group-text">NT$</span>
+                                    <input v-model.number="equipment.vm.RentalPrice" type="number" class="form-control"
+                                           placeholder="0" min="0" step="1">
+                                </div>
+                                <small class="form-text text-muted">僅限設備加租/攤位租借使用</small>
+                            </div>
+                        </div>
+
+                        <!-- 設備照片 -->
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">設備照片</label>
+                            <div class="col-sm-9">
+                                <!-- 預覽區 -->
+                                <div v-if="equipment.imageState.preview" class="mb-2 position-relative d-inline-block">
+                                    <img :src="equipment.imageState.preview" alt="設備照片"
+                                         style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
+                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
+                                            style="transform: translate(30%, -30%);" @@click="equipment.removeImage">
+                                        <i class="mdi mdi-close"></i>
+                                    </button>
+                                </div>
+                                <!-- 選檔按鈕 -->
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                        @@click="equipment.triggerImageUpload">
+                                        <i class="mdi mdi-camera"></i> {{ equipment.imageState.preview ? '更換照片' : '上傳照片' }}
+                                    </button>
+                                    <input type="file" id="equipmentImageInput" accept="image/*" style="display:none"
                                     @@change="equipment.onImageSelect">
-                                <small class="form-text text-muted d-block mt-1">支援 JPG, PNG 格式，建議 2MB 以內</small>
+                                    <small class="form-text text-muted d-block mt-1">支援 JPG, PNG 格式，建議 2MB 以內</small>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- 啟用 -->
-                    @* <div class="row mb-4">
+                        <!-- 啟用 -->
+                        @* <div class="row mb-4">
                         <label class="col-sm-3 col-form-label">啟用</label>
                         <div class="col-sm-9">
                             <label class="form-check">
@@ -252,16 +248,16 @@
                             </label>
                         </div>
                     </div> *@
-                </form>
-            </div>
+                    </form>
+                </div>
 
-            <!-- Modal Footer -->
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" @@click="equipment.save">
-                    {{ equipment.vm.Id ? '確認修改' : '確認新增' }}
-                </button>
+                <!-- Modal Footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" @@click="equipment.save">
+                        {{ equipment.vm.Id ? '確認修改' : '確認新增' }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>

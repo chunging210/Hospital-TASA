@@ -1236,17 +1236,17 @@ body {
         font-size: 12px;
         padding: 10px;
     }
-    
+
     .equipment-card i {
         font-size: 2em !important;
     }
-    
+
     .search-results-header {
         flex-direction: column;
         gap: 10px;
         align-items: flex-start;
     }
-    
+
     .search-results-header .btn {
         width: 100%;
     }
@@ -1347,7 +1347,162 @@ body {
     }
 }
 
-.status-internal { background-color: #0dcaf0; color: white; }  /* 藍色 */
-.status-open { background-color: #198754; color: white; }      /* 綠色 */
-.status-closed { background-color: #6c757d; color: white; }    /* 灰色 */
-.status-free { background-color: #0d6efd; color: white; }    
+/* ===== Room Popover ===== */
+.room-popover {
+    position: fixed;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    width: 450px;
+    max-height: 600px;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+}
+
+/* 標題區 */
+.popover-header-section {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.popover-room-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.popover-room-location {
+    font-size: 18px;
+    color: #999;
+    margin-top: 2px;
+}
+
+/* 區塊標題 */
+.popover-section {
+    margin-bottom: 14px;
+}
+
+.popover-section:last-child {
+    margin-bottom: 0;
+}
+
+.popover-section-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.popover-section-title .material-icons {
+    font-size: 20px;
+    color: #6c757d;
+}
+
+/* 收費列表（可滾動） */
+.popover-pricing-list {
+    max-height: 150px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.popover-pricing-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.popover-pricing-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.popover-pricing-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.popover-pricing-list::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}
+
+.popover-pricing-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    border-left: 3px solid #0d6efd;
+    background: #f9f9f9;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-size: 18px;
+}
+
+.popover-pricing-price {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+/* 設備 grid */
+.popover-equipment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.popover-equipment-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-left: 3px solid #0d6efd;
+    background: #f9f9f9;
+    border-radius: 6px;
+    font-size: 18px;
+    color: #495057;
+}
+
+.popover-equipment-icon {
+    font-size: 18px;
+    color: #0d6efd;
+}
+
+/* hover 提示 */
+.equipment-hover {
+    cursor: pointer;
+}
+
+.equipment-hover:hover {
+    background-color: #f0f7ff;
+    border-radius: 6px;
+}
+
+.status-internal {
+    background-color: #0dcaf0;
+    color: white;
+}
+
+/* 藍色 */
+.status-open {
+    background-color: #198754;
+    color: white;
+}
+
+/* 綠色 */
+.status-closed {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 灰色 */
+.status-free {
+    background-color: #0d6efd;
+    color: white;
+}

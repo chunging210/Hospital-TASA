@@ -394,6 +394,56 @@ const room = new function () {
     };
 };
 
+// ===== Room Popover =====
+const roomPopover = reactive({
+    visible: false,
+    loading: false,
+    data: null,
+    top: 0,
+    left: 0
+});
+const popoverCache = {};
+let popoverHideTimer = null;
+
+const showRoomPopover = async (item, event) => {
+    clearTimeout(popoverHideTimer);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    roomPopover.top = rect.bottom - 300;
+    roomPopover.left = rect.right - 300;
+
+    // use cache
+    if (popoverCache[item.Id]) {
+        roomPopover.data = popoverCache[item.Id];
+        roomPopover.visible = true;
+        return;
+    }
+
+    roomPopover.data = null;
+    roomPopover.loading = true;
+    roomPopover.visible = true;
+
+    try {
+        const res = await global.api.admin.roomdetail({ body: { Id: item.Id } });
+        popoverCache[item.Id] = res.data;
+        roomPopover.data = res.data;
+    } catch (e) {
+        roomPopover.visible = false;
+    } finally {
+        roomPopover.loading = false;
+    }
+};
+
+const hideRoomPopover = () => {
+    popoverHideTimer = setTimeout(() => {
+        roomPopover.visible = false;
+    }, 200);
+};
+
+const keepRoomPopover = () => {
+    clearTimeout(popoverHideTimer);
+};
+
 window.$config = {
     setup: () => new function () {
         this.room = room;
@@ -417,6 +467,11 @@ window.$config = {
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.hasDetailImages = room.hasDetailImages;
         this.currentDetailImage = room.currentDetailImage;
+
+        this.roomPopover = roomPopover;
+        this.showRoomPopover = showRoomPopover;
+        this.hideRoomPopover = hideRoomPopover;
+        this.keepRoomPopover = keepRoomPopover;
 
         this.isDetailVideoFile = (filePath) => {
             if (!filePath) return false;

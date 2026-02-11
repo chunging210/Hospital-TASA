@@ -2,34 +2,26 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header">
-                <div class="row">
+                <div class="row d-flex align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">history</span>登入日誌
                     </div>
+
                     <div class="col-12 col-lg-4">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <!-- ✅ 移除 @@blur,只用 watch -->
-                                <input v-model="loginlog.query.keyword" type="text" class="form-control"
-                                    placeholder="搜尋">
-                                <label>搜尋</label>
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="loginlog.query.keyword"
+                                       placeholder="搜尋關鍵字...">
+                                <span class="material-icons search-icon">search</span>
                             </div>
-                            <!-- ✅ 改用 search 方法 -->
-                            <button @@click="loginlog.search" class="btn btn-secondary">
-                                <span class="material-icons">search</span>
-                            </button>
                         </div>
                     </div>
                     <div class="col-12 col-lg-4">
                         <div class="input-group">
                             <input v-model="loginlog.query.startDate" type="date" class="form-control"
-                                placeholder="開始日期">
+                                   placeholder="開始日期">
                             <span class="input-group-text">-</span>
                             <input v-model="loginlog.query.endDate" type="date" class="form-control" placeholder="結束日期">
-                            <!-- ✅ 改用 search 方法 -->
-                            <button @@click="loginlog.search" class="btn btn-secondary">
-                                <span class="material-icons">search</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -38,8 +30,8 @@
                 <ul class="nav nav-tabs">
                     <li v-for="item in loginlog.tabs" class="nav-item">
                         <div @@click="loginlog.selectTab(item.value)"
-                            v-bind:class="['nav-link',{'active': loginlog.selectedTab.value == item.value}]"
-                            role="button">{{item.text}}</div>
+                        v-bind:class="['nav-link',{'active': loginlog.selectedTab.value == item.value}]"
+                        role="button">{{item.text}}</div>
                     </li>
                 </ul>
 
@@ -96,8 +88,9 @@
                 </table>
 
                 <!-- ✅ Page 元件 - 使用標準寫法 -->
-                
-                <page ref="loginlogpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="loginlog.getList"></page>
+
+                <page ref="loginlogpage" :per-page="10" :per-page-option="[10,20,30]" @@reload="loginlog.getList">
+                </page>
             </div>
         </div>
     </div>

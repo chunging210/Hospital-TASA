@@ -183,6 +183,13 @@ window.$config = {
                 }
                 debouncedSearch();
             });
+
+            watch([
+                () => loginlog.query.startDate,
+                () => loginlog.query.endDate
+            ], () => {
+                loginlog.search();
+            });
         });
     }
 };

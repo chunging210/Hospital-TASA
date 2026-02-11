@@ -202,18 +202,13 @@
 
     <!-- ✅ 預約詳情 Offcanvas -->
     <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="bookingDrawer" ref="bookingDrawer">
-        <div class="offcanvas-header" style="padding-bottom:0;">
+        <div class="offcanvas-header d-flex align-items-center justify-content-between" style="padding-bottom:0;">
             <h4 class="mb-0 fw-bold">
                 預約詳情 <small class="text-muted ms-2">#{{ selectedItem?.reservationNo }}</small>
             </h4>
-            
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-        </div>
-       
-        <div class="offcanvas-body" v-if="selectedItem">
             <!-- ✅ 管理員操作按鈕區（所有預約） -->
-            <div v-if="activeTab === 'all' && canAdminCancel(selectedItem)" class="border-top pt-3 mt-4">
-                <div class="d-flex flex-wrap gap-2 mb-3">
+            <div v-if="activeTab === 'all' && canAdminCancel(selectedItem)" class="">
+                <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-outline-danger"
                         @@click="confirmAdminCancel(selectedItem)">
                         <i class="mdi mdi-close-circle me-1"></i> 取消預約
@@ -222,34 +217,31 @@
             </div>
 
             <!-- ✅ 個人操作按鈕區（個人預約） -->
-            <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="border-top pt-3 mt-4">
-                <!-- 操作提示 -->
-                <div v-if="getActionHint(selectedItem)" class="alert alert-info py-2 px-3 mb-3">
-                    <small>
-                        <i class="mdi mdi-information me-1"></i>
-                        {{ getActionHint(selectedItem) }}
-                    </small>
-                </div>
+            <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="">
 
                 <!-- 按鈕區 -->
-                <div class="d-flex flex-wrap gap-2 mb-3">
+                <div class="d-flex flex-wrap gap-2">
                     <!-- 編輯按鈕 -->
                     <button type="button" class="btn btn-outline-primary" v-if="canEdit(selectedItem)"
                         @@click="editReservation(selectedItem)">
-                        <i class="mdi mdi-pencil me-1"></i> 編輯
+                        <i class="mdi mdi-pencil me-1"></i> 編輯預約
                     </button>
                     <!-- 取消預約按鈕 -->
                     <button type="button" class="btn btn-outline-danger" v-if="canCancel(selectedItem)"
                         @@click="confirmCancel(selectedItem)">
-                        <i class="mdi mdi-close-circle me-1"></i> 取消
+                        <i class="mdi mdi-close-circle me-1"></i> 取消預約
                     </button>
                     <!-- 刪除按鈕 -->
                     <button type="button" class="btn btn-outline-secondary" v-if="canDelete(selectedItem)"
                         @@click="confirmDelete(selectedItem)">
-                        <i class="mdi mdi-delete me-1"></i> 刪除
+                        <i class="mdi mdi-delete me-1"></i> 刪除預約
                     </button>
                 </div>
             </div>
+        </div>
+       
+        <div class="offcanvas-body" v-if="selectedItem">
+            
             <form class="row g-3">
                 <!-- ========== 基本資訊 ========== -->
                     <div class="col-12">

@@ -1,6 +1,6 @@
 ﻿// Admin/AuthUser.cshtml
 import global from '/global.js';
-const { ref, reactive, onMounted, computed } = Vue;
+const { ref, reactive, onMounted, computed, watch } = Vue;
 
 class VM {
     Id = null;
@@ -91,6 +91,10 @@ window.$config = {
         this.authuseroffcanvas = ref(null);
         this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
         this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
+
+        watch(() => authuser.query.keyword, () => {
+            authuser.getList(1);
+        });
 
         onMounted(() => {
             console.log('🚀 onMounted 開始');

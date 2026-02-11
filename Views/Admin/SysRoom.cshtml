@@ -8,24 +8,10 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header">
-                <div class="row  d-flex align-items-center">
+                <div class="row d-flex align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding align-middle">
                         <span class="material-icons">room_preferences</span> 會議室管理
                     </div>
-
-                    @* <div class="col-xl-6 col-sm-12">
-                        <div class="input-group">
-                            <span class="input-group-text bg-transparent border-end-0 rounded-start-pill">
-                                <span class="material-icons text-muted">search</span>
-                            </span>
-                            <input v-model="room.query.keyword" @@keyup.enter="room.getList(1)"
-                                class="form-control border-start-0 rounded-end-pill" placeholder="搜尋會議室名稱..." />
-                            <button v-if="room.query.keyword" @@click="clearSearch()"
-                                class="btn btn-outline-secondary border-start-0" type="button">
-                                <span class="material-icons">clear</span>
-                            </button>
-                        </div>
-                    </div> *@
 
                     <div class="col-xl-5 col-sm-12">
                         <div class="search-box">
@@ -37,14 +23,7 @@
                         </div>
                     </div>
 
-                    @* <div class="col-xl-auto col-sm-12">
-                        <button @@click="room.getList(1)"
-                            class="btn btn-outline-primary me-2 d-flex align-items-center">
-                            <span class="material-icons">search</span> 搜尋
-                        </button>
-                    </div> *@
-
-                    <div class="col-xl-auto col-sm-12">
+                    <div class="col-xl-auto col-sm-12 ms-auto">
                         <button type="button" @@click="room.getVM()" class="btn btn-primary d-flex align-items-center">
                             <span class="material-icons me-2">add</span> 新增會議室
                         </button>

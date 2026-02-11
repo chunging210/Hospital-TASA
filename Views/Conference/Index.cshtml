@@ -7,41 +7,30 @@
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">format_list_bulleted</span>會議總覽
                     </div>
-                    <div class="col-12 col-lg-auto">
-                        <div class="form-floating">
-                            <input v-model="conference.query.Start" @@change="conference.onFilterChange" type="date"
-                                   class="form-control" placeholder="會議時間(起)">
-                            <label>會議時間(起)</label>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto">
-                        <div class="form-floating">
-                            <input v-model="conference.query.End" @@change="conference.onFilterChange" type="date"
-                                   class="form-control" placeholder="會議時間(訖)">
-                            <label>會議時間(訖)</label>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto">
-                        <div class="form-floating">
-                            <select v-model="conference.query.RoomId" @@change="conference.onFilterChange"
-                                    class="form-select">
-                                <option value="">請選擇</option>
-                                <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
-                            </select>
-                            <label>與會地點</label>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-auto">
-                        <div class="form-floating">
-                            <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
-                                    class="form-select">
-                                <option value="">請選擇</option>
-                                <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
-                            </select>
-                            <label>發起會議者</label>
-                        </div>
-                    </div>
                     <div class="col-12 col-lg-3">
+                        <div class="input-group">
+                            <input v-model="conference.query.Start" type="date" class="form-control"
+                                   placeholder="會議時間(起)">
+                            <span class="input-group-text">-</span>
+                            <input v-model="conference.query.End" type="date" class="form-control"
+                                   placeholder="會議時間(訖)">
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <select v-model="conference.query.RoomId" @@change="conference.onFilterChange"
+                                class="form-select">
+                            <option value="">與會地點</option>
+                            <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-lg-auto">
+                        <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
+                                class="form-select">
+                            <option value="">發起會議者</option>
+                            <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-lg-2">
                         <div class="search-box">
                             <div class="position-relative">
                                 <input type="text" class="form-control" v-model="conference.query.keyword"
@@ -50,7 +39,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-auto d-flex align-items-center">
+                    <div class="col-auto d-flex align-items-center ms-auto">
                         <a href="/Conference/Create" class="btn btn-primary">
                             新增會議
                         </a>

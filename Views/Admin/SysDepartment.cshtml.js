@@ -1,6 +1,6 @@
 ﻿// Admin/SysDepartment
 import global from '/global.js';
-const { ref, reactive, onMounted, computed } = Vue;
+const { ref, reactive, onMounted, computed, watch } = Vue;
 
 class VM {
     Id = null;
@@ -81,11 +81,17 @@ window.$config = {
         this.department = department;
         this.departmentoffcanvas = ref(null);
 
+        watch(() => department.query.keyword, () => {
+            department.getList();
+        });
+
         onMounted(() => {
             department.getTree();
             department.getList();
             department.offcanvas = this.departmentoffcanvas.value;
             //window.addEventListener('ctrls', () => authuser.save());
         });
+
+
     }
 }

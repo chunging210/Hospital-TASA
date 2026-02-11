@@ -3,24 +3,22 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header">
-                <div class="row">
+                <div class="row d-flex align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">people</span>使用者總覽
                     </div>
-                    <div class="col-12 col-lg-2">
-                        <div class="input-group">
-                            <div class="form-floating">
-                                <input v-model="authuser.query.keyword" @@blur="authuser.getList" type="text"
-                                    class="form-control" placeholder="關鍵字">
-                                <label>關鍵字</label>
+
+                    <div class="col-12 col-lg-4">
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="authuser.query.keyword"
+                                       placeholder="搜尋關鍵字...">
+                                <span class="material-icons search-icon">search</span>
                             </div>
-                            <button @@click="authuser.getList" class="btn btn-secondary"><span
-                                    class="material-icons">search</span></button>
                         </div>
                     </div>
 
-
-                    <div class="col-auto d-flex align-items-center">
+                    <div class="col-auto d-flex align-items-center ms-auto">
                         <button @@click="authuser.getVM()" class="btn btn-primary">新增使用者</button>
                     </div>
                 </div>

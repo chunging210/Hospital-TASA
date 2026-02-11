@@ -24,7 +24,7 @@
                     <!-- 大樓下拉 -->
                     <div class="col-auto">
                         <select class="form-select" v-model="selectedBuilding" :key="selectedDepartment"
-                            style="min-width: 180px;">
+                                style="min-width: 180px;">
                             <option value="">請選擇大樓...</option>
                             <option v-for="b in buildings" :key="b.Building" :value="b.Building">
                                 {{ b.Building }}
@@ -35,7 +35,7 @@
                     <!-- 樓層下拉 -->
                     <div class="col-auto">
                         <select class="form-select" v-model="selectedFloor" :disabled="!selectedBuilding"
-                            style="min-width: 180px;">
+                                style="min-width: 180px;">
                             <option value="">請選擇樓層...</option>
                             <option v-for="f in floorOptions" :key="f" :value="f">
                                 {{ f }}
@@ -46,7 +46,7 @@
                     <!-- 智慧搜尋按鈕 -->
                     <div class="col-auto ms-auto">
                         <button type="button" class="btn btn-outline-primary btn-rounded font-size-24"
-                            data-bs-toggle="modal" data-bs-target="#smartSearchModal">
+                                data-bs-toggle="modal" data-bs-target="#smartSearchModal">
                             智慧搜尋
                         </button>
                     </div>
@@ -90,8 +90,8 @@
                         <div class="room-preview">
                             <!-- 圖片 -->
                             <div v-if="item.Images && item.Images.length > 0 && !room.isVideoFile(item.Images[item._imgIndex || 0])"
-                                style="width: 100%; height: 100%; background-size: cover; background-position: center;"
-                                :style="{ backgroundImage: `url('${item.Images[item._imgIndex || 0]}')` }">
+                                 style="width: 100%; height: 100%; background-size: cover; background-position: center;"
+                                 :style="{ backgroundImage: `url('${item.Images[item._imgIndex || 0]}')` }">
                             </div>
 
                             <!-- ✅ 影片：加 controls autoplay muted -->
@@ -105,7 +105,7 @@
 
                             <!-- 無圖片 -->
                             <div v-else
-                                style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">
+                                 style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">
                                 暫無圖片
                             </div>
 
@@ -133,9 +133,13 @@
                                     <span class="detail-label">面積</span>
                                     <span class="detail-value">{{ item.Area ?? '-' }} ㎡</span>
                                 </div>
-                                <div class="detail-row">
+                                <div class="detail-row equipment-hover" @@mouseenter="showRoomPopover(item, $event)"
+                                    @@mouseleave="hideRoomPopover()">
                                     <span class="detail-label">設備數量</span>
-                                    <span class="detail-value">{{ item.EquipmentCount ?? '-' }} 項設備</span>
+                                    <span class="detail-value">{{ item.EquipmentCount ?? '-' }} 項設備
+                                        <span class="material-icons"
+                                              style="font-size: 14px; vertical-align: middle; color: #6c757d;">info_outline</span>
+                                    </span>
                                 </div>
                             </div>
 
@@ -162,6 +166,51 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Room Popover -->
+<div v-if="roomPopover.visible" class="room-popover"
+     :style="{ top: roomPopover.top + 'px', left: roomPopover.left + 'px' }" @@mouseenter="keepRoomPopover()"
+    @@mouseleave="hideRoomPopover()">
+    <div v-if="roomPopover.loading" class="text-center p-3">
+        <div class="spinner-border spinner-border-sm text-primary"></div>
+        <span class="ms-2 small">載入中...</span>
+    </div>
+    <template v-else-if="roomPopover.data">
+        <!-- 標題區 -->
+        <div class="popover-header-section">
+            <div class="popover-room-name">{{ roomPopover.data.Name }}</div>
+            <div class="popover-room-location">{{ roomPopover.data.Building }} {{ roomPopover.data.Floor }}樓</div>
+        </div>
+
+        <!-- 收費制度 -->
+        <div class="popover-section">
+            <div class="popover-section-title">
+                <span class="material-icons">paid</span> 收費制度
+            </div>
+            <div v-if="roomPopover.data.PricingDetails?.length > 0" class="popover-pricing-list">
+                <div v-for="p in roomPopover.data.PricingDetails" :key="p.Name" class="popover-pricing-item">
+                    <span>{{ p.StartTime }}-{{ p.EndTime }}</span>
+                    <span class="popover-pricing-price">NT$ {{ p.Price }}</span>
+                </div>
+            </div>
+            <div v-else class="text-muted small">無收費資訊</div>
+        </div>
+
+        <!-- 設備總覽 -->
+        <div class="popover-section">
+            <div class="popover-section-title">
+                <span class="material-icons">construction</span> 設備總覽
+            </div>
+            <div v-if="roomPopover.data.Equipment?.length > 0" class="popover-equipment-grid">
+                <div v-for="eq in roomPopover.data.Equipment" :key="eq.Id" class="popover-equipment-item">
+                    @* <span class="material-icons popover-equipment-icon">devices</span> *@
+                    <span>{{ eq.Name }}</span>
+                </div>
+            </div>
+            <div v-else class="text-muted small">無設備資訊</div>
+        </div>
+    </template>
 </div>
 
 <!-- 智慧搜尋 Modal -->
@@ -194,7 +243,7 @@
                         </h6>
                         <div class="input-group">
                             <input type="number" class="form-control" id="searchCapacity"
-                                v-model.number="smartSearch.minCapacity" min="1" placeholder="例如:20">
+                                   v-model.number="smartSearch.minCapacity" min="1" placeholder="例如:20">
                             <span class="input-group-text">人</span>
                         </div>
                     </div>
@@ -210,14 +259,14 @@
                         <div class="col-md-3">
                             <label class="equipment-card">
                                 <input type="checkbox" class="form-check-input d-none" value="1"
-                                    v-model="smartSearch.equipmentTypes">
+                                       v-model="smartSearch.equipmentTypes">
                                 <i class="mdi mdi-projector text-primary fs-3 me-2"></i> 影像設備
                             </label>
                         </div>
                         <div class="col-md-3">
                             <label class="equipment-card">
                                 <input type="checkbox" class="form-check-input d-none" value="2"
-                                    v-model="smartSearch.equipmentTypes">
+                                       v-model="smartSearch.equipmentTypes">
                                 <i class="mdi mdi-microphone text-success fs-3 me-2"></i> 音響設備
                             </label>
                         </div>
@@ -232,7 +281,7 @@
                             關鍵字搜尋
                         </h6>
                         <input type="text" class="form-control" id="searchKeyword" v-model="smartSearch.keyword"
-                            placeholder="例如:演講廳、國際...">
+                               placeholder="例如:演講廳、國際...">
                     </div>
 
                     <div class="col-md-6">
