@@ -253,11 +253,11 @@ namespace TASA.Services.EquipmentModule
             {
                 Id = Guid.NewGuid(),
                 Name = vm.Name,
-                ProductModel = vm.ProductModel,
+                ProductModel = vm.Type == 9 ? null : vm.ProductModel,  // 攤位租借無型號
                 Type = (byte)vm.Type,
                 RoomId = vm.RoomId,
                 DepartmentId = departmentId,  // ✅ 設定分院ID
-                RentalPrice = vm.RentalPrice,
+                RentalPrice = (vm.Type == 1 || vm.Type == 2) ? 0 : vm.RentalPrice,  // 影像/聲音設備無租金
                 Host = vm.Host,
                 Port = vm.Port,
                 Account = vm.Account,
@@ -320,11 +320,15 @@ namespace TASA.Services.EquipmentModule
             }
 
             data.Name = vm.Name;
-            data.ProductModel = vm.ProductModel;
             data.Type = (byte)vm.Type;
             data.RoomId = vm.RoomId;
             data.DepartmentId = departmentId;  // ✅ 更新分院ID
-            data.RentalPrice = vm.RentalPrice;
+
+            // ✅ 根據類型重置不相關欄位
+            // 影像設備(1)、聲音設備(2)：無租借金額
+            // 攤位租借(9)：無產品型號
+            data.ProductModel = vm.Type == 9 ? null : vm.ProductModel;
+            data.RentalPrice = (vm.Type == 1 || vm.Type == 2) ? 0 : vm.RentalPrice;
             data.Host = vm.Host;
             data.Port = vm.Port;
             data.Account = vm.Account;

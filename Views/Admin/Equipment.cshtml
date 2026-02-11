@@ -221,8 +221,8 @@
                                     <img :src="equipment.imageState.preview" alt="設備照片"
                                          style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
                                     <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
-                                            style="transform: translate(30%, -30%);" @@click="equipment.removeImage">
-                                        <i class="mdi mdi-close"></i>
+                                            style="transform: translate(30%, -30%); padding: 0.15rem 0.35rem;" @@click="equipment.removeImage">
+                                        <span class="material-icons" style="font-size: 14px; margin: 0;">close</span>
                                     </button>
                                 </div>
                                 <!-- 選檔按鈕 -->
@@ -233,21 +233,11 @@
                                     </button>
                                     <input type="file" id="equipmentImageInput" accept="image/*" style="display:none"
                                     @@change="equipment.onImageSelect">
-                                    <small class="form-text text-muted d-block mt-1">支援 JPG, PNG 格式，建議 2MB 以內</small>
+                                    <small class="form-text text-muted d-block mt-1">支援 JPG，建議 2MB 以內</small>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 啟用 -->
-                        @* <div class="row mb-4">
-                        <label class="col-sm-3 col-form-label">啟用</label>
-                        <div class="col-sm-9">
-                            <label class="form-check">
-                                <input v-model="equipment.vm.IsEnabled" class="form-check-input" type="checkbox">
-                                <span class="form-check-label">啟用此設備</span>
-                            </label>
-                        </div>
-                    </div> *@
+                       
                     </form>
                 </div>
 

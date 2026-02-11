@@ -627,6 +627,7 @@ namespace TASA.Services
             public string? RoomName { get; set; }
             public decimal RentalPrice { get; set; }
             public bool IsEnabled { get; set; }
+            public string? ImagePath { get; set; }
 
             public bool Occupied { get; set; } = false;
         }
@@ -960,7 +961,8 @@ namespace TASA.Services
                         x.RoomId,
                         RoomName = x.Room != null ? x.Room.Name : null,
                         x.RentalPrice,
-                        x.IsEnabled
+                        x.IsEnabled,
+                        x.ImagePath
                     })
                     .ToList();
 
@@ -997,10 +999,13 @@ namespace TASA.Services
 
                         var equipmentIds = allEquipment.Select(x => x.Id).ToList();
 
-                        // 先找出當天所有的會議室時段
+                        // 先找出當天所有有效的會議室時段（排除已取消/已拒絕的會議）
                         var allConferenceSlots = db.ConferenceRoomSlot
                             .AsNoTracking()
-                            .Where(x => x.SlotDate == dateOnly.Value)  // ✅ 改用 dateOnly
+                            .Where(x => x.SlotDate == dateOnly.Value &&
+                                        x.SlotStatus != SlotStatus.Available &&  // 排除已釋放的時段
+                                        x.Conference.ReservationStatus != ReservationStatus.Cancelled &&
+                                        x.Conference.ReservationStatus != ReservationStatus.Rejected)
                             .Select(x => new
                             {
                                 x.ConferenceId,
@@ -1050,13 +1055,14 @@ namespace TASA.Services
 
                         if (overlappingConferences.Any())
                         {
-                            // 查詢這些會議使用了哪些設備
+                            // 查詢這些會議使用了哪些設備（排除已釋放的）
                             var occupiedEquipment = db.ConferenceEquipment
                                 .AsNoTracking()
                                 .Where(x =>
                                     overlappingConferences.Contains(x.ConferenceId) &&
                                     equipmentIds.Contains(x.EquipmentId) &&
-                                    x.SlotDate == dateOnly.Value  // ✅ 改用 dateOnly
+                                    x.SlotDate == dateOnly.Value &&
+                                    x.EquipmentStatus != 0  // 排除已釋放的設備
                                 )
                                 .Select(x => new
                                 {
@@ -1111,6 +1117,7 @@ namespace TASA.Services
                         RoomName = x.RoomName,
                         RentalPrice = x.RentalPrice,
                         IsEnabled = x.IsEnabled,
+                        ImagePath = x.ImagePath,
                         Occupied = occupiedEquipmentIds.Contains(x.Id)
                     })
                     .ToList();
