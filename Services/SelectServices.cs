@@ -587,7 +587,7 @@ namespace TASA.Services
 
             if (excludeTaipei)
             {
-                query = query.Where(x => x.Sequence != 1);  // ✅ 排除台北總院
+                query = query.Where(x => x.Sequence != 1);  // ✅ 排除臺北總院
             }
 
             return query

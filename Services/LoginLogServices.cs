@@ -27,6 +27,7 @@ namespace TASA.Services
             public string DeviceInfo { get; set; } = string.Empty;
             public string BrowserInfo { get; set; } = string.Empty;
             public string Type { get; set; } = string.Empty;
+            public string ActionDescription { get; set; } = string.Empty;  // 操作描述
         }
 
         public IQueryable<ListVM> List(QueryVM query)
@@ -61,7 +62,8 @@ namespace TASA.Services
                     try
                     {
                         var info = JsonConvert.DeserializeObject<dynamic>(x.Info);
-                        
+                        var type = ExtractType(x.InfoType);
+
                         return new ListVM
                         {
                             Id = x.No,
@@ -73,7 +75,8 @@ namespace TASA.Services
                             IpAddress = info?.ClientIp ?? info?.IpAddress ?? x.Ip ?? "未知",
                             DeviceInfo = info?.DeviceInfo ?? "Unknown",
                             BrowserInfo = info?.BrowserInfo ?? "Unknown",
-                            Type = ExtractType(x.InfoType)
+                            Type = type,
+                            ActionDescription = GenerateActionDescription(x.InfoType, info)
                         };
                     }
                     catch
@@ -89,7 +92,8 @@ namespace TASA.Services
                             IpAddress = x.Ip ?? "未知",
                             DeviceInfo = "Unknown",
                             BrowserInfo = "Unknown",
-                            Type = ExtractType(x.InfoType)
+                            Type = ExtractType(x.InfoType),
+                            ActionDescription = x.Info.Length > 50 ? x.Info.Substring(0, 50) + "..." : x.Info
                         };
                     }
                 })
@@ -121,11 +125,71 @@ namespace TASA.Services
             {
                 var x when x.Contains("login") => "login",
                 var x when x.Contains("user_register") => "user_register",
-                var x when x.Contains("user_update") => "user_update",
+                var x when x.Contains("user_update") => "user_update",  // 包含 user_update_profile, user_update_password
                 var x when x.Contains("user_insert") || x.Contains("user_create") => "user_insert",
                 var x when x.Contains("user_delete") => "user_delete",
+                var x when x.Contains("變更密碼") || x.Contains("忘記密碼") => "user_update",  // 相容舊資料
                 _ => "other"
             };
+        }
+
+        /// <summary>
+        /// 根據 InfoType 和 Info 生成操作描述
+        /// 格式: "操作者 修改了 目標 操作內容"
+        /// </summary>
+        private string GenerateActionDescription(string infoType, dynamic? info)
+        {
+            if (info == null) return "-";
+
+            string operatorName = info?.OperatorName ?? info?.UserName ?? "系統";
+            string targetName = info?.TargetName ?? info?.UserName ?? "";
+            string action = info?.Action?.ToString() ?? "";
+
+            // 根據 InfoType 生成描述
+            if (infoType.Contains("user_update_password") || infoType.Contains("變更密碼"))
+            {
+                if (action == "reset_password")
+                    return $"{targetName} 透過忘記密碼重設了密碼";
+                return $"{operatorName} 修改了 {targetName} 的密碼";
+            }
+
+            if (infoType.Contains("user_update_profile"))
+            {
+                var changes = new List<string>();
+                if (info?.OldName != null && info?.NewName != null && info.OldName.ToString() != info.NewName.ToString())
+                    changes.Add($"名稱: {info.OldName} → {info.NewName}");
+                if (info?.OldEmail != null && info?.NewEmail != null && info.OldEmail.ToString() != info.NewEmail.ToString())
+                    changes.Add($"Email: {info.OldEmail} → {info.NewEmail}");
+
+                var changeDesc = changes.Count > 0 ? string.Join(", ", changes) : "個人資料";
+                return $"{operatorName} 修改了 {targetName} 的{changeDesc}";
+            }
+
+            if (infoType.Contains("user_update") || infoType == "user_update")
+            {
+                // 檢查是否有 IsEnabled 變更
+                if (info?.IsEnabled != null)
+                {
+                    bool isEnabled = info.IsEnabled;
+                    return isEnabled
+                        ? $"{operatorName} 啟用了 {targetName} 的帳號"
+                        : $"{operatorName} 停用了 {targetName} 的帳號";
+                }
+                return $"{operatorName} 修改了 {targetName} 的帳號資料";
+            }
+
+            if (infoType.Contains("user_insert") || infoType.Contains("user_create"))
+            {
+                return $"{operatorName} 新增了帳號 {targetName}";
+            }
+
+            if (infoType.Contains("user_delete"))
+            {
+                return $"{operatorName} 刪除了帳號 {targetName}";
+            }
+
+            // 預設描述
+            return $"{operatorName} 執行了 {infoType} 操作";
         }
     }
 }

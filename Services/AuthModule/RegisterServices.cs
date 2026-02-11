@@ -122,27 +122,34 @@ namespace TASA.Services.AuthModule
             }
 
             // 1️⃣ 檢查帳號 / Email 是否已存在
-            var exists = db.AuthUser
+            var existingUser = db.AuthUser
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Any(x => x.Account == vm.Email || x.Email == vm.Email);
+                .FirstOrDefault(x => x.Account == vm.Email || x.Email == vm.Email);
 
-            if (exists)
+            if (existingUser != null)
             {
+                // 區分已啟用和等待審核的情況
+                var failureReason = existingUser.IsEnabled ? "Email已存在" : "帳號等待審核中";
+                var errorMessage = existingUser.IsEnabled
+                    ? "此 Email 已被註冊"
+                    : "此帳號已註冊，目前正在等待管理者審核，請耐心等候";
+
                 var failureInfo = new
                 {
                     UserName = vm.Email,
                     Email = vm.Email,
                     IsSuccess = false,
-                    FailureReason = "Email已存在",
+                    FailureReason = failureReason,
                     ClientIp = GetClientIp(),
                     DeviceInfo = deviceInfo.device,
                     BrowserInfo = deviceInfo.browser,
                     LoginMethod = GetLoginMethod(),
                     Timestamp = DateTime.Now
                 };
-                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
-                throw new HttpException("此 Email 已被註冊")
+                // ✅ 傳入已存在用戶的 UserId 和 DepartmentId
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo), existingUser.Id, existingUser.DepartmentId);
+                throw new HttpException(errorMessage)
                 {
                     StatusCode = System.Net.HttpStatusCode.BadRequest
                 };
@@ -167,7 +174,7 @@ namespace TASA.Services.AuthModule
                 department = db.SysDepartment
                     .AsNoTracking()
                     .WhereNotDeleted()
-                    .FirstOrDefault(x => x.Sequence == 1);  // ✅ 假設台北總院 Sequence = 1
+                    .FirstOrDefault(x => x.Sequence == 1);  // ✅ 假設臺北總院 Sequence = 1
 
                 if (department == null)
                 {
@@ -233,7 +240,8 @@ namespace TASA.Services.AuthModule
                 DepartmentId = user.DepartmentId,
                 Timestamp = DateTime.Now
             };
-            _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo));
+            // ✅ 傳入新建用戶的 UserId 和 DepartmentId
+            _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo), user.Id, user.DepartmentId);
 
             // 7️⃣ 寄信通知分院主任（DIRECTOR），沒有則寄給 ADMIN
             var directorEmails = db.AuthUser

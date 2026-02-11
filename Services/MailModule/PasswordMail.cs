@@ -123,7 +123,7 @@ namespace TASA.Services.MailModule
             mail.Subject = "帳號審核通過通知";
             mail.Body = $@"
 <p>您好：</p>
-<p>您註冊的台北榮總會議預約系統已通過審核，現在可以登入系統。</p>
+<p>您註冊的臺北榮總會議預約系統已通過審核，現在可以登入系統。</p>
 <p><a href='{BaseUrl}'>點此前往登入</a></p>";
             mail.To.Add(email);
             Task.Run(async () =>

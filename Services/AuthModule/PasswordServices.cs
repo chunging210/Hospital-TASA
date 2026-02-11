@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using TASA.Extensions;
 using TASA.Models;
@@ -6,8 +7,51 @@ using TASA.Program;
 
 namespace TASA.Services.AuthModule
 {
-    public class PasswordServices(TASAContext db, ServiceWrapper service) : IService
+    public class PasswordServices(TASAContext db, ServiceWrapper service, IHttpContextAccessor httpContextAccessor) : IService
     {
+        // ✅ 取得客戶端 IP
+        private string GetClientIp()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var ip = context?.Request.Headers["X-Forwarded-For"].ToString().Split(',')[0].Trim()
+                ?? context?.Request.Headers["X-Real-IP"].ToString()
+                ?? context?.Connection.RemoteIpAddress?.ToString()
+                ?? "未知";
+            return ip;
+        }
+
+        // ✅ 取得瀏覽器和裝置資訊
+        private (string browser, string device) GetDeviceInfo()
+        {
+            var context = httpContextAccessor.HttpContext;
+            var userAgent = context?.Request.Headers["User-Agent"].ToString() ?? "未知";
+
+            var device = "未知";
+            var browser = "未知";
+
+            if (userAgent.Contains("Windows", StringComparison.OrdinalIgnoreCase))
+                device = "Windows";
+            else if (userAgent.Contains("Mac", StringComparison.OrdinalIgnoreCase))
+                device = "macOS";
+            else if (userAgent.Contains("Linux", StringComparison.OrdinalIgnoreCase))
+                device = "Linux";
+            else if (userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase))
+                device = "iPhone";
+            else if (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase))
+                device = "Android";
+
+            if (userAgent.Contains("Chrome", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chromium"))
+                browser = "Chrome";
+            else if (userAgent.Contains("Safari", StringComparison.OrdinalIgnoreCase) && !userAgent.Contains("Chrome"))
+                browser = "Safari";
+            else if (userAgent.Contains("Firefox", StringComparison.OrdinalIgnoreCase))
+                browser = "Firefox";
+            else if (userAgent.Contains("Edge", StringComparison.OrdinalIgnoreCase))
+                browser = "Edge";
+
+            return (browser, device);
+        }
+
         public void ToHash()
         {
             var user = db.AuthUser.Where(x => string.IsNullOrEmpty(x.PasswordHash)).ToList();
@@ -47,7 +91,7 @@ namespace TASA.Services.AuthModule
                 };
                 db.AuthForget.Add(newAuthForget);
                 db.SaveChanges();
-                _ = _ = service.LogServices.LogAsync("忘記密碼", $"帳號 {user.Account}");
+                // 忘記密碼申請只是發信，不記錄在「修改帳號日誌」
                 service.PasswordMail.Forget(newAuthForget.Id, newAuthForget.ExpiresAt, user.Email);
             }
         }
@@ -84,7 +128,22 @@ namespace TASA.Services.AuthModule
                     user.PasswordHash = hashPassword.Hash;
                     user.PasswordSalt = hashPassword.Salt;
                     db.SaveChanges();
-                    _ = _ = service.LogServices.LogAsync("忘記密碼", $"帳號 {user.Account} 變更密碼");
+                    // ✅ 記錄透過忘記密碼重設密碼（手動傳入 UserId 和 DepartmentId，因為用戶還沒登入）
+                    var deviceInfo = GetDeviceInfo();
+                    var resetInfo = new
+                    {
+                        OperatorName = user.Name,  // 自己透過忘記密碼重設
+                        TargetName = user.Name,
+                        UserName = user.Account,
+                        Email = user.Email,
+                        Action = "reset_password",
+                        IsSuccess = true,
+                        ClientIp = GetClientIp(),
+                        DeviceInfo = deviceInfo.device,
+                        BrowserInfo = deviceInfo.browser,
+                        Timestamp = DateTime.Now
+                    };
+                    _ = service.LogServices.LogAsync("user_update_password", JsonConvert.SerializeObject(resetInfo), user.Id, user.DepartmentId);
                     service.PasswordMail.PasswordChange(user.Email);
                 }
             }
@@ -107,7 +166,22 @@ namespace TASA.Services.AuthModule
                 user.PasswordHash = hashPassword.Hash;
                 user.PasswordSalt = hashPassword.Salt;
                 db.SaveChanges();
-                _ = _ = service.LogServices.LogAsync("變更密碼", $"帳號 {user.Account} 變更密碼");
+                // ✅ 記錄變更密碼
+                var deviceInfo = GetDeviceInfo();
+                var changeInfo = new
+                {
+                    OperatorName = user.Name,  // 自己修改自己
+                    TargetName = user.Name,
+                    UserName = user.Account,
+                    Email = user.Email,
+                    Action = "change_password",
+                    IsSuccess = true,
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    Timestamp = DateTime.Now
+                };
+                _ = service.LogServices.LogAsync("user_update_password", JsonConvert.SerializeObject(changeInfo), user.Id, user.DepartmentId);
                 service.PasswordMail.PasswordChange(user.Email);
             }
         }

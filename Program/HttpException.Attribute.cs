@@ -9,10 +9,13 @@ namespace TASA.Program
         {
             if (context.Exception is HttpException exception)
             {
+                // ✅ 使用實際的錯誤訊息，而非固定的「操作有誤」
+                var errorMessage = exception.Details?.ToString() ?? exception.GetBaseException().Message;
+
                 var result = new ObjectResult(new
                 {
                     source = GetSource(exception),
-                    message = "操作有誤，請檢查後重試。",
+                    message = errorMessage,
                     details = exception.Details ?? exception.GetBaseException().Message
                 })
                 {

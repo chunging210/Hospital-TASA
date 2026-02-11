@@ -97,8 +97,19 @@ namespace TASA.Services.AuthUserModule
             };
             db.AuthUser.Add(newAuthUser);
             db.SaveChanges();
-            var insertInfo = new { UserName = newAuthUser.Name, Email = newAuthUser.Email, Action = "create", IsEnabled = newAuthUser.IsEnabled };
-            service.LogServices.LogAsync("user_insert", JsonConvert.SerializeObject(insertInfo)).Wait();
+
+            // ✅ 取得操作者名稱
+            var operatorUser = service.UserClaimsService.Me();
+            var insertInfo = new
+            {
+                OperatorName = operatorUser?.Name ?? "系統",
+                TargetName = newAuthUser.Name,
+                UserName = newAuthUser.Name,
+                Email = newAuthUser.Email,
+                Action = "create",
+                IsEnabled = newAuthUser.IsEnabled
+            };
+            _ = service.LogServices.LogAsync("user_insert", JsonConvert.SerializeObject(insertInfo), newAuthUser.Id, newAuthUser.DepartmentId);
 
         }
 
@@ -133,8 +144,19 @@ namespace TASA.Services.AuthUserModule
                     db.SaveChanges();
                 }
 
-                var updateInfo = new { UserName = data.Name, Email = data.Email, Action = "update", IsEnabled = data.IsEnabled };
-                service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo)).Wait();
+                // ✅ 取得操作者名稱，記錄啟用/停用狀態變更
+                var operatorUser = service.UserClaimsService.Me();
+                var updateInfo = new
+                {
+                    OperatorName = operatorUser?.Name ?? "系統",
+                    TargetName = data.Name,
+                    UserName = data.Name,
+                    Email = data.Email,
+                    Action = "update",
+                    IsEnabled = data.IsEnabled,
+                    WasEnabled = wasEnabled  // 記錄之前的狀態以便追蹤
+                };
+                _ = service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo), data.Id, data.DepartmentId);
             }
         }
     }
