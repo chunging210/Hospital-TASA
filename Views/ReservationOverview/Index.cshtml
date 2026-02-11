@@ -318,8 +318,8 @@
                         </div>
                     </div>
 
-                    <!-- 加租項目（設備、攤位、附件） -->
-                    <template v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0 || selectedItem.attachments?.length > 0">
+                    <!-- 加租項目（設備、攤位、停車券、附件） -->
+                    <template v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0 || selectedItem.parkingTicketCount > 0 || selectedItem.attachments?.length > 0">
                         <div class="col-12">
                             <h5 class="d-flex align-items-center text-primary border-bottom">
                                 <span class="material-icons icons">inventory_2</span>
@@ -336,6 +336,15 @@
                                 <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.booths?.length > 0">
                                     <span class="form-label text-secondary font-size-18">攤位加租</span>
                                     <label class="form-label fw-bold">{{ selectedItem.booths.join('、') }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 停車券 -->
+                        <div class="col-md-12" v-if="selectedItem.parkingTicketCount > 0">
+                            <div class="row">
+                                <div class="col-md-6 d-flex flex-sm-column">
+                                    <span class="form-label text-secondary font-size-18">停車券</span>
+                                    <label class="form-label fw-bold">{{ selectedItem.parkingTicketCount }} 張</label>
                                 </div>
                             </div>
                         </div>

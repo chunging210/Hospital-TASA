@@ -13,10 +13,15 @@ namespace TASA.Services
             public bool IsOpen { get; set; }
         }
 
-        public class UpdateSysConfigDto
+        public class ConfigItem
         {
             public string ConfigKey { get; set; }
             public string ConfigValue { get; set; }
+        }
+
+        public class BatchUpdateSysConfigDto
+        {
+            public List<ConfigItem> Configs { get; set; }
             public Guid? DepartmentId { get; set; }  // NULL = 全局預設
         }
 
@@ -180,51 +185,81 @@ namespace TASA.Services
         }
 
         /// <summary>
-        /// 更新設定 (通用方法)
+        /// 批次更新設定
         /// </summary>
-        public void UpdateConfig(string configKey, string configValue, Guid? departmentId = null)
+        public void BatchUpdateConfig(List<ConfigItem> configs, Guid? departmentId = null)
         {
-            // ✅ 驗證：最早預約天數必須大於繳費期限天數
-            if (configKey == "PAYMENT_DEADLINE_DAYS" || configKey == "MIN_ADVANCE_BOOKING_DAYS")
+            if (configs == null || configs.Count == 0)
             {
-                ValidateBookingAndPaymentDays(configKey, configValue, departmentId);
+                throw new HttpException("沒有要更新的設定");
             }
 
-            SetConfigValue(configKey, configValue, departmentId);
-        }
+            // 從這批傳入的值中取得繳費期限和最早預約天數
+            var paymentDaysConfig = configs.FirstOrDefault(c => c.ConfigKey == "PAYMENT_DEADLINE_DAYS");
+            var bookingDaysConfig = configs.FirstOrDefault(c => c.ConfigKey == "MIN_ADVANCE_BOOKING_DAYS");
 
-        /// <summary>
-        /// 驗證最早預約天數與繳費期限天數的關係
-        /// </summary>
-        private void ValidateBookingAndPaymentDays(string configKey, string newValue, Guid? departmentId)
-        {
-            if (!int.TryParse(newValue, out int newDays))
-            {
-                throw new HttpException("請輸入有效的數字");
-            }
+            // 取得要驗證的值（優先用傳入的，沒有就從 DB 讀）
+            int paymentDeadlineDays = paymentDaysConfig != null
+                ? int.TryParse(paymentDaysConfig.ConfigValue, out int p) ? p : GetPaymentDeadlineDays(departmentId)
+                : GetPaymentDeadlineDays(departmentId);
 
-            int minAdvanceBookingDays;
-            int paymentDeadlineDays;
+            int minAdvanceBookingDays = bookingDaysConfig != null
+                ? int.TryParse(bookingDaysConfig.ConfigValue, out int b) ? b : GetMinAdvanceBookingDays(departmentId)
+                : GetMinAdvanceBookingDays(departmentId);
 
-            if (configKey == "MIN_ADVANCE_BOOKING_DAYS")
-            {
-                // 正在修改最早預約天數，取得目前的繳費期限天數
-                minAdvanceBookingDays = newDays;
-                paymentDeadlineDays = GetPaymentDeadlineDays(departmentId);
-            }
-            else
-            {
-                // 正在修改繳費期限天數，取得目前的最早預約天數
-                paymentDeadlineDays = newDays;
-                minAdvanceBookingDays = GetMinAdvanceBookingDays(departmentId);
-            }
-
-            // 最早預約天數必須大於繳費期限天數
+            // 驗證：最早預約天數必須大於繳費期限天數
             if (minAdvanceBookingDays <= paymentDeadlineDays)
             {
                 throw new HttpException(
                     $"最早預約天數（{minAdvanceBookingDays} 天）必須大於繳費期限天數（{paymentDeadlineDays} 天），" +
                     $"否則可能發生會議已開始但尚未繳費的情況");
+            }
+
+            // 批次更新（不個別 SaveChanges，最後統一存）
+            foreach (var config in configs)
+            {
+                SetConfigValueWithoutSave(config.ConfigKey, config.ConfigValue, departmentId);
+            }
+
+            // 統一儲存
+            db.SaveChanges();
+
+            // 記錄 Log
+            var departmentName = departmentId.HasValue
+                ? db.SysDepartment.AsNoTracking().FirstOrDefault(d => d.Id == departmentId.Value)?.Name ?? "未知分院"
+                : "全局";
+            var configSummary = string.Join(", ", configs.Select(c => $"{c.ConfigKey}={c.ConfigValue}"));
+            _ = service.LogServices.LogAsync("系統設定批次更新", $"[{departmentName}] {configSummary}");
+        }
+
+        /// <summary>
+        /// 設定值（不儲存，供批次更新使用）
+        /// </summary>
+        private void SetConfigValueWithoutSave(string configKey, string configValue, Guid? departmentId = null)
+        {
+            var config = db.SysConfig
+                .FirstOrDefault(x =>
+                    x.ConfigKey == configKey &&
+                    (departmentId == null ? x.DepartmentId == null : x.DepartmentId == departmentId) &&
+                    x.DeleteAt == null);
+
+            if (config == null)
+            {
+                // 新增
+                config = new SysConfig
+                {
+                    Id = Guid.NewGuid(),
+                    ConfigKey = configKey,
+                    ConfigValue = configValue,
+                    DepartmentId = departmentId,
+                    Enabled = true
+                };
+                db.SysConfig.Add(config);
+            }
+            else
+            {
+                // 更新
+                config.ConfigValue = configValue;
             }
         }
 

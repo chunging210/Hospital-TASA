@@ -4,6 +4,7 @@ using TASA.Extensions;
 using TASA.Program;
 using TASA.Services;
 using static TASA.Services.SysConfigService;
+using TASA.Services;
 
 
 namespace TASA.Controllers.API
@@ -101,11 +102,11 @@ namespace TASA.Controllers.API
         }
 
         /// <summary>
-        /// 更新系統設定（支援分院設定）
+        /// 批次更新系統設定（支援分院設定）
         /// </summary>
         [Authorize]
         [HttpPost("update")]
-        public IActionResult Update([FromBody] UpdateSysConfigDto dto)
+        public IActionResult Update([FromBody] BatchUpdateSysConfigDto dto)
         {
             try
             {
@@ -132,9 +133,14 @@ namespace TASA.Controllers.API
                     {
                         return BadRequest(new { message = "您只能修改自己分院的設定" });
                     }
+
+                    // 非 Admin 不能修改 GUEST_REGISTRATION（過濾掉）
+                    dto.Configs = dto.Configs?
+                        .Where(c => c.ConfigKey != "GUEST_REGISTRATION")
+                        .ToList();
                 }
 
-                service.SysConfigService.UpdateConfig(dto.ConfigKey, dto.ConfigValue, targetDepartmentId);
+                service.SysConfigService.BatchUpdateConfig(dto.Configs, targetDepartmentId);
                 return Ok(new { message = "設定已更新" });
             }
             catch (HttpException ex)

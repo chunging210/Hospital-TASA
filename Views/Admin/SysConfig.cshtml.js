@@ -44,7 +44,7 @@ const sysConfig = new function () {
             });
     };
 
-    // 儲存設定 (POST /admin/api/sysconfig)
+    // 儲存設定 (POST /api/sysconfig/update)
     this.saveSettings = () => {
         // 準備要更新的設定
         const configs = [];
@@ -66,18 +66,13 @@ const sysConfig = new function () {
 
         console.log('[SysConfig] saveSettings() configs =', configs, 'departmentId =', departmentId);
 
-        // 逐一更新設定
-        let updatePromises = configs.map(config => {
-            return global.api.sysconfig.update({
-                body: {
-                    configKey: config.configKey,
-                    configValue: config.configValue,
-                    departmentId: departmentId
-                }
-            });
-        });
-
-        Promise.all(updatePromises)
+        // 一次送出所有設定
+        global.api.sysconfig.update({
+            body: {
+                configs: configs,
+                departmentId: departmentId
+            }
+        })
             .then(() => {
                 console.log('[SysConfig] 所有設定已儲存');
                 addAlert('設定已儲存', { type: 'success' });
@@ -86,7 +81,7 @@ const sysConfig = new function () {
             .catch(error => {
                 console.error('[SysConfig] 儲存失敗:', error);
                 // 顯示後端回傳的錯誤訊息
-                const errorMsg = error?.response?.data?.message || '儲存設定失敗';
+                const errorMsg = error?.message || '儲存設定失敗';
                 addAlert(errorMsg, { type: 'danger' });
             });
     };
@@ -97,7 +92,7 @@ const sysConfig = new function () {
 
         this.settings.isRegistrationOpen = true;
         this.settings.paymentDeadlineDays = 7;
-        this.settings.minAdvanceBookingDays = 7;
+        this.settings.minAdvanceBookingDays = 14;
         this.settings.managerEmail = '';
 
         addAlert('已重設為預設值 (請記得儲存設定)', { type: 'info' });

@@ -125,7 +125,8 @@ window.$config = {
             selectedBooths: [],
             paymentMethod: '',
             departmentCode: '',
-            attachments: []
+            attachments: [],
+            parkingTicketPurchase: 0  // 停車券加購張數
         });
 
         /* ========= 附件管理 ========= */
@@ -390,8 +391,28 @@ window.$config = {
             }, 0);
         });
 
-        this.totalAmount = computed(() => {
+        // 小計（會議室 + 設備 + 攤位，用於計算停車券贈送）
+        this.subtotal = computed(() => {
             return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
+        });
+
+        // 停車券贈送張數（每滿 5 萬送 30 張）
+        this.freeTicketCount = computed(() => {
+            return Math.floor(this.subtotal.value / 50000) * 30;
+        });
+
+        // 停車券加購費用（每張 100 元）
+        this.parkingTicketCost = computed(() => {
+            return (this.form.parkingTicketPurchase || 0) * 100;
+        });
+
+        // 停車券總張數（贈送 + 加購）
+        this.totalTicketCount = computed(() => {
+            return this.freeTicketCount.value + (this.form.parkingTicketPurchase || 0);
+        });
+
+        this.totalAmount = computed(() => {
+            return this.subtotal.value + this.parkingTicketCost.value;
         });
 
         /* ====== ✅ 確認彈窗相關功能 ====== */
@@ -938,6 +959,8 @@ window.$config = {
                 roomCost: this.roomCost.value,
                 equipmentCost: this.equipmentCost.value,
                 boothCost: this.boothCost.value,
+                parkingTicketCount: this.totalTicketCount.value,
+                parkingTicketCost: this.parkingTicketCost.value,
                 totalAmount: this.totalAmount.value,
                 roomId: this.form.roomId,
                 slotKeys: [...this.form.selectedSlots],
