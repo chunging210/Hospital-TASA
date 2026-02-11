@@ -208,37 +208,31 @@
                             <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
                                 <div class="pricing-section">
                                     <div class="mb-3">
-                                        @* <span class="badge bg-primary">{{ detailRoom?.PricingType === 0 ? '小時制' : '時段制'
-                                            }}</span> *@
                                         <span class="badge bg-primary">時段制</span>
                                     </div>
 
                                     <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"
                                         class="pricing-list">
 
-                                        <!-- 時段制 - 時段名稱和時間同一行 -->
+                                        <!-- 時段制 - 時段名稱、時間、平日價格、假日價格 -->
                                         <div v-if="detailRoom.PricingType === 1"
                                             v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
                                             <div class="pricing-item-period">
                                                 <div class="pricing-item-period-info">
                                                     <span class="pricing-name">{{ pricing.Name }}</span>
-                                                    <span class="pricing-time">{{ pricing.StartTime }} - {{
-                                                        pricing.EndTime }}</span>
+                                                    <span class="pricing-time">{{ pricing.StartTime }} - {{ pricing.EndTime }}</span>
                                                 </div>
                                                 <div class="pricing-item-period-divider"></div>
-                                                <span class="pricing-item-period-price">NT$ {{ pricing.Price }}</span>
+                                                <div class="pricing-item-period-prices">
+                                                    <span class="pricing-item-period-price">
+                                                        <small class="text-muted">平日</small> NT$ {{ pricing.Price }}
+                                                    </span>
+                                                    <span class="pricing-item-period-price" v-if="pricing.HolidayPrice">
+                                                        <small class="text-muted">假日</small> NT$ {{ pricing.HolidayPrice }}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-
-                                        <!-- 小時制 - 只顯示時間 -->
-                                        @* <div v-else-if="detailRoom.PricingType === 0"
-                                            v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
-                                            <div class="pricing-item-hourly">
-                                                <span class="pricing-item-hourly-time">{{ pricing.StartTime }} - {{
-                                                    pricing.EndTime }}</span>
-                                                <span class="pricing-item-hourly-price">NT$ {{ pricing.Price }}</span>
-                                            </div>
-                                        </div> *@
                                     </div>
 
                                     <div v-else class="text-muted">

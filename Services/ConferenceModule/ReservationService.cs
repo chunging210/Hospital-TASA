@@ -38,6 +38,8 @@ namespace TASA.Services.ConferenceModule
             public int RoomCost { get; set; }
             public int EquipmentCost { get; set; }
             public int BoothCost { get; set; }
+            public int ParkingTicketCount { get; set; }
+            public int ParkingTicketCost { get; set; }
             public int TotalAmount { get; set; }
             public List<AttachmentDTO> Attachments { get; set; } = new();
             public class AttachmentDTO
@@ -68,6 +70,7 @@ namespace TASA.Services.ConferenceModule
             public string Time { get; set; }
             public string RoomName { get; set; }
             public int TotalAmount { get; set; }
+            public int ParkingTicketCount { get; set; }  // ✅ 停車券張數
             public string Status { get; set; }
             public string PaymentStatusText { get; set; }
             public string? PaymentDeadline { get; set; }
@@ -113,6 +116,7 @@ namespace TASA.Services.ConferenceModule
             public string Time { get; set; }
             public string RoomName { get; set; }
             public int TotalAmount { get; set; }
+            public int ParkingTicketCount { get; set; }  // ✅ 停車券張數
             public string Status { get; set; }
             public string PaymentStatusText { get; set; }
             public string? PaymentDeadline { get; set; }
@@ -245,6 +249,7 @@ namespace TASA.Services.ConferenceModule
                             .FirstOrDefault() ?? "-",
 
                     TotalAmount = x.Conference.TotalAmount,
+                    ParkingTicketCount = x.Conference.ParkingTicketCount,  // ✅ 停車券張數
 
                     Status = x.Conference.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
                              x.Conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
@@ -343,6 +348,7 @@ namespace TASA.Services.ConferenceModule
                         .FirstOrDefault() ?? "-",
 
                     TotalAmount = x.Conference.TotalAmount,
+                    ParkingTicketCount = x.Conference.ParkingTicketCount,  // ✅ 停車券張數
                     PaymentMethod = x.Conference.PaymentMethod,
                     Status = "待繳費",
 
@@ -870,6 +876,7 @@ namespace TASA.Services.ConferenceModule
                     .Select(s => s.Room?.Name)
                     .FirstOrDefault() ?? "-",
                 TotalAmount = conference.TotalAmount,
+                ParkingTicketCount = conference.ParkingTicketCount,  // ✅ 停車券張數
                 Status = conference.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
                          conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
                          conference.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
@@ -1023,6 +1030,8 @@ namespace TASA.Services.ConferenceModule
                 RoomCost = (int)(vm.RoomCost ?? 0),
                 EquipmentCost = (int)(vm.EquipmentCost ?? 0),
                 BoothCost = (int)(vm.BoothCost ?? 0),
+                ParkingTicketCount = vm.ParkingTicketCount ?? 0,
+                ParkingTicketCost = vm.ParkingTicketCost ?? 0,
                 TotalAmount = (int)(vm.TotalAmount ?? 0),
                 CreateBy = userId,
                 CreateAt = DateTime.Now, 
@@ -1066,6 +1075,8 @@ namespace TASA.Services.ConferenceModule
             conference.RoomCost = (int)(vm.RoomCost ?? 0);
             conference.EquipmentCost = (int)(vm.EquipmentCost ?? 0);
             conference.BoothCost = (int)(vm.BoothCost ?? 0);
+            conference.ParkingTicketCount = vm.ParkingTicketCount ?? 0;
+            conference.ParkingTicketCost = vm.ParkingTicketCost ?? 0;
             conference.TotalAmount = (int)(vm.TotalAmount ?? 0);
             conference.DurationHH = vm.DurationHH ?? 0;
             conference.DurationSS = vm.DurationSS ?? 0;

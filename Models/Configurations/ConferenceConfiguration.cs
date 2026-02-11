@@ -107,6 +107,16 @@ namespace TASA.Models.Configurations
                 .HasDefaultValueSql("'0'")
                 .HasComment("攤位費用");
 
+            entity.Property(e => e.ParkingTicketCount)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("停車券張數");
+
+            entity.Property(e => e.ParkingTicketCost)
+                .HasColumnType("int(11)")
+                .HasDefaultValueSql("'0'")
+                .HasComment("停車券加購費用");
+
             entity.Property(e => e.TotalAmount)
                 .HasColumnType("int(11)")
                 .HasDefaultValueSql("'0'")

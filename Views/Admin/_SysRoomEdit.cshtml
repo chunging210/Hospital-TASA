@@ -151,15 +151,20 @@
                                 <input v-model="slot.Enabled" type="checkbox" class="form-check-input">
                                 <input v-model="slot.Name" class="form-control form-control-sm name-input"
                                     placeholder="時段名稱">
-                                <input v-model="slot.StartTime" type="time"
-                                    class="form-control form-control-sm time-input">
+                                <select v-model="slot.StartTime" class="form-select form-select-sm time-input">
+                                    <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                </select>
                                 <span>-</span>
-                                <input v-model="slot.EndTime" type="time"
-                                    class="form-control form-control-sm time-input">
+                                <select v-model="slot.EndTime" class="form-select form-select-sm time-input">
+                                    <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
+                                </select>
                                 <div class="input-group input-group-sm price-input">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">平日$</span>
                                     <input v-model.number="slot.Price" type="number" class="form-control">
-                                    <span class="input-group-text">元</span>
+                                </div>
+                                <div class="input-group input-group-sm price-input">
+                                    <span class="input-group-text">假日$</span>
+                                    <input v-model.number="slot.HolidayPrice" type="number" class="form-control">
                                 </div>
                                 <button type="button" class="btn btn-outline-danger btn-sm remove-btn"
                                     @@click="room.removeTimeSlot(index)">
@@ -298,6 +303,37 @@
 
                         <div class="form-text text-muted mt-2">
                             <i class="mdi mdi-information-outline"></i> 預約審核通知將寄給指定管理者
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ 聲明書設定 -->
+                <div class="edit-form-section">
+                    <h6>聲明書設定</h6>
+                    <div class="mb-3">
+                        <label class="form-label">上傳自訂聲明書 (PDF)</label>
+
+                        <!-- 目前已有的聲明書 -->
+                        <div v-if="room.vm.AgreementPath && !form.agreementFileName" class="alert alert-info py-2 mb-2">
+                            <i class="mdi mdi-file-pdf-box text-danger"></i>
+                            目前聲明書：
+                            <a :href="room.vm.AgreementPath" target="_blank" class="ms-1">查看</a>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                                    @@click="room.removeExistingAgreement()">移除</button>
+                        </div>
+
+                        <input type="file" class="form-control form-control-sm" accept=".pdf"
+                               @@change="room.handleAgreementUpload($event)">
+                        <div class="form-text text-muted">
+                            <i class="mdi mdi-information-outline"></i> 若未上傳，將使用系統預設聲明書
+                        </div>
+
+                        <!-- 新上傳的檔案 -->
+                        <div v-if="form.agreementFileName" class="alert alert-success mt-2 py-2">
+                            <i class="mdi mdi-file-pdf-box text-danger"></i>
+                            已選擇新檔案：{{ form.agreementFileName }}
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                                    @@click="room.clearAgreement()">移除</button>
                         </div>
                     </div>
                 </div>

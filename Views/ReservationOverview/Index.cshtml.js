@@ -205,6 +205,7 @@ window.$config = {
                         paymentDeadline: item.PaymentDeadline || '-',
                         paymentMethod: item.PaymentMethod || '-',
                         amount: item.TotalAmount,
+                        parkingTicketCount: item.ParkingTicketCount || 0,  // ✅ 停車券張數
                         paymentStatus: paymentStatus,
                         approvalStatus: item.Status,
                         costCenter: item.DepartmentCode || '-',
@@ -285,6 +286,7 @@ window.$config = {
                         paymentDeadline: item.PaymentDeadline || '-',
                         paymentMethod: item.PaymentMethod || '-',
                         amount: item.TotalAmount,
+                        parkingTicketCount: item.ParkingTicketCount || 0,  // ✅ 停車券張數
                         paymentStatus: paymentStatus,
                         approvalStatus: item.Status,
                         costCenter: item.DepartmentCode || '-',
@@ -428,6 +430,7 @@ window.$config = {
                     paymentDeadline: detail.PaymentDeadline || '-',
                     paymentMethod: detail.PaymentMethod,
                     amount: detail.TotalAmount,
+                    parkingTicketCount: detail.ParkingTicketCount || 0,  // ✅ 停車券張數
                     costCenter: detail.DepartmentCode || '-',
                     paymentStatus: detail.PaymentStatusText,
                     approvalStatus: detail.Status,

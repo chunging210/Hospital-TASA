@@ -522,7 +522,6 @@ namespace TASA.Services.MailModule
     <h4 style='margin: 0 0 10px 0; color: #007bff;'>💳 銀行匯款資訊</h4>
     <p style='margin: 5px 0;'><strong>銀行名稱：</strong>合作金庫(006)</p>
     <p style='margin: 5px 0;'><strong>分行名稱：</strong>石牌分行</p>
-    <p style='margin: 5px 0;'><strong>銀行代碼：</strong>004</p>
     <p style='margin: 5px 0;'><strong>戶名：</strong>臺北榮民總醫院作業基金403專戶</p>
     <p style='margin: 5px 0;'><strong>帳號：</strong>1427713000733</p>
     <p style='margin: 10px 0 0 0; color: #666;'><small>匯款完成後，請至系統上傳轉帳末五碼及金額</small></p>
@@ -530,8 +529,8 @@ namespace TASA.Services.MailModule
                 "cash" => @"
 <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0;'>
     <h4 style='margin: 0 0 10px 0; color: #856404;'>🏢 現金繳費資訊</h4>
-    <p style='margin: 5px 0;'><strong>繳費地點：</strong>行政大樓 1F 出納組</p>
-    <p style='margin: 5px 0;'><strong>服務時間：</strong>週一至週五 08:30-12:00、13:30-17:00</p>
+    <p style='margin: 5px 0;'><strong>繳費地點：</strong>中正樓與北護分院連通道的郵局旁</p>
+    <p style='margin: 5px 0;'><strong>服務時間：</strong>週一至週五 8:00AM - 5:00PM/5:30PM</p>
     <p style='margin: 10px 0 0 0; color: #666;'><small>繳費完成後，請至系統上傳繳費收據</small></p>
 </div>",
                 "cost-sharing" => @"
@@ -1381,6 +1380,7 @@ namespace TASA.Services.MailModule
             using var db = dbContextFactory.CreateDbContext();
 
             var reservation = db.Conference
+            .IgnoreQueryFilters()
                 .Include(c => c.CreateByNavigation)
                 .Include(c => c.ConferenceRoomSlots)
                     .ThenInclude(s => s.Room)

@@ -112,6 +112,12 @@ public partial class SysRoom
     [ForeignKey("ManagerId")]
     public virtual AuthUser? Manager { get; set; }
 
+    /// <summary>
+    /// 聲明書路徑（自訂聲明書，若無則使用公版）
+    /// </summary>
+    [StringLength(500)]
+    public string? AgreementPath { get; set; }
+
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
 

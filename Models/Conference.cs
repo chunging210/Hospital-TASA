@@ -218,6 +218,18 @@ public partial class Conference
     public int BoothCost { get; set; } = 0;
 
     /// <summary>
+    /// 停車券張數（贈送 + 加購）
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int ParkingTicketCount { get; set; } = 0;
+
+    /// <summary>
+    /// 停車券加購費用
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int ParkingTicketCost { get; set; } = 0;
+
+    /// <summary>
     /// 總金額
     /// </summary>
     [Column(TypeName = "int(11)")]

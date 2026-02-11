@@ -94,6 +94,15 @@ const isVideoFile = (filePath) => {
     return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
 };
 
+// ✅ 生成 30 分鐘間隔的時間選項 (00:00, 00:30, 01:00, ..., 23:30)
+const timeOptions = [];
+for (let hour = 0; hour < 24; hour++) {
+    for (let min = 0; min < 60; min += 30) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+        timeOptions.push(timeStr);
+    }
+}
+
 const department = new function () {
     this.list = reactive([]);
     this.getList = () => {
@@ -191,7 +200,9 @@ const room = new function () {
         feeType: PricingType.Period,
         rentalType: BookingSettings.InternalOnly,
         departmentId: null,
-        managerId: null
+        managerId: null,
+        agreementBase64: null,      // ✅ 聲明書 Base64
+        agreementFileName: null     // ✅ 聲明書檔名
     });
     // ✅ 新增:今日時程
     this.todaySchedule = ref([]);
@@ -319,6 +330,7 @@ const room = new function () {
             StartTime: data.StartTime ?? '09:00',
             EndTime: data.EndTime ?? '10:00',
             Price: data.Price ?? 0,
+            HolidayPrice: data.HolidayPrice ?? null,
             Enabled: data.Enabled ?? true
         };
     };
@@ -365,6 +377,11 @@ const room = new function () {
                     this.vm.BookingSettings = response.data.BookingSettings;
                     this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
                     this.vm.ManagerId = response.data.ManagerId;
+                    this.vm.AgreementPath = response.data.AgreementPath;  // ✅ 聲明書路徑
+
+                    // ✅ 編輯時清空新上傳的聲明書
+                    this.form.agreementBase64 = null;
+                    this.form.agreementFileName = null;
 
                     // ✅ 1. 先載入員工列表
                     await manager.getList(this.vm.DepartmentId);
@@ -437,6 +454,8 @@ const room = new function () {
             this.generateCreateTimeSlotDefaults();
 
             this.form.managerId = null;
+            this.form.agreementBase64 = null;    // ✅ 重設聲明書
+            this.form.agreementFileName = null;
             manager.clearSelection();
 
             if (!isAdmin.value && userDepartmentId.value) {
@@ -493,7 +512,9 @@ const room = new function () {
                 fileSize: m.src?.length ?? 0,
                 sortOrder: idx
             })),
-            PricingDetails: this.getPricingDetails()
+            PricingDetails: this.getPricingDetails(),
+            AgreementBase64: this.form.agreementBase64,      // ✅ 聲明書
+            AgreementFileName: this.form.agreementFileName   // ✅ 聲明書檔名
         };
 
         console.log('🔍 [SAVE normalized]', body);
@@ -539,9 +560,9 @@ const room = new function () {
         this.timeSlots.splice(0);
 
         [
-            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000 },
-            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800 },
-            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200 }
+            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200 },
+            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800, HolidayPrice: 1000 },
+            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200, HolidayPrice: 1500 }
         ].forEach(s => {
             this.timeSlots.push(this.createPeriodSlot(s));
         });
@@ -604,6 +625,7 @@ const room = new function () {
                         StartTime: slot.StartTime,
                         EndTime: slot.EndTime,
                         Price: slot.Price,
+                        HolidayPrice: slot.HolidayPrice,
                         Enabled: true
                     });
                 }
@@ -659,6 +681,37 @@ const room = new function () {
         document.getElementById('mediaUpload').click();
     }
 
+    // ✅ 聲明書上傳處理
+    this.handleAgreementUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            addAlert('請上傳 PDF 格式的檔案', { type: 'warning' });
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.form.agreementBase64 = e.target.result;
+            this.form.agreementFileName = file.name;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    };
+
+    // ✅ 清除已選擇的聲明書
+    this.clearAgreement = () => {
+        this.form.agreementBase64 = null;
+        this.form.agreementFileName = null;
+    };
+
+    // ✅ 移除現有聲明書（編輯時）
+    this.removeExistingAgreement = () => {
+        this.vm.AgreementPath = null;
+    };
+
     this.viewRoom = (Id) => {
         global.api.admin.roomdetail({ body: { Id } })
             .then((response) => {
@@ -704,6 +757,7 @@ window.$config = {
         this.imageIndices = imageIndices;
         this.roompage = ref(null);
         this.timeSlots = room.timeSlots;
+        this.timeOptions = timeOptions;  // ✅ 30 分鐘間隔的時間選項
         this.mediaFiles = room.mediaFiles;
         // this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;

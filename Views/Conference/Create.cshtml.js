@@ -68,6 +68,22 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
+        // 判斷選擇的日期是否為假日（週六日）
+        this.isHoliday = computed(() => {
+            if (!this.form.date) return false;
+            const date = new Date(this.form.date);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6; // 0=週日, 6=週六
+        });
+
+        // 取得時段的顯示價格（根據平日/假日）
+        this.getSlotPrice = (slot) => {
+            if (this.isHoliday.value && slot.HolidayPrice) {
+                return slot.HolidayPrice;
+            }
+            return slot.Price;
+        };
+
         this.currentUser = ref(null);
         this.isAdmin = ref(false);
         this.isInternalStaff = ref(false);
@@ -109,7 +125,8 @@ window.$config = {
             selectedBooths: [],
             paymentMethod: '',
             departmentCode: '',
-            attachments: []
+            attachments: [],
+            parkingTicketPurchase: 0  // 停車券加購張數
         });
 
         /* ========= 附件管理 ========= */
@@ -332,6 +349,7 @@ window.$config = {
             console.group('💰 計算會議室費用');
             console.log('會議室:', room?.Name);
             console.log('BookingSettings:', room?.BookingSettings);
+            console.log('是否假日:', this.isHoliday.value);
 
             if (room && room.BookingSettings === 3) {  // BookingSettings.Free = 3
                 console.log('✅ 免費會議室,費用為 0');
@@ -346,9 +364,13 @@ window.$config = {
                 return 0;
             }
 
+            // ✅ 根據平日/假日計算費用
             const cost = this.timeSlots.value
                 .filter(slot => this.form.selectedSlots.includes(slot.Key))
-                .reduce((sum, slot) => sum + slot.Price, 0);
+                .reduce((sum, slot) => {
+                    const price = this.getSlotPrice(slot);
+                    return sum + price;
+                }, 0);
 
             console.log('💵 計算費用:', cost);
             console.groupEnd();
@@ -369,8 +391,28 @@ window.$config = {
             }, 0);
         });
 
-        this.totalAmount = computed(() => {
+        // 小計（會議室 + 設備 + 攤位，用於計算停車券贈送）
+        this.subtotal = computed(() => {
             return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
+        });
+
+        // 停車券贈送張數（每滿 5 萬送 30 張）
+        this.freeTicketCount = computed(() => {
+            return Math.floor(this.subtotal.value / 50000) * 30;
+        });
+
+        // 停車券加購費用（每張 100 元）
+        this.parkingTicketCost = computed(() => {
+            return (this.form.parkingTicketPurchase || 0) * 100;
+        });
+
+        // 停車券總張數（贈送 + 加購）
+        this.totalTicketCount = computed(() => {
+            return this.freeTicketCount.value + (this.form.parkingTicketPurchase || 0);
+        });
+
+        this.totalAmount = computed(() => {
+            return this.subtotal.value + this.parkingTicketCost.value;
         });
 
         /* ====== ✅ 確認彈窗相關功能 ====== */
@@ -917,6 +959,8 @@ window.$config = {
                 roomCost: this.roomCost.value,
                 equipmentCost: this.equipmentCost.value,
                 boothCost: this.boothCost.value,
+                parkingTicketCount: this.totalTicketCount.value,
+                parkingTicketCost: this.parkingTicketCost.value,
                 totalAmount: this.totalAmount.value,
                 roomId: this.form.roomId,
                 slotKeys: [...this.form.selectedSlots],

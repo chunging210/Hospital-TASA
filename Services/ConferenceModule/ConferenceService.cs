@@ -54,6 +54,8 @@ namespace TASA.Services.ConferenceModule
             public decimal? RoomCost { get; set; }
             public decimal? EquipmentCost { get; set; }
             public decimal? BoothCost { get; set; }
+            public int? ParkingTicketCount { get; set; }
+            public int? ParkingTicketCost { get; set; }
             public decimal? TotalAmount { get; set; }
             public string? PaymentMethod { get; set; }
             public string? DepartmentCode { get; set; }

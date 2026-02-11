@@ -310,8 +310,8 @@
                         </div>
                     </div>
 
-                    <!-- 加租項目（設備、攤位、附件） -->
-                    <template v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0 || selectedItem.attachments?.length > 0">
+                    <!-- 加租項目（設備、攤位、停車券、附件） -->
+                    <template v-if="selectedItem.equipments?.length > 0 || selectedItem.booths?.length > 0 || selectedItem.parkingTicketCount > 0 || selectedItem.attachments?.length > 0">
                         <div class="col-12">
                             <h5 class="d-flex align-items-center text-primary border-bottom">
                                 <span class="material-icons icons">inventory_2</span>
@@ -328,6 +328,15 @@
                                 <div class="col-md-6 d-flex flex-sm-column" v-if="selectedItem.booths?.length > 0">
                                     <span class="form-label text-secondary font-size-18">攤位加租</span>
                                     <label class="form-label fw-bold">{{ selectedItem.booths.join('、') }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 停車券 -->
+                        <div class="col-md-12" v-if="selectedItem.parkingTicketCount > 0">
+                            <div class="row">
+                                <div class="col-md-6 d-flex flex-sm-column">
+                                    <span class="form-label text-secondary font-size-18">停車券</span>
+                                    <label class="form-label fw-bold">{{ selectedItem.parkingTicketCount }} 張</label>
                                 </div>
                             </div>
                         </div>
@@ -405,10 +414,24 @@
 
                         <!-- 臨櫃付款欄位 -->
                         <div v-if="isCounterPayment(selectedItem.paymentMethod)" class="col-12">
-                            
+
                             <div v-if="selectedItem.amount === 0" class="alert alert-info">
                                 <i class="mdi mdi-information me-2"></i>
                                 此預約為免費使用,請上傳證明文件(如:公文、許可證明等)
+                            </div>
+
+                            <!-- 現金付款資訊提示 -->
+                            <div v-if="selectedItem.amount > 0" class="alert alert-secondary mb-3">
+                                <h6 class="mb-2"><i class="mdi mdi-cash me-1"></i> 現金付款資訊</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>地點：</strong>中正樓與北護分院連通道的郵局旁</p>
+                                        <p class="mb-1 text-nowrap">
+                                        <strong>時間：</strong>週一至週五 8:00AM - 5:00PM/5:30PM</p>
+                                        <p class="mb-1"><strong>聯絡：</strong>(02) 2875-7259</p>
+                                        <p class="mb-1"><strong>收據：</strong>現場開立正式收據</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -416,9 +439,9 @@
                                     {{ selectedItem.amount === 0 ? '上傳證明文件' : '上傳三聯單' }}
                                     <span class="text-danger">*</span>
                                 </span>
-                                <input class="form-control fw-bold" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,.png"
+                                <input class="form-control fw-bold" type="file" ref="counterPayFiles" accept=".jpg,.jpeg,"
                                        multiple required>
-                                <div class="form-text">可上傳多檔;支援 JPG / PNG。</div>
+                                <div class="form-text">可上傳多檔;支援 JPG </div>
                             </div>
 
                             <div class="mb-3">
@@ -435,6 +458,22 @@
 
                         <!-- 匯款付款欄位 -->
                         <div v-if="isTransferPayment(selectedItem.paymentMethod)" class="col-12">
+
+                            <!-- 匯款資訊提示 -->
+                            <div class="alert alert-info mb-3">
+                                <h6 class="mb-2"><i class="mdi mdi-bank me-1"></i> 匯款資訊</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>銀行：</strong>合作金庫(006)</p>
+                                        <p class="mb-1"><strong>分行：</strong>石牌分行</p>
+                                        <p class="mb-1"><strong>戶名：</strong>臺北榮民總醫院作業基金403專戶</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>帳號：</strong>1427713000733</p>
+                                        <p class="mb-1"><strong>電話：</strong>(02) 2875-7003</p>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="row g-3">
                                 <div class="col-6">

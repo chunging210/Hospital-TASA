@@ -252,6 +252,7 @@ namespace TASA.Services.RoomModule
             public List<EquipmentVM>? Equipment { get; set; }
             public Guid? ManagerId { get; set; }  // ✅ 加這個
             public ManagerInfoVM? Manager { get; set; }  // ✅ 加這個
+            public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
         }
 
         public record DepartmentInfoVM
@@ -286,6 +287,8 @@ namespace TASA.Services.RoomModule
             public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
             public Guid? ManagerId { get; set; }
+            public string? AgreementBase64 { get; set; }  // ✅ 聲明書 Base64（前端上傳用）
+            public string? AgreementFileName { get; set; }  // ✅ 聲明書檔名
         }
 
         [Serializable]
@@ -310,6 +313,7 @@ namespace TASA.Services.RoomModule
             public string? StartTime { get; set; }
             public string? EndTime { get; set; }
             public decimal Price { get; set; }
+            public decimal? HolidayPrice { get; set; }
             public bool Enabled { get; set; }
         }
 
@@ -367,6 +371,8 @@ namespace TASA.Services.RoomModule
                     Email = room.Manager.Email
                 } : null,
 
+                AgreementPath = room.AgreementPath,  // ✅ 聲明書路徑
+
                 PricingDetails = new List<PricingDetailVM>(),
 
                 Images = room.Images
@@ -388,6 +394,7 @@ namespace TASA.Services.RoomModule
                         StartTime = x.StartTime.ToString(@"hh\:mm"),
                         EndTime = x.EndTime.ToString(@"hh\:mm"),
                         Price = x.Price,
+                        HolidayPrice = x.HolidayPrice,
                         Enabled = x.IsEnabled
                     })
                     .ToList();
@@ -691,6 +698,7 @@ namespace TASA.Services.RoomModule
                 DepartmentId = vm.DepartmentId,
                 IsEnabled = vm.IsEnabled,
                 ManagerId = vm.ManagerId,
+                AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName),  // ✅ 聲明書
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
             };
@@ -765,6 +773,41 @@ namespace TASA.Services.RoomModule
             catch (Exception ex)
             {
                 throw new HttpException($"保存檔案失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ 儲存聲明書 PDF
+        /// </summary>
+        private string? SaveAgreementPdf(string? base64Data, string? fileName)
+        {
+            if (string.IsNullOrEmpty(base64Data))
+                return null;
+
+            try
+            {
+                // 移除 base64 前綴
+                var base64Content = base64Data.Contains(",")
+                    ? base64Data.Substring(base64Data.IndexOf(",") + 1)
+                    : base64Data;
+
+                byte[] pdfBytes = Convert.FromBase64String(base64Content);
+                string uniqueFileName = $"{Guid.NewGuid()}.pdf";
+
+                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "room-agreements");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                File.WriteAllBytes(filePath, pdfBytes);
+
+                return $"/uploads/room-agreements/{uniqueFileName}";
+            }
+            catch (Exception ex)
+            {
+                throw new HttpException($"儲存聲明書失敗: {ex.Message}");
             }
         }
 
@@ -881,6 +924,11 @@ namespace TASA.Services.RoomModule
                 }
             }
             data.ManagerId = vm.ManagerId;
+
+            // ✅ 更新聲明書（有上傳新的才更新）
+
+            data.AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName);
+            
 
             // ===== 6. 更新圖片 (可選) =====
             if (vm.Images != null)
@@ -1010,6 +1058,7 @@ namespace TASA.Services.RoomModule
                         StartTime = startTime,
                         EndTime = endTime,
                         Price = pricing.Price,
+                        HolidayPrice = pricing.HolidayPrice,
                         IsEnabled = pricing.Enabled,
                         CreateAt = DateTime.Now,
                         CreateBy = userid!.Value
