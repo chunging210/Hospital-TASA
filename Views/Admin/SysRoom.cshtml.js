@@ -324,13 +324,17 @@ const room = new function () {
     // };
 
     this.createPeriodSlot = (data = {}) => {
+        const st = (data.StartTime ?? '09:00').split(':');
+        const et = (data.EndTime ?? '10:00').split(':');
         return {
             Id: data.Id ?? `tmp_${Date.now()}_${Math.random()}`,
             Name: data.Name ?? '新時段',
             StartTime: data.StartTime ?? '09:00',
             EndTime: data.EndTime ?? '10:00',
+            StartHour: st[0], StartMin: st[1] ?? '00',
+            EndHour: et[0], EndMin: et[1] ?? '00',
             Price: data.Price ?? 0,
-            HolidayPrice: data.HolidayPrice ?? null,
+            HolidayPrice: data.HolidayPrice ?? 0,
             Enabled: data.Enabled ?? true
         };
     };
@@ -622,8 +626,8 @@ const room = new function () {
                     details.push({
                         Id: slot.Id,
                         Name: slot.Name,
-                        StartTime: slot.StartTime,
-                        EndTime: slot.EndTime,
+                        StartTime: `${slot.StartHour}:${slot.StartMin}`,
+                        EndTime: `${slot.EndHour}:${slot.EndMin}`,
                         Price: slot.Price,
                         HolidayPrice: slot.HolidayPrice,
                         Enabled: true
@@ -661,6 +665,25 @@ const room = new function () {
         event.target.value = '';
     };
 
+    this.handleMediaDrop = (event) => {
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+
+        Array.from(files).forEach(file => {
+            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.mediaFiles.push({
+                    Id: Date.now() + Math.random(),
+                    type: file.type.startsWith('image/') ? 'image' : 'video',
+                    src: e.target.result,
+                    name: file.name
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
     this.removeMedia = (Id) => {
         const index = this.mediaFiles.findIndex(m => m.Id === Id);
         if (index > -1) {
@@ -679,6 +702,10 @@ const room = new function () {
 
     this.triggerMediaUpload = () => {
         document.getElementById('mediaUpload').click();
+    }
+
+    this.triggerAgreementUpload = () => {
+        document.getElementById('agreementUpload').click();
     }
 
     // ✅ 聲明書上傳處理

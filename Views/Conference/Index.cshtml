@@ -71,10 +71,10 @@
                                 item.EndTime.format('HH:MM') : '-')}}</td>
                                 <td>{{item.RoomLocation || '-'}}</td>
                                 <td>{{item.CreateByName}}</td>
-                                <td class="hstack gap-3">
+                                @* <td class="hstack gap-3">
                                     <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
                                             class="btn btn-sm btn-secondary">ZeroTouch</button>
-                                </td>
+                                </td> *@
                             </tr>
                         </tbody>
                         <tfoot v-if="conference.list.length==0">

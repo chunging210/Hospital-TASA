@@ -787,7 +787,7 @@ body {
 /* ===== 媒體上傳區塊 ===== */
 .image-upload-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
 }
 
@@ -1128,6 +1128,137 @@ body {
 
 .hourly-pricing-item:last-child {
     margin-bottom: 0;
+}
+
+/* ===== 收費設定表格樣式 ===== */
+.pricing-section-card {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    background: #fff;
+}
+
+.pricing-table-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 8px;
+    border-bottom: 2px solid #e9ecef;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.pricing-table-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pricing-table-row:last-of-type {
+    border-bottom: none;
+}
+
+.pricing-col-check {
+    width: 45px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.pricing-col-name {
+    width: 110px;
+    flex-shrink: 0;
+}
+
+.pricing-col-time {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.pricing-col-time select {
+    width: 125px;
+    flex-shrink: 0;
+}
+
+.pricing-col-price {
+    width: 140px;
+    flex-shrink: 0;
+}
+
+.pricing-col-action {
+    width: 45px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.time-picker-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.time-picker-group .time-hour {
+    width: 58px;
+    padding: 0.2rem 0.3rem;
+    text-align: center;
+    border-color: #d1d1d1 !important;
+}
+
+.time-picker-group .time-min {
+    width: 58px;
+    padding: 0.2rem 0.3rem;
+    text-align: center;
+    border-color: #d1d1d1 !important;
+}
+
+.time-picker-group .time-colon {
+    font-weight: bold;
+    color: #666;
+}
+
+.pricing-table-row .form-check-input {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+}
+
+.pricing-table-row .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+@media (max-width: 768px) {
+    .pricing-table-header {
+        display: none;
+    }
+
+    .pricing-table-row {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 8px;
+    }
+
+    .pricing-col-check {
+        width: auto;
+    }
+
+    .pricing-col-name,
+    .pricing-col-price {
+        width: 100%;
+    }
+
+    .pricing-col-time {
+        width: 100%;
+    }
+
+    .pricing-col-action {
+        width: auto;
+        margin-left: auto;
+    }
 }
 
 .hourly-pricing-checkbox {
@@ -1524,4 +1655,52 @@ body {
 .status-free {
     background-color: #0d6efd;
     color: white;
+}
+
+.has-file {
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+}
+
+.has-file:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.uploaded-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.uploaded-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.uploaded-file-item .file-info {
+    flex: 1;
+    text-align: left;
+}
+
+.uploaded-file-item:hover {
+    background-color: #f8fafc;
+}
+
+.media-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
 }

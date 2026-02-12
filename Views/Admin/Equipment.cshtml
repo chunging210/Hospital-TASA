@@ -32,9 +32,9 @@
 
                     <!-- 新增按鈕 -->
                     <div class="col-auto ms-auto">
-                        <button @@click="equipment.getVM()" class="btn btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#equipmentModal">
-                            <i class="mdi mdi-archive-plus-outline"></i> 新增設備
+                        <button @@click="equipment.getVM()" class="btn btn-primary d-flex align-items-center"
+                            data-bs-toggle="modal" data-bs-target="#equipmentModal">
+                            <span class="material-icons me-2">add</span> 新增設備
                         </button>
                     </div>
                 </div>
@@ -222,7 +222,7 @@
                                          style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid #dee2e6;">
                                     <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0"
                                             style="transform: translate(30%, -30%);" @@click="equipment.removeImage">
-                                        <i class="mdi mdi-close"></i>
+                                        X
                                     </button>
                                 </div>
                                 <!-- 選檔按鈕 -->

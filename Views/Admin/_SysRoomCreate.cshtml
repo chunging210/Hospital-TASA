@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="/css/sysroom.css">
 
 <div ref="roomoffcanvas" class="offcanvas offcanvas-end offcanvas-create" tabindex="-1" id="offcanvasRoomCreate"
-    aria-labelledby="offcanvasRoomCreateLabel">
+     aria-labelledby="offcanvasRoomCreateLabel">
     <div class="offcanvas-header border-bottom">
         <h5 id="offcanvasRoomCreateLabel" class="mb-0">
             <i class="mdi mdi-home-plus"></i> 新增會議室
@@ -44,7 +44,7 @@
                     <label class="form-label form-label-custom">樓層 <span class="text-danger">*</span></label>
 
                     <input v-model.trim="form.floor" type="text" class="form-control" placeholder="例：B1、B2、1、5、10、RF"
-                        maxlength="4" required />
+                           maxlength="4" required />
 
                     <div class="form-text text-muted">
                         可輸入格式：B1~B99、1~99、1F~99F、RF
@@ -58,7 +58,7 @@
                 <div class="mb-3">
                     <label class="form-label form-label-custom">會議室說明</label>
                     <textarea v-model="form.description" class="form-control" rows="4" placeholder="請輸入會議室簡介、用途或特色..."
-                        required></textarea>
+                              required></textarea>
                     <div class="invalid-feedback">請輸入會議室說明</div>
                 </div>
 
@@ -66,112 +66,90 @@
                     <div class="col-md-6">
                         <label class="form-label form-label-custom">人數 <span class="text-danger">*</span></label>
                         <input v-model.number="form.capacity" type="number" class="form-control" placeholder="請輸入人數"
-                            min="1" step="1" required>
+                               min="1" step="1" required>
                         <div class="invalid-feedback">請輸入人數（最少 1 人）</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-custom">面積（㎡） <span class="text-danger">*</span></label>
                         <input v-model.number="form.area" type="number" class="form-control" placeholder="請輸入面積" min="1"
-                            step="0.01" required>
+                               step="0.01" required>
                         <div class="invalid-feedback">請輸入面積（㎡）</div>
                     </div>
                 </div>
             </div>
 
             <!-- 收費設定區塊 -->
-            <div class="form-section">
-                <h6>收費設定 <span class="text-danger">*</span></h6>
-                <div class="mb-3">
-                    <label class="form-label form-label-custom">收費方式</label>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-check">
-                                <input v-model.number="form.feeType" type="radio" name="feeType" id="feeSlot" :value="1"
-                                    class="form-check-input" @@change="room.toggleFeeOptions()">
-                                <label class="form-check-label" for="feeSlot">時段制</label>
-                            </div>
+            <div class="form-section pricing-section-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">收費設定 <span class="text-danger">*</span></h6>
+                        <small class="text-muted">管理不同時段的場地租借費用</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" @@click="room.addTimeSlot()">
+                        新增時段
+                    </button>
+                </div>
+
+                <!-- 表頭 -->
+                <div class="pricing-table-header">
+                    <div class="pricing-col-name font-size-16">時段名稱</div>
+                    <div class="pricing-col-time font-size-16">時間範圍</div>
+                    <div class="pricing-col-price font-size-16">平日價格</div>
+                    <div class="pricing-col-price font-size-16">假日價格</div>
+                    <div class="pricing-col-action font-size-16">操作</div>
+                </div>
+
+                <!-- 時段列表 -->
+                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="pricing-table-row">
+                    <div class="pricing-col-name">
+                        <input v-model="slot.Name" type="text" class="form-control form-control-sm"
+                               placeholder="時段名稱">
+                    </div>
+                    <div class="pricing-col-time">
+                        <div class="time-picker-group">
+                            <select v-model="slot.StartHour" class="form-select-sm time-hour">
+                                <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                            </select>
+                            <span class="time-colon">:</span>
+                            <select v-model="slot.StartMin" class="form-select-sm time-min">
+                                <option value="00">00</option>
+                                <option value="30">30</option>
+                            </select>
                         </div>
+                        <span class="text-muted mx-1">—</span>
+                        <div class="time-picker-group">
+                            <select v-model="slot.EndHour" class="form-select-sm time-hour">
+                                <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                            </select>
+                            <span class="time-colon">:</span>
+                            <select v-model="slot.EndMin" class="form-select-sm time-min">
+                                <option value="00">00</option>
+                                <option value="30">30</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pricing-col-price">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input v-model.number="slot.Price" type="number" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="pricing-col-price">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input v-model.number="slot.HolidayPrice" type="number" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="pricing-col-action">
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                @@click="room.removeTimeSlot(index)">
+                            <span class="material-icons icons font-size-18">delete_outline</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- 小時制設定 -->
-                @* <div v-if="form.feeType === 0">
-                    <h6 class="fee-type-title">小時制收費</h6>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fee-settings-header">設定每個時段的收費和開放狀態：</span>
-                            <div>
-                                <button type="button" class="btn btn-outline-success btn-sm me-2"
-                                    @@click="room.selectAllHours()">全選</button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm"
-                                    @@click="room.deselectAllHours()">全不選</button>
-                            </div>
-                        </div>
-                        <div class="hourly-slot-container" id="hourlySlotContainer">
-                            <div v-for="slot in hourlySlots" :key="slot.Hour" class="mb-2">
-                                <div class="hourly-slot-item">
-                                    <div class="form-check">
-                                        <input v-model="slot.Checked" type="checkbox" class="form-check-input"
-                                            :id="`hour_${slot.Hour}`">
-                                        <label class="form-check-label fw-600" :for="`hour_${slot.Hour}`">
-                                            {{ slot.Hour }}:00 - {{ slot.Hour + 1 }}:00
-                                        </label>
-                                    </div>
-                                    <div class="input-group ms-auto hourly-slot-item input-group">
-                                        <span class="input-group-text">$</span>
-                                        <input v-model.number="slot.Fee" type="number"
-                                            class="form-control form-control-sm" min="0">
-                                        <span class="input-group-text">元</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div> *@
-
-                <!-- 時段制設定 -->
-                <div v-else-if="form.feeType === 1">
-                    <h6 class="fee-type-title">時段制收費</h6>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fee-settings-header">設定各個時段的收費：</span>
-                            <button type="button" class="btn btn-outline-primary btn-sm" @@click="room.addTimeSlot()">
-                                <i class="bx bx-plus"></i> 新增時段
-                            </button>
-                        </div>
-                        <div class="slot-container">
-                            <div class="time-slot-container" id="timeSlotContainer">
-                                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="time-slot-wrapper">
-                                    <div class="form-check">
-                                        <input v-model="slot.Enabled" type="checkbox" class="form-check-input"
-                                            :id="`slot_${slot.Id}`">
-                                        <label class="form-check-label" :for="`slot_${slot.Id}`">開放</label>
-                                    </div>
-                                    <input v-model="slot.Name" type="text"
-                                        class="form-control form-control-sm name-input" placeholder="時段名稱">
-                                    <select v-model="slot.StartTime" class="form-select form-select-sm time-input">
-                                        <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
-                                    </select>
-                                    <span>-</span>
-                                    <select v-model="slot.EndTime" class="form-select form-select-sm time-input">
-                                        <option v-for="t in timeOptions" :key="t" :value="t">{{ t }}</option>
-                                    </select>
-                                    <div class="input-group price-input">
-                                        <span class="input-group-text">平日$</span>
-                                        <input v-model.number="slot.Price" type="number"
-                                            class="form-control form-control-sm" placeholder="平日" min="0">
-                                    </div>
-                                    <div class="input-group price-input">
-                                        <span class="input-group-text">假日$</span>
-                                        <input v-model.number="slot.HolidayPrice" type="number"
-                                            class="form-control form-control-sm" placeholder="假日" min="0">
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                        @@click="room.removeTimeSlot(index)">刪除</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="text-muted small mt-3">
+                    <span class="text-danger">*</span> 平日指週一至週五，假日指週六、週日及國定假日。系統將自動根據預約日期套用價格。
                 </div>
             </div>
 
@@ -179,22 +157,45 @@
             <div class="form-section">
                 <h6>會議室媒體資料</h6>
                 <div class="mb-3">
-                    <label class="form-label form-label-custom">上傳圖片/影片</label>
-                    <div class="image-upload-container" id="mediaGrid">
-                        <div v-for="media in room.mediaFiles" :key="media.Id" class="media-item">
-                            <img v-if="media.type === 'image'" :src="media.src" alt="媒體預覽">
-                            <video v-else>
-                                <source :src="media.src">
-                            </video>
-                            <button type="button" class="btn btn-sm remove-btn"
-                                @@click="room.removeMedia(media.Id)">×</button>
+                    <label class="form-label form-label-custom">
+                        上傳圖片/影片
+                        <span class="text-muted small">(選填，可多個)</span>
+                    </label>
+                    <div class="file-upload-area"
+                         :class="{ 'has-file': room.mediaFiles.length > 0 }"
+                         @@click="room.triggerMediaUpload()"
+                         @@dragover.prevent
+                         @@drop.prevent="room.handleMediaDrop($event)">
+
+                        <!-- 未上傳狀態 -->
+                        <div v-if="room.mediaFiles.length === 0" class="upload-placeholder">
+                            <i class="bx bx-cloud-upload" style="font-size: 48px;"></i>
+                            <p class="mb-1">點擊上傳或拖曳檔案至此</p>
+                            <small class="text-muted">支援圖片及影片格式</small>
                         </div>
-                        <div class="upload-item" @@click="room.triggerMediaUpload()">
-                            請上傳圖片/影片
+
+                        <!-- 已上傳檔案列表 -->
+                        <div v-else class="uploaded-files-list" @@click.stop>
+                            <div v-for="media in room.mediaFiles" :key="media.Id" class="uploaded-file-item">
+                                <img v-if="media.type === 'image'" :src="media.src" class="media-thumb">
+                                <video v-else class="media-thumb"><source :src="media.src"></video>
+                                <div class="file-info">
+                                    <strong>{{ media.name || '媒體檔案' }}</strong>
+                                    <small class="text-muted d-block">{{ media.type === 'image' ? '圖片' : '影片' }}</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                        @@click.stop="room.removeMedia(media.Id)">
+                                    移除
+                                </button>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                    @@click.stop="room.triggerMediaUpload()">
+                                新增更多檔案
+                            </button>
                         </div>
-                        <input type="file" id="mediaUpload" accept="image/*,video/*" @@change="room.handleMediaUpload"
-                            style="display: none;">
                     </div>
+                    <input type="file" id="mediaUpload" accept="image/*,video/*" multiple
+                           @@change="room.handleMediaUpload" style="display: none;">
                 </div>
             </div>
 
@@ -204,7 +205,7 @@
                 <div class="rental-options">
                     <!-- 對內 -->
                     <div class="rental-option rental-option-internal" @@click="room.selectRentalOption(0)"
-                        :class="{ active: form.rentalType === 0 }">
+                         :class="{ active: form.rentalType === 0 }">
                         <i class="bx bx-building"></i>
                         <h6>對內</h6>
                         <small>僅限公司內部使用</small>
@@ -212,7 +213,7 @@
 
                     <!-- 對內外 -->
                     <div class="rental-option rental-option-external" @@click="room.selectRentalOption(1)"
-                        :class="{ active: form.rentalType === 1 }">
+                         :class="{ active: form.rentalType === 1 }">
                         <i class="bx bx-group"></i>
                         <h6>對內外</h6>
                         <small>內部及外部客戶可租借</small>
@@ -220,7 +221,7 @@
 
                     <!-- 不開放 -->
                     <div class="rental-option rental-option-closed" @@click="room.selectRentalOption(2)"
-                        :class="{ active: form.rentalType === 2 }">
+                         :class="{ active: form.rentalType === 2 }">
                         <i class="bx bx-block"></i>
                         <h6>不開放</h6>
                         <small>暫不開放租借</small>
@@ -228,105 +229,119 @@
 
                     <!-- 免費開放 -->
                     <div class="rental-option rental-option-free" @@click="room.selectRentalOption(3)"
-                        :class="{ active: form.rentalType === 3 }">
+                         :class="{ active: form.rentalType === 3 }">
                         <i class="bx bx-gift"></i>
                         <h6>免費開放</h6>
                         <small>免費提供使用</small>
                     </div>
                 </div>
             </div>
-        
-        <div class="form-section">
-    <h6>會議室管理者</h6>
 
-    <div class="mb-3">
-        <label class="form-label form-label-custom">指定管理者 (選填)</label>
+            <div class="form-section">
+                <h6>會議室管理者</h6>
 
-        <!-- 已選擇的管理者 -->
-        <div v-if="manager.selectedManager.value"
-            class="alert alert-info d-flex justify-content-between align-items-center">
-            <div>
-                <i class="mdi mdi-account-check"></i>
-                <strong>{{ manager.selectedManager.value.Name }}</strong>
-                <!-- ✅ 顯示角色 -->
-                <span class="badge bg-white text-primary ms-2" style="font-size: 0.75rem;">
-                    {{ manager.selectedManager.value.RoleDisplay }}
-                </span>
-                <small class="text-muted ms-2">{{ manager.selectedManager.value.Email }}</small>
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" @@click="manager.clearSelection()">
-                <i class="mdi mdi-close"></i> 取消選擇
-            </button>
-        </div>
+                <div class="mb-3">
+                    <label class="form-label form-label-custom">指定管理者 (選填)</label>
 
-        <!-- 搜尋管理者 -->
-        <div v-else>
-            <input v-model="manager.searchKeyword.value" type="text" class="form-control mb-2"
-                placeholder="搜尋使用者姓名或 Email...">
+                    <!-- 已選擇的管理者 -->
+                    <div v-if="manager.selectedManager.value"
+                         class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="mdi mdi-account-check"></i>
+                            <strong>{{ manager.selectedManager.value.Name }}</strong>
+                            <!-- ✅ 顯示角色 -->
+                            <span class="badge bg-white text-primary ms-2" style="font-size: 0.75rem;">
+                                {{ manager.selectedManager.value.RoleDisplay }}
+                            </span>
+                            <small class="text-muted ms-2">{{ manager.selectedManager.value.Email }}</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @@click="manager.clearSelection()">
+                            <i class="mdi mdi-close"></i> 取消選擇
+                        </button>
+                    </div>
 
-            <div class="manager-list"
-                style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
-                <div v-for="user in manager.filteredList.value" :key="user.Id"
-                    class="manager-item p-2 border-bottom hover-bg-light" style="cursor: pointer;"
-                    @@click="manager.selectManager(user)">
-                    <div class="d-flex align-items-center">
-                        <i class="mdi mdi-account-circle me-2 text-primary"></i>
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center gap-2">
-                                <strong>{{ user.Name }}</strong>
-                                <!-- ✅ 顯示角色標籤 -->
-                                <span class="badge bg-primary" style="font-size: 0.7rem;">
-                                    {{ user.RoleDisplay }}
-                                </span>
+                    <!-- 搜尋管理者 -->
+                    <div v-else>
+                        <input v-model="manager.searchKeyword.value" type="text" class="form-control mb-2"
+                               placeholder="搜尋使用者姓名或 Email...">
+
+                        <div class="manager-list"
+                             style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                            <div v-for="user in manager.filteredList.value" :key="user.Id"
+                                 class="manager-item p-2 border-bottom hover-bg-light" style="cursor: pointer;"
+                                @@click="manager.selectManager(user)">
+                                <div class="d-flex align-items-center">
+                                    <i class="mdi mdi-account-circle me-2 text-primary"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <strong>{{ user.Name }}</strong>
+                                            <!-- ✅ 顯示角色標籤 -->
+                                            <span class="badge bg-primary" style="font-size: 0.7rem;">
+                                                {{ user.RoleDisplay }}
+                                            </span>
+                                        </div>
+                                        <small class="text-muted d-block">{{ user.Email }}</small>
+                                        <!-- ✅ 只有管理者才顯示分院 -->
+                                        <small v-if="isAdmin && user.DepartmentName" class="text-muted">
+                                            <i class="mdi mdi-domain"></i> {{ user.DepartmentName }}
+                                        </small>
+                                    </div>
+                                </div>
                             </div>
-                            <small class="text-muted d-block">{{ user.Email }}</small>
-                            <!-- ✅ 只有管理者才顯示分院 -->
-                            <small v-if="isAdmin && user.DepartmentName" class="text-muted">
-                                <i class="mdi mdi-domain"></i> {{ user.DepartmentName }}
-                            </small>
+
+                            <div v-if="manager.filteredList.value.length === 0" class="p-3 text-center text-muted">
+                                <i class="mdi mdi-account-search"></i> 查無使用者
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div v-if="manager.filteredList.value.length === 0" class="p-3 text-center text-muted">
-                    <i class="mdi mdi-account-search"></i> 查無使用者
+                    <div class="form-text text-muted">
+                        <i class="mdi mdi-information"></i> 設定後,此會議室的預約審核通知將寄給指定管理者
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="form-text text-muted">
-            <i class="mdi mdi-information"></i> 設定後,此會議室的預約審核通知將寄給指定管理者
-        </div>
-    </div>
-</div>
 
             <!-- ✅ 聲明書上傳區塊 -->
             <div class="form-section">
                 <h6>聲明書設定</h6>
-                <div class="mb-3">
-                    <label class="form-label form-label-custom">上傳自訂聲明書 (PDF)</label>
-                    <input type="file" class="form-control" accept=".pdf"
-                           @@change="room.handleAgreementUpload($event)">
-                    <div class="form-text text-muted">
-                        <i class="mdi mdi-information"></i> 若未上傳，將使用系統預設聲明書
-                    </div>
-                    <!-- 已上傳檔案顯示 -->
-                    <div v-if="form.agreementFileName" class="alert alert-success mt-2 py-2">
-                        <i class="mdi mdi-file-pdf-box text-danger"></i>
-                        已選擇：{{ form.agreementFileName }}
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
-                                @@click="room.clearAgreement()">移除</button>
+                
+                <!-- 未上傳：顯示上傳區 -->
+                <div v-if="!room.form.agreementFileName" class="file-upload-area"
+                     @@click="room.triggerAgreementUpload()">
+                    <div class="upload-placeholder">
+                        <i class="mdi mdi-file-pdf-box" style="font-size: 32px; color: #dc3545;"></i>
+                        <p class="mb-1">點擊上傳聲明書</p>
+                        <small class="text-muted">僅支援 PDF 格式</small>
                     </div>
                 </div>
+
+                <!-- 已上傳：顯示檔名 + 移除 -->
+                <div v-else class="has-file">
+                    <div class="uploaded-files-list">
+                        <div class="uploaded-file-item">
+                            <strong  class="file-info">{{ room.form.agreementFileName }}</strong>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @@click="room.clearAgreement()">
+                                移除
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <input type="file" id="agreementUpload" @@change="room.handleAgreementUpload($event)"
+                       accept=".pdf" style="display: none;">
+
+                <p class="text-muted small mt-2">
+                    <i class="mdi mdi-information-outline"></i>
+                    若未上傳，將使用系統預設聲明書
+                </p>
             </div>
-
-
         </form>
     </div>
 
     <!-- 固定底部按鈕 -->
-    <div class="offcanvas-footer d-grid gap-2 mt-4">
-        <button type="button" class="btn btn-primary" @@click="room.save()">送出</button>
-        <button type="button" class="btn btn-light" data-bs-dismiss="offcanvas">取消</button>
+    <div class="offcanvas-footer d-flex gap-2 justify-content-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">取消</button>
+        <button type="button" class="btn btn-primary" @@click="room.save()">確定新增</button>
+
     </div>
 </div>

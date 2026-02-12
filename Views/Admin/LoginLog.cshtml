@@ -49,9 +49,9 @@
                             <th>登入時間</th>
                             <th>使用者</th>
                             @* <th>登入方式</th> *@
-                            <th>狀態</th>
                             <th>IP 位址</th>
                             <th>裝置 / 瀏覽器</th>
+                            <th>狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,6 +62,14 @@
                                 {{ item?.UserName }}
                             </td>
                             @* <td>{{ item?.LoginMethod }}</td> *@
+                            <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                :title="item?.IpAddress">
+                                {{ item?.IpAddress }}
+                            </td>
+                            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                :title="(item?.DeviceInfo || '') + ' / ' + (item?.BrowserInfo || '')">
+                                {{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}
+                            </td>
                             <td>
                                 <span v-if="item?.IsSuccess" class="badge bg-success">
                                     <span class="material-icons font-size-12">check_circle</span>
@@ -72,14 +80,7 @@
                                     失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
                                 </span>
                             </td>
-                            <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                :title="item?.IpAddress">
-                                {{ item?.IpAddress }}
-                            </td>
-                            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                :title="(item?.DeviceInfo || '') + ' / ' + (item?.BrowserInfo || '')">
-                                {{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}
-                            </td>
+
                         </tr>
                         <tr v-if="loginlog.list.length === 0">
                             <td colspan="6" class="text-center">查無資料</td>

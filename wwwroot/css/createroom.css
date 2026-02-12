@@ -179,9 +179,9 @@
     background-color: #eff6ff;
 }
 
-.file-upload-area.has-file {
-    border-color: #10b981;
-    background-color: #f0fdf4;
+.file-upload-area .has-file {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
 }
 
 .upload-placeholder {
@@ -339,10 +339,6 @@
 }
 
 /* 按鈕樣式 */
-.modal-footer .btn {
-    min-width: 100px;
-    font-weight: 500;
-}
 
 .modal-footer .btn-secondary {
     background-color: #6c757d;
