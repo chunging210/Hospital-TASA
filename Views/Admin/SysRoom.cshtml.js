@@ -614,15 +614,24 @@ const room = new function () {
         //             });
         //         }
         //     });
-        // } else 
+        // } else
         if (pricingType === PricingType.Period) {
             this.timeSlots.forEach(slot => {
                 if (slot.Enabled) {
+                    // ✅ 修正：優先使用 StartHour:StartMin 組合（新增模式）
+                    // 如果沒有 StartHour/EndHour，才使用 StartTime/EndTime（編輯模式）
+                    const startTime = (slot.StartHour !== undefined && slot.StartMin !== undefined)
+                        ? `${slot.StartHour}:${slot.StartMin}`
+                        : slot.StartTime;
+                    const endTime = (slot.EndHour !== undefined && slot.EndMin !== undefined)
+                        ? `${slot.EndHour}:${slot.EndMin}`
+                        : slot.EndTime;
+
                     details.push({
                         Id: slot.Id,
                         Name: slot.Name,
-                        StartTime: `${slot.StartHour}:${slot.StartMin}`,
-                        EndTime: `${slot.EndHour}:${slot.EndMin}`,
+                        StartTime: startTime,
+                        EndTime: endTime,
                         Price: slot.Price,
                         HolidayPrice: slot.HolidayPrice,
                         Enabled: true

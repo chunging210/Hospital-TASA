@@ -190,26 +190,10 @@
             </div>
         </div>
 
-        <!-- 預約時段明細 -->
-        <div v-if="reservation.currentReview.slots && reservation.currentReview.slots.length > 0" class="mb-4">
-            <h6 class="mb-2">
-                <span class="material-icons">schedule</span>
-                預約時段明細
-            </h6>
-
-            <div class="slot-list">
-                <div v-for="(slot, index) in reservation.currentReview.slots" :key="slot.id"
-                     class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
-                    <span class="badge bg-primary rounded-pill">{{ index + 1 }}</span>
-                    <div class="flex-grow-1 small">
-                        <div class="fw-bold">{{ slot.slotDate }}</div>
-                        <div class="text-muted">{{ slot.startTime }} ~ {{ slot.endTime }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-3 p-2 bg-light rounded text-center small">
-                <strong>共 {{ reservation.currentReview.slots.length }} 個時段</strong>
+        <!-- 預約時間 -->
+        <div class="mb-4">
+            <div class="row g-2 small">
+                <div class="col-md-6"><strong>時間：</strong>{{ reservation.currentReview.time }}</div>
             </div>
         </div>
 
@@ -351,26 +335,10 @@
                         </div>
 
 
-                        <!-- ✅ 加入預約時段明細 -->
-                        <div v-if="reservation.currentPayment.slots && reservation.currentPayment.slots.length > 0" class="mb-4">
-                            <h6 class="mb-2">
-                                <span class="material-icons">schedule</span>
-                                預約時段明細
-                            </h6>
-
-                            <div class="slot-list">
-                                <div v-for="(slot, index) in reservation.currentPayment.slots" :key="slot.id"
-                                     class="d-flex align-items-center gap-3 mb-2 p-3 border rounded" style="background: #f8f9fa;">
-                                    <span class="badge bg-primary rounded-pill">{{ index + 1 }}</span>
-                                    <div class="flex-grow-1 small">
-                                        <div class="fw-bold">{{ slot.slotDate }}</div>
-                                        <div class="text-muted">{{ slot.startTime }} ~ {{ slot.endTime }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-3 p-2 bg-light rounded text-center small">
-                                <strong>共 {{ reservation.currentPayment.slots.length }} 個時段</strong>
+                        <!-- 預約時間 -->
+                        <div class="mb-4">
+                            <div class="row g-2 small">
+                                <div class="col-md-6"><strong>時間：</strong>{{ reservation.currentPayment.time }}</div>
                             </div>
                         </div>
 

@@ -7,7 +7,7 @@
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">format_list_bulleted</span>會議總覽
                     </div>
-                    <div class="col-12 col-lg-3">
+                    <div class="col-12 col-lg-4">
                         <div class="input-group">
                             <input v-model="conference.query.Start" type="date" class="form-control"
                                    placeholder="會議時間(起)">
@@ -23,14 +23,7 @@
                             <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
                         </select>
                     </div>
-                    <div class="col-12 col-lg-auto">
-                        <select v-model="conference.query.UserId" @@change="conference.onFilterChange"
-                                class="form-select">
-                            <option value="">發起會議者</option>
-                            <option v-for="{Id,Name} in createby.list" :value="Id">{{Name}}</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-lg-2">
+                    <div class="col-12 col-lg-3">
                         <div class="search-box">
                             <div class="position-relative">
                                 <input type="text" class="form-control" v-model="conference.query.keyword"
@@ -38,11 +31,6 @@
                                 <span class="material-icons search-icon">search</span>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-auto d-flex align-items-center ms-auto">
-                        <a href="/Conference/Create" class="btn btn-primary d-flex align-items-center">
-                            <span class="material-icons me-2">add</span> 新增會議
-                        </a>
                     </div>
                 </div>
             </div>
@@ -55,7 +43,7 @@
                             <th>承辦單位</th>
                             <th>會議主席</th>
                             <th>會議日期</th>
-                            <th>時段</th>
+                            <th>時間</th>
                             <th>與會地點</th>
                             <th>發起會議者</th>
                         </tr>
@@ -66,9 +54,9 @@
                             <td>{{item.OrganizerUnit || '-'}}</td>
                             <td>{{item.Chairman || '-'}}</td>
                             <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
-                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) + ' (' +
-                                item.SlotCount + '個時段)' : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' +
-                                item.EndTime.format('HH:MM') : '-')}}</td>
+                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) :
+                                (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM')
+                                : '-')}}</td>
                                 <td>{{item.RoomLocation || '-'}}</td>
                                 <td>{{item.CreateByName}}</td>
                                 @* <td class="hstack gap-3">

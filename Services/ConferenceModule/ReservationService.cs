@@ -240,8 +240,7 @@ namespace TASA.Services.ConferenceModule
 
                     Time = x.Conference.ConferenceRoomSlots.Any()
                             ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm} " +
-                              $"({x.Conference.ConferenceRoomSlots.Count()} 個時段)"
+                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
                             : "-",
 
                     RoomName = x.Conference.ConferenceRoomSlots
@@ -339,8 +338,7 @@ namespace TASA.Services.ConferenceModule
 
                     Time = x.Conference.ConferenceRoomSlots.Any()
                         ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                          $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm} " +
-                          $"({x.Conference.ConferenceRoomSlots.Count()} 個時段)"
+                          $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
                         : "-",
 
                     RoomName = x.Conference.ConferenceRoomSlots

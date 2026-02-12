@@ -146,16 +146,32 @@ namespace TASA.Services
         }
 
 
-        public IQueryable<IdNameVM> Room()
+        public IEnumerable<RoomVM> Room()
         {
-            return db.SysRoom
+            var rooms = db.SysRoom
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
-                .Mapping(x => new RoomVM()
+                .Select(x => new
                 {
-                    Ecs = x.Ecs.Where(x => x.IsEnabled && x.DeleteAt == null).Select(x => new IdNameVM() { Id = x.Id, Name = x.Name }).ToList()
-                });
+                    x.Id,
+                    x.Name,
+                    x.Building,
+                    x.Floor,
+                    Ecs = x.Ecs.Where(e => e.IsEnabled && e.DeleteAt == null).Select(e => new IdNameVM() { Id = e.Id, Name = e.Name }).ToList()
+                })
+                .ToList();
+
+            return rooms.Select(x => new RoomVM()
+            {
+                Id = x.Id,
+                Name = string.IsNullOrEmpty(x.Building)
+                    ? x.Name
+                    : string.IsNullOrEmpty(x.Floor)
+                        ? $"{x.Building} {x.Name}"
+                        : $"{x.Building} {x.Floor}樓 {x.Name}",
+                Ecs = x.Ecs
+            });
         }
 
         public IEnumerable<RoomSlotVM> RoomSlots(RoomSlotQueryVM query)

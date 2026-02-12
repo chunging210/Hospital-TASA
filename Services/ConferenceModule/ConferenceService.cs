@@ -178,7 +178,7 @@ namespace TASA.Services.ConferenceModule
                     RoomLocation = x.ConferenceRoomSlots.Any()
                         ? x.ConferenceRoomSlots
                             .OrderBy(s => s.StartTime)
-                            .Select(s => s.Room.Building + " " + s.Room.Floor + " " + s.Room.Name)
+                            .Select(s => s.Room.Building + " " + s.Room.Floor + "樓 " + s.Room.Name)
                             .FirstOrDefault()
                         : x.Room.Select(y => y.Name).FirstOrDefault(),
                     SlotDate = x.ConferenceRoomSlots.Any()
