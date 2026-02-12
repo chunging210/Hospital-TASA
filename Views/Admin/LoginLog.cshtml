@@ -42,13 +42,34 @@
                     </div>
                 </div>
 
-                <table v-else class="table table-hover">
-                    <caption>登入日誌列表</caption>
+                <!-- ✅ 修改帳號日誌 - 簡化版表格 -->
+                <table v-if="loginlog.selectedTab.value === 'user_update'" class="table table-hover">
+                    <caption>修改帳號日誌列表</caption>
                     <thead>
                         <tr class="table-light">
-                            <th>登入時間</th>
+                            <th style="width: 180px;">修改時間</th>
+                            <th>操作描述</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in loginlog.list" :key="index">
+                            <td>{{ item?.LoginTime ? new Date(item.LoginTime).toLocaleString('zh-TW') : '' }}</td>
+                            <td>{{ item?.ActionDescription || '-' }}</td>
+                        </tr>
+                        <tr v-if="loginlog.list.length === 0">
+                            <td colspan="2" class="text-center">查無資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- ✅ 登入日誌 / 新增帳號日誌 - 完整表格 -->
+                <table v-else class="table table-hover">
+                    <caption>日誌列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th>{{ loginlog.selectedTab.value === 'user_register_' ? '註冊時間' : '登入時間' }}</th>
                             <th>使用者</th>
-                            @* <th>登入方式</th> *@
+                            <th>狀態</th>
                             <th>IP 位址</th>
                             <th>裝置 / 瀏覽器</th>
                             <th>狀態</th>
@@ -60,15 +81,6 @@
                             <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                 :title="item?.UserName">
                                 {{ item?.UserName }}
-                            </td>
-                            @* <td>{{ item?.LoginMethod }}</td> *@
-                            <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                :title="item?.IpAddress">
-                                {{ item?.IpAddress }}
-                            </td>
-                            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                :title="(item?.DeviceInfo || '') + ' / ' + (item?.BrowserInfo || '')">
-                                {{ item?.DeviceInfo }} / {{ item?.BrowserInfo }}
                             </td>
                             <td>
                                 <span v-if="item?.IsSuccess" class="badge bg-success">
@@ -83,7 +95,7 @@
 
                         </tr>
                         <tr v-if="loginlog.list.length === 0">
-                            <td colspan="6" class="text-center">查無資料</td>
+                            <td colspan="5" class="text-center">查無資料</td>
                         </tr>
                     </tbody>
                 </table>

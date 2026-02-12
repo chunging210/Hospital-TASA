@@ -122,52 +122,61 @@ namespace TASA.Services.AuthModule
             }
 
             // 1️⃣ 檢查帳號 / Email 是否已存在
-            var exists = db.AuthUser
+            var existingUser = db.AuthUser
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .Any(x => x.Account == vm.Email || x.Email == vm.Email);
+                .FirstOrDefault(x => x.Account == vm.Email || x.Email == vm.Email);
 
-            if (exists)
+            if (existingUser != null)
             {
+                // 區分已啟用和等待審核的情況
+                var failureReason = existingUser.IsEnabled ? "Email已存在" : "帳號等待審核中";
+                var errorMessage = existingUser.IsEnabled
+                    ? "此 Email 已被註冊"
+                    : "此帳號已註冊，目前正在等待管理者審核，請耐心等候";
+
                 var failureInfo = new
                 {
                     UserName = vm.Email,
                     Email = vm.Email,
                     IsSuccess = false,
-                    FailureReason = "Email已存在",
+                    FailureReason = failureReason,
                     ClientIp = GetClientIp(),
                     DeviceInfo = deviceInfo.device,
                     BrowserInfo = deviceInfo.browser,
                     LoginMethod = GetLoginMethod(),
                     Timestamp = DateTime.Now
                 };
-                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
-                throw new HttpException("此 Email 已被註冊")
+                // ✅ 傳入已存在用戶的 UserId 和 DepartmentId
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo), existingUser.Id, existingUser.DepartmentId);
+                throw new HttpException(errorMessage)
                 {
                     StatusCode = System.Net.HttpStatusCode.BadRequest
                 };
             }
 
-            // 2️⃣ 取得「一般使用者」角色
-            var normalRole = db.AuthRole
-                .FirstOrDefault(x => x.Code == "NORMAL");
+            // 2️⃣ 判斷角色：外院人士 → NORMAL，有選分院 → STAFF
+            var isExternal = !vm.DepartmentId.HasValue;
+            var roleCode = isExternal ? "NORMAL" : "STAFF";
+            var role = db.AuthRole.FirstOrDefault(x => x.Code == roleCode);
 
-            if (normalRole == null)
+            if (role == null)
             {
-                throw new HttpException("系統尚未設定一般使用者角色")
+                throw new HttpException($"系統尚未設定 {roleCode} 角色")
                 {
                     StatusCode = System.Net.HttpStatusCode.InternalServerError
                 };
             }
 
-            // 3️⃣ 分院（可為 null）
+            // 3️⃣ 分院
             SysDepartment? department = null;
-            if (!vm.DepartmentId.HasValue)
+            if (isExternal)
             {
+                // 外院人士：自動設定為臺北總院
                 department = db.SysDepartment
                     .AsNoTracking()
                     .WhereNotDeleted()
-                    .FirstOrDefault(x => x.Sequence == 1);  // ✅ 假設台北總院 Sequence = 1
+                    .FirstOrDefault(x => x.Sequence == 1);  // 假設臺北總院 Sequence = 1
 
                 if (department == null)
                 {
@@ -183,11 +192,11 @@ namespace TASA.Services.AuthModule
                     throw new HttpException("無法找到預設分院(臺北總院)");
                 }
 
-                Console.WriteLine($"✅ 院外人士註冊,自動設定為: {department.Name}");
+                Console.WriteLine($"✅ 院外人士註冊,角色: NORMAL,分院: {department.Name}");
             }
             else
             {
-                // 如果有選擇分院,驗證分院是否存在
+                // 內部員工：驗證分院是否存在
                 department = db.SysDepartment
                     .AsNoTracking()
                     .FirstOrDefault(x => x.Id == vm.DepartmentId.Value);
@@ -196,6 +205,8 @@ namespace TASA.Services.AuthModule
                 {
                     throw new HttpException("所選分院不存在");
                 }
+
+                Console.WriteLine($"✅ 內部員工註冊,角色: STAFF,分院: {department.Name}");
             }
 
             // 4️⃣ 密碼加密
@@ -215,7 +226,7 @@ namespace TASA.Services.AuthModule
                 CreateAt = DateTime.Now,
             };
 
-            user.AuthRole.Add(normalRole);
+            user.AuthRole.Add(role);
 
             db.AuthUser.Add(user);
             db.SaveChanges();
@@ -233,7 +244,8 @@ namespace TASA.Services.AuthModule
                 DepartmentId = user.DepartmentId,
                 Timestamp = DateTime.Now
             };
-            _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo));
+            // ✅ 傳入新建用戶的 UserId 和 DepartmentId
+            _ = service.LogServices.LogAsync("user_register_success", JsonConvert.SerializeObject(successInfo), user.Id, user.DepartmentId);
 
             // 7️⃣ 寄信通知分院主任（DIRECTOR），沒有則寄給 ADMIN
             var directorEmails = db.AuthUser

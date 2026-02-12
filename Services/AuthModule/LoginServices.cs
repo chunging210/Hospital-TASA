@@ -87,13 +87,14 @@ namespace TASA.Services.AuthModule
             if (user?.IsEnabled == false)
             {
                 var reason = user.IsApproved ? "帳號已停用" : "帳號尚在審核中，請等待管理員核准";
+                var failureReason = user.IsApproved ? "帳號已停用" : "帳號尚在審核中";
                 var deviceInfo = GetDeviceInfo();
                 var failureInfo = new
                 {
                     UserName = user.Account,
                     // LoginMethod = GetLoginMethod(),
                     IsSuccess = false,
-                    FailureReason = reason,
+                    FailureReason = failureReason,
                     ClientIp = GetClientIp(),
                     DeviceInfo = deviceInfo.device,
                     BrowserInfo = deviceInfo.browser,

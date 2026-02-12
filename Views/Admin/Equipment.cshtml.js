@@ -191,6 +191,10 @@ const equipment = new function () {
             const res = await global.api.admin.equipmentdetail({ body: { id } });
             copy(this.vm, res.data);
 
+            // 確保 Building 和 Floor 不是 null（統一使用空字串）
+            this.vm.Building = this.vm.Building || '';
+            this.vm.Floor = this.vm.Floor || '';
+
             // 設定照片預覽
             this.imageFile = null;
             this.imageState.removeFlag = false;

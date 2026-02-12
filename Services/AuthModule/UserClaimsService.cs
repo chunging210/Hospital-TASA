@@ -63,7 +63,8 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
     {
         role = JsonSerializer.Deserialize<List<string>>(roleclaims) ?? [];
     }
-    _ = Guid.TryParse(claims.FirstOrDefault(x => x.Type == "departmentid")?.Value, out var departmentId);
+    var departmentIdClaim = claims.FirstOrDefault(x => x.Type == "departmentid")?.Value;
+    Guid? departmentId = Guid.TryParse(departmentIdClaim, out var parsedDeptId) ? parsedDeptId : null;
     var departmentName = claims.FirstOrDefault(x => x.Type == "departmentname")?.Value;
     
     // ✅ 從 Claim 中取得 IsRoomManager

@@ -143,7 +143,7 @@ window.$config = {
 
             global.api.auth.register({ body: payload })
                 .then(() => {
-                    addAlert('註冊成功，請使用帳號登入', { type: 'success' });
+                    addAlert('註冊成功，待管理者審核後使用帳號登入', { type: 'success' });
 
                     const modal = bootstrap.Modal.getInstance(
                         document.getElementById('guestRegisterModal')
