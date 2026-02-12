@@ -41,15 +41,6 @@ export const department = new function () {
     }
 }
 
-export const createby = new function () {
-    this.list = reactive([]);
-    this.getList = () => {
-        global.api.select.conferencecreateby()
-            .then((response) => {
-                copy(this.list, response.data);
-            });
-    }
-}
 
 export const visitor = new function () {
     this.query = reactive({ Keyword: '', CarType: '' });
@@ -281,7 +272,6 @@ export const conference = new function () {
         Start: new Date().format(),
         End: new Date().addDays(7).format(),
         RoomId: '',
-        UserId: '',
         keyword: ''
     });
 
@@ -329,7 +319,6 @@ window.$config = {
         this.me = me;
         this.room = room;
         this.department = department;
-        this.createby = createby;
         this.conference = conference;
         this.conferencepage = ref(null);
         this.conferenceoffcanvas = ref(null);
@@ -344,10 +333,17 @@ window.$config = {
             conference.onFilterChange();
         });
 
+        watch(() => conference.query.Start, () => {
+            conference.onFilterChange();
+        });
+
+        watch(() => conference.query.End, () => {
+            conference.onFilterChange();
+        });
+
         onMounted(() => {
             me.getVM();
             room.getList();
-            createby.getList();
 
 
             // ✅ 接 page ref
