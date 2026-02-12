@@ -1,5 +1,7 @@
+<link rel="stylesheet" href="/css/detailroom.css">
+
 <div class="modal fade room-detail-modal" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel"
-    aria-hidden="true">
+     aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
 
@@ -20,10 +22,10 @@
                                 <div class="detail-image-container">
                                     <!-- 有圖片的情況 -->
                                     <img v-if="hasDetailImages && currentDetailImage && !isDetailVideoFile(currentDetailImage)"
-                                        :key="detailRoomCarouselIndex" :src="currentDetailImage"
-                                        class="d-block w-100 h-100"
-                                        :class="room.carouselDirection === 'next' ? 'carousel-next' : 'carousel-prev'"
-                                        alt="會議室圖片">
+                                         :key="detailRoomCarouselIndex" :src="currentDetailImage"
+                                         class="d-block w-100 h-100"
+                                         :class="room.carouselDirection === 'next' ? 'carousel-next' : 'carousel-prev'"
+                                         alt="會議室圖片">
 
                                     <!-- 有影片的情況 -->
                                     <video
@@ -55,8 +57,8 @@
                                     <!-- 圖片指示器 -->
                                     <div v-if="hasDetailImages" class="image-indicators">
                                         <span v-for="(_, index) in detailRoom.Images" :key="index"
-                                            class="image-indicator"
-                                            :class="{ active: index === detailRoomCarouselIndex }"
+                                              class="image-indicator"
+                                              :class="{ active: index === detailRoomCarouselIndex }"
                                             @@click="room.stopCarousel(); detailRoomCarouselIndex = index; room.startCarousel()">
                                         </span>
                                     </div>
@@ -71,28 +73,28 @@
                         <ul class="nav nav-tabs" id="roomDetailTabs" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="info-tab" data-bs-toggle="tab"
-                                    data-bs-target="#info" type="button" role="tab" aria-controls="info"
-                                    aria-selected="true">
+                                        data-bs-target="#info" type="button" role="tab" aria-controls="info"
+                                        aria-selected="true">
                                     <span class="material-icons icons">settings</span> 基本資訊
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="equipment-tab" data-bs-toggle="tab"
-                                    data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment"
-                                    aria-selected="false">
+                                        data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment"
+                                        aria-selected="false">
                                     <span class="material-icons icons">construction</span> 設備狀態
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="schedule-tab" data-bs-toggle="tab"
-                                    data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule"
-                                    aria-selected="false">
+                                        data-bs-target="#schedule" type="button" role="tab" aria-controls="schedule"
+                                        aria-selected="false">
                                     <span class="material-icons icons">today</span> 今日時程
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing"
-                                    type="button" role="tab" aria-controls="pricing" aria-selected="false">
+                                        type="button" role="tab" aria-controls="pricing" aria-selected="false">
                                     <span class="material-icons icons">paid</span> 收費標準
                                 </button>
                             </li>
@@ -139,104 +141,107 @@
                                         <div class="info-label">位置</div>
                                         <div class="info-value">{{ (detailRoom?.Building || '') }} {{ (detailRoom?.Floor
                                             || '') }}樓</div>
-                                    </div>
-                                    <!-- ✅ 加上分院 -->
-                                    <div class="info-item">
-                                        <div class="info-icon">
-                                            <span class="material-icons icons">
-                                                apartment
-                                            </span>
                                         </div>
-                                        <div class="info-label">分院</div>
-                                        <div class="info-value">{{ detailRoom?.Department?.Name || '-' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 設備頁 -->
-                            <div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
-                                <div class="equipment-status">
-                                    <div v-if="detailRoom?.Equipment?.length > 0">
-                                        <div v-for="equipment in detailRoom.Equipment" :key="equipment.Id"
-                                            class="equipment-item d-flex align-items-center mb-2">
-                                            <i class="mdi mdi-tools me-2 text-secondary"></i>
-                                            <span>{{ equipment.Name }}</span>
+                                        <!-- ✅ 加上分院 -->
+                                        <div class="info-item">
+                                            <div class="info-icon">
+                                                <span class="material-icons icons">
+                                                    apartment
+                                                </span>
+                                            </div>
+                                            <div class="info-label">分院</div>
+                                            <div class="info-value">{{ detailRoom?.Department?.Name || '-' }}</div>
                                         </div>
                                     </div>
-
-                                    <div v-else class="text-muted">
-                                        暫無設備資訊
-                                    </div>
                                 </div>
-                            </div>
-                            <!-- 時程頁 -->
-                            <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
-                                <div class="schedule-section">
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>時間</th>
-                                                    <th>會議名稱</th>
-                                                    <th>狀態</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- ✅ 有資料 -->
-                                                <tr v-if="todaySchedule && todaySchedule.length > 0"
-                                                    v-for="(schedule, index) in todaySchedule" :key="index">
-                                                    <td>{{ schedule.StartTime }} - {{ schedule.EndTime }}</td>
-                                                    <td>{{ schedule.ConferenceName }}</td>
-                                                    <td>
-                                                        <span class="badge"
-                                                            :class="getStatusBadgeClass(schedule.Status)">
-                                                            {{ getStatusText(schedule.Status) }}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                                <!-- ✅ 無資料 -->
-                                                <tr v-else>
-                                                    <td colspan="3" class="text-center text-muted">今日無會議</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- 收費頁 -->
-                            <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
-                                <div class="pricing-section">
-                                    <div class="mb-3">
-                                        <span class="badge bg-primary">時段制</span>
-                                    </div>
-
-                                    <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0"
-                                        class="pricing-list">
-
-                                        <!-- 時段制 - 時段名稱、時間、平日價格、假日價格 -->
-                                        <div v-if="detailRoom.PricingType === 1"
-                                            v-for="pricing in detailRoom.PricingDetails" :key="pricing.Name">
-                                            <div class="pricing-item-period">
-                                                <div class="pricing-item-period-info">
-                                                    <span class="pricing-name">{{ pricing.Name }}</span>
-                                                    <span class="pricing-time">{{ pricing.StartTime }} - {{ pricing.EndTime }}</span>
-                                                </div>
-                                                <div class="pricing-item-period-divider"></div>
-                                                <div class="pricing-item-period-prices">
-                                                    <span class="pricing-item-period-price">
-                                                        <small class="text-muted">平日</small> NT$ {{ pricing.Price }}
-                                                    </span>
-                                                    <span class="pricing-item-period-price" v-if="pricing.HolidayPrice">
-                                                        <small class="text-muted">假日</small> NT$ {{ pricing.HolidayPrice }}
-                                                    </span>
-                                                </div>
+                                <!-- 設備頁 -->
+                                <div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
+                                    <div class="equipment-status">
+                                        <div v-if="detailRoom?.Equipment?.length > 0">
+                                            <div v-for="equipment in detailRoom.Equipment" :key="equipment.Id"
+                                                 class="equipment-item d-flex align-items-center mb-2">
+                                                <i class="mdi mdi-tools me-2 text-secondary"></i>
+                                                <span>{{ equipment.Name }}</span>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div v-else class="text-muted">
-                                        暫無收費資訊
+                                        <div v-else class="text-muted">
+                                            暫無設備資訊
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 時程頁 -->
+                                <div class="tab-pane fade" id="schedule" role="tabpanel" aria-labelledby="schedule-tab">
+                                    <div class="schedule-section">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>時間</th>
+                                                        <th>會議名稱</th>
+                                                        <th>狀態</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <!-- ✅ 有資料 -->
+                                                    <tr v-if="todaySchedule && todaySchedule.length > 0"
+                                                        v-for="(schedule, index) in todaySchedule" :key="index">
+                                                        <td>{{ schedule.StartTime }} - {{ schedule.EndTime }}</td>
+                                                        <td>{{ schedule.ConferenceName }}</td>
+                                                        <td>
+                                                            <span class="badge"
+                                                                  :class="getStatusBadgeClass(schedule.Status)">
+                                                                {{ getStatusText(schedule.Status) }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    <!-- ✅ 無資料 -->
+                                                    <tr v-else>
+                                                        <td colspan="3" class="text-center text-muted">今日無會議</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 收費頁 -->
+                                <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+                                    <div class="pricing-section">
+
+                                        <div v-if="detailRoom?.PricingDetails && detailRoom.PricingDetails.length > 0">
+
+                                            <!-- Header -->
+                                            <div class="pricing-header">
+                                                <span></span>
+                                                <span class="pricing-col-label">平日</span>
+                                                <span class="pricing-col-label">假日</span>
+                                            </div>
+
+                                            <!-- 時段制 -->
+                                            <div v-if="detailRoom.PricingType === 1"
+                                                 v-for="pricing in detailRoom.PricingDetails"           :key="pricing.Name"
+                                                 class="pricing-row">
+                                                <div>
+                                                    <div class="pricing-name">{{ pricing.Name }}</div>
+                                                    <div class="pricing-time">{{ pricing.StartTime }} - {{ pricing.EndTime
+                                                        }}</div>
+                                                    </div>
+                                                    <div class="pricing-price">NT$ {{ pricing.Price }}</div>
+                                                    <div class="pricing-price holiday" v-if="pricing.HolidayPrice">
+                                                        NT$ {{ pricing.HolidayPrice }}
+                                                    </div>
+                                                    <div class="pricing-price holiday" v-else>—</div>
+                                                </div>
+
+                                            </div>
+
+                                            <div v-else class="text-muted">
+                                                暫無收費資訊
+                                            </div>
+
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -245,5 +250,3 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
