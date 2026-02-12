@@ -1704,3 +1704,11 @@ body {
     border-radius: 4px;
     flex-shrink: 0;
 }
+
+.manager-area {
+    border: 2px solid #007bff;
+    background: #f0f7ff;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+}
