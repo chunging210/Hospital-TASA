@@ -732,13 +732,77 @@ window.$config = {
             return this.form.selectedSlots.includes(slot.Key);
         };
 
+        // 取得已選時段的起始和結束邊界
+        this.getSelectedRange = () => {
+            if (this.form.selectedSlots.length === 0) {
+                return null;
+            }
+
+            const selectedSlots = this.timeSlots.value.filter(slot =>
+                this.form.selectedSlots.includes(slot.Key)
+            );
+
+            let minStart = null;
+            let maxEnd = null;
+
+            for (const slot of selectedSlots) {
+                if (minStart === null || slot.StartTime < minStart) {
+                    minStart = slot.StartTime;
+                }
+                if (maxEnd === null || slot.EndTime > maxEnd) {
+                    maxEnd = slot.EndTime;
+                }
+            }
+
+            return { minStart, maxEnd };
+        };
+
+        // 檢查時段是否與已選範圍相鄰
+        this.isSlotAdjacent = (slot) => {
+            const range = this.getSelectedRange();
+            if (!range) return true; // 沒有選擇，全部可選
+
+            // 時段的結束時間 = 已選範圍的開始時間，或時段的開始時間 = 已選範圍的結束時間
+            return slot.EndTime === range.minStart || slot.StartTime === range.maxEnd;
+        };
+
+        // 檢查時段是否可以被選擇
+        this.isSlotAvailable = (slot) => {
+            if (slot.Occupied) return false;
+            if (this.form.selectedSlots.length === 0) return true;
+            if (this.isSlotSelected(slot)) return true; // 已選的可以取消
+            return this.isSlotAdjacent(slot);
+        };
+
+        // 檢查時段是否在已選範圍的邊緣（可以取消選擇）
+        this.isSlotAtEdge = (slot) => {
+            if (!this.isSlotSelected(slot)) return false;
+            if (this.form.selectedSlots.length === 1) return true; // 只有一個，當然是邊緣
+
+            const range = this.getSelectedRange();
+            if (!range) return false;
+
+            // 是開頭或結尾
+            return slot.StartTime === range.minStart || slot.EndTime === range.maxEnd;
+        };
+
         this.toggleTimeSlot = (slot) => {
             if (slot.Occupied) return;
-            const idx = this.form.selectedSlots.indexOf(slot.Key);
-            if (idx > -1) {
-                this.form.selectedSlots.splice(idx, 1);
+
+            const isSelected = this.form.selectedSlots.includes(slot.Key);
+
+            if (isSelected) {
+                // 取消選擇：只能取消邊緣的時段
+                if (this.isSlotAtEdge(slot)) {
+                    const idx = this.form.selectedSlots.indexOf(slot.Key);
+                    this.form.selectedSlots.splice(idx, 1);
+                }
+                // 如果不是邊緣，不做任何事（或可以顯示提示）
             } else {
-                this.form.selectedSlots.push(slot.Key);
+                // 新增選擇：只能選相鄰的時段
+                if (this.isSlotAvailable(slot)) {
+                    this.form.selectedSlots.push(slot.Key);
+                }
             }
         };
 

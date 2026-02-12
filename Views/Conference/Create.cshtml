@@ -227,7 +227,8 @@
                                                             <div v-for="slot in displayedSlots" :key="slot.Key"
                                                                  class="time-slot-card" :class="{
                                                                 selected: isSlotSelected(slot),
-                                                                occupied: slot.Occupied
+                                                                occupied: slot.Occupied,
+                                                                disabled: !isSlotAvailable(slot)
                                                                 }" @@click="toggleTimeSlot(slot)">
                                                                 <div class="slot-time">
                                                                     <strong>{{ slot.Name || '時段' }}</strong>
