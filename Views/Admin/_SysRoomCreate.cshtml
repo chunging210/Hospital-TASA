@@ -1,11 +1,11 @@
-<!-- 右側邊欄：新增會議室 -->
+<!-- 右側邊欄：新增/編輯會議室 -->
 <link rel="stylesheet" href="/css/sysroom.css">
 
 <div ref="roomoffcanvas" class="offcanvas offcanvas-end offcanvas-create" tabindex="-1" id="offcanvasRoomCreate"
      aria-labelledby="offcanvasRoomCreateLabel">
     <div class="offcanvas-header border-bottom">
         <h5 id="offcanvasRoomCreateLabel" class="mb-0">
-            <i class="mdi mdi-home-plus"></i> 新增會議室
+            <i :class="room.vm.Id ? 'mdi mdi-home-edit' : 'mdi mdi-home-plus'"></i> {{ room.vm.Id ? '編輯會議室' : '新增會議室' }}
         </h5>
         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -19,13 +19,13 @@
 
                 <div class="mb-3">
                     <label class="form-label form-label-custom">會議室名稱 <span class="text-danger">*</span></label>
-                    <input v-model="form.name" type="text" class="form-control" placeholder="請輸入會議室名稱" required>
+                    <input v-model="room.vm.Name" type="text" class="form-control" placeholder="請輸入會議室名稱" required>
                     <div class="invalid-feedback">請輸入會議室名稱</div>
                 </div>
 
                 <div class="mb-3" v-if="isAdmin">
                     <label class="form-label form-label-custom">分院 <span class="text-danger">*</span></label>
-                    <select v-model="form.departmentId" class="form-control" required>
+                    <select v-model="room.vm.DepartmentId" class="form-control" required>
                         <option :value="null">請選擇分院</option>
                         <option v-for="dept in department.list" :key="dept.Id" :value="dept.Id">
                             {{ dept.Name }}
@@ -36,14 +36,14 @@
 
                 <div class="mb-3">
                     <label class="form-label form-label-custom">大樓名稱 <span class="text-danger">*</span></label>
-                    <input v-model="form.building" type="text" class="form-control" placeholder="請輸入大樓名稱" required>
+                    <input v-model="room.vm.Building" type="text" class="form-control" placeholder="請輸入大樓名稱" required>
                     <div class="invalid-feedback">請輸入大樓名稱</div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label form-label-custom">樓層 <span class="text-danger">*</span></label>
 
-                    <input v-model.trim="form.floor" type="text" class="form-control" placeholder="例：B1、B2、1、5、10、RF"
+                    <input v-model.trim="room.vm.Floor" type="text" class="form-control" placeholder="例：B1、B2、1、5、10、RF"
                            maxlength="4" required />
 
                     <div class="form-text text-muted">
@@ -57,7 +57,7 @@
 
                 <div class="mb-3">
                     <label class="form-label form-label-custom">會議室說明</label>
-                    <textarea v-model="form.description" class="form-control" rows="4" placeholder="請輸入會議室簡介、用途或特色..."
+                    <textarea v-model="room.vm.Description" class="form-control" rows="4" placeholder="請輸入會議室簡介、用途或特色..."
                               required></textarea>
                     <div class="invalid-feedback">請輸入會議室說明</div>
                 </div>
@@ -65,15 +65,24 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label form-label-custom">人數 <span class="text-danger">*</span></label>
-                        <input v-model.number="form.capacity" type="number" class="form-control" placeholder="請輸入人數"
+                        <input v-model.number="room.vm.Capacity" type="number" class="form-control" placeholder="請輸入人數"
                                min="1" step="1" required>
                         <div class="invalid-feedback">請輸入人數（最少 1 人）</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label form-label-custom">面積（㎡） <span class="text-danger">*</span></label>
-                        <input v-model.number="form.area" type="number" class="form-control" placeholder="請輸入面積" min="1"
+                        <input v-model.number="room.vm.Area" type="number" class="form-control" placeholder="請輸入面積" min="1"
                                step="0.01" required>
                         <div class="invalid-feedback">請輸入面積（㎡）</div>
+                    </div>
+                </div>
+
+                <!-- 維修中 (僅編輯模式) -->
+                <div v-if="room.vm.Id" class="mt-3">
+                    <div class="form-check">
+                        <input v-model="room.vm.Status" :true-value="1" :false-value="0" type="checkbox"
+                            class="form-check-input" id="editStatusCheck">
+                        <label class="form-check-label" for="editStatusCheck">維修中</label>
                     </div>
                 </div>
             </div>
@@ -204,32 +213,32 @@
                 <h6>租借權限設定 <span class="text-danger">*</span></h6>
                 <div class="rental-options">
                     <!-- 對內 -->
-                    <div class="rental-option rental-option-internal" @@click="room.selectRentalOption(0)"
-                         :class="{ active: form.rentalType === 0 }">
+                    <div class="rental-option rental-option-internal" @@click="room.vm.BookingSettings = 0"
+                         :class="{ active: room.vm.BookingSettings === 0 }">
                         <i class="bx bx-building"></i>
                         <h6>對內</h6>
                         <small>僅限公司內部使用</small>
                     </div>
 
                     <!-- 對內外 -->
-                    <div class="rental-option rental-option-external" @@click="room.selectRentalOption(1)"
-                         :class="{ active: form.rentalType === 1 }">
+                    <div class="rental-option rental-option-external" @@click="room.vm.BookingSettings = 1"
+                         :class="{ active: room.vm.BookingSettings === 1 }">
                         <i class="bx bx-group"></i>
                         <h6>對內外</h6>
                         <small>內部及外部客戶可租借</small>
                     </div>
 
                     <!-- 不開放 -->
-                    <div class="rental-option rental-option-closed" @@click="room.selectRentalOption(2)"
-                         :class="{ active: form.rentalType === 2 }">
+                    <div class="rental-option rental-option-closed" @@click="room.vm.BookingSettings = 2"
+                         :class="{ active: room.vm.BookingSettings === 2 }">
                         <i class="bx bx-block"></i>
                         <h6>不開放</h6>
                         <small>暫不開放租借</small>
                     </div>
 
                     <!-- 免費開放 -->
-                    <div class="rental-option rental-option-free" @@click="room.selectRentalOption(3)"
-                         :class="{ active: form.rentalType === 3 }">
+                    <div class="rental-option rental-option-free" @@click="room.vm.BookingSettings = 3"
+                         :class="{ active: room.vm.BookingSettings === 3 }">
                         <i class="bx bx-gift"></i>
                         <h6>免費開放</h6>
                         <small>免費提供使用</small>
@@ -245,18 +254,21 @@
 
                     <!-- 已選擇的管理者 -->
                     <div v-if="manager.selectedManager.value"
-                         class="alert alert-info d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="mdi mdi-account-check"></i>
-                            <strong>{{ manager.selectedManager.value.Name }}</strong>
-                            <!-- ✅ 顯示角色 -->
-                            <span class="badge bg-white text-primary ms-2" style="font-size: 0.75rem;">
-                                {{ manager.selectedManager.value.RoleDisplay }}
-                            </span>
-                            <small class="text-muted ms-2">{{ manager.selectedManager.value.Email }}</small>
+                         class="d-flex justify-content-between manager-area align-items-center">
+                        <div class="d-flex flex-column">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-primary me-2">
+                                    {{ manager.selectedManager.value.RoleDisplay }}
+                                </span>
+                                <strong>{{ manager.selectedManager.value.Name }}</strong>
+                            </div>
+                            <small class="text-muted mt-2">
+                                <span class="material-icons icons font-size-18 me-1">mail_outline</span>
+                                {{ manager.selectedManager.value.Email }}
+                            </small>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger" @@click="manager.clearSelection()">
-                            <i class="mdi mdi-close"></i> 取消選擇
+                        <button type="button" class="btn btn-sm btn-outline-danger" @@click="manager.clearSelection()" style="height: 34.56px">
+                            移除
                         </button>
                     </div>
 
@@ -271,32 +283,26 @@
                                  class="manager-item p-2 border-bottom hover-bg-light" style="cursor: pointer;"
                                 @@click="manager.selectManager(user)">
                                 <div class="d-flex align-items-center">
-                                    <i class="mdi mdi-account-circle me-2 text-primary"></i>
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center gap-2">
-                                            <strong>{{ user.Name }}</strong>
-                                            <!-- ✅ 顯示角色標籤 -->
                                             <span class="badge bg-primary" style="font-size: 0.7rem;">
                                                 {{ user.RoleDisplay }}
                                             </span>
+                                            <strong>{{ user.Name }}</strong>
+                                            <small class="text-muted d-block">{{ user.Email }}</small>
                                         </div>
-                                        <small class="text-muted d-block">{{ user.Email }}</small>
-                                        <!-- ✅ 只有管理者才顯示分院 -->
-                                        <small v-if="isAdmin && user.DepartmentName" class="text-muted">
-                                            <i class="mdi mdi-domain"></i> {{ user.DepartmentName }}
-                                        </small>
                                     </div>
                                 </div>
                             </div>
 
                             <div v-if="manager.filteredList.value.length === 0" class="p-3 text-center text-muted">
-                                <i class="mdi mdi-account-search"></i> 查無使用者
+                                查無使用者
                             </div>
                         </div>
                     </div>
 
                     <div class="form-text text-muted">
-                        <i class="mdi mdi-information"></i> 設定後,此會議室的預約審核通知將寄給指定管理者
+                        設定後,此會議室的預約審核通知將寄給指定管理者
                     </div>
                 </div>
             </div>
@@ -304,12 +310,19 @@
             <!-- ✅ 聲明書上傳區塊 -->
             <div class="form-section">
                 <h6>聲明書設定</h6>
-                
+
+                <!-- 已有聲明書 (編輯模式) -->
+                <div v-if="room.vm.Id && room.vm.AgreementPath && !room.form.agreementFileName" class="alert alert-info py-2 mb-3">
+                    目前聲明書：
+                    <a :href="room.vm.AgreementPath" target="_blank" class="ms-1">查看</a>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                            @@click="room.removeExistingAgreement()">移除</button>
+                </div>
+
                 <!-- 未上傳：顯示上傳區 -->
                 <div v-if="!room.form.agreementFileName" class="file-upload-area"
                      @@click="room.triggerAgreementUpload()">
                     <div class="upload-placeholder">
-                        <i class="mdi mdi-file-pdf-box" style="font-size: 32px; color: #dc3545;"></i>
                         <p class="mb-1">點擊上傳聲明書</p>
                         <small class="text-muted">僅支援 PDF 格式</small>
                     </div>
@@ -331,7 +344,6 @@
                        accept=".pdf" style="display: none;">
 
                 <p class="text-muted small mt-2">
-                    <i class="mdi mdi-information-outline"></i>
                     若未上傳，將使用系統預設聲明書
                 </p>
             </div>
@@ -341,7 +353,6 @@
     <!-- 固定底部按鈕 -->
     <div class="offcanvas-footer d-flex gap-2 justify-content-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">取消</button>
-        <button type="button" class="btn btn-primary" @@click="room.save()">確定新增</button>
-
+        <button type="button" class="btn btn-primary" @@click="room.save()">{{ room.vm.Id ? '儲存變更' : '確定新增' }}</button>
     </div>
 </div>

@@ -10,9 +10,18 @@ const userDepartmentName = ref('');  // ✅ 改用 ref
 class VM {
     Id = null;
     Name = '';
+    Building = '';
+    Floor = '';
     Description = '';
+    Capacity = null;
+    Area = null;
+    Status = 0;
+    PricingType = 1;
+    BookingSettings = 0;
     IsEnabled = true;
     DepartmentId = null;
+    ManagerId = null;
+    AgreementPath = null;
 }
 
 // ✅ Enum 定義（與後端對應）
@@ -208,7 +217,7 @@ const room = new function () {
     this.todaySchedule = ref([]);
     this.scheduleRefreshInterval = null;
 
-    this.editModal = null;
+    // editModal removed - using offcanvas for both create and edit
     this.page = {};
     this.mediaFiles = reactive([]);
     this.timeSlots = reactive([]);
@@ -437,8 +446,8 @@ const room = new function () {
                         });
                     }
 
-                    if (this.editModal) {
-                        this.editModal.show();
+                    if (this.offcanvas) {
+                        this.offcanvas.show();
                     }
                 })
                 .catch(error => {
@@ -446,27 +455,29 @@ const room = new function () {
                 });
         } else {
             // ✅ 新增模式
-            this.form.name = '';
-            this.form.building = '';
-            this.form.floor = '';
-            this.form.description = '';
-            this.form.capacity = null;
-            this.form.area = null;
-            this.form.feeType = PricingType.Period;
+            this.vm.Id = null;
+            this.vm.Name = '';
+            this.vm.Building = '';
+            this.vm.Floor = '';
+            this.vm.Description = '';
+            this.vm.Capacity = null;
+            this.vm.Area = null;
+            this.vm.Status = RoomStatus.Available;
             this.vm.PricingType = PricingType.Period;
-            this.form.rentalType = BookingSettings.InternalOnly;
+            this.vm.BookingSettings = BookingSettings.InternalOnly;
+            this.vm.AgreementPath = null;
             this.generateCreateTimeSlotDefaults();
 
-            this.form.managerId = null;
+            this.vm.ManagerId = null;
             this.form.agreementBase64 = null;    // ✅ 重設聲明書
             this.form.agreementFileName = null;
             manager.clearSelection();
 
             if (!isAdmin.value && userDepartmentId.value) {
-                this.form.departmentId = userDepartmentId.value;
+                this.vm.DepartmentId = userDepartmentId.value;
                 manager.getList(userDepartmentId.value);
             } else {
-                this.form.departmentId = null;
+                this.vm.DepartmentId = null;
                 manager.list.splice(0);
             }
 
@@ -477,39 +488,30 @@ const room = new function () {
     }
 
     this.save = () => {
-        const isEdit = !!this.vm.Id;
-        const method = isEdit
+        const method = this.vm.Id
             ? global.api.admin.roomupdate
             : global.api.admin.roominsert;
 
-        const source = isEdit ? this.vm : this.form;
-
-        const pricingType = isEdit
-            ? this.vm.PricingType
-            : this.form.feeType;
-
-        let status = source.Status ?? RoomStatus.Available;
-
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
-        const capacity = Number(source.Capacity ?? source.capacity ?? 0);
-        const area = Number(source.Area ?? source.area ?? 0);
+        const capacity = Number(this.vm.Capacity ?? 0);
+        const area = Number(this.vm.Area ?? 0);
 
         const body = {
             Id: this.vm.Id ?? null,
-            Name: source.Name ?? source.name,
-            Building: source.Building ?? source.building,
-            Floor: source.Floor ?? source.floor,
-            Description: source.Description ?? source.description,
+            Name: this.vm.Name,
+            Building: this.vm.Building,
+            Floor: this.vm.Floor,
+            Description: this.vm.Description,
 
             // ✅ 一定是 number
             Capacity: isNaN(capacity) ? 0 : capacity,
             Area: isNaN(area) ? 0 : area,
 
-            Status: status,
-            PricingType: pricingType,
-            BookingSettings: source.BookingSettings ?? source.rentalType,
-            DepartmentId: source.DepartmentId ?? source.departmentId,
-            ManagerId: manager.selectedManager.value?.Id ?? source.ManagerId ?? source.managerId,
+            Status: this.vm.Status ?? RoomStatus.Available,
+            PricingType: this.vm.PricingType,
+            BookingSettings: this.vm.BookingSettings,
+            DepartmentId: this.vm.DepartmentId,
+            ManagerId: manager.selectedManager.value?.Id ?? this.vm.ManagerId,
             Images: this.mediaFiles.map((m, idx) => ({
                 type: m.type,
                 src: m.src,
@@ -528,7 +530,6 @@ const room = new function () {
                 addAlert('操作成功');
                 this.getList();
                 this.offcanvas?.hide();
-                this.editModal?.hide();
             })
             .catch(err => {
                 addAlert(err.details || '操作失敗', { type: 'danger' });
@@ -550,11 +551,7 @@ const room = new function () {
     }
 
     this.toggleFeeOptions = () => {
-        // if (this.form.feeType === PricingType.Hourly) {
-        //     this.generateHourlySlots();
-        //     this.timeSlots.splice(0);
-        // } else
-        if (this.form.feeType === PricingType.Period) {
+        if (this.vm.PricingType === PricingType.Period) {
             this.timeSlots.splice(0);
             this.generateCreateTimeSlotDefaults();
         }
@@ -602,9 +599,7 @@ const room = new function () {
     this.getPricingDetails = () => {
         const details = [];
 
-        const pricingType = this.vm.Id
-            ? this.vm.PricingType
-            : this.form.feeType;
+        const pricingType = this.vm.PricingType;
 
         // if (pricingType === PricingType.Hourly) {
         //     this.hourlySlots.value.forEach(slot => {
@@ -649,7 +644,7 @@ const room = new function () {
     }
 
     this.selectRentalOption = (type) => {
-        this.form.rentalType = type;
+        this.vm.BookingSettings = type;
     }
 
     this.handleMediaUpload = (event) => {
@@ -853,12 +848,8 @@ window.$config = {
             await loadCurrentUser();
             room.page = this.roompage.value;
 
-            // ✅ 初始化 offcanvas 和 modal
+            // ✅ 初始化 offcanvas
             room.offcanvas = new bootstrap.Offcanvas(this.roomoffcanvas.value);
-            room.editModal = new bootstrap.Modal(
-                document.getElementById('roomEditModal'),
-                { backdrop: 'static' }
-            );
 
             room.getList(1);
 
@@ -898,25 +889,15 @@ window.$config = {
                 room.getList(1);
             });
 
-            // ✅ 監聽「編輯模式」的分院變更
+            // ✅ 監聽分院變更（新增/編輯共用）
             watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {
-                // ✅ 只有在「真正變更」且「是編輯模式」時才觸發
-                if (room.vm.Id && newDeptId && newDeptId !== oldDeptId) {
-                    console.log('✅ [編輯] 分院變更,重新載入員工:', newDeptId);
+                if (!newDeptId || newDeptId === oldDeptId) return;
+                if (room.vm.Id || isAdmin.value) {
+                    console.log('✅ 分院變更,重新載入員工:', newDeptId);
                     manager.clearSelection();
                     manager.getList(newDeptId);
                 }
             });
-
-            // ✅ 監聽「新增模式」的分院變更
-            watch(() => room.form.departmentId, (newDeptId) => {
-                // ✅ 只有在「新增模式」且「是 Admin」時才觸發
-                if (!room.vm.Id && isAdmin.value && newDeptId) {
-                    console.log('✅ [新增] Admin 選擇分院,重新載入員工:', newDeptId);
-                    manager.clearSelection();
-                    manager.getList(newDeptId);
-                }
-            }, { immediate: false });
         });
     }
 }

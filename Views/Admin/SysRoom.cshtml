@@ -100,13 +100,13 @@
 
                             <!-- 操作按鈕 -->
                             <div class="action-buttons">
-                                <button class="btn btn-primary" @@click="room.viewRoom(roomItem.Id)">
+                                <button class="btn btn-outline-primary" @@click="room.viewRoom(roomItem.Id)">
                                     <i class="mdi mdi-eye"></i> 檢視
                                 </button>
-                                <button class="btn btn-warning" @@click="room.getVM(roomItem.Id)">
+                                <button class="btn btn-outline-warning" @@click="room.getVM(roomItem.Id)">
                                     <i class="mdi mdi-pencil"></i> 編輯
                                 </button>
-                                <button class="btn btn-danger" @@click="room.deleteRoom(roomItem.Id)">
+                                <button class="btn btn-outline-danger" @@click="room.deleteRoom(roomItem.Id)">
                                     <i class="mdi mdi-trash-can"></i> 刪除
                                 </button>
                             </div>
@@ -122,4 +122,3 @@
 
 <partial name="_SysRoomCreate" />
 <partial name="_SysRoomDetail" />
-<partial name="_SysRoomEdit" />

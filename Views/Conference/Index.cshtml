@@ -54,7 +54,9 @@
                             <td>{{item.OrganizerUnit || '-'}}</td>
                             <td>{{item.Chairman || '-'}}</td>
                             <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
-                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) : (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM') : '-')}}</td>
+                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) :
+                                (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM')
+                                : '-')}}</td>
                                 <td>{{item.RoomLocation || '-'}}</td>
                                 <td>{{item.CreateByName}}</td>
                                 @* <td class="hstack gap-3">
