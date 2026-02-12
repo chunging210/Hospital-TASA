@@ -68,12 +68,12 @@
                                 <td>{{ item.CreateAt.format() }}</td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-primary"
+                                        <button @@click="equipment.getVM(item.Id)" class="btn btn-sm btn-outline-primary"
                                             data-bs-toggle="modal" data-bs-target="#equipmentModal">
-                                            <i class="mdi mdi-pencil-outline"></i> 編輯
+                                            編輯
                                         </button>
-                                        <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-danger">
-                                            <i class="mdi mdi-delete-outline"></i> 刪除
+                                        <button @@click="equipment.delete(item.Id)" class="btn btn-sm btn-outline-danger">
+                                            刪除
                                         </button>
                                     </div>
                                 </td>
