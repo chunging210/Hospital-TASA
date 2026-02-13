@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -51,6 +52,17 @@ namespace TASA.Services.AuthModule
 
             return (browser, device);
         }
+
+        /// <summary>
+        /// 密碼驗證規則：至少10字元，包含大小寫字母、數字、特殊字元
+        /// </summary>
+        public static bool IsValidPassword(string password)
+        {
+            string regexPattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$";
+            return Regex.IsMatch(password, regexPattern);
+        }
+
+        public static string PasswordRuleMessage => "密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）";
 
         public void ToHash()
         {
@@ -104,6 +116,12 @@ namespace TASA.Services.AuthModule
         }
         public void Forget(ForgetVM vm)
         {
+            // 密碼規則驗證
+            if (!IsValidPassword(vm.Password))
+            {
+                throw new HttpException(PasswordRuleMessage);
+            }
+
             var forget = db.AuthForget
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);
@@ -156,6 +174,12 @@ namespace TASA.Services.AuthModule
         }
         public void ChangePW(ChangePWVM vm)
         {
+            // 密碼規則驗證
+            if (!IsValidPassword(vm.Password))
+            {
+                throw new HttpException(PasswordRuleMessage);
+            }
+
             var userid = service.UserClaimsService.Me()?.Id;
             var user = db.AuthUser
                 .WhereNotDeleted()

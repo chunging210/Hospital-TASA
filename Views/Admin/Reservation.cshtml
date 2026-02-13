@@ -257,6 +257,15 @@
                                       :required="reservation.vm.discountType === 'free'"></textarea>
                         </div>
 
+                        <!-- 繳費期限 -->
+                        <div class="col-md-6">
+                            <label class="form-label">繳費期限</label>
+                            <input type="date" class="form-control"
+                                   v-model="reservation.vm.paymentDeadline"
+                                   :min="reservation.today">
+                            <div class="form-text text-muted">不填則使用系統預設期限</div>
+                        </div>
+
                         <!-- 價格明細 -->
                         <div class="col-12">
                             <div class="border rounded p-3 bg-body-secondary">

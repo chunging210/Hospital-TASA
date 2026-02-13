@@ -95,7 +95,7 @@
                                             </a>
                                         </div>
 
-                                        <div class="mb-3">
+                                        @* <div class="mb-3">
                                             <a href="/conference/list"
                                                    class="btn btn-outline-primary w-100 waves-effect"
                                                    style="border-radius: 6px; padding: 10px 20px; font-weight: 600;">
@@ -103,7 +103,7 @@
                                                       style="vertical-align: middle; font-size: 18px; margin-right: 4px;">visibility</span>
                                                 瀏覽會議室列表
                                             </a>
-                                        </div>
+                                        </div> *@
                                     </div>
                                 </div>
                                 <div class="mt-4 text-center">
@@ -195,13 +195,17 @@
                         </div>
 
                         <!-- 密碼 -->
-                        <div class="form-floating form-floating-custom mb-3">
+                        <div class="form-floating form-floating-custom mb-2">
                             <input type="password" class="form-control" id="guestPassword" placeholder="密碼"
                                    v-model="guestForm.password" required>
                             <label for="guestPassword">密碼</label>
                             <div class="form-floating-icon">
                                 <span class="material-icons">lock</span>
                             </div>
+                        </div>
+                        <div class="form-text text-muted mb-3" style="font-size: 0.8rem;">
+                            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">info</span>
+                            密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@@$!%*?&）
                         </div>
 
                         <!-- 確認密碼 -->
@@ -229,6 +233,29 @@
                             <span class="material-icons" style="font-size: 16px; vertical-align: middle;">info</span>
                             未選擇分院將註冊為一般會員；<br>
                             若您為院內職員，請選擇所屬分院。
+                        </div>
+
+                        <!-- 驗證碼 -->
+                        <div class="mb-3">
+                            <label class="form-label">驗證碼</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <img :src="registerCaptchaSrc"
+                                     alt="驗證碼"
+                                     style="height: 40px; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer;"
+                                     @@click="refreshRegisterCaptcha"
+                                     title="點擊重新產生">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" @@click="refreshRegisterCaptcha">
+                                    <span class="material-icons" style="font-size: 18px; vertical-align: middle;">refresh</span>
+                                </button>
+                            </div>
+                            <input type="text"
+                                   class="form-control mt-2"
+                                   placeholder="請輸入上方驗證碼"
+                                   v-model="guestForm.captcha"
+                                   @@input="upperCaptcha"
+                                   maxlength="4"
+                                   required>
+                            <small class="text-muted">點擊圖片可重新產生驗證碼</small>
                         </div>
 
                         @* <!-- 服務條款同意 -->

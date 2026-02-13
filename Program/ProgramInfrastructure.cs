@@ -60,6 +60,15 @@ namespace TASA.Program
             builder.Services.AddHostedService<StatusChangeBackgroundService>();
             builder.Services.AddHostedService<RefreshTokenBackgroundService>();
 
+            // 加入 Session（用於驗證碼）
+            builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(10);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
+
             return builder;
         }
 
@@ -84,6 +93,9 @@ namespace TASA.Program
 
             // 啟用路由
             app.UseRouting();
+
+            // Session（用於驗證碼）
+            app.UseSession();
 
             // 身份驗證與授權
             app.UseAuthentication();

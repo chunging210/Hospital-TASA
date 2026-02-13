@@ -9,6 +9,13 @@ window.$config = {
     setup: () => new function () {
         this.vm = reactive({ Password: '', ConfirmPassword: '' });
 
+        // 密碼規則驗證
+        this.isValidPassword = (password) => {
+            const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
+            return regexPattern.test(password);
+        };
+        this.passwordRuleMessage = '密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）';
+
         this.resetPassword = () => {
             if (this.vm.Password !== this.vm.ConfirmPassword) {
                 addAlert('兩次輸入的密碼不一致', { type: 'warning' });
@@ -16,6 +23,11 @@ window.$config = {
             }
             if (!this.vm.Password) {
                 addAlert('請輸入新密碼', { type: 'warning' });
+                return;
+            }
+            // 密碼規則檢查
+            if (!this.isValidPassword(this.vm.Password)) {
+                addAlert(this.passwordRuleMessage, { type: 'warning' });
                 return;
             }
 

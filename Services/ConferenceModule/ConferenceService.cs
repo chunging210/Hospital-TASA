@@ -134,7 +134,7 @@ namespace TASA.Services.ConferenceModule
 
         /// <summary>
         /// 列表 - 顯示所有會議（含舊系統與新預約系統）
-        /// 新預約系統：只顯示審核通過且已繳費的會議 (ReservationStatus = Confirmed && PaymentStatus = Paid)
+        /// 新預約系統：顯示時段被鎖住的會議（排除已取消、審核拒絕）
         /// 舊系統：顯示有 StartTime 的會議
         /// </summary>
         public IQueryable<ListVM> List(BaseQueryVM query)
@@ -147,10 +147,10 @@ namespace TASA.Services.ConferenceModule
                     (x.StartTime.HasValue &&
                      x.ReservationStatus != ReservationStatus.Cancelled &&
                      x.ReservationStatus != ReservationStatus.Rejected) ||
-                    // 新預約系統：審核通過且已繳費
+                    // 新預約系統：只要時段被鎖住就顯示（排除已取消、審核拒絕）
                     (!x.StartTime.HasValue &&
-                     x.ReservationStatus == ReservationStatus.Confirmed &&
-                     x.PaymentStatus == PaymentStatus.Paid)
+                     x.ReservationStatus != ReservationStatus.Cancelled &&
+                     x.ReservationStatus != ReservationStatus.Rejected)
                 )
                 .WhereIf(query.Start.HasValue, x =>
                     (x.StartTime.HasValue && query.Start <= x.StartTime) ||

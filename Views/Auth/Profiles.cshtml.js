@@ -4,6 +4,13 @@ const { reactive, computed, onMounted } = Vue;
 
 class VM { Id = null; Name = ''; Email = ''; Password = ''; Password2 = ''; }
 
+// 密碼規則驗證
+const isValidPassword = (password) => {
+    const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
+    return regexPattern.test(password);
+};
+const passwordRuleMessage = '密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）';
+
 const personal = new function () {
     this.vm = reactive(new VM());
     // 取得個人資料
@@ -19,6 +26,11 @@ const personal = new function () {
     this.save = () => {
         if (this.vm.Password && this.vm.Password !== this.vm.Password2) {
             addAlert('密碼與確認密碼不相符', { type: 'danger' });
+            return;
+        }
+        // 密碼規則檢查
+        if (this.vm.Password && !isValidPassword(this.vm.Password)) {
+            addAlert(passwordRuleMessage, { type: 'warning' });
             return;
         }
         global.api.profiles.update({ body: this.vm })
