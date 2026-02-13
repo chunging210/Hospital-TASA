@@ -43,8 +43,12 @@ const reservation = new function () {
         discountType: 'none',
         discountPercent: 10,
         discountAmount: 0,
-        discountReason: ''
+        discountReason: '',
+        paymentDeadline: ''  // 自訂繳費期限
     });
+
+    // ✅ 今天日期（用於日期選擇器的 min 限制）
+    this.today = new Date().toISOString().split('T')[0];
 
     this.currentReview = reactive({});
 
@@ -285,6 +289,7 @@ const reservation = new function () {
         this.vm.discountPercent = 10;
         this.vm.discountAmount = 0;
         this.vm.discountReason = '';
+        this.vm.paymentDeadline = '';  // ✅ 重設繳費期限
 
         // 計算價格
         this.calculatePricing();
@@ -380,7 +385,8 @@ const reservation = new function () {
                 body: {
                     conferenceId: this.currentReview.id,
                     discountAmount: this.pricing.discount,
-                    discountReason: this.vm.discountReason || null  // ✅ 加入折扣原因
+                    discountReason: this.vm.discountReason || null,
+                    paymentDeadline: this.vm.paymentDeadline || null  // ✅ 自訂繳費期限
                 }
             });
 

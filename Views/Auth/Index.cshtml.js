@@ -15,6 +15,7 @@ class RegisterVM {
     hospital = ''; // 空字串 = 一般會員
     // agreeTerms = false;
     departmentId = null;
+    captcha = '';
 }
 
 const captcha = new function () {
@@ -58,12 +59,19 @@ window.$config = {
         this.vm = reactive(new VM());
         this.departments = ref([]);
         this.captchaSrc = ref(captcha.url);
+        this.registerCaptchaSrc = ref(captcha.url);
         this.sysConfig = sysConfig;
         this.isRegistrationOpen = sysConfig.isRegistrationOpen;
         this.isRegistrationLoaded = sysConfig.isRegistrationLoaded;
 
         this.refreshCaptcha = () => {
             this.captchaSrc.value = captcha.refresh();
+        }
+        this.refreshRegisterCaptcha = () => {
+            this.registerCaptchaSrc.value = captcha.refresh();
+        }
+        this.upperCaptcha = () => {
+            this.guestForm.captcha = this.guestForm.captcha.toUpperCase();
         }
         this.upper = () => {
             this.vm.Captcha = this.vm.Captcha.toUpperCase();
@@ -86,6 +94,9 @@ window.$config = {
         }
 
         this.onClickRegister = () => {
+            // 開啟時重新產生驗證碼
+            this.refreshRegisterCaptcha();
+            this.guestForm.captcha = '';
             const modal = new bootstrap.Modal(
                 document.getElementById('guestRegisterModal')
             );
@@ -120,6 +131,14 @@ window.$config = {
         /* ===== Register ===== */
         this.guestForm = reactive(new RegisterVM());
         this.sysConfig = sysConfig;
+
+        // 密碼規則驗證
+        this.isValidPassword = (password) => {
+            const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
+            return regexPattern.test(password);
+        };
+        this.passwordRuleMessage = '密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）';
+
         this.registerGuest = () => {
 
             // ✅ 前端基本檢查
@@ -128,17 +147,30 @@ window.$config = {
                 return;
             }
 
+            // 密碼規則檢查
+            if (!this.isValidPassword(this.guestForm.password)) {
+                addAlert(this.passwordRuleMessage, { type: 'warning' });
+                return;
+            }
+
             // if (!this.guestForm.agreeTerms) {
             //     addAlert('請先同意服務條款與隱私權政策', { type: 'warning' });
             //     return;
             // }
+
+            // 驗證碼檢查
+            if (!this.guestForm.captcha || this.guestForm.captcha.length < 4) {
+                addAlert('請輸入驗證碼', { type: 'warning' });
+                return;
+            }
 
             const payload = {
                 Name: this.guestForm.name,
                 Email: this.guestForm.email,
                 Password: this.guestForm.password,
                 ConfirmPassword: this.guestForm.confirmPassword,
-                DepartmentId: this.guestForm.departmentId
+                DepartmentId: this.guestForm.departmentId,
+                Captcha: this.guestForm.captcha
             };
 
             global.api.auth.register({ body: payload })
@@ -157,6 +189,9 @@ window.$config = {
                         type: 'danger',
                         click: error.download
                     });
+                    // 重新產生驗證碼
+                    this.refreshRegisterCaptcha();
+                    this.guestForm.captcha = '';
                 });
         };
 

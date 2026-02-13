@@ -1,15 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using TASA.Services.AuthUserModule;
+using TASA.Services.CaptchaModule;
 using System.Net;
 using Newtonsoft.Json;
 
 namespace TASA.Services.AuthModule
 {
-    public class RegisterServices(TASAContext db, ServiceWrapper service, IHttpContextAccessor httpContextAccessor) : IService
+    public class RegisterServices(TASAContext db, ServiceWrapper service, IHttpContextAccessor httpContextAccessor, CaptchaService captchaService) : IService
     {
         // ✅ 取得客戶端 IP
         private string GetClientIp()
@@ -67,6 +69,17 @@ namespace TASA.Services.AuthModule
             return (browser, device);
         }
 
+        /// <summary>
+        /// 密碼驗證規則：至少10字元，包含大小寫字母、數字、特殊字元
+        /// </summary>
+        public static bool IsValidPassword(string password)
+        {
+            string regexPattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$";
+            return Regex.IsMatch(password, regexPattern);
+        }
+
+        public static string PasswordRuleMessage => "密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）";
+
         /* ===============================
          * Register VM
          * =============================== */
@@ -89,6 +102,12 @@ namespace TASA.Services.AuthModule
             /// 分院 Id（null = 一般會員）
             /// </summary>
             public Guid? DepartmentId { get; set; }
+
+            /// <summary>
+            /// 驗證碼
+            /// </summary>
+            [Required]
+            public string Captcha { get; set; } = string.Empty;
         }
 
         /* ===============================
@@ -99,7 +118,29 @@ namespace TASA.Services.AuthModule
             // ✅ 在方法開頭宣告一次，所有區塊共用
             var deviceInfo = GetDeviceInfo();
 
-            // 0️⃣ 密碼確認
+            // 0️⃣ 驗證碼驗證
+            if (!captchaService.Validate(vm.Captcha))
+            {
+                var failureInfo = new
+                {
+                    UserName = vm.Email,
+                    Email = vm.Email,
+                    IsSuccess = false,
+                    FailureReason = "驗證碼錯誤",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    LoginMethod = GetLoginMethod(),
+                    Timestamp = DateTime.Now
+                };
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
+                throw new HttpException("驗證碼錯誤，請重新輸入")
+                {
+                    StatusCode = System.Net.HttpStatusCode.BadRequest
+                };
+            }
+
+            // 1️⃣ 密碼確認
             if (vm.Password != vm.ConfirmPassword)
             {
                 var failureInfo = new
@@ -121,7 +162,29 @@ namespace TASA.Services.AuthModule
                 };
             }
 
-            // 1️⃣ 檢查帳號 / Email 是否已存在
+            // 2️⃣ 密碼規則驗證
+            if (!IsValidPassword(vm.Password))
+            {
+                var failureInfo = new
+                {
+                    UserName = vm.Email,
+                    Email = vm.Email,
+                    IsSuccess = false,
+                    FailureReason = "密碼不符合規則",
+                    ClientIp = GetClientIp(),
+                    DeviceInfo = deviceInfo.device,
+                    BrowserInfo = deviceInfo.browser,
+                    LoginMethod = GetLoginMethod(),
+                    Timestamp = DateTime.Now
+                };
+                _ = service.LogServices.LogAsync("user_register_failed", JsonConvert.SerializeObject(failureInfo));
+                throw new HttpException(PasswordRuleMessage)
+                {
+                    StatusCode = System.Net.HttpStatusCode.BadRequest
+                };
+            }
+
+            // 3️⃣ 檢查帳號 / Email 是否已存在
             var existingUser = db.AuthUser
                 .AsNoTracking()
                 .WhereNotDeleted()

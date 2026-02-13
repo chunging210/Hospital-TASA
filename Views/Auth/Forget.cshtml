@@ -29,13 +29,17 @@
                                         <p class="text-muted mt-2">請輸入您的新密碼</p>
                                     </div>
                                     <div class="mt-4 pt-2">
-                                        <div class="form-floating form-floating-custom mb-4">
+                                        <div class="form-floating form-floating-custom mb-2">
                                             <input v-model="vm.Password" type="password" class="form-control"
                                                 placeholder="新密碼">
                                             <label>新密碼</label>
                                             <div class="form-floating-icon">
                                                 <span class="material-icons">lock</span>
                                             </div>
+                                        </div>
+                                        <div class="form-text text-muted mb-3" style="font-size: 0.8rem;">
+                                            <span class="material-icons" style="font-size: 14px; vertical-align: middle;">info</span>
+                                            密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@@$!%*?&）
                                         </div>
                                         <div class="form-floating form-floating-custom mb-4">
                                             <input v-model="vm.ConfirmPassword" @@keyup.enter="resetPassword" type="password" class="form-control"

@@ -16,6 +16,7 @@ namespace TASA.Services.ConferenceModule
             public Guid ConferenceId { get; set; }
             public int? DiscountAmount { get; set; }
             public string? DiscountReason { get; set; }
+            public DateTime? PaymentDeadline { get; set; }  // 自訂繳費期限（沒填則用 DB 設定）
         }
 
         public class GetReservationDetailDTO
@@ -519,13 +520,26 @@ namespace TASA.Services.ConferenceModule
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
-            // ✅ 根據會議的分院 ID 取得繳費期限設定
-            var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
+            // ✅ 計算繳費期限
+            DateTime paymentDeadline;
+            if (vm.PaymentDeadline.HasValue)
+            {
+                // 有自訂繳費期限，驗證不能小於今天
+                if (vm.PaymentDeadline.Value.Date < DateTime.Today)
+                    throw new HttpException("繳費期限不能小於今天");
+                paymentDeadline = vm.PaymentDeadline.Value;
+            }
+            else
+            {
+                // 沒有自訂，使用 DB 設定
+                var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
+                paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+            }
 
             conference.ReservationStatus = ReservationStatus.PendingPayment;
             conference.ReviewedAt = DateTime.Now;
             conference.ReviewedBy = reviewedBy;
-            conference.PaymentDeadline = DateTime.Now.AddDays(deadlineDays);
+            conference.PaymentDeadline = paymentDeadline;
             conference.UpdateAt = DateTime.Now;
 
             // ✅ 存儲折扣資訊
