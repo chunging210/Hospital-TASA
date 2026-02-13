@@ -40,11 +40,15 @@
                                 <td>{{item.IsEnabled?'V':''}}</td>
                                 <td>{{item.CreateAt.format()}}</td>
                                 <td>
-                                    <div class="btn-group btn-group-sm" role="group">
+                                    <div class="d-flex gap-2">
                                         <button @@click="department.getVM(item.Id)"
-                                        class="btn btn-sm btn-secondary">編輯</button>
-                                        <button @@click="department.delete(item.Id)"
-                                        class="btn btn-sm btn-danger">刪除</button>
+                                            class="btn btn-sm btn-outline-primary"">
+                                            編輯
+                                        </button>
+                                        <button @@click=" department.delete(item.Id)"
+                                            class="btn btn-sm btn-outline-danger">
+                                            刪除
+                                        </button>
                                     </div>
                                 </td>
                             </tr>

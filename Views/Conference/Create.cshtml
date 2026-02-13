@@ -346,7 +346,7 @@
                                     <hr>
                                 </li>
 
-                                <li class="checkout-item">
+                                @* <li class="checkout-item">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
                                             <span class="material-icons room-icons">drive_folder_upload</span>
@@ -454,105 +454,105 @@
                                                     </form>
                                                 </div>
                                                 <hr>
-                                            </li>
+                                            </li> *@
 
-                                            <!-- 6. 付費方式 -->
-                                            <li class="checkout-item">
-                                                <div class="avatar checkout-icon p-1">
-                                                    <div class="avatar-title rounded-circle bg-primary">
-                                                        <span class="material-icons room-icons">paid</span>
+                                <!-- 6. 付費方式 -->
+                                <li class="checkout-item">
+                                    <div class="avatar checkout-icon p-1">
+                                        <div class="avatar-title rounded-circle bg-primary">
+                                            <span class="material-icons room-icons">paid</span>
+                                        </div>
+                                    </div>
+                                    <div class="feed-item-list flex-grow-1">
+                                        <label class="col-form-label pe-3">付費方式選擇</label>
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="payment-method"
+                                                     :class="{ 'selected': form.paymentMethod === 'transfer' }"
+                                                    @@click="form.paymentMethod = 'transfer'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-credit-card text-primary me-2"></i>
+                                                        <strong>銀行匯款</strong><br>
+                                                        <small class="text-muted">透過銀行轉帳付款</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4" v-if="isInternalStaff || isAdmin">
+                                                <div class="payment-method"
+                                                     :class="{ 'selected': form.paymentMethod === 'cost-sharing' }"
+                                                    @@click="form.paymentMethod = 'cost-sharing'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-building text-success me-2"></i>
+                                                        <strong>成本分攤</strong><br>
+                                                        <small class="text-muted">由部門預算支付</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <div class="payment-method"
+                                                     :class="{ 'selected': form.paymentMethod === 'cash' }"
+                                                    @@click="form.paymentMethod = 'cash'">
+                                                    <label class="ms-2">
+                                                        <i class="bx bx-money text-warning me-2"></i>
+                                                        <strong>現金付款</strong><br>
+                                                        <small class="text-muted">請至出納組繳款</small>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 付費詳細資訊 -->
+                                        <div v-if="form.paymentMethod" class="mt-3">
+                                            <div v-if="form.paymentMethod === 'transfer'" class="alert alert-info">
+                                                <h6><i class="bx bx-info-circle"></i> 匯款資訊</h6>
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>銀行:</strong>合作金庫(006)</p>
+                                                        <p class="mb-1"><strong>分行:</strong>石牌分行</p>
+                                                        <p class="mb-1"><strong>戶名:</strong>臺北榮民總醫院作業基金403專戶</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <p class="mb-1"><strong>帳號:</strong>1427713000733</p>
+                                                        <p class="mb-1"><strong>電話:</strong>(02) 2875-7003</p>
                                                     </div>
                                                 </div>
-                                                <div class="feed-item-list flex-grow-1">
-                                                    <label class="col-form-label pe-3">付費方式選擇</label>
+                                            </div>
 
-                                                    <div class="row">
-                                                        <div class="col-md-4">
-                                                            <div class="payment-method"
-                                                                 :class="{ 'selected': form.paymentMethod === 'transfer' }"
-                                                                @@click="form.paymentMethod = 'transfer'">
-                                                                <label class="ms-2">
-                                                                    <i class="bx bx-credit-card text-primary me-2"></i>
-                                                                    <strong>銀行匯款</strong><br>
-                                                                    <small class="text-muted">透過銀行轉帳付款</small>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                            <div v-if="form.paymentMethod === 'cost-sharing'"
+                                                 class="alert alert-warning">
+                                                <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
 
-                                                        <div class="col-md-4" v-if="isInternalStaff || isAdmin">
-                                                            <div class="payment-method"
-                                                                 :class="{ 'selected': form.paymentMethod === 'cost-sharing' }"
-                                                                @@click="form.paymentMethod = 'cost-sharing'">
-                                                                <label class="ms-2">
-                                                                    <i class="bx bx-building text-success me-2"></i>
-                                                                    <strong>成本分攤</strong><br>
-                                                                    <small class="text-muted">由部門預算支付</small>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">部門代碼<span
+                                                        class="text-danger">*</span></label>
 
-                                                        <div class="col-md-4">
-                                                            <div class="payment-method"
-                                                                 :class="{ 'selected': form.paymentMethod === 'cash' }"
-                                                                @@click="form.paymentMethod = 'cash'">
-                                                                <label class="ms-2">
-                                                                    <i class="bx bx-money text-warning me-2"></i>
-                                                                    <strong>現金付款</strong><br>
-                                                                    <small class="text-muted">請至出納組繳款</small>
-                                                                </label>
+                                                        <!-- 可搜尋的輸入框 -->
+                                                        <div class="position-relative">
+                                                            <input type="text" class="form-control"
+                                                                   v-model="costCenterSearch" @@input="filterCostCenters"
+                                                            @@focus="showCostCenterDropdown = true"
+                                                                   placeholder="輸入代碼或名稱搜尋 (例: 00100 或 內科)" autocomplete="off">
+
+                                                            <!-- 下拉選項列表 -->
+                                                            <div v-if="showCostCenterDropdown && filteredCostCenters.length > 0"
+                                                                 class="cost-center-dropdown">
+                                                                <div v-for="center in filteredCostCenters"
+                                                                     :key="center.code" class="cost-center-item"
+                                                                    @@click="selectCostCenter(center)">
+                                                                    <strong>{{ center.code }}</strong> - {{ center.name }}
+                                                                </div>
+                                                                <div v-if="filteredCostCenters.length === 0"
+                                                                     class="text-muted p-2">
+                                                                    查無結果
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <!-- 付費詳細資訊 -->
-                                                    <div v-if="form.paymentMethod" class="mt-3">
-                                                        <div v-if="form.paymentMethod === 'transfer'" class="alert alert-info">
-                                                            <h6><i class="bx bx-info-circle"></i> 匯款資訊</h6>
-                                                            <div class="row">
-                                                                <div class="col-md-6">
-                                                                    <p class="mb-1"><strong>銀行:</strong>合作金庫(006)</p>
-                                                                    <p class="mb-1"><strong>分行:</strong>石牌分行</p>
-                                                                    <p class="mb-1"><strong>戶名:</strong>臺北榮民總醫院作業基金403專戶</p>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <p class="mb-1"><strong>帳號:</strong>1427713000733</p>
-                                                                    <p class="mb-1"><strong>電話:</strong>(02) 2875-7003</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div v-if="form.paymentMethod === 'cost-sharing'"
-                                                             class="alert alert-warning">
-                                                            <h6><i class="bx bx-building"></i> 成本分攤資訊</h6>
-
-                                                            <div class="mb-3">
-                                                                <label class="form-label">部門代碼<span
-                                                                    class="text-danger">*</span></label>
-
-                                                                    <!-- 可搜尋的輸入框 -->
-                                                                    <div class="position-relative">
-                                                                        <input type="text" class="form-control"
-                                                                               v-model="costCenterSearch" @@input="filterCostCenters"
-                                                                        @@focus="showCostCenterDropdown = true"
-                                                                               placeholder="輸入代碼或名稱搜尋 (例: 00100 或 內科)" autocomplete="off">
-
-                                                                        <!-- 下拉選項列表 -->
-                                                                        <div v-if="showCostCenterDropdown && filteredCostCenters.length > 0"
-                                                                             class="cost-center-dropdown">
-                                                                            <div v-for="center in filteredCostCenters"
-                                                                                 :key="center.code" class="cost-center-item"
-                                                                                @@click="selectCostCenter(center)">
-                                                                                <strong>{{ center.code }}</strong> - {{ center.name }}
-                                                                            </div>
-                                                                            <div v-if="filteredCostCenters.length === 0"
-                                                                                 class="text-muted p-2">
-                                                                                查無結果
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                @* <div class="row">
+                                                    @* <div class="row">
                                                     <div class="col-md-6">
                                                         <p class="mb-1"><strong>科目:</strong>7201-會議室租用費</p>
                                                         <p class="mb-1"><strong>窗口:</strong>分機 2156</p>
@@ -561,169 +561,169 @@
                                                         <p class="mb-1"><strong>權限:</strong>部門主管以上</p>
                                                     </div>
                                                 </div> *@
-                                                            </div>
-
-                                                            <div v-if="form.paymentMethod === 'cash'" class="alert alert-secondary">
-                                                                <h6><i class="bx bx-money"></i> 現金付款資訊</h6>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <p class="mb-1"><strong>地點:</strong>中正樓與北護分院連通道的郵局旁</p>
-                                                                        <p class="mb-1"><strong>時間:</strong>週一至週五 8:00AM - 5:00PM/5:30PM
-                                                                        </p>
-                                                                        <p class="mb-1"><strong>聯絡:</strong>(02) 2875-7259</p>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <p class="mb-1"><strong>承辦:</strong>出納組</p>
-                                                                        <p class="mb-1"><strong>收據:</strong>現場開立正式收據</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <hr>
-                                                </li>
-
-                                                <!-- 7. 停車券 -->
-                                                <li class="checkout-item">
-                                                    <div class="avatar checkout-icon p-1">
-                                                        <div class="avatar-title rounded-circle bg-primary">
-                                                            <span class="material-icons room-icons">local_parking</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="feed-item-list flex-grow-1">
-                                                        <label class="col-form-label pe-3">停車券</label>
-
-                                                        <!-- 規則提示 -->
-                                                        <div class="alert alert-info mb-3">
-                                                            <i class="bx bx-info-circle"></i>
-                                                            消費滿 5 萬元贈送 30 張停車券，每滿 5 萬再加送 30 張。如需額外加購，每張 100 元。
-                                                        </div>
-
-                                                        <!-- 贈送資訊 -->
-                                                        <div v-if="freeTicketCount > 0" class="alert alert-success mb-3">
-                                                            <i class="bx bx-gift"></i>
-                                                            目前消費 ${{ subtotal.toLocaleString() }}，可獲得 <strong>{{ freeTicketCount
-                                                            }}</strong> 張免費停車券！
-                                                        </div>
-
-                                                        <!-- 加購輸入 -->
-                                                        <div class="row align-items-center mb-3">
-                                                            <div class="col-auto">
-                                                                <label class="form-label mb-0">加購張數：</label>
-                                                            </div>
-                                                            <div class="col-auto">
-                                                                <input type="number" class="form-control" style="width: 100px;"
-                                                                       v-model.number="form.parkingTicketPurchase" min="0" step="1">
-                                                            </div>
-                                                            <div class="col-auto text-muted">
-                                                                × $100 = <strong>${{ parkingTicketCost.toLocaleString() }}</strong>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- 停車券小計 -->
-                                                        <div v-if="totalTicketCount > 0" class="p-3 bg-light rounded">
-                                                            <div class="d-flex justify-content-between">
-                                                                <span>
-                                                                    停車券總計：
-                                                                    <span v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
-                                                                        ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase }}加購)
-                                                                    </span>
-                                                                    <span v-else-if="freeTicketCount > 0">({{ freeTicketCount
-                                                                        }}贈送)</span>
-                                                                        <span v-else>({{ form.parkingTicketPurchase }}加購)</span>
-                                                                    </span>
-                                                                    <strong>{{ totalTicketCount }} 張</strong>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <hr>
-                                                    </li>
-
-                                                    <!-- 8. 費用總計 -->
-                                                    <li class="checkout-item">
-                                                        <div class="avatar checkout-icon p-1">
-                                                            <div class="avatar-title rounded-circle bg-success">
-                                                                <span class="material-icons room-icons">price_check</span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="feed-item-list flex-grow-1">
-                                                            <div class="total-section">
-                                                                <h5>費用總計</h5>
-
-                                                                <div v-if="selectedRoom && selectedRoom.BookingSettings === 3"
-                                                                     class="alert alert-success mb-3">
-                                                                    <i class="bx bx-gift"></i>
-                                                                    此會議室免費使用,僅需支付設備及攤位費用
-                                                                </div>
-
-                                                                <div class="row">
-                                                                    <div class="col-md-8">
-                                                                        <p class="mb-1">
-                                                                            會議室費用:
-                                                                            <span
-                                                                                :class="{ 'text-success': selectedRoom && selectedRoom.BookingSettings === 3 }">
-                                                                                ${{ roomCost.toLocaleString() }}
-                                                                                <span
-                                                                                v-if="selectedRoom && selectedRoom.BookingSettings === 3"
-                                                                                class="badge bg-success ms-2">免費</span>
-                                                                            </span>
-                                                                        </p>
-                                                                        <p class="mb-1">設備費用: ${{ equipmentCost.toLocaleString() }}</p>
-                                                                        <p class="mb-1">攤位費用: ${{ boothCost.toLocaleString() }}</p>
-                                                                        <p class="mb-1" v-if="totalTicketCount > 0">
-                                                                            停車券
-                                                                            <span
-                                                                                v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
-                                                                                ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase
-                                                                                }}加購)
-                                                                            </span>
-                                                                            <span v-else-if="freeTicketCount > 0">({{ freeTicketCount
-                                                                                }}贈送)</span>
-                                                                                <span v-else>({{ form.parkingTicketPurchase }}加購)</span>
-                                                                                : ${{ parkingTicketCost.toLocaleString() }}
-                                                                            </p>
-                                                                            <hr>
-                                                                        </div>
-                                                                        <div class="col-md-4 text-end">
-                                                                            <h4>總金額: ${{ totalAmount.toLocaleString() }}</h4>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </li>
-                                                    </ol>
                                                 </div>
 
-                                                <!-- Footer -->
-                                                <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
-                                                    <button @@click="showConfirmationModal"
-                                                        class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-18">
-                                                        {{ isEditMode ? '更新預約' : '預約送出' }}
-                                                    </button>
+                                                <div v-if="form.paymentMethod === 'cash'" class="alert alert-secondary">
+                                                    <h6><i class="bx bx-money"></i> 現金付款資訊</h6>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <p class="mb-1"><strong>地點:</strong>中正樓與北護分院連通道的郵局旁</p>
+                                                            <p class="mb-1"><strong>時間:</strong>週一至週五 8:00AM - 5:00PM/5:30PM
+                                                            </p>
+                                                            <p class="mb-1"><strong>聯絡:</strong>(02) 2875-7259</p>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <p class="mb-1"><strong>承辦:</strong>出納組</p>
+                                                            <p class="mb-1"><strong>收據:</strong>現場開立正式收據</p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
+                                        <hr>
+                                    </li>
+
+                                    <!-- 7. 停車券 -->
+                                    <li class="checkout-item">
+                                        <div class="avatar checkout-icon p-1">
+                                            <div class="avatar-title rounded-circle bg-primary">
+                                                <span class="material-icons room-icons">local_parking</span>
+                                            </div>
+                                        </div>
+                                        <div class="feed-item-list flex-grow-1">
+                                            <label class="col-form-label pe-3">停車券</label>
+
+                                            <!-- 規則提示 -->
+                                            <div class="alert alert-info mb-3">
+                                                <i class="bx bx-info-circle"></i>
+                                                消費滿 5 萬元贈送 30 張停車券，每滿 5 萬再加送 30 張。如需額外加購，每張 100 元。
+                                            </div>
+
+                                            <!-- 贈送資訊 -->
+                                            <div v-if="freeTicketCount > 0" class="alert alert-success mb-3">
+                                                <i class="bx bx-gift"></i>
+                                                目前消費 ${{ subtotal.toLocaleString() }}，可獲得 <strong>{{ freeTicketCount
+                                                }}</strong> 張免費停車券！
+                                            </div>
+
+                                            <!-- 加購輸入 -->
+                                            <div class="row align-items-center mb-3">
+                                                <div class="col-auto">
+                                                    <label class="form-label mb-0">加購張數：</label>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <input type="number" class="form-control" style="width: 100px;"
+                                                           v-model.number="form.parkingTicketPurchase" min="0" step="1">
+                                                </div>
+                                                <div class="col-auto text-muted">
+                                                    × $100 = <strong>${{ parkingTicketCost.toLocaleString() }}</strong>
+                                                </div>
+                                            </div>
+
+                                            <!-- 停車券小計 -->
+                                            <div v-if="totalTicketCount > 0" class="p-3 bg-light rounded">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>
+                                                        停車券總計：
+                                                        <span v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
+                                                            ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase }}加購)
+                                                        </span>
+                                                        <span v-else-if="freeTicketCount > 0">({{ freeTicketCount
+                                                            }}贈送)</span>
+                                                            <span v-else>({{ form.parkingTicketPurchase }}加購)</span>
+                                                        </span>
+                                                        <strong>{{ totalTicketCount }} 張</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <hr>
+                                        </li>
+
+                                        <!-- 8. 費用總計 -->
+                                        <li class="checkout-item">
+                                            <div class="avatar checkout-icon p-1">
+                                                <div class="avatar-title rounded-circle bg-success">
+                                                    <span class="material-icons room-icons">price_check</span>
+                                                </div>
+                                            </div>
+                                            <div class="feed-item-list flex-grow-1">
+                                                <div class="total-section">
+                                                    <h5>費用總計</h5>
+
+                                                    <div v-if="selectedRoom && selectedRoom.BookingSettings === 3"
+                                                         class="alert alert-success mb-3">
+                                                        <i class="bx bx-gift"></i>
+                                                        此會議室免費使用,僅需支付設備及攤位費用
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-8">
+                                                            <p class="mb-1">
+                                                                會議室費用:
+                                                                <span
+                                                                    :class="{ 'text-success': selectedRoom && selectedRoom.BookingSettings === 3 }">
+                                                                    ${{ roomCost.toLocaleString() }}
+                                                                    <span
+                                                                    v-if="selectedRoom && selectedRoom.BookingSettings === 3"
+                                                                    class="badge bg-success ms-2">免費</span>
+                                                                </span>
+                                                            </p>
+                                                            <p class="mb-1">設備費用: ${{ equipmentCost.toLocaleString() }}</p>
+                                                            <p class="mb-1">攤位費用: ${{ boothCost.toLocaleString() }}</p>
+                                                            <p class="mb-1" v-if="totalTicketCount > 0">
+                                                                停車券
+                                                                <span
+                                                                    v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
+                                                                    ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase
+                                                                    }}加購)
+                                                                </span>
+                                                                <span v-else-if="freeTicketCount > 0">({{ freeTicketCount
+                                                                    }}贈送)</span>
+                                                                    <span v-else>({{ form.parkingTicketPurchase }}加購)</span>
+                                                                    : ${{ parkingTicketCost.toLocaleString() }}
+                                                                </p>
+                                                                <hr>
+                                                            </div>
+                                                            <div class="col-md-4 text-end">
+                                                                <h4>總金額: ${{ totalAmount.toLocaleString() }}</h4>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
+
+                                    <!-- Footer -->
+                                    <div class="border-1 border-top px-5 pb-3 mb-6 text-center">
+                                        <button @@click="showConfirmationModal"
+                                            class="btn btn-branding text-white px-4 py-2 mt-4 mb-3 font-size-18">
+                                            {{ isEditMode ? '更新預約' : '預約送出' }}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- ✅ 確認預約資訊的彈窗 Modal - PDF 版本 -->
-                            <div v-if="showConfirmModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);"
-                                 tabindex="-1">
-                                <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
-                                    <div class="modal-content" style="border-radius: 12px; border: none;">
+                <!-- ✅ 確認預約資訊的彈窗 Modal - PDF 版本 -->
+                <div v-if="showConfirmModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);"
+                     tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+                        <div class="modal-content" style="border-radius: 12px; border: none;">
 
-                                        <!-- Header -->
-                                        <div class="modal-header" style="border-bottom: none; padding: 24px 32px 8px;">
-                                            <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 18px;">確認預約資訊</h5>
-                                            <button type="button" class="btn-close" @@click="closeConfirmationModal"></button>
-                                        </div>
+                            <!-- Header -->
+                            <div class="modal-header" style="border-bottom: none; padding: 24px 32px 8px;">
+                                <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 18px;">確認預約資訊</h5>
+                                <button type="button" class="btn-close" @@click="closeConfirmationModal"></button>
+                            </div>
 
-                                        <!-- Body -->
-                                        <div class="modal-body" style="padding: 16px 32px 24px; max-height: 70vh; overflow-y: auto;">
+                            <!-- Body -->
+                            <div class="modal-body" style="padding: 16px 32px 24px; max-height: 70vh; overflow-y: auto;">
 
-                                            <!-- 匯款資訊提示 (銀行匯款時才顯示) -->
-                                            @* <div v-if="form.paymentMethod === 'transfer'"
+                                <!-- 匯款資訊提示 (銀行匯款時才顯示) -->
+                                @* <div v-if="form.paymentMethod === 'transfer'"
                         style="background: #f0f7ff; border-left: 3px solid #0066cc; border-radius: 4px; padding: 16px; margin-bottom: 20px;">
                         <div style="color: #0066cc; font-weight: 600; font-size: 14px; margin-bottom: 8px;">
                             銀行轉帳資訊
@@ -739,170 +739,170 @@
                         </div>
                     </div> *@
 
-                                            <!-- 預約資訊列表 -->
-                                            <div style="font-size: 15px; line-height: 2.2; color: #333;">
+                                <!-- 預約資訊列表 -->
+                                <div style="font-size: 15px; line-height: 2.2; color: #333;">
 
-                                                <div style="display: flex; padding: 8px 0;">
-                                                    <div style="min-width: 110px; color: #666;">會議名稱:</div>
-                                                    <div style="flex: 1; font-weight: 500;">{{ form.name }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;">
+                                        <div style="min-width: 110px; color: #666;">會議名稱:</div>
+                                        <div style="flex: 1; font-weight: 500;">{{ form.name }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="form.organizerUnit">
-                                                    <div style="min-width: 110px; color: #666;">承辦單位:</div>
-                                                    <div style="flex: 1;">{{ form.organizerUnit }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;" v-if="form.organizerUnit">
+                                        <div style="min-width: 110px; color: #666;">承辦單位:</div>
+                                        <div style="flex: 1;">{{ form.organizerUnit }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="form.chairman">
-                                                    <div style="min-width: 110px; color: #666;">會議主席:</div>
-                                                    <div style="flex: 1;">{{ form.chairman }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;" v-if="form.chairman">
+                                        <div style="min-width: 110px; color: #666;">會議主席:</div>
+                                        <div style="flex: 1;">{{ form.chairman }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="form.content">
-                                                    <div style="min-width: 110px; color: #666;">會議內容:</div>
-                                                    <div style="flex: 1;">{{ form.content }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;" v-if="form.content">
+                                        <div style="min-width: 110px; color: #666;">會議內容:</div>
+                                        <div style="flex: 1;">{{ form.content }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;">
-                                                    <div style="min-width: 110px; color: #666;">會議日期:</div>
-                                                    <div style="flex: 1;">{{ formatDate(form.date) }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;">
+                                        <div style="min-width: 110px; color: #666;">會議日期:</div>
+                                        <div style="flex: 1;">{{ formatDate(form.date) }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;">
-                                                    <div style="min-width: 110px; color: #666;">會議室:</div>
-                                                    <div style="flex: 1;">{{ getRoomFullName() }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;">
+                                        <div style="min-width: 110px; color: #666;">會議室:</div>
+                                        <div style="flex: 1;">{{ getRoomFullName() }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;">
-                                                    <div style="min-width: 110px; color: #666;">選擇時段:</div>
-                                                    <div style="flex: 1;">{{ getSelectedSlotsText() }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;">
+                                        <div style="min-width: 110px; color: #666;">選擇時段:</div>
+                                        <div style="flex: 1;">{{ getSelectedSlotsText() }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;">
-                                                    <div style="min-width: 110px; color: #666;">會議室費用:</div>
-                                                    <div style="flex: 1;">${{ roomCost.toLocaleString() }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;">
+                                        <div style="min-width: 110px; color: #666;">會議室費用:</div>
+                                        <div style="flex: 1;">${{ roomCost.toLocaleString() }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="equipmentCost > 0">
-                                                    <div style="min-width: 110px; color: #666;">設備費用:</div>
-                                                    <div style="flex: 1;">${{ equipmentCost.toLocaleString() }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;" v-if="equipmentCost > 0">
+                                        <div style="min-width: 110px; color: #666;">設備費用:</div>
+                                        <div style="flex: 1;">${{ equipmentCost.toLocaleString() }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="boothCost > 0">
-                                                    <div style="min-width: 110px; color: #666;">攤位費用:</div>
-                                                    <div style="flex: 1;">${{ boothCost.toLocaleString() }}</div>
-                                                </div>
+                                    <div style="display: flex; padding: 8px 0;" v-if="boothCost > 0">
+                                        <div style="min-width: 110px; color: #666;">攤位費用:</div>
+                                        <div style="flex: 1;">${{ boothCost.toLocaleString() }}</div>
+                                    </div>
 
-                                                <div style="display: flex; padding: 8px 0;" v-if="totalTicketCount > 0">
-                                                    <div style="min-width: 110px; color: #666;">停車券:</div>
-                                                    <div style="flex: 1;">
-                                                        <span v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
-                                                            {{ totalTicketCount }}張 ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase
-                                                            }}加購)
-                                                        </span>
-                                                        <span v-else-if="freeTicketCount > 0">{{ freeTicketCount }}張 (贈送)</span>
-                                                        <span v-else>{{ form.parkingTicketPurchase }}張 (加購)</span>
-                                                        <span v-if="parkingTicketCost > 0"> - ${{ parkingTicketCost.toLocaleString() }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div style="border-top: 1px solid #e5e5e5; margin: 16px 0;"></div>
-
-                                                <div style="display: flex; padding: 8px 0; font-size: 16px; font-weight: 600;">
-                                                    <div style="min-width: 110px; color: #666;">總金額:</div>
-                                                    <div style="flex: 1; color: #0066cc;">${{ totalAmount.toLocaleString() }}</div>
-                                                </div>
-
-                                            </div>
-
-                                            <!-- ✅ 使用條款同意區塊 -->
-                                            <div
-                                                style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-                                                <label
-                                                    style="display: flex; align-items: center; cursor: pointer; user-select: none; margin: 0;">
-                                                    <input type="checkbox" :checked="hasReadAgreement" disabled>
-                                                    <div style="flex: 1; font-size: 14px; line-height: 1.6; margin-left: 5px;">
-                                                        <span style="color: #333;">我已詳細閱讀並同意</span>
-                                                        <a href="#" @@click.prevent="openAgreementPDF"
-                                                               style="color: #0066cc; text-decoration: none; font-weight: 500;">
-                                                            《會議室使用聲明暨承諾書》
-                                                            <i class="bx bx-link-external" style="font-size: 14px; vertical-align: middle;"></i>
-                                                        </a>
-                                                    </div>
-                                                </label>
-                                                <div style="margin-top: 8px; font-size: 12px; color: #6c757d; padding-left: 15px;">
-                                                    ⓘ 請點擊上方連結閱讀完整內容後自動勾選同意
-                                                </div>
-                                            </div>
-
+                                    <div style="display: flex; padding: 8px 0;" v-if="totalTicketCount > 0">
+                                        <div style="min-width: 110px; color: #666;">停車券:</div>
+                                        <div style="flex: 1;">
+                                            <span v-if="freeTicketCount > 0 && form.parkingTicketPurchase > 0">
+                                                {{ totalTicketCount }}張 ({{ freeTicketCount }}贈送 + {{ form.parkingTicketPurchase
+                                                }}加購)
+                                            </span>
+                                            <span v-else-if="freeTicketCount > 0">{{ freeTicketCount }}張 (贈送)</span>
+                                            <span v-else>{{ form.parkingTicketPurchase }}張 (加購)</span>
+                                            <span v-if="parkingTicketCost > 0"> - ${{ parkingTicketCost.toLocaleString() }}</span>
                                         </div>
+                                    </div>
 
-                                        <!-- Footer -->
-                                        <div class="modal-footer" style="border-top: none; padding: 16px 32px 24px; gap: 12px;">
-                                            <button type="button" class="btn btn-secondary" @@click="closeConfirmationModal"
-                                                    style="flex: 1; padding: 10px 24px; border-radius: 6px; font-weight: 500;">
-                                                返回修改
-                                            </button>
-                                            <button type="button" class="btn" @@click="submitBooking" :disabled="!hasReadAgreement" :style="{
-                                                flex: 1, 
-                                                padding: '10px 24px', 
-                                                borderRadius: '6px', 
-                                                fontWeight: 500,
-                                                backgroundColor: hasReadAgreement ? '#0066cc' : '#6c757d',
-                                                borderColor: hasReadAgreement ? '#0066cc' : '#6c757d',
-                                                color: '#fff',
-                                                cursor: hasReadAgreement ? 'pointer' : 'not-allowed',
-                                                opacity: hasReadAgreement ? 1 : 0.65,
-                                                transition: 'all 0.3s ease'
-                                                }">
-                                                確認送出
-                                            </button>
+                                    <div style="border-top: 1px solid #e5e5e5; margin: 16px 0;"></div>
+
+                                    <div style="display: flex; padding: 8px 0; font-size: 16px; font-weight: 600;">
+                                        <div style="min-width: 110px; color: #666;">總金額:</div>
+                                        <div style="flex: 1; color: #0066cc;">${{ totalAmount.toLocaleString() }}</div>
+                                    </div>
+
+                                </div>
+
+                                <!-- ✅ 使用條款同意區塊 -->
+                                <div
+                                    style="margin-top: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+                                    <label
+                                        style="display: flex; align-items: center; cursor: pointer; user-select: none; margin: 0;">
+                                        <input type="checkbox" :checked="hasReadAgreement" disabled>
+                                        <div style="flex: 1; font-size: 14px; line-height: 1.6; margin-left: 5px;">
+                                            <span style="color: #333;">我已詳細閱讀並同意</span>
+                                            <a href="#" @@click.prevent="openAgreementPDF"
+                                                   style="color: #0066cc; text-decoration: none; font-weight: 500;">
+                                                《會議室使用聲明暨承諾書》
+                                                <i class="bx bx-link-external" style="font-size: 14px; vertical-align: middle;"></i>
+                                            </a>
                                         </div>
-
+                                    </label>
+                                    <div style="margin-top: 8px; font-size: 12px; color: #6c757d; padding-left: 15px;">
+                                        ⓘ 請點擊上方連結閱讀完整內容後自動勾選同意
                                     </div>
                                 </div>
+
                             </div>
 
-                            <!-- ✅ PDF 檢視器彈窗 -->
-                            <div v-if="showAgreementPDF" class="modal fade show" backdrop="static" keyboard="false"
-                                 style="display: block; background: rgba(0,0,0,0.7);" tabindex="-1">
-                                <div class="modal-dialog modal-xl modal-dialog-centered agreement-modal">
-                                    <div class="modal-content" style="border-radius: 12px; border: none; height: 100%;">
-
-                                        <!-- Header -->
-                                        <div class="modal-header" style="border-bottom: 1px solid #dee2e6; padding: 16px 24px; flex-shrink: 0;">
-                                            <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 17px;">
-                                                會議室使用聲明暨承諾書
-                                            </h5>
-                                        </div>
-
-                                        <!-- PDF 顯示區域 -->
-                                        <div class="modal-body"
-                                             style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
-
-
-                                            <iframe ref="pdfIframe" class="agreement-iframe" :key="pdfCacheBuster" :src="pdfViewerUrl"
-                                                    frameborder="0">
-                                            </iframe>
-
-
-                                            <!-- 底部提示條 -->
-                                            <div
-                                                style="padding: 16px 24px; background: #f8f9fa; border-top: 1px solid #dee2e6; flex-shrink: 0;">
-                                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                                    <div style="font-size: 13px; color: #666;">
-                                                        <i class="bx bx-info-circle"
-                                                           style="font-size: 16px; vertical-align: middle; margin-right: 6px;"></i>
-                                                        請仔細閱讀所有條款內容
-                                                    </div>
-                                                    <button type="button" class="btn btn-primary" @@click="confirmReadAgreement"
-                                                            :disabled="!canConfirmAgreement">
-                                                        我已閱讀完畢
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
+                            <!-- Footer -->
+                            <div class="modal-footer" style="border-top: none; padding: 16px 32px 24px; gap: 12px;">
+                                <button type="button" class="btn btn-secondary" @@click="closeConfirmationModal"
+                                        style="flex: 1; padding: 10px 24px; border-radius: 6px; font-weight: 500;">
+                                    返回修改
+                                </button>
+                                <button type="button" class="btn" @@click="submitBooking" :disabled="!hasReadAgreement" :style="{
+                                    flex: 1, 
+                                    padding: '10px 24px', 
+                                    borderRadius: '6px', 
+                                    fontWeight: 500,
+                                    backgroundColor: hasReadAgreement ? '#0066cc' : '#6c757d',
+                                    borderColor: hasReadAgreement ? '#0066cc' : '#6c757d',
+                                    color: '#fff',
+                                    cursor: hasReadAgreement ? 'pointer' : 'not-allowed',
+                                    opacity: hasReadAgreement ? 1 : 0.65,
+                                    transition: 'all 0.3s ease'
+                                    }">
+                                    確認送出
+                                </button>
                             </div>
+
                         </div>
+                    </div>
+                </div>
+
+                <!-- ✅ PDF 檢視器彈窗 -->
+                <div v-if="showAgreementPDF" class="modal fade show" backdrop="static" keyboard="false"
+                     style="display: block; background: rgba(0,0,0,0.7);" tabindex="-1">
+                    <div class="modal-dialog modal-xl modal-dialog-centered agreement-modal">
+                        <div class="modal-content" style="border-radius: 12px; border: none; height: 100%;">
+
+                            <!-- Header -->
+                            <div class="modal-header" style="border-bottom: 1px solid #dee2e6; padding: 16px 24px; flex-shrink: 0;">
+                                <h5 class="modal-title" style="font-weight: 600; color: #1a1a1a; font-size: 17px;">
+                                    會議室使用聲明暨承諾書
+                                </h5>
+                            </div>
+
+                            <!-- PDF 顯示區域 -->
+                            <div class="modal-body"
+                                 style="padding: 0; flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+
+
+                                <iframe ref="pdfIframe" class="agreement-iframe" :key="pdfCacheBuster" :src="pdfViewerUrl"
+                                        frameborder="0">
+                                </iframe>
+
+
+                                <!-- 底部提示條 -->
+                                <div
+                                    style="padding: 16px 24px; background: #f8f9fa; border-top: 1px solid #dee2e6; flex-shrink: 0;">
+                                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                                        <div style="font-size: 13px; color: #666;">
+                                            <i class="bx bx-info-circle"
+                                               style="font-size: 16px; vertical-align: middle; margin-right: 6px;"></i>
+                                            請仔細閱讀所有條款內容
+                                        </div>
+                                        <button type="button" class="btn btn-primary" @@click="confirmReadAgreement"
+                                                :disabled="!canConfirmAgreement">
+                                            我已閱讀完畢
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>

@@ -96,10 +96,10 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button v-if="item.status === '待審核'" class="btn btn-sm btn-primary"
+                                    <button v-if="item.status === '待審核'" class="btn btn-sm btn-outline-primary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
                                             data-bs-target="#approvalDrawer">
-                                        <span class="material-icons">edit</span> 審核
+                                        審核
                                     </button>
                                     <button v-else class="btn btn-sm btn-outline-secondary"
                                         @@click="reservation.openApprovalReview(item)" data-bs-toggle="offcanvas"
@@ -187,12 +187,6 @@
                 <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentReview.applicantName }}</div>
                 <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentReview.roomName }}</div>
                 <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentReview.date }}</div>
-            </div>
-        </div>
-
-        <!-- 預約時間 -->
-        <div class="mb-4">
-            <div class="row g-2 small">
                 <div class="col-md-6"><strong>時間：</strong>{{ reservation.currentReview.time }}</div>
             </div>
         </div>

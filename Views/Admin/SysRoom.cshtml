@@ -101,13 +101,16 @@
                             <!-- 操作按鈕 -->
                             <div class="action-buttons">
                                 <button class="btn btn-outline-primary" @@click="room.viewRoom(roomItem.Id)">
-                                    <i class="mdi mdi-eye"></i> 檢視
+                                    <span class="material-icons icons me-1">visibility</span>
+                                    檢視
                                 </button>
-                                <button class="btn btn-outline-warning" @@click="room.getVM(roomItem.Id)">
-                                    <i class="mdi mdi-pencil"></i> 編輯
+                                <button class="btn btn-outline-primary" @@click="room.getVM(roomItem.Id)">
+                                    <span class="material-icons icons me-1">edit</span>
+                                    編輯
                                 </button>
                                 <button class="btn btn-outline-danger" @@click="room.deleteRoom(roomItem.Id)">
-                                    <i class="mdi mdi-trash-can"></i> 刪除
+                                    <span class="material-icons icons me-1">clear</span>
+                                    刪除
                                 </button>
                             </div>
                         </div>

@@ -252,7 +252,7 @@ body {
 .status-badge {
     padding: 4px 8px;
     border-radius: 12px;
-    font-size: 12px;
+    font-size: 20px;
     font-weight: 500;
 }
 
@@ -658,19 +658,16 @@ body {
     cursor: not-allowed;
 }
 
-/* ===== 廢棄的舊按鈕樣式 ===== */
 .btn-view,
 .btn-edit {
     flex: 1;
-    border: none;
-    color: white;
     padding: 10px;
     border-radius: 6px;
     font-weight: 500;
     transition: background 0.3s;
 }
 
-.btn-view,
+/* .btn-view,
 .btn-edit {
     background: #3b76e1;
 }
@@ -679,7 +676,7 @@ body {
 .btn-edit:hover {
     background: #2c63c7;
     color: white;
-}
+} */
 
 .carousel-control-next,
 .carousel-control-prev {
@@ -879,7 +876,7 @@ body {
 
 /* ===== 詳情 Modal 容器 ===== */
 .room-detail-modal .modal-dialog {
-    max-width: 1500px;
+    max-width: 1400px;
 }
 
 .detail-image-column {
@@ -1347,17 +1344,169 @@ body {
 /* ===== 搜尋結果區域 ===== */
 .search-results-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    padding: 15px 0;
-    border-bottom: 2px solid #e9ecef;
-    margin-bottom: 20px;
+    padding-bottom: 15px;
+    margin-left: 20px;
+    gap: 10px;
 }
 
 .search-results-header h5 {
     color: #495057;
     margin: 0;
     font-weight: 600;
+}
+
+/* ===== 搜尋結果：水平卡片列表 ===== */
+.search-result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 10px;
+}
+
+.search-result-card {
+    display: flex;
+    align-items: stretch;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+    height: 250px;
+}
+
+.search-result-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-image {
+    flex-shrink: 0;
+    width: 400px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.search-result-image img,
+.search-result-image video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.search-result-no-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: #f8f9fa;
+}
+
+.search-result-info {
+    flex: 1;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.search-result-name {
+    font-size: 30px;
+    font-weight: 600;
+    color: #3b76e1;
+    cursor: pointer;
+}
+
+.search-result-name:hover {
+    text-decoration: underline;
+}
+
+.search-result-location {
+    font-size: 18px;
+    color: #6c757d;
+}
+
+.search-result-meta {
+    font-size: 20px;
+    font-weight: 500;
+    color: #343a40;
+    margin-top: 2px;
+}
+
+.search-result-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.search-result-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #e8f0fe;
+    color: #3b76e1;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.search-result-tag-more {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.search-result-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 24px;
+    min-width: 160px;
+}
+
+.search-result-actions .btn {
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 20px;
+}
+
+/* 搜尋結果響應式 */
+@media (max-width: 768px) {
+    .search-result-card {
+        flex-direction: column;
+    }
+
+    .search-result-image {
+        width: 100%;
+        height: 200px;
+    }
+
+    .search-result-actions {
+        flex-direction: row;
+        padding: 12px 20px;
+        min-width: unset;
+    }
+
+    .search-result-actions .btn {
+        flex: 1;
+    }
 }
 
 .search-result-empty {

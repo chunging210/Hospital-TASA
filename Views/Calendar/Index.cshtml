@@ -43,10 +43,9 @@
                         </select>
                     </div>
 
-                    <!-- 智慧搜尋按鈕 -->
                     <div class="col-auto ms-auto">
-                        <button type="button" class="btn btn-outline-primary btn-rounded font-size-24"
-                                data-bs-toggle="modal" data-bs-target="#smartSearchModal">
+                        <button type="button" class="btn btn-primary font-size-24" data-bs-toggle="modal"
+                                data-bs-target="#smartSearchModal">
                             智慧搜尋
                         </button>
                     </div>
@@ -54,31 +53,74 @@
             </div>
 
             <div class="card-body">
-                <!-- ✅ 搜尋結果標題 -->
-                <div v-if="isSearchMode" class="search-results-header mb-3">
+                @* <div v-if="isSearchMode" class="search-results-header">
                     <h5>
-                        <i class="mdi mdi-magnify"></i>
                         搜尋結果 ({{ room.list.length }} 筆)
                     </h5>
                     <button type="button" class="btn btn-outline-secondary btn-sm" @@click="clearSearchResults">
-                        <i class="mdi mdi-arrow-left"></i> 返回總覽
+                        返回總覽
                     </button>
-                </div>
+                </div> *@
 
-                <!-- ✅ 無資料顯示 (統一處理) -->
                 <div v-if="room.list.length === 0" class="text-center py-5">
-                    <i class="mdi mdi-magnify mdi-48px text-muted"></i>
                     <h5 class="text-muted mt-3">
                         {{ isSearchMode ? '沒有找到符合條件的會議室' : '查無資料' }}
                     </h5>
                     <p v-if="isSearchMode" class="text-muted">請調整搜尋條件</p>
                 </div>
 
-                <!-- 會議室卡片 -->
+                <div v-else-if="isSearchMode" class="search-result-list">
+                    <div v-for="item in room.list" :key="item.Id" class="search-result-card">
+                        <div class="search-result-image">
+                            <img v-if="item.Images && item.Images.length > 0 && !room.isVideoFile(item.Images[0])"
+                                 :src="item.Images[0]" alt="會議室圖片">
+                            <video v-else-if="item.Images && item.Images.length > 0 && room.isVideoFile(item.Images[0])"
+                                   muted style="object-fit:cover;">
+                                <source :src="item.Images[0]" type="video/mp4">
+                            </video>
+                            <div v-else class="search-result-no-image">
+                                <span class="material-icons" style="font-size:48px;color:#ccc;">meeting_room</span>
+                            </div>
+                        </div>
+
+                        <div class="search-result-info">
+                            <div class="search-result-name" @@click="room.openDetail(item.Id)">{{ item.Name }}</div>
+                            <div class="search-result-location">
+                                {{ item.Building }} {{ item.Floor }}樓<span v-if="item.Number"> | {{ item.Number
+                                }}</span>
+                            </div>
+                            <div class="search-result-meta">
+                                容量：{{ item.Capacity ?? '-' }} 人 | 面積：{{ item.Area ?? '-' }} 平方公尺
+                            </div>
+                            <div class="search-result-meta">
+                                設備數量：{{ item.EquipmentCount ?? 0 }} 項
+                            </div>
+                            <div class="search-result-tags" v-if="item.Equipments && item.Equipments.length > 0">
+                                <span v-for="eq in item.Equipments.slice(0, 3)" :key="eq.Name || eq"
+                                      class="search-result-tag">
+                                    <span class="material-icons icons" style="font-size:14px;">devices</span>
+                                    {{ eq.Name || eq }}
+                                </span>
+                                <span v-if="item.Equipments.length > 3" class="search-result-tag-more">
+                                    +{{ item.Equipments.length - 3 }} 項
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="search-result-actions">
+                            <button class="btn btn-outline-primary" @@click.stop="room.openDetail(item.Id)">
+                                <span class="material-icons icons">visibility</span> 了解更多
+                            </button>
+                            <button class="btn btn-outline-primary" @@click.stop="room.goReserve(item)">
+                                <span class="material-icons icons">event_available</span> 立即預約
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div v-else class="room-grid">
                     <div v-for="item in room.list" :key="item.Id" class="room-card">
 
-                        <!-- Header -->
                         <div class="room-card-header">
                             <div class="room-name">{{ item.Name }}</div>
                             <div class="room-info">
@@ -86,15 +128,12 @@
                             </div>
                         </div>
 
-                        <!-- 圖片/影片 -->
                         <div class="room-preview">
-                            <!-- 圖片 -->
                             <div v-if="item.Images && item.Images.length > 0 && !room.isVideoFile(item.Images[item._imgIndex || 0])"
                                  style="width: 100%; height: 100%; background-size: cover; background-position: center;"
                                  :style="{ backgroundImage: `url('${item.Images[item._imgIndex || 0]}')` }">
                             </div>
 
-                            <!-- ✅ 影片：加 controls autoplay muted -->
                             <video
                                 v-else-if="item.Images && item.Images.length > 0 && room.isVideoFile(item.Images[item._imgIndex || 0])"
                                 controls autoplay muted
@@ -103,13 +142,11 @@
                                 你的瀏覽器不支援視訊播放
                             </video>
 
-                            <!-- 無圖片 -->
                             <div v-else
                                  style="width: 100%; height: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999;">
                                 暫無圖片
                             </div>
 
-                            <!-- 按鈕 -->
                             <button v-if="item.Images?.length > 1" class="carousel-btn prev"
                                 @@click.stop="room.prevCardImage(item)">
                                 ‹
@@ -121,7 +158,6 @@
                             </button>
                         </div>
 
-                        <!-- 內容 -->
                         <div class="room-card-body">
                             <div class="room-details">
                                 <div class="detail-row">
@@ -143,13 +179,13 @@
                                 </div>
                             </div>
 
-                            <!-- 操作 -->
                             <div class="action-buttons mt-3">
-                                <button class="btn btn-view" @@click.stop="room.openDetail(item.Id)">
+                                <button class="btn btn-view btn-outline-primary"
+                                    @@click.stop="room.openDetail(item.Id)">
                                     <span class="material-icons icons">visibility</span>
                                     了解更多
                                 </button>
-                                <button class="btn btn-edit" @@click.stop="room.goReserve(item)">
+                                <button class="btn btn-edit btn-outline-primary" @@click.stop="room.goReserve(item)">
                                     <span class="material-icons icons">event_available</span>
                                     立即預約
                                 </button>
@@ -158,7 +194,6 @@
                     </div>
                 </div>
 
-                <!-- 分頁 -->
                 <div v-if="!isSearchMode">
                     <page ref="roompage" :per-page="6" :per-page-option="[6,9,12,18]" @@reload="room.getList">
                     </page>
@@ -303,7 +338,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="mdi mdi-close"></i> 取消
                 </button>
-                <button type="button" class="btn btn-outline-danger" @@click="clearSmartSearch">
+                <button type="button" class="btn btn-danger" @@click="clearSmartSearch">
                     <i class="mdi mdi-refresh"></i> 重置
                 </button>
                 <button type="button" class="btn btn-primary" @@click="performSmartSearch">
