@@ -86,8 +86,7 @@
                         <div class="search-result-info">
                             <div class="search-result-name" @@click="room.openDetail(item.Id)">{{ item.Name }}</div>
                             <div class="search-result-location">
-                                {{ item.Building }} {{ item.Floor }}樓<span v-if="item.Number"> | {{ item.Number
-                                }}</span>
+                                {{ item.Building }} {{ item.Floor }}樓
                             </div>
                             <div class="search-result-meta">
                                 容量：{{ item.Capacity ?? '-' }} 人 | 面積：{{ item.Area ?? '-' }} 平方公尺
@@ -124,7 +123,7 @@
                         <div class="room-card-header">
                             <div class="room-name">{{ item.Name }}</div>
                             <div class="room-info">
-                                {{ item.Building }} {{ item.Floor }} 樓 | {{ item.Number }}
+                                {{ item.Building }} {{ item.Floor }} 樓
                             </div>
                         </div>
 
