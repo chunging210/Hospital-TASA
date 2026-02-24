@@ -125,6 +125,25 @@ namespace TASA.Services.AuthUserModule
                 .FirstOrDefault(x => x.Id == vm.Id);
             if (data != null)
             {
+                // ✅ 檢查分院是否變更
+                if (data.DepartmentId != vm.DepartmentId && data.DepartmentId.HasValue)
+                {
+                    // 檢查該使用者在原分院是否有管理會議室
+                    var managedRooms = db.SysRoom
+                        .IgnoreQueryFilters()
+                        .Where(r => r.ManagerId == data.Id
+                                 && r.DepartmentId == data.DepartmentId
+                                 && r.DeleteAt == null
+                                 && r.IsEnabled)
+                        .Select(r => r.Name)
+                        .ToList();
+
+                    if (managedRooms.Any())
+                    {
+                        throw new HttpException($"該使用者仍管理以下會議室，請先更換管理者：{string.Join("、", managedRooms)}");
+                    }
+                }
+
                 var wasEnabled = data.IsEnabled;
                 data.Name = vm.Name;
                 data.Email = vm.Email;
@@ -158,6 +177,52 @@ namespace TASA.Services.AuthUserModule
                 };
                 _ = service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo), data.Id, data.DepartmentId);
             }
+        }
+
+        public record RejectUserVM
+        {
+            public Guid UserId { get; set; }
+            public string Reason { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// 拒絕使用者申請（軟刪除 + 發送通知信）
+        /// </summary>
+        public void RejectUser(RejectUserVM vm)
+        {
+            var user = db.AuthUser
+                .WhereNotDeleted()
+                .FirstOrDefault(x => x.Id == vm.UserId);
+
+            if (user == null)
+            {
+                throw new HttpException("使用者不存在");
+            }
+
+            if (user.IsEnabled || user.IsApproved)
+            {
+                throw new HttpException("只能拒絕尚未審核的帳號");
+            }
+
+            // 軟刪除
+            user.DeleteAt = DateTime.Now;
+            db.SaveChanges();
+
+            // 發送拒絕通知信
+            service.PasswordMail.AccountRejected(user.Email, user.Name, vm.Reason);
+
+            // 記錄 Log
+            var operatorUser = service.UserClaimsService.Me();
+            var rejectInfo = new
+            {
+                OperatorName = operatorUser?.Name ?? "系統",
+                TargetName = user.Name,
+                UserName = user.Name,
+                Email = user.Email,
+                Action = "reject",
+                Reason = vm.Reason
+            };
+            _ = service.LogServices.LogAsync("user_reject", JsonConvert.SerializeObject(rejectInfo), user.Id, user.DepartmentId);
         }
     }
 }

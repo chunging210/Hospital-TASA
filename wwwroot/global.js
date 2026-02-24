@@ -24,6 +24,7 @@ const global = new function () {
             delegate: GET,
             saveDelegate: { method: POST, path: 'delegate' },
             removeDelegate: { method: POST, path: 'delegate/remove' },
+            blockedPeriods: { method: GET, path: 'delegate/blocked-periods' },
         }),
         select: {
             // 保留原有的 apiMethods
@@ -118,6 +119,7 @@ const global = new function () {
             userdetail: GET,
             userinsert: POST,
             userupdate: POST,
+            userreject: POST,
             departmentlist: GET,
             departmentdetail: GET,
             departmentinsert: POST,

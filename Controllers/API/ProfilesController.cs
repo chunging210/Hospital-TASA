@@ -41,5 +41,14 @@ namespace TASA.Controllers.API
             service.RoomManagerDelegateService.RemoveDelegate();
             return Ok();
         }
+
+        /// <summary>
+        /// 取得目前登入者「被委派」的日期範圍（前端用於反灰不可選的日期）
+        /// </summary>
+        [HttpGet("delegate/blocked-periods")]
+        public IActionResult GetDelegatedPeriods()
+        {
+            return Ok(service.RoomManagerDelegateService.GetMyDelegatedPeriods());
+        }
     }
 }

@@ -87,6 +87,36 @@ const authuser = new function () {
                 addAlert(error.details, { type: 'danger', click: error.download });
             });
     }
+
+    // 拒絕帳號相關
+    this.rejectVM = reactive({ userId: null, userName: '', reason: '' });
+    this.showRejectModal = (item) => {
+        this.rejectVM.userId = item.Id;
+        this.rejectVM.userName = item.Name;
+        this.rejectVM.reason = '';
+        const modalEl = document.querySelector('#rejectUserModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
+    this.confirmReject = () => {
+        if (!this.rejectVM.reason.trim()) {
+            addAlert('請輸入拒絕原因', { type: 'warning' });
+            return;
+        }
+        global.api.admin.userreject({ body: { userId: this.rejectVM.userId, reason: this.rejectVM.reason } })
+            .then(() => {
+                addAlert('已拒絕該帳號申請');
+                this.getList();
+                const modalEl = document.querySelector('#rejectUserModal');
+                const modal = window.bootstrap?.Modal?.getInstance(modalEl);
+                if (modal) modal.hide();
+            })
+            .catch(error => {
+                addAlert(error.details || '操作失敗', { type: 'danger', click: error.download });
+            });
+    }
 }
 
 window.$config = {

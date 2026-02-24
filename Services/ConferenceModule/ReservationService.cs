@@ -674,8 +674,26 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約取消",
-                $"使用者取消預約 - {conference.Name} ({conference.Id})");
+            // 判斷是否為管理員取消（操作者 != 預約者）
+            var isCancelledByAdmin = userId != conference.CreateBy;
+
+            if (isCancelledByAdmin)
+            {
+                // 取得管理員名稱
+                var admin = db.AuthUser.FirstOrDefault(u => u.Id == userId);
+                var adminName = admin?.Name ?? "管理員";
+
+                _ = service.LogServices.LogAsync("預約取消",
+                    $"管理員取消預約 - {conference.Name} ({conference.Id})，操作者：{adminName}");
+
+                // 通知預約者預約已被管理員取消
+                service.ConferenceMail.ReservationCancelledByAdmin(conferenceId, adminName);
+            }
+            else
+            {
+                _ = service.LogServices.LogAsync("預約取消",
+                    $"使用者取消預約 - {conference.Name} ({conference.Id})");
+            }
 
             // 如果已繳費，通知總務退費
             if (hasPaid)

@@ -48,6 +48,15 @@ namespace TASA.Services.AuthModule
             public bool IsAccountant { get; set; }
             public bool IsRoomManager { get; set; }
             public bool IsInternal { get; set; }
+            // 委派代理人資訊
+            public DelegateInfoVM? DelegateInfo { get; set; }
+        };
+
+        public record DelegateInfoVM
+        {
+            public string ManagerName { get; set; } = string.Empty;
+            public DateOnly EndDate { get; set; }
+            public List<string> RoomNames { get; set; } = [];
         };
 
 public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)

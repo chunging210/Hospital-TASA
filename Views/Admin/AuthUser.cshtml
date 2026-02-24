@@ -61,6 +61,9 @@
                             <td>{{item.CreateAt.format()}}</td>
                             <td>
                                 <button @@click="authuser.getVM(item.Id)" class="btn btn-sm btn-outline-primary">編輯</button>
+                                <button v-if="!item.IsEnabled && !item.IsApproved"
+                                        @@click="authuser.showRejectModal(item)"
+                                        class="btn btn-sm btn-outline-danger ms-1">拒絕</button>
                             </td>
                         </tr>
                     </tbody>
@@ -181,6 +184,31 @@
                 <button type="button" class="btn btn-primary" @@click="authuser.save()">
                     {{ authuser.vm.Id ? '確認修改' : '確認新增' }}
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 拒絕帳號 Modal ===== -->
+<div class="modal fade" id="rejectUserModal" tabindex="-1" aria-labelledby="rejectUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectUserModalLabel">拒絕帳號申請</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 mt-3">
+                <p>確定要拒絕 <strong>{{ authuser.rejectVM.userName }}</strong> 的帳號申請嗎？</p>
+                <p class="text-muted small">拒絕後將刪除該帳號，並發送通知信給申請者。</p>
+                <div class="mb-3">
+                    <label class="form-label">拒絕原因 <span class="text-danger">*</span></label>
+                    <textarea v-model="authuser.rejectVM.reason" class="form-control" rows="3"
+                              placeholder="請輸入拒絕原因，將會寄送給申請者..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" @@click="authuser.confirmReject()">確認拒絕</button>
             </div>
         </div>
     </div>

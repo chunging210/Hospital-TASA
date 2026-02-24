@@ -1,5 +1,5 @@
 ﻿import 'vue';
-const { ref } = Vue;
+const { ref, onMounted } = Vue;
 
 const pad0 = (v) => {
     return v.toString().padStart(2, '0');
@@ -15,6 +15,27 @@ export default {
     setup: () => new function () {
         this.name = ref(fn.getName());
         this.countdown = ref('00:00');
+        this.delegateInfo = ref(null);
+
+        // 取得代理人資訊
+        const loadDelegateInfo = async () => {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.DelegateInfo) {
+                        this.delegateInfo.value = data.DelegateInfo;
+                    }
+                }
+            } catch (e) {
+                console.error('載入代理人資訊失敗', e);
+            }
+        };
+
+        onMounted(() => {
+            loadDelegateInfo();
+        });
+
         setInterval(() => {
             this.name.value = fn.getName();
             if (this.name.value) {

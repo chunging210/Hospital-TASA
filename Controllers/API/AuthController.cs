@@ -41,7 +41,22 @@ namespace TASA.Controllers.API
         [Authorize, HttpGet("me")]
         public IActionResult Me()
         {
-            return Ok(service.UserClaimsService.Me());
+            var me = service.UserClaimsService.Me();
+            if (me?.Id != null)
+            {
+                // 查詢委派代理人資訊
+                var delegateInfo = service.RoomManagerDelegateService.GetMyDelegateInfo(me.Id.Value);
+                if (delegateInfo != null)
+                {
+                    me.DelegateInfo = new TASA.Services.AuthModule.UserClaimsService.DelegateInfoVM
+                    {
+                        ManagerName = delegateInfo.ManagerName,
+                        EndDate = delegateInfo.EndDate,
+                        RoomNames = delegateInfo.RoomNames
+                    };
+                }
+            }
+            return Ok(me);
         }
 
         [HttpPost("register")]

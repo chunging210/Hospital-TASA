@@ -965,7 +965,7 @@ window.$config = {
                 addAlert('載入預約資料失敗', { type: 'danger' });
                 setTimeout(() => {
                     window.location.href = '/reservationoverview';
-                }, 2000);
+                }, 1000);
             }
         };
 
@@ -1055,7 +1055,7 @@ window.$config = {
 
                     setTimeout(() => {
                         window.location.href = '/reservationoverview';
-                    }, 2000);
+                    }, 1000);
                 })
                 .catch(err => {
                     const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';

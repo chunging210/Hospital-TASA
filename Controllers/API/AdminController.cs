@@ -40,6 +40,13 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
+        [HttpPost("userreject")]
+        public IActionResult UserReject(AuthUserServices.RejectUserVM vm)
+        {
+            service.AuthUserServices.RejectUser(vm);
+            return Ok();
+        }
+
         /* --- */
 
         [HttpGet("departmentlist")]

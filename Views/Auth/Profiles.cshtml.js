@@ -57,11 +57,27 @@ class DelegateVM { Id = null; DelegateUserId = ''; DelegateUserName = ''; StartD
 const delegateSection = new function () {
     this.vm = reactive(new DelegateVM());
     this.users = reactive([]);
+    this.blockedPeriods = reactive([]);  // 被委派的日期範圍
+    this.today = new Date().toISOString().slice(0, 10);  // 今天日期（用於 min 屬性）
+
     this.isActive = computed(() => {
         if (!delegateSection.vm.StartDate || !delegateSection.vm.EndDate) return false;
         const today = new Date().toISOString().slice(0, 10);
         return delegateSection.vm.StartDate <= today && delegateSection.vm.EndDate >= today;
     });
+
+    // 檢查日期是否與被委派日期重疊
+    this.checkDateOverlap = () => {
+        if (!delegateSection.vm.StartDate || !delegateSection.vm.EndDate) return null;
+
+        for (const period of delegateSection.blockedPeriods) {
+            // 日期重疊條件：StartDate <= period.EndDate && EndDate >= period.StartDate
+            if (delegateSection.vm.StartDate <= period.EndDate && delegateSection.vm.EndDate >= period.StartDate) {
+                return period;
+            }
+        }
+        return null;
+    };
 
     this.load = () => {
         global.api.profiles.delegate()
@@ -69,6 +85,13 @@ const delegateSection = new function () {
                 if (response.data) {
                     copy(delegateSection.vm, response.data);
                 }
+            })
+            .catch(() => { });
+
+        // 載入被委派的日期範圍
+        global.api.profiles.blockedPeriods()
+            .then(response => {
+                delegateSection.blockedPeriods.splice(0, delegateSection.blockedPeriods.length, ...response.data);
             })
             .catch(() => { });
 
@@ -93,6 +116,12 @@ const delegateSection = new function () {
         }
         if (delegateSection.vm.StartDate > delegateSection.vm.EndDate) {
             addAlert('開始日期不得晚於結束日期', { type: 'danger' });
+            return;
+        }
+        // 檢查日期是否與被委派日期重疊
+        const overlap = delegateSection.checkDateOverlap();
+        if (overlap) {
+            addAlert(`您在 ${overlap.StartDate} ~ ${overlap.EndDate} 期間已被「${overlap.ManagerName}」委派為代理人，無法在此期間設定自己的委派`, { type: 'danger' });
             return;
         }
         global.api.profiles.saveDelegate({ body: delegateSection.vm })

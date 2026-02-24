@@ -1365,6 +1365,115 @@ namespace TASA.Services.MailModule
         }
 
         /// <summary>
+        /// 管理員取消預約通知 - 通知預約者預約已被管理員取消
+        /// </summary>
+        public void ReservationCancelledByAdmin(Guid conferenceId, string adminName, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            Console.WriteLine($"📧 [ReservationCancelledByAdmin] 開始處理，ConferenceId: {conferenceId}");
+
+            if (!Enable)
+            {
+                Console.WriteLine("📧 [ReservationCancelledByAdmin] 信件服務未啟用，跳過");
+                return;
+            }
+
+            using var db = dbContextFactory.CreateDbContext();
+
+            var reservation = db.Conference
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .FirstOrDefault(c => c.Id == conferenceId);
+
+            if (reservation == null)
+            {
+                Console.WriteLine($"📧 [ReservationCancelledByAdmin] 找不到預約資料，ConferenceId: {conferenceId}");
+                return;
+            }
+
+            var applicant = reservation.CreateByNavigation;
+            if (applicant == null || string.IsNullOrEmpty(applicant.Email))
+            {
+                Console.WriteLine($"📧 [ReservationCancelledByAdmin] 預約者無 Email，跳過");
+                return;
+            }
+
+            var roomSlot = reservation.ConferenceRoomSlots.FirstOrDefault();
+            var room = roomSlot?.Room;
+            var roomName = room != null ? $"{room.Building} {room.Floor} {room.Name}" : "未指定";
+            var slotDate = roomSlot?.SlotDate.ToString("yyyy/MM/dd") ?? "-";
+            var slotTime = reservation.ConferenceRoomSlots.Any()
+                ? $"{reservation.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {reservation.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                : "-";
+            var bookingNo = reservation.Id.ToString().Substring(0, 8);
+
+            var mail = NewMailMessage();
+            mail.Subject = $"[預約取消通知] - {reservation.Name}";
+            mail.Body = $@"
+<h3>親愛的 {applicant.Name} 您好：</h3>
+
+<p>您的預約已被管理員取消，詳細資訊如下：</p>
+
+<h4>📋 預約資訊</h4>
+<table style='border-collapse: collapse; width: 100%; max-width: 500px;'>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5; width: 120px;'><strong>預約單號</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{bookingNo}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議名稱</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{reservation.Name}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>會議室</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{roomName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約日期</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotDate}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>原預約時間</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{slotTime}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>取消者</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{adminName}</td>
+    </tr>
+    <tr>
+        <td style='padding: 8px; border: 1px solid #ddd; background-color: #f5f5f5;'><strong>取消時間</strong></td>
+        <td style='padding: 8px; border: 1px solid #ddd;'>{DateTime.Now:yyyy/MM/dd HH:mm}</td>
+    </tr>
+</table>
+
+<div style='background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 15px 0;'>
+    <p style='margin: 0; color: #721c24;'>
+        如有任何疑問，請聯繫會議室管理人員。
+    </p>
+</div>
+
+<p style='color: #666; margin-top: 30px;'>
+    此為系統自動通知，請勿直接回覆此信件。
+</p>
+";
+            mail.To.Add(applicant.Email);
+
+            Console.WriteLine($"📧 [ReservationCancelledByAdmin] 準備寄信給預約者: {applicant.Email}");
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await SendAsync(mail, className, functionName);
+                    Console.WriteLine($"📧 [ReservationCancelledByAdmin] ✅ 信件已發送: {applicant.Email}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"📧 [ReservationCancelledByAdmin] ❌ 信件發送失敗: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
         /// 繳費逾期自動取消通知 - 通知用戶預約已被系統自動取消
         /// </summary>
         public void PaymentOverdueCancelled(Guid conferenceId, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
