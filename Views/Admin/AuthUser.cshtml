@@ -40,7 +40,6 @@
                         <tr class="table-light">
                             <th>單位</th>
                             <th>姓名</th>
-                            <th>帳號</th>
                             <th>Email</th>
                             <th>狀態</th>
                             <th>建立日期</th>
@@ -51,7 +50,6 @@
                         <tr v-for="item in tabData" @@dblclick="authuser.getVM(item.Id)" :key="item.Id">
                             <td>{{item.DepartmentName}}</td>
                             <td>{{item.Name}}</td>
-                            <td>{{item.Account}}</td>
                             <td>{{item.Email}}</td>
                             <td>
                                 <span v-if="item.IsEnabled" class="badge bg-success">啟用</span>
@@ -69,7 +67,7 @@
                     </tbody>
                     <tfoot v-if="tabData.length==0">
                         <tr>
-                            <td colspan="5" class="text-center">查無資料</td>
+                            <td colspan="6" class="text-center text-muted">查無資料</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -201,9 +199,9 @@
                 <p>確定要拒絕 <strong>{{ authuser.rejectVM.userName }}</strong> 的帳號申請嗎？</p>
                 <p class="text-muted small">拒絕後將刪除該帳號，並發送通知信給申請者。</p>
                 <div class="mb-3">
-                    <label class="form-label">拒絕原因 <span class="text-danger">*</span></label>
+                    <label class="form-label">拒絕原因</label>
                     <textarea v-model="authuser.rejectVM.reason" class="form-control" rows="3"
-                              placeholder="請輸入拒絕原因，將會寄送給申請者..."></textarea>
+                              placeholder="選填，將會寄送給申請者..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">

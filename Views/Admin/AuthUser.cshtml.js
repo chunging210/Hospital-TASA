@@ -101,10 +101,6 @@ const authuser = new function () {
         }
     }
     this.confirmReject = () => {
-        if (!this.rejectVM.reason.trim()) {
-            addAlert('請輸入拒絕原因', { type: 'warning' });
-            return;
-        }
         global.api.admin.userreject({ body: { userId: this.rejectVM.userId, reason: this.rejectVM.reason } })
             .then(() => {
                 addAlert('已拒絕該帳號申請');
