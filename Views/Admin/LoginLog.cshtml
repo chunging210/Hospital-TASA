@@ -72,7 +72,6 @@
                             <th>狀態</th>
                             <th>IP 位址</th>
                             <th>裝置 / 瀏覽器</th>
-                            <th>狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,10 +91,11 @@
                                     失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
                                 </span>
                             </td>
-
+                            <td>{{ item?.IpAddress || '-' }}</td>
+                            <td>{{ item?.DeviceInfo || '-' }} / {{ item?.BrowserInfo || '-' }}</td>
                         </tr>
                         <tr v-if="loginlog.list.length === 0">
-                            <td colspan="5" class="text-center">查無資料</td>
+                            <td colspan="5" class="text-center text-muted">查無資料</td>
                         </tr>
                     </tbody>
                 </table>
