@@ -48,7 +48,7 @@
 
                                 <!-- ✅ 個人預約:單一狀態篩選 -->
                                 <template v-if="activeTab === 'personal'">
-                                    <div class="col-xl-4 col-sm-12">
+                                    <div class="col-xl-2 col-sm-12">
                                         <select class="form-select" v-model="userStatusFilter">
                                             <option v-for="opt in userStatusOptions" :key="opt.value"
                                                     :value="opt.value">

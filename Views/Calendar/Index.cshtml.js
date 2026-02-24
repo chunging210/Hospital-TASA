@@ -21,6 +21,7 @@ const smartSearch = reactive({
     departmentId: null
 });
 
+const gridColumns = ref(2);  // 一行顯示幾個會議室 (2 或 3)
 const isSearchMode = ref(false);  // 是否在搜尋模式
 const searchResults = reactive([]); // 搜尋結果
 const floorOptions = computed(() => {
@@ -458,6 +459,7 @@ window.$config = {
 
         this.isAdmin = isAdmin;
         this.userDepartmentName = userDepartmentName;
+        this.gridColumns = gridColumns;
 
         this.todaySchedule = room.todaySchedule;
         this.getStatusBadgeClass = room.getStatusBadgeClass;

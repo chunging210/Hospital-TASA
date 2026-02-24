@@ -43,8 +43,18 @@
                         </select>
                     </div>
 
-                    <div class="col-auto ms-auto">
-                        <button type="button" class="btn btn-primary font-size-24" data-bs-toggle="modal"
+                    <div class="col-auto ms-auto d-flex align-items-center gap-2">
+                        <div class="view-toggle" v-if="!isSearchMode">
+                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 2 }"
+                                @@click="gridColumns = 2" title="一行顯示 2 個">
+                                2
+                            </button>
+                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 3 }"
+                                @@click="gridColumns = 3" title="一行顯示 3 個">
+                                3
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-primary font-size-20" data-bs-toggle="modal"
                                 data-bs-target="#smartSearchModal">
                             智慧搜尋
                         </button>
@@ -53,14 +63,12 @@
             </div>
 
             <div class="card-body">
-                @* <div v-if="isSearchMode" class="search-results-header">
-                    <h5>
-                        搜尋結果 ({{ room.list.length }} 筆)
-                    </h5>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" @@click="clearSearchResults">
+                <div v-if="isSearchMode" class="search-results-header">
+                    <button type="button" @@click="clearSearchResults" class="back-btn d-flex align-items-center">
+                        <span class="material-icons">west</span>
                         返回總覽
                     </button>
-                </div> *@
+                </div>
 
                 <div v-if="room.list.length === 0" class="text-center py-5">
                     <h5 class="text-muted mt-3">
@@ -117,7 +125,7 @@
                     </div>
                 </div>
 
-                <div v-else class="room-grid">
+                <div v-else class="room-grid" :class="{ 'room-grid-3': gridColumns === 3 }">
                     <div v-for="item in room.list" :key="item.Id" class="room-card">
 
                         <div class="room-card-header">

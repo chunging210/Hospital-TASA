@@ -51,21 +51,26 @@ const authuser = new function () {
                 addAlert('取得資料失敗', { type: 'danger', click: error.download });
             });
     }
-    this.offcanvas = {}
     this.vm = reactive(new VM());
+    this.showModal = () => {
+        const modalEl = document.querySelector('#authUserModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
     this.getVM = (id) => {
         if (id) {
             global.api.admin.userdetail({ body: { id } })
                 .then((response) => {
                     copy(this.vm, response.data);
-                    this.offcanvas.show();
+                    this.showModal();
                 })
                 .catch(error => {
                     addAlert('取得資料失敗', { type: 'danger', click: error.download });
                 });
         } else {
             copy(this.vm, new VM());
-            this.offcanvas.show();
         }
     }
     this.save = () => {
@@ -74,7 +79,9 @@ const authuser = new function () {
             .then((response) => {
                 addAlert('操作成功');
                 this.getList();
-                this.offcanvas.hide();
+                const modalEl = document.querySelector('#authUserModal');
+                const modal = window.bootstrap?.Modal?.getInstance(modalEl);
+                if (modal) modal.hide();
             })
             .catch(error => {
                 addAlert(error.details, { type: 'danger', click: error.download });
@@ -88,7 +95,6 @@ window.$config = {
         this.department = department;
         this.role = role;
         this.authuser = authuser;
-        this.authuseroffcanvas = ref(null);
         this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
         this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
 
@@ -101,7 +107,6 @@ window.$config = {
             department.gettree();
             role.getList();
             authuser.getList();
-            authuser.offcanvas = this.authuseroffcanvas.value;
             sysConfig.getRegistrationStatus();
 
             window.addEventListener('registrationStatusChanged', (event) => {

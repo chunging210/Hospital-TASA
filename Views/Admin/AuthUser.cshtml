@@ -2,7 +2,7 @@
 <div class="page-content">
     <div class="container-fluid vstack gap-3">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header mx-4 mt-3">
                 <div class="row d-flex align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">people</span>使用者總覽
@@ -19,7 +19,8 @@
                     </div>
 
                     <div class="col-auto d-flex align-items-center ms-auto">
-                        <button @@click="authuser.getVM()" class="btn btn-primary d-flex align-items-center">
+                        <button @@click="authuser.getVM()" class="btn btn-primary d-flex align-items-center"
+                            data-bs-toggle="modal" data-bs-target="#authUserModal">
                             <span class="material-icons me-2">add</span> 新增使用者
                         </button>
                     </div>
@@ -73,150 +74,115 @@
         </div>
     </div>
 </div>
-<offcanvas ref="authuseroffcanvas">
-    <template #header>
-        <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
-            <span class="material-icons">folder</span>使用者管理
-        </div>
-    </template>
-    <template #footer>
-        <button @@click="authuser.save()" class="btn btn-branding text-white">
-            確認修改
-        </button>
-    </template>
-    <ol class="activity-checkout mb-0 px-4 mt-3">
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">edit</span>
-                </div>
+<!-- ===== 新增/編輯 Modal ===== -->
+<div class="modal fade" id="authUserModal" tabindex="-1" aria-labelledby="authUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="authUserModalLabel">
+                    {{ authuser.vm.Id ? '編輯使用者' : '新增使用者' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">姓名</label>
+
+            <!-- Modal Body -->
+            <div class="modal-body px-4 mt-3">
+                <form>
+                    <!-- 姓名 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">姓名 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input v-model="authuser.vm.Name" type="text" class="form-control" placeholder="姓名">
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <input v-model="authuser.vm.Name" type="text" class="form-control" placeholder="姓名" />
+
+                    <!-- 帳號 (僅新增時顯示) -->
+                    <div v-if="!authuser.vm.Id" class="row mb-4">
+                        <label class="col-sm-3 col-form-label">帳號 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input v-model="authuser.vm.Account" type="text" class="form-control" placeholder="帳號">
+                        </div>
                     </div>
-                </div>
-            </div>
-        </li>
-        <li v-if="!authuser.vm.Id" class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">account_circle</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">帳號</label>
+
+                    <!-- Email -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">Email</label>
+                        <div class="col-sm-9">
+                            <input v-model="authuser.vm.Email" type="email" class="form-control" placeholder="Email">
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <input v-model="authuser.vm.Account" type="text" class="form-control" placeholder="帳號" />
+
+                    <!-- 單位 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">單位</label>
+                        <div class="col-sm-9">
+                            <select v-model="authuser.vm.DepartmentId" class="form-select">
+                                <option :value="null">請選擇單位</option>
+                                <template v-for="{Id,Name,Children} in department.tree">
+                                    <optgroup v-if="Children && Children.length > 0" :label="Name">
+                                        <option :value="Id">{{ Name }}</option>
+                                        <option v-for="child in Children" :key="child.Id" :value="child.Id">
+                                            {{ child.Name }}
+                                        </option>
+                                    </optgroup>
+                                    <option v-else :key="Id" :value="Id">{{ Name }}</option>
+                                </template>
+                            </select>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">alternate_email</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">Email</label>
-                    </div>
-                    <div class="col-12">
-                        <input v-model="authuser.vm.Email" type="email" class="form-control" placeholder="Email" />
-                    </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">groups</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">單位</label>
-                    </div>
-                    <div class="col-12">
-                        <ul class="list-group">
-                            <li class="form-check form-check-inline ps-0">
-                                <label class="form-check-label">
-                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio"
-                                        :value="null" />
-                                    無
-                                </label>
-                            </li>
-                            <li v-for="{Id,Name,Children} in department.tree" class="form-check form-check-inline ps-0">
-                                <label class="form-check-label">
-                                    <input v-model="authuser.vm.DepartmentId" class="form-radio-primary" type="radio"
-                                        :value="Id" />
-                                    {{Name}}
-                                </label>
-                                <ul class="list-group">
-                                    <li v-for="{Id,Name} in Children" class="form-check form-check-inline">
-                                        <label class="form-check-label">
-                                            <input v-model="authuser.vm.DepartmentId" class="form-radio-primary"
-                                                type="radio" :value="Id" />
-                                            {{Name}}
+
+                    <!-- 角色 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">角色</label>
+                        <div class="col-sm-9">
+                            <div class="dropdown">
+                                <button class="form-select text-start" type="button"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                    {{ authuser.vm.Role.length > 0
+                                        ? role.list.filter(r => authuser.vm.Role.includes(r.Id)).map(r => r.Name).join('、')
+                                        : '請選擇角色' }}
+                                </button>
+                                <ul class="dropdown-menu w-100 px-2">
+                                    <li v-for="item in role.list" :key="item.Id" class="dropdown-item p-0 ms-3">
+                                        <label class="form-check mb-0 px-3 py-2 w-100" style="cursor:pointer;">
+                                            <input v-model="authuser.vm.Role" class="form-check-input"
+                                                   type="checkbox" :value="item.Id">
+                                            {{item.Name}}
                                         </label>
                                     </li>
                                 </ul>
-                            </li>
-                        </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">check_box</span>
-                </div>
-            </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">角色</label>
+
+                    <!-- 啟用 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">啟用</label>
+                        <div class="col-sm-9 d-flex align-items-center gap-3">
+                            <label class="form-check">
+                                <input v-model="authuser.vm.IsEnabled" class="form-check-input" type="radio"
+                                    :value="true">
+                                是
+                            </label>
+                            <label class="form-check">
+                                <input v-model="authuser.vm.IsEnabled" class="form-check-input" type="radio"
+                                    :value="false">
+                                否
+                            </label>
+                        </div>
                     </div>
-                    <div class="col-12">
-                        <label v-for="item in role.list" class="form-check">
-                            <input v-model="authuser.vm.Role" class="form-check-input" type="checkbox" :value="item.Id">
-                            {{item.Name}}
-                        </label>
-                    </div>
-                </div>
+                </form>
             </div>
-        </li>
-        <li class="checkout-item">
-            <div class="avatar checkout-icon p-1">
-                <div class="avatar-title rounded-circle bg-primary">
-                    <span class="material-icons font-size-20">check</span>
-                </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" @@click="authuser.save()">
+                    {{ authuser.vm.Id ? '確認修改' : '確認新增' }}
+                </button>
             </div>
-            <div class="feed-item-list">
-                <div class="row align-items-center">
-                    <div class="col-sm-12 col-xl-auto pe-0">
-                        <label class="col-form-label pe-3">啟用</label>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-check">
-                            <input v-model="authuser.vm.IsEnabled" class="form-check-input" type="checkbox"
-                                :value="true">
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </li>
-    </ol>
-</offcanvas>
+        </div>
+    </div>
+</div>
 </div>

@@ -1,2 +1,12 @@
 /bin
 /obj
+# Visual Studio / Rider 暫存檔
+*.user
+*.suo
+*.v2
+*.bin
+*.vsidx
+.vs/
+
+# Publish Profiles user 檔
+*.pubxml.user
