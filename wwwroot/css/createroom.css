@@ -587,7 +587,7 @@
     color: #fff;
 }
 
-/* 場地布置 - 選中狀態（橘色） */
+/* 場地佈置 - 選中狀態（橘色） */
 .slot-type-btn.active-setup {
     background: #fd7e14;
     border-color: #fd7e14;

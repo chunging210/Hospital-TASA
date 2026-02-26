@@ -76,7 +76,7 @@ public partial class ConferenceRoomSlot
     public DateTime? ReleasedAt { get; set; }
 
     /// <summary>
-    /// 是否為場地布置
+    /// 是否為場地佈置
     /// </summary>
     public bool IsSetup { get; set; } = false;
 

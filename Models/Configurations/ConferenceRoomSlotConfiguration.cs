@@ -69,7 +69,7 @@ public class ConferenceRoomSlotConfiguration
 
         entity.Property(e => e.IsSetup)
             .HasDefaultValue(false)
-            .HasComment("是否為場地布置");
+            .HasComment("是否為場地佈置");
 
         entity.Property(e => e.CreateAt)
             .HasColumnType("datetime")
