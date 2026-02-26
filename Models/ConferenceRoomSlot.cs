@@ -76,6 +76,11 @@ public partial class ConferenceRoomSlot
     public DateTime? ReleasedAt { get; set; }
 
     /// <summary>
+    /// 是否為場地布置
+    /// </summary>
+    public bool IsSetup { get; set; } = false;
+
+    /// <summary>
     /// 建立時間
     /// </summary>
     [Column(TypeName = "datetime")]

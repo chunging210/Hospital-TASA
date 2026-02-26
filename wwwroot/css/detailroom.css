@@ -1,13 +1,14 @@
 .pricing-header {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     padding: 0 0 10px 0;
     border-bottom: 2px solid #e3f2fd;
     margin-bottom: 4px;
+    gap: 8px;
 }
 
 .pricing-col-label {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: #90a4ae;
     text-align: right;
@@ -16,10 +17,11 @@
 
 .pricing-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
     align-items: center;
     padding: 14px 0;
     border-bottom: 1px solid #f0f0f0;
+    gap: 8px;
 }
 
 .pricing-row:last-child {
@@ -27,19 +29,19 @@
 }
 
 .pricing-name {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: #222;
 }
 
 .pricing-time {
-    font-size: 18px;
+    font-size: 14px;
     color: #bbb;
     margin-top: 3px;
 }
 
 .pricing-price {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     color: #1976d2;
     text-align: right;
@@ -53,4 +55,8 @@
 
 .pricing-price.holiday {
     color: #f57c00;
+}
+
+.pricing-price.setup {
+    color: #7b1fa2;
 }

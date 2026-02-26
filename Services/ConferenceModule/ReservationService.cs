@@ -409,7 +409,8 @@ namespace TASA.Services.ConferenceModule
             CreateRoomSlots(conferenceId, roomId, slotDateOnly, requestedSlots);
 
             // 建立設備和攤位關聯
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, requestedSlots);
+            var slotsForEquipment = requestedSlots.Select(s => (s.Start, s.End)).ToList();
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, slotsForEquipment);
 
             if (vm.Attachments != null && vm.Attachments.Any())
             {
@@ -482,7 +483,8 @@ namespace TASA.Services.ConferenceModule
             db.ConferenceEquipment.RemoveRange(oldEquipments);
 
             // 建立新設備和攤位關聯
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, requestedSlots);
+            var slotsForEquipmentUpdate = requestedSlots.Select(s => (s.Start, s.End)).ToList();
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, slotsForEquipmentUpdate);
 
             // 軟刪除舊附件
             var oldAttachments = db.ConferenceAttachment
@@ -944,7 +946,8 @@ namespace TASA.Services.ConferenceModule
             if (!vm.RoomId.HasValue)
                 throw new HttpException("必須選擇會議室");
 
-            if (vm.SlotKeys == null || vm.SlotKeys.Count == 0)
+            if ((vm.SlotKeys == null || vm.SlotKeys.Count == 0) &&
+                (vm.SlotInfos == null || vm.SlotInfos.Count == 0))
                 throw new HttpException("必須選擇至少一個時段");
 
             if (string.IsNullOrWhiteSpace(vm.PaymentMethod))
@@ -965,26 +968,49 @@ namespace TASA.Services.ConferenceModule
         /// <summary>
         /// 解析時段並檢查衝突
         /// </summary>
-        private (Guid RoomId, DateTime SlotDate, DateOnly SlotDateOnly, List<(TimeOnly Start, TimeOnly End)> RequestedSlots)
+        private (Guid RoomId, DateTime SlotDate, DateOnly SlotDateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)> RequestedSlots)
             ParseAndValidateSlots(InsertVM vm, Guid? excludeConferenceId)
         {
             var roomId = vm.RoomId!.Value;
             var slotDate = vm.ReservationDate!.Value.Date;
             var slotDateOnly = DateOnly.FromDateTime(slotDate);
-            var requestedSlots = new List<(TimeOnly Start, TimeOnly End)>();
+            var requestedSlots = new List<(TimeOnly Start, TimeOnly End, bool IsSetup)>();
 
-            // 解析時段
-            foreach (var slotKey in vm.SlotKeys!)
+            // ✅ 優先使用新格式 SlotInfos（包含 isSetup 資訊）
+            if (vm.SlotInfos != null && vm.SlotInfos.Count > 0)
             {
-                var parts = slotKey.Split('-');
-                if (parts.Length != 2)
-                    throw new HttpException($"時段格式錯誤: {slotKey}");
+                foreach (var slotInfo in vm.SlotInfos)
+                {
+                    var parts = slotInfo.Key.Split('-');
+                    if (parts.Length != 2)
+                        throw new HttpException($"時段格式錯誤: {slotInfo.Key}");
 
-                if (!TimeOnly.TryParse(parts[0].Trim(), out var start) ||
-                    !TimeOnly.TryParse(parts[1].Trim(), out var end))
-                    throw new HttpException($"時段格式錯誤: {slotKey}");
+                    if (!TimeOnly.TryParse(parts[0].Trim(), out var start) ||
+                        !TimeOnly.TryParse(parts[1].Trim(), out var end))
+                        throw new HttpException($"時段格式錯誤: {slotInfo.Key}");
 
-                requestedSlots.Add((start, end));
+                    requestedSlots.Add((start, end, slotInfo.IsSetup));
+                }
+            }
+            // ✅ 向後相容：使用舊格式 SlotKeys（預設 isSetup = false）
+            else if (vm.SlotKeys != null && vm.SlotKeys.Count > 0)
+            {
+                foreach (var slotKey in vm.SlotKeys)
+                {
+                    var parts = slotKey.Split('-');
+                    if (parts.Length != 2)
+                        throw new HttpException($"時段格式錯誤: {slotKey}");
+
+                    if (!TimeOnly.TryParse(parts[0].Trim(), out var start) ||
+                        !TimeOnly.TryParse(parts[1].Trim(), out var end))
+                        throw new HttpException($"時段格式錯誤: {slotKey}");
+
+                    requestedSlots.Add((start, end, false));  // 預設非場布
+                }
+            }
+            else
+            {
+                throw new HttpException("必須選擇至少一個時段");
             }
 
             // 檢查時段衝突
@@ -1116,16 +1142,20 @@ namespace TASA.Services.ConferenceModule
         /// <summary>
         /// 建立會議室時段記錄
         /// </summary>
-        private void CreateRoomSlots(Guid conferenceId, Guid roomId, DateOnly slotDate, List<(TimeOnly Start, TimeOnly End)> requestedSlots)
+        private void CreateRoomSlots(Guid conferenceId, Guid roomId, DateOnly slotDate, List<(TimeOnly Start, TimeOnly End, bool IsSetup)> requestedSlots)
         {
             // ✅ 查詢該會議室的所有時段價格設定
             var roomSlotPrices = db.SysRoomPricePeriod
                 .Where(rs => rs.RoomId == roomId && rs.IsEnabled)
                 .ToList();
 
-            foreach (var (start, end) in requestedSlots)
-            {
+            // ✅ 查詢該日期是否為假日
+            var dateTime = slotDate.ToDateTime(TimeOnly.MinValue);
+            var dayOfWeek = dateTime.DayOfWeek;
+            var isHoliday = dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday;
 
+            foreach (var (start, end, isSetup) in requestedSlots)
+            {
                 var startTimeSpan = start.ToTimeSpan();
                 var endTimeSpan = end.ToTimeSpan();
 
@@ -1133,6 +1163,27 @@ namespace TASA.Services.ConferenceModule
                 var priceInfo = roomSlotPrices.FirstOrDefault(rs =>
                     rs.StartTime == startTimeSpan && rs.EndTime == endTimeSpan
                 );
+
+                // ✅ 根據 isSetup 決定價格
+                decimal price = 0;
+                if (priceInfo != null)
+                {
+                    if (isSetup && priceInfo.SetupPrice.HasValue)
+                    {
+                        // 場布價格（固定，不分平假日）
+                        price = priceInfo.SetupPrice.Value;
+                    }
+                    else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+                    {
+                        // 假日價格
+                        price = priceInfo.HolidayPrice.Value;
+                    }
+                    else
+                    {
+                        // 平日價格
+                        price = priceInfo.Price;
+                    }
+                }
 
                 var slot = new ConferenceRoomSlot
                 {
@@ -1142,10 +1193,11 @@ namespace TASA.Services.ConferenceModule
                     SlotDate = slotDate,
                     StartTime = start,
                     EndTime = end,
-                    Price = priceInfo?.Price ?? 0,  // ✅ 使用實際價格(沒找到就是 0)
-                    PricingType = PricingType.Period,  // ✅ 時段計價
+                    Price = price,
+                    PricingType = PricingType.Period,
                     SlotStatus = SlotStatus.Locked,
-                    LockedAt = DateTime.Now
+                    LockedAt = DateTime.Now,
+                    IsSetup = isSetup
                 };
 
                 db.ConferenceRoomSlot.Add(slot);

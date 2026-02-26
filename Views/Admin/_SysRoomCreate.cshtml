@@ -105,6 +105,7 @@
                     <div class="pricing-col-time font-size-16">時間範圍</div>
                     <div class="pricing-col-price font-size-16">平日價格</div>
                     <div class="pricing-col-price font-size-16">假日價格</div>
+                    <div class="pricing-col-price font-size-16">場布價格</div>
                     <div class="pricing-col-action font-size-16">操作</div>
                 </div>
 
@@ -147,6 +148,12 @@
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">$</span>
                             <input v-model.number="slot.HolidayPrice" type="number" class="form-control" min="0">
+                        </div>
+                    </div>
+                    <div class="pricing-col-price">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input v-model.number="slot.SetupPrice" type="number" class="form-control" min="0" placeholder="選填">
                         </div>
                     </div>
                     <div class="pricing-col-action">

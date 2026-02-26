@@ -540,3 +540,63 @@
     margin: 0px;
     font-size: 30px;
 }
+
+/* ===== 場布模式 - 橘色樣式 ===== */
+.time-slot-card.selected-setup {
+    border-color: #fd7e14 !important;
+    background: #fff3e6 !important;
+}
+
+.time-slot-card.selected-setup:hover {
+    border-color: #e67a00 !important;
+}
+
+.time-slot-card.selected-setup .slot-price {
+    color: #fd7e14 !important;
+}
+
+/* 時段類型切換按鈕 */
+.slot-type-toggle {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e5eaf0;
+}
+
+.slot-type-btn {
+    flex: 1;
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #6c757d;
+}
+
+.slot-type-btn:hover {
+    background: #f8f9fa;
+}
+
+/* 一般使用 - 選中狀態（藍色） */
+.slot-type-btn.active-normal {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+/* 場地布置 - 選中狀態（橘色） */
+.slot-type-btn.active-setup {
+    background: #fd7e14;
+    border-color: #fd7e14;
+    color: #fff;
+}
+
+/* 場布模式的價格標籤 */
+.setup-price-label {
+    font-size: 10px;
+    color: #fd7e14;
+    font-weight: 500;
+}

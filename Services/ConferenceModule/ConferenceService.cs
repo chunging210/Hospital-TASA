@@ -48,7 +48,14 @@ namespace TASA.Services.ConferenceModule
             // ===== 新預約系統專用 =====
             public Guid? RoomId { get; set; }  // 新系統:單一會議室
             public DateTime? ReservationDate { get; set; }  // 預約日期
-            public List<string>? SlotKeys { get; set; }     // 時段陣列 ["09:00-10:00", "10:00-11:00"]
+            public List<string>? SlotKeys { get; set; }     // 時段陣列 ["09:00-10:00", "10:00-11:00"]（向後相容）
+            public List<SlotInfoVM>? SlotInfos { get; set; }  // 新格式: 包含 isSetup 資訊
+
+            public record SlotInfoVM
+            {
+                public string Key { get; set; } = string.Empty;  // 時段 Key "09:00:00-10:00:00"
+                public bool IsSetup { get; set; } = false;       // 是否為場布
+            }
             public List<Guid>? EquipmentIds { get; set; } = [];
             public List<Guid>? BoothIds { get; set; } = [];
             public decimal? RoomCost { get; set; }

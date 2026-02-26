@@ -55,6 +55,12 @@ public partial class SysRoomPricePeriod
     public decimal? HolidayPrice { get; set; }
 
     /// <summary>
+    /// 場布價格
+    /// </summary>
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal? SetupPrice { get; set; }
+
+    /// <summary>
     /// 是否開放
     /// </summary>
     public bool IsEnabled { get; set; }

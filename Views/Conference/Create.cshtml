@@ -226,7 +226,8 @@
                                                         <div class="time-slot-grid">
                                                             <div v-for="slot in displayedSlots" :key="slot.Key"
                                                                  class="time-slot-card" :class="{
-                                                                selected: isSlotSelected(slot),
+                                                                selected: isSlotSelected(slot) && !isSlotSetup(slot),
+                                                                'selected-setup': isSlotSelected(slot) && isSlotSetup(slot),
                                                                 occupied: slot.Occupied,
                                                                 disabled: !isSlotAvailable(slot)
                                                                 }" @@click="toggleTimeSlot(slot)">
@@ -245,11 +246,31 @@
                                                                     </span>
                                                                     <span v-else>
                                                                         {{ slot.Occupied ? '已預約' : '$' +
-                                                                        getSlotPrice(slot) }}
+                                                                        getSlotDisplayPrice(slot) }}
                                                                         <small
-                                                                        v-if="!slot.Occupied && isHoliday && slot.HolidayPrice"
+                                                                        v-if="!slot.Occupied && isSlotSetup(slot) && slot.SetupPrice"
+                                                                        class="text-warning d-block">(場布價)</small>
+                                                                        <small
+                                                                        v-else-if="!slot.Occupied && isHoliday && slot.HolidayPrice"
                                                                         class="text-warning d-block">(假日價)</small>
                                                                     </span>
+                                                                </div>
+
+                                                                <!-- 使用類型切換按鈕 -->
+                                                                <div v-if="isSlotSelected(slot) && slot.SetupPrice"
+                                                                     class="slot-type-toggle" @@click.stop>
+                                                                    <button type="button"
+                                                                            class="btn btn-sm"
+                                                                            :class="isSlotSetup(slot) ? 'btn-outline-primary' : 'btn-primary'"
+                                                                            @@click="setSlotType(slot, false)">
+                                                                        一般使用
+                                                                    </button>
+                                                                    <button type="button"
+                                                                            class="btn btn-sm"
+                                                                            :class="isSlotSetup(slot) ? 'btn-warning' : 'btn-outline-warning'"
+                                                                            @@click="setSlotType(slot, true)">
+                                                                        場地布置
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>

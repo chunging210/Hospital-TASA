@@ -87,6 +87,7 @@ namespace TASA.Services
             public TimeOnly EndTime { get; init; }
             public decimal Price { get; init; }
             public decimal? HolidayPrice { get; init; }
+            public decimal? SetupPrice { get; init; }
             public bool Occupied { get; init; }
         }
 
@@ -199,7 +200,8 @@ namespace TASA.Services
                     Start = x.StartTime,
                     End = x.EndTime,
                     x.Price,
-                    x.HolidayPrice
+                    x.HolidayPrice,
+                    x.SetupPrice
                 })
                 .ToList();
 
@@ -239,6 +241,7 @@ namespace TASA.Services
                     s.End,
                     s.Price,
                     s.HolidayPrice,
+                    s.SetupPrice,
                     Occupied = occupiedSlots.Any(o =>
                     {
                         var oStart = o.StartTime;
@@ -258,6 +261,7 @@ namespace TASA.Services
                 EndTime = TimeOnly.FromTimeSpan(s.End),
                 Price = s.Price,
                 HolidayPrice = s.HolidayPrice,
+                SetupPrice = s.SetupPrice,
                 Occupied = s.Occupied
             }).ToList();
         }

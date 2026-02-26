@@ -344,6 +344,7 @@ const room = new function () {
             EndHour: et[0], EndMin: et[1] ?? '00',
             Price: data.Price ?? 0,
             HolidayPrice: data.HolidayPrice ?? 0,
+            SetupPrice: data.SetupPrice ?? null,
             Enabled: data.Enabled ?? true
         };
     };
@@ -561,9 +562,9 @@ const room = new function () {
         this.timeSlots.splice(0);
 
         [
-            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200 },
-            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800, HolidayPrice: 1000 },
-            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200, HolidayPrice: 1500 }
+            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200, SetupPrice: null },
+            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800, HolidayPrice: 1000, SetupPrice: null },
+            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200, HolidayPrice: 1500, SetupPrice: null }
         ].forEach(s => {
             this.timeSlots.push(this.createPeriodSlot(s));
         });
@@ -634,6 +635,7 @@ const room = new function () {
                         EndTime: endTime,
                         Price: slot.Price,
                         HolidayPrice: slot.HolidayPrice,
+                        SetupPrice: slot.SetupPrice ?? null,
                         Enabled: true
                     });
                 }

@@ -475,7 +475,9 @@ body {
     border: 1px solid #dee2e6;
     border-top: none;
     padding: 10px;
-    height: 500px;
+    min-height: 400px;
+    max-height: 500px;
+    overflow-y: auto;
     border-radius: 0 0 8px 8px;
 }
 
@@ -689,7 +691,7 @@ body {
 
 /* ===== Offcanvas 新增區塊 ===== */
 .offcanvas-create {
-    width: 880px !important;
+    width: 950px !important;
 }
 
 .form-section {
@@ -1169,15 +1171,15 @@ body {
 }
 
 .pricing-col-name {
-    width: 110px;
+    width: 90px;
     flex-shrink: 0;
 }
 
 .pricing-col-time {
-    flex: 1;
+    min-width: 280px;
     display: flex;
     align-items: center;
-    min-width: 0;
+    flex-shrink: 0;
 }
 
 .pricing-col-time select {
@@ -1186,7 +1188,7 @@ body {
 }
 
 .pricing-col-price {
-    width: 140px;
+    width: 110px;
     flex-shrink: 0;
 }
 

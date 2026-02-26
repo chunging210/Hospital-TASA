@@ -217,6 +217,7 @@
                                                 <span></span>
                                                 <span class="pricing-col-label">平日</span>
                                                 <span class="pricing-col-label">假日</span>
+                                                <span class="pricing-col-label">場布</span>
                                             </div>
 
                                             <!-- 時段制 -->
@@ -233,6 +234,10 @@
                                                         NT$ {{ pricing.HolidayPrice }}
                                                     </div>
                                                     <div class="pricing-price holiday" v-else>—</div>
+                                                    <div class="pricing-price setup" v-if="pricing.SetupPrice">
+                                                        NT$ {{ pricing.SetupPrice }}
+                                                    </div>
+                                                    <div class="pricing-price setup" v-else>—</div>
                                                 </div>
 
                                             </div>

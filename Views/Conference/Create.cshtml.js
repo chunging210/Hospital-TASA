@@ -120,7 +120,7 @@ window.$config = {
             roomId: null,
             initiatorId: '',
             attendees: [],
-            selectedSlots: [],
+            selectedSlots: [],  // 新格式: [{ key: '09:00:00-10:00:00', isSetup: false }]
             selectedEquipment: [],
             selectedBooths: [],
             paymentMethod: '',
@@ -364,11 +364,23 @@ window.$config = {
                 return 0;
             }
 
-            // ✅ 根據平日/假日計算費用
+            // ✅ 根據平日/假日/場布計算費用
+            const selectedKeys = this.form.selectedSlots.map(s => s.key);
             const cost = this.timeSlots.value
-                .filter(slot => this.form.selectedSlots.includes(slot.Key))
+                .filter(slot => selectedKeys.includes(slot.Key))
                 .reduce((sum, slot) => {
-                    const price = this.getSlotPrice(slot);
+                    // 檢查是否為場布模式
+                    const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
+                    const isSetup = slotInfo?.isSetup || false;
+
+                    let price;
+                    if (isSetup && slot.SetupPrice != null) {
+                        price = slot.SetupPrice;
+                    } else if (this.isHoliday.value && slot.HolidayPrice) {
+                        price = slot.HolidayPrice;
+                    } else {
+                        price = slot.Price;
+                    }
                     return sum + price;
                 }, 0);
 
@@ -502,8 +514,9 @@ window.$config = {
 
         // ✅ 取得選擇的時段文字
         this.getSelectedSlotsText = () => {
+            const selectedKeys = this.form.selectedSlots.map(s => s.key);
             const selectedSlots = this.timeSlots.value.filter(slot =>
-                this.form.selectedSlots.includes(slot.Key)
+                selectedKeys.includes(slot.Key)
             );
 
             if (selectedSlots.length === 0) return '無';
@@ -513,7 +526,9 @@ window.$config = {
             return selectedSlots.map(slot => {
                 const startTime = slot.StartTime.slice(0, 5);
                 const endTime = slot.EndTime.slice(0, 5);
-                return `${slot.Name || ''} (${startTime} - ${endTime})`;
+                const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
+                const suffix = slotInfo?.isSetup ? ' [場布]' : '';
+                return `${slot.Name || ''} (${startTime} - ${endTime})${suffix}`;
             }).join(', ');
         };
 
@@ -623,7 +638,7 @@ window.$config = {
                 const body = {
                     roomId: this.form.roomId,
                     date: this.form.date,
-                    slotKeys: this.form.selectedSlots,
+                    slotKeys: this.form.selectedSlots.map(s => s.key),
                     excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
                 };
 
@@ -729,7 +744,30 @@ window.$config = {
         });
 
         this.isSlotSelected = (slot) => {
-            return this.form.selectedSlots.includes(slot.Key);
+            return this.form.selectedSlots.some(s => s.key === slot.Key);
+        };
+
+        // 檢查時段是否為場布模式
+        this.isSlotSetup = (slot) => {
+            const found = this.form.selectedSlots.find(s => s.key === slot.Key);
+            return found ? found.isSetup : false;
+        };
+
+        // 設定時段類型（一般/場布）
+        this.setSlotType = (slot, isSetup) => {
+            const found = this.form.selectedSlots.find(s => s.key === slot.Key);
+            if (found) {
+                found.isSetup = isSetup;
+            }
+        };
+
+        // 取得時段顯示價格（根據平日/假日/場布）
+        this.getSlotDisplayPrice = (slot) => {
+            const isSetup = this.isSlotSetup(slot);
+            if (isSetup && slot.SetupPrice != null) {
+                return slot.SetupPrice;
+            }
+            return this.getSlotPrice(slot);
         };
 
         // 取得已選時段的起始和結束邊界
@@ -738,8 +776,9 @@ window.$config = {
                 return null;
             }
 
+            const selectedKeys = this.form.selectedSlots.map(s => s.key);
             const selectedSlots = this.timeSlots.value.filter(slot =>
-                this.form.selectedSlots.includes(slot.Key)
+                selectedKeys.includes(slot.Key)
             );
 
             let minStart = null;
@@ -789,19 +828,21 @@ window.$config = {
         this.toggleTimeSlot = (slot) => {
             if (slot.Occupied) return;
 
-            const isSelected = this.form.selectedSlots.includes(slot.Key);
+            const isSelected = this.isSlotSelected(slot);
 
             if (isSelected) {
                 // 取消選擇：只能取消邊緣的時段
                 if (this.isSlotAtEdge(slot)) {
-                    const idx = this.form.selectedSlots.indexOf(slot.Key);
-                    this.form.selectedSlots.splice(idx, 1);
+                    const idx = this.form.selectedSlots.findIndex(s => s.key === slot.Key);
+                    if (idx > -1) {
+                        this.form.selectedSlots.splice(idx, 1);
+                    }
                 }
                 // 如果不是邊緣，不做任何事（或可以顯示提示）
             } else {
                 // 新增選擇：只能選相鄰的時段
                 if (this.isSlotAvailable(slot)) {
-                    this.form.selectedSlots.push(slot.Key);
+                    this.form.selectedSlots.push({ key: slot.Key, isSetup: false });
                 }
             }
         };
@@ -843,8 +884,9 @@ window.$config = {
                 return { hours: 0, minutes: 0 };
             }
 
+            const selectedKeys = this.form.selectedSlots.map(s => s.key);
             const selectedSlots = this.timeSlots.value.filter(slot =>
-                this.form.selectedSlots.includes(slot.Key)
+                selectedKeys.includes(slot.Key)
             );
 
             if (!selectedSlots.length) {
@@ -944,8 +986,19 @@ window.$config = {
                 await this.updateTimeSlots();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
-                    this.form.selectedSlots = data.SlotKeys;
+                // 處理時段資料 - 支援新舊格式
+                if (data.SlotInfos && Array.isArray(data.SlotInfos)) {
+                    // 新格式：包含 isSetup 資訊
+                    this.form.selectedSlots = data.SlotInfos.map(s => ({
+                        key: s.Key || s.key,
+                        isSetup: s.IsSetup || s.isSetup || false
+                    }));
+                } else if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
+                    // 舊格式：只有 key，預設為一般使用
+                    this.form.selectedSlots = data.SlotKeys.map(key => ({
+                        key: key,
+                        isSetup: false
+                    }));
                 }
 
                 await this.loadEquipmentByRoom();
@@ -1027,7 +1080,8 @@ window.$config = {
                 parkingTicketCost: this.parkingTicketCost.value,
                 totalAmount: this.totalAmount.value,
                 roomId: this.form.roomId,
-                slotKeys: [...this.form.selectedSlots],
+                slotKeys: this.form.selectedSlots.map(s => s.key),  // 保持向下相容
+                slotInfos: this.form.selectedSlots.map(s => ({ key: s.key, isSetup: s.isSetup })),  // 新格式
                 equipmentIds: [...this.form.selectedEquipment],
                 boothIds: [...this.form.selectedBooths],
                 attendeeIds: [this.initiatorId.value],

@@ -67,6 +67,10 @@ public class ConferenceRoomSlotConfiguration
             .HasColumnType("datetime")
             .HasComment("時段被釋放時間");
 
+        entity.Property(e => e.IsSetup)
+            .HasDefaultValue(false)
+            .HasComment("是否為場地布置");
+
         entity.Property(e => e.CreateAt)
             .HasColumnType("datetime")
             .HasComment("建立時間");
