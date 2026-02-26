@@ -10,6 +10,7 @@ namespace TASA.Controllers.API
     public class AuthController(ServiceWrapper service) : ControllerBase
     {
         [HttpPost("login")]
+        [AllowAnonymous]
         public IActionResult Login(LoginVM vm)
         {
             var user = service.LoginServices.Login(vm);

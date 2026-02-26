@@ -16,6 +16,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
     <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
+
   </ItemGroup>
 
   <ItemGroup>
