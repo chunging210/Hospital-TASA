@@ -235,13 +235,20 @@ namespace TASA.Services.ConferenceModule
                     OrganizerUnit = x.Conference.OrganizerUnit,
                     Chairman = x.Conference.Chairman,
 
+                    // ✅ 列表：只顯示日期範圍
                     Date = x.Conference.ConferenceRoomSlots.Any()
-                            ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                                : x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                                  x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                             : "-",
 
+                    // ✅ 列表：單日顯示時間，跨日顯示「-」（詳細時間在 Detail 看）
                     Time = x.Conference.ConferenceRoomSlots.Any()
-                            ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                                  $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                                : "-")
                             : "-",
 
                     RoomName = x.Conference.ConferenceRoomSlots
@@ -333,13 +340,20 @@ namespace TASA.Services.ConferenceModule
                     OrganizerUnit = x.Conference.OrganizerUnit,
                     Chairman = x.Conference.Chairman,
 
+                    // ✅ 列表：只顯示日期範圍
                     Date = x.Conference.ConferenceRoomSlots.Any()
-                        ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                        ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                            : x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                              x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                         : "-",
 
+                    // ✅ 列表：單日顯示時間，跨日顯示「-」（詳細時間在 Detail 看）
                     Time = x.Conference.ConferenceRoomSlots.Any()
-                        ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                          $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                        ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                            : "-")
                         : "-",
 
                     RoomName = x.Conference.ConferenceRoomSlots
@@ -395,8 +409,8 @@ namespace TASA.Services.ConferenceModule
             // 驗證基本資料
             ValidateReservationData(vm);
 
-            // 解析並檢查時段
-            var (roomId, slotDate, slotDateOnly, requestedSlots) = ParseAndValidateSlots(vm, null);
+            // 解析並檢查時段（支援多日）
+            var (roomId, slotsByDate) = ParseAndValidateSlots(vm, null);
 
             // 建立會議記錄
             var conferenceId = Guid.NewGuid();
@@ -405,12 +419,11 @@ namespace TASA.Services.ConferenceModule
             db.Conference.Add(conference);
             db.SaveChanges();
 
-            // 建立時段記錄
-            CreateRoomSlots(conferenceId, roomId, slotDateOnly, requestedSlots);
+            // 建立時段記錄（支援多日）
+            CreateRoomSlots(conferenceId, roomId, slotsByDate);
 
-            // 建立設備和攤位關聯
-            var slotsForEquipment = requestedSlots.Select(s => (s.Start, s.End)).ToList();
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, slotsForEquipment);
+            // 建立設備和攤位關聯（支援多日）
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotsByDate);
 
             if (vm.Attachments != null && vm.Attachments.Any())
             {
@@ -419,8 +432,15 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
+            // 計算總時段數和日期範圍
+            var totalSlots = slotsByDate.Values.Sum(s => s.Count);
+            var dateRange = slotsByDate.Keys.OrderBy(d => d).ToList();
+            var dateRangeStr = dateRange.Count == 1
+                ? $"{dateRange.First():yyyy/MM/dd}"
+                : $"{dateRange.First():yyyy/MM/dd} ~ {dateRange.Last():yyyy/MM/dd}";
+
             _ = service.LogServices.LogAsync("預約系統",
-                $"預約建立 - {conference.Name} ({conference.Id})，日期: {slotDate:yyyy/MM/dd}，共 {requestedSlots.Count} 個時段");
+                $"預約建立 - {conference.Name} ({conference.Id})，日期: {dateRangeStr}，共 {totalSlots} 個時段");
 
             // 寄送預約通知信件
             service.ConferenceMail.ReservationCreated(conferenceId);
@@ -465,8 +485,8 @@ namespace TASA.Services.ConferenceModule
             // 驗證基本資料
             ValidateReservationData(vm);
 
-            // 解析並檢查時段
-            var (roomId, slotDate, slotDateOnly, requestedSlots) = ParseAndValidateSlots(vm, conferenceId);
+            // 解析並檢查時段（支援多日）
+            var (roomId, slotsByDate) = ParseAndValidateSlots(vm, conferenceId);
 
             // 更新基本資訊
             UpdateConferenceEntity(conference, vm);
@@ -475,16 +495,15 @@ namespace TASA.Services.ConferenceModule
             var oldSlots = conference.ConferenceRoomSlots.ToList();
             db.ConferenceRoomSlot.RemoveRange(oldSlots);
 
-            // 建立新時段
-            CreateRoomSlots(conferenceId, roomId, slotDateOnly, requestedSlots);
+            // 建立新時段（支援多日）
+            CreateRoomSlots(conferenceId, roomId, slotsByDate);
 
             // 刪除舊設備關聯
             var oldEquipments = conference.ConferenceEquipments.ToList();
             db.ConferenceEquipment.RemoveRange(oldEquipments);
 
-            // 建立新設備和攤位關聯
-            var slotsForEquipmentUpdate = requestedSlots.Select(s => (s.Start, s.End)).ToList();
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotDateOnly, slotsForEquipmentUpdate);
+            // 建立新設備和攤位關聯（支援多日）
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotsByDate);
 
             // 軟刪除舊附件
             var oldAttachments = db.ConferenceAttachment
@@ -897,15 +916,28 @@ namespace TASA.Services.ConferenceModule
                 Description = conference.Description,
                 OrganizerUnit = conference.OrganizerUnit,
                 Chairman = conference.Chairman,
+                // ✅ Detail：顯示完整起迄時間（含日期）
                 Date = conference.ConferenceRoomSlots.Any()
-                    ? conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                    ? (conference.ConferenceRoomSlots.Min(s => s.SlotDate) == conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                        ? conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                        : conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                          conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                     : "-",
+                // ✅ Detail：跨日顯示「起始日期時間 ~ 結束日期時間」
                 Time = conference.ConferenceRoomSlots.Any()
-                    ? $"{conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                      $"{conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                    ? (conference.ConferenceRoomSlots.Min(s => s.SlotDate) == conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                        ? $"{conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                          $"{conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                        : $"{conference.ConferenceRoomSlots.Min(s => s.SlotDate):M/d} " +
+                          $"{conference.ConferenceRoomSlots.OrderBy(s => s.SlotDate).ThenBy(s => s.StartTime).First().StartTime:HH\\:mm} ~ " +
+                          $"{conference.ConferenceRoomSlots.Max(s => s.SlotDate):M/d} " +
+                          $"{conference.ConferenceRoomSlots.OrderByDescending(s => s.SlotDate).ThenByDescending(s => s.EndTime).First().EndTime:HH\\:mm}")
                     : "-",
+                // ✅ Detail：顯示完整地點（大樓 + 樓層 + 會議室名稱）
                 RoomName = conference.ConferenceRoomSlots
-                    .Select(s => s.Room?.Name)
+                    .Select(s => s.Room != null
+                        ? $"{s.Room.Building} {s.Room.Floor} 樓 {s.Room.Name}"
+                        : "-")
                     .FirstOrDefault() ?? "-",
                 TotalAmount = conference.TotalAmount,
                 ParkingTicketCount = conference.ParkingTicketCount,  // ✅ 停車券張數
@@ -953,7 +985,10 @@ namespace TASA.Services.ConferenceModule
             if (string.IsNullOrWhiteSpace(vm.PaymentMethod))
                 throw new HttpException("必須選擇付款方式");
 
-            if (!vm.ReservationDate.HasValue)
+            // ✅ 判斷是跨日模式還是單日模式
+            var isMultiDay = vm.StartDate.HasValue && vm.EndDate.HasValue;
+
+            if (!isMultiDay && !vm.ReservationDate.HasValue)
                 throw new HttpException("必須指定預約日期");
 
             // ✅ 根據會議室的分院 ID 取得最早預約天數設定
@@ -961,22 +996,37 @@ namespace TASA.Services.ConferenceModule
             var departmentId = room?.DepartmentId;
             var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays(departmentId);
             var minDate = DateTime.Today.AddDays(minAdvanceDays);
-            if (vm.ReservationDate.Value.Date < minDate)
-                throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+
+            if (isMultiDay)
+            {
+                // 跨日模式：檢查開始日期
+                if (vm.StartDate!.Value.Date < minDate)
+                    throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+
+                if (vm.EndDate!.Value.Date < vm.StartDate.Value.Date)
+                    throw new HttpException("結束日期不能早於開始日期");
+            }
+            else
+            {
+                // 單日模式：檢查預約日期
+                if (vm.ReservationDate!.Value.Date < minDate)
+                    throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+            }
         }
 
         /// <summary>
-        /// 解析時段並檢查衝突
+        /// 解析時段並檢查衝突（支援單日和跨日模式）
         /// </summary>
-        private (Guid RoomId, DateTime SlotDate, DateOnly SlotDateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)> RequestedSlots)
+        private (Guid RoomId, Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>> SlotsByDate)
             ParseAndValidateSlots(InsertVM vm, Guid? excludeConferenceId)
         {
             var roomId = vm.RoomId!.Value;
-            var slotDate = vm.ReservationDate!.Value.Date;
-            var slotDateOnly = DateOnly.FromDateTime(slotDate);
-            var requestedSlots = new List<(TimeOnly Start, TimeOnly End, bool IsSetup)>();
+            var slotsByDate = new Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>>();
 
-            // ✅ 優先使用新格式 SlotInfos（包含 isSetup 資訊）
+            // ✅ 判斷是跨日模式還是單日模式
+            var isMultiDay = vm.StartDate.HasValue && vm.EndDate.HasValue;
+
+            // ✅ 優先使用新格式 SlotInfos（包含 isSetup 和 Date 資訊）
             if (vm.SlotInfos != null && vm.SlotInfos.Count > 0)
             {
                 foreach (var slotInfo in vm.SlotInfos)
@@ -989,12 +1039,34 @@ namespace TASA.Services.ConferenceModule
                         !TimeOnly.TryParse(parts[1].Trim(), out var end))
                         throw new HttpException($"時段格式錯誤: {slotInfo.Key}");
 
-                    requestedSlots.Add((start, end, slotInfo.IsSetup));
+                    // ✅ 解析日期（跨日模式必須有 Date，單日模式用 ReservationDate）
+                    DateOnly slotDateOnly;
+                    if (!string.IsNullOrEmpty(slotInfo.Date))
+                    {
+                        if (!DateOnly.TryParse(slotInfo.Date, out slotDateOnly))
+                            throw new HttpException($"日期格式錯誤: {slotInfo.Date}");
+                    }
+                    else if (vm.ReservationDate.HasValue)
+                    {
+                        slotDateOnly = DateOnly.FromDateTime(vm.ReservationDate.Value.Date);
+                    }
+                    else
+                    {
+                        throw new HttpException("時段缺少日期資訊");
+                    }
+
+                    if (!slotsByDate.ContainsKey(slotDateOnly))
+                        slotsByDate[slotDateOnly] = new List<(TimeOnly, TimeOnly, bool)>();
+
+                    slotsByDate[slotDateOnly].Add((start, end, slotInfo.IsSetup));
                 }
             }
-            // ✅ 向後相容：使用舊格式 SlotKeys（預設 isSetup = false）
+            // ✅ 向後相容：使用舊格式 SlotKeys（預設 isSetup = false，單日模式）
             else if (vm.SlotKeys != null && vm.SlotKeys.Count > 0)
             {
+                var slotDateOnly = DateOnly.FromDateTime(vm.ReservationDate!.Value.Date);
+                slotsByDate[slotDateOnly] = new List<(TimeOnly, TimeOnly, bool)>();
+
                 foreach (var slotKey in vm.SlotKeys)
                 {
                     var parts = slotKey.Split('-');
@@ -1005,7 +1077,7 @@ namespace TASA.Services.ConferenceModule
                         !TimeOnly.TryParse(parts[1].Trim(), out var end))
                         throw new HttpException($"時段格式錯誤: {slotKey}");
 
-                    requestedSlots.Add((start, end, false));  // 預設非場布
+                    slotsByDate[slotDateOnly].Add((start, end, false));  // 預設非場布
                 }
             }
             else
@@ -1013,32 +1085,88 @@ namespace TASA.Services.ConferenceModule
                 throw new HttpException("必須選擇至少一個時段");
             }
 
-            // 檢查時段衝突
-            var query = db.ConferenceRoomSlot
-                .Where(s => s.RoomId == roomId
-                         && s.SlotDate == slotDateOnly
-                         && (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved));
-
-            if (excludeConferenceId.HasValue)
+            // ✅ 跨日模式：檢查中間天是否整天空閒
+            if (isMultiDay)
             {
-                query = query.Where(s => s.ConferenceId != excludeConferenceId.Value);
+                var allDates = slotsByDate.Keys.OrderBy(d => d).ToList();
+                if (allDates.Count >= 2)
+                {
+                    var firstDate = allDates.First();
+                    var lastDate = allDates.Last();
+
+                    // 取得會議室的所有時段定義
+                    var roomSlotDefs = db.SysRoomPricePeriod
+                        .Where(p => p.RoomId == roomId && p.IsEnabled)
+                        .OrderBy(p => p.StartTime)
+                        .ToList();
+
+                    if (roomSlotDefs.Any())
+                    {
+                        // ✅ 首日驗證：必須選到最後一個時段
+                        var lastSlotDef = roomSlotDefs.Last();
+                        var firstDaySlots = slotsByDate[firstDate];
+                        var hasLastSlot = firstDaySlots.Any(s =>
+                            s.Start.ToTimeSpan() == lastSlotDef.StartTime &&
+                            s.End.ToTimeSpan() == lastSlotDef.EndTime);
+
+                        if (!hasLastSlot)
+                            throw new HttpException($"跨日預約的首日 ({firstDate:yyyy/MM/dd}) 必須選擇到最後時段，才能與隔天連續");
+
+                        // ✅ 末日驗證：必須從第一個時段開始選
+                        var firstSlotDef = roomSlotDefs.First();
+                        var lastDaySlots = slotsByDate[lastDate];
+                        var hasFirstSlot = lastDaySlots.Any(s =>
+                            s.Start.ToTimeSpan() == firstSlotDef.StartTime &&
+                            s.End.ToTimeSpan() == firstSlotDef.EndTime);
+
+                        if (!hasFirstSlot)
+                            throw new HttpException($"跨日預約的末日 ({lastDate:yyyy/MM/dd}) 必須從第一時段開始選，才能與前一天連續");
+                    }
+
+                    // 檢查中間天
+                    for (var date = firstDate.AddDays(1); date < lastDate; date = date.AddDays(1))
+                    {
+                        var hasAnyOccupied = db.ConferenceRoomSlot
+                            .Any(s => s.RoomId == roomId
+                                   && s.SlotDate == date
+                                   && (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved)
+                                   && (!excludeConferenceId.HasValue || s.ConferenceId != excludeConferenceId.Value));
+
+                        if (hasAnyOccupied)
+                            throw new HttpException($"{date:yyyy/MM/dd} 已有其他預約，無法進行跨日預約");
+                    }
+                }
             }
 
-            var occupiedSlots = query
-                .Select(s => new { s.StartTime, s.EndTime })
-                .ToList();
-
-            foreach (var requested in requestedSlots)
+            // ✅ 各日期衝突檢查
+            foreach (var (date, slots) in slotsByDate)
             {
-                var hasConflict = occupiedSlots.Any(occupied =>
-                    requested.Start < occupied.EndTime && requested.End > occupied.StartTime
-                );
+                var query = db.ConferenceRoomSlot
+                    .Where(s => s.RoomId == roomId
+                             && s.SlotDate == date
+                             && (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved));
 
-                if (hasConflict)
-                    throw new HttpException($"該會議室在 {slotDate:yyyy/MM/dd} 的時段 {requested.Start:HH\\:mm} ~ {requested.End:HH\\:mm} 已被佔用");
+                if (excludeConferenceId.HasValue)
+                {
+                    query = query.Where(s => s.ConferenceId != excludeConferenceId.Value);
+                }
+
+                var occupiedSlots = query
+                    .Select(s => new { s.StartTime, s.EndTime })
+                    .ToList();
+
+                foreach (var requested in slots)
+                {
+                    var hasConflict = occupiedSlots.Any(occupied =>
+                        requested.Start < occupied.EndTime && requested.End > occupied.StartTime
+                    );
+
+                    if (hasConflict)
+                        throw new HttpException($"該會議室在 {date:yyyy/MM/dd} 的時段 {requested.Start:HH\\:mm} ~ {requested.End:HH\\:mm} 已被佔用");
+                }
             }
 
-            return (roomId, slotDate, slotDateOnly, requestedSlots);
+            return (roomId, slotsByDate);
         }
 
         /// <summary>
@@ -1140,67 +1268,70 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// 建立會議室時段記錄
+        /// 建立會議室時段記錄（支援多日）
         /// </summary>
-        private void CreateRoomSlots(Guid conferenceId, Guid roomId, DateOnly slotDate, List<(TimeOnly Start, TimeOnly End, bool IsSetup)> requestedSlots)
+        private void CreateRoomSlots(Guid conferenceId, Guid roomId, Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>> slotsByDate)
         {
             // ✅ 查詢該會議室的所有時段價格設定
             var roomSlotPrices = db.SysRoomPricePeriod
                 .Where(rs => rs.RoomId == roomId && rs.IsEnabled)
                 .ToList();
 
-            // ✅ 查詢該日期是否為假日
-            var dateTime = slotDate.ToDateTime(TimeOnly.MinValue);
-            var dayOfWeek = dateTime.DayOfWeek;
-            var isHoliday = dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday;
-
-            foreach (var (start, end, isSetup) in requestedSlots)
+            foreach (var (slotDate, requestedSlots) in slotsByDate)
             {
-                var startTimeSpan = start.ToTimeSpan();
-                var endTimeSpan = end.ToTimeSpan();
+                // ✅ 查詢該日期是否為假日
+                var dateTime = slotDate.ToDateTime(TimeOnly.MinValue);
+                var dayOfWeek = dateTime.DayOfWeek;
+                var isHoliday = dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday;
 
-                // ✅ 找到對應的時段價格
-                var priceInfo = roomSlotPrices.FirstOrDefault(rs =>
-                    rs.StartTime == startTimeSpan && rs.EndTime == endTimeSpan
-                );
-
-                // ✅ 根據 isSetup 決定價格
-                decimal price = 0;
-                if (priceInfo != null)
+                foreach (var (start, end, isSetup) in requestedSlots)
                 {
-                    if (isSetup && priceInfo.SetupPrice.HasValue)
+                    var startTimeSpan = start.ToTimeSpan();
+                    var endTimeSpan = end.ToTimeSpan();
+
+                    // ✅ 找到對應的時段價格
+                    var priceInfo = roomSlotPrices.FirstOrDefault(rs =>
+                        rs.StartTime == startTimeSpan && rs.EndTime == endTimeSpan
+                    );
+
+                    // ✅ 根據 isSetup 決定價格
+                    decimal price = 0;
+                    if (priceInfo != null)
                     {
-                        // 場布價格（固定，不分平假日）
-                        price = priceInfo.SetupPrice.Value;
+                        if (isSetup && priceInfo.SetupPrice.HasValue)
+                        {
+                            // 場布價格（固定，不分平假日）
+                            price = priceInfo.SetupPrice.Value;
+                        }
+                        else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+                        {
+                            // 假日價格
+                            price = priceInfo.HolidayPrice.Value;
+                        }
+                        else
+                        {
+                            // 平日價格
+                            price = priceInfo.Price;
+                        }
                     }
-                    else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+
+                    var slot = new ConferenceRoomSlot
                     {
-                        // 假日價格
-                        price = priceInfo.HolidayPrice.Value;
-                    }
-                    else
-                    {
-                        // 平日價格
-                        price = priceInfo.Price;
-                    }
+                        Id = Guid.NewGuid(),
+                        ConferenceId = conferenceId,
+                        RoomId = roomId,
+                        SlotDate = slotDate,
+                        StartTime = start,
+                        EndTime = end,
+                        Price = price,
+                        PricingType = PricingType.Period,
+                        SlotStatus = SlotStatus.Locked,
+                        LockedAt = DateTime.Now,
+                        IsSetup = isSetup
+                    };
+
+                    db.ConferenceRoomSlot.Add(slot);
                 }
-
-                var slot = new ConferenceRoomSlot
-                {
-                    Id = Guid.NewGuid(),
-                    ConferenceId = conferenceId,
-                    RoomId = roomId,
-                    SlotDate = slotDate,
-                    StartTime = start,
-                    EndTime = end,
-                    Price = price,
-                    PricingType = PricingType.Period,
-                    SlotStatus = SlotStatus.Locked,
-                    LockedAt = DateTime.Now,
-                    IsSetup = isSetup
-                };
-
-                db.ConferenceRoomSlot.Add(slot);
             }
         }
 
@@ -1302,9 +1433,9 @@ namespace TASA.Services.ConferenceModule
 
 
         /// <summary>
-        /// 建立設備和攤位關聯
+        /// 建立設備和攤位關聯（支援多日）
         /// </summary>
-        private void CreateEquipmentLinks(Guid conferenceId, List<Guid>? equipmentIds, List<Guid>? boothIds, DateOnly slotDate, List<(TimeOnly Start, TimeOnly End)> requestedSlots)
+        private void CreateEquipmentLinks(Guid conferenceId, List<Guid>? equipmentIds, List<Guid>? boothIds, Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>> slotsByDate)
         {
             // ✅ 收集所有需要的設備 ID
             var allEquipmentIds = new List<Guid>();
@@ -1318,58 +1449,61 @@ namespace TASA.Services.ConferenceModule
                 .Where(e => allEquipmentIds.Contains(e.Id))
                 .ToDictionary(e => e.Id, e => e);
 
-            // ✅ 對每個時段都要建立設備關聯
-            foreach (var (start, end) in requestedSlots)
+            // ✅ 對每個日期的每個時段都要建立設備關聯
+            foreach (var (slotDate, slots) in slotsByDate)
             {
-                // 新增設備 (Type = 8)
-                if (equipmentIds != null && equipmentIds.Any())
+                foreach (var (start, end, _) in slots)
                 {
-                    foreach (var equipmentId in equipmentIds)
+                    // 新增設備 (Type = 8)
+                    if (equipmentIds != null && equipmentIds.Any())
                     {
-                        if (!equipmentDict.TryGetValue(equipmentId, out var equipment))
-                            continue;
-
-                        db.ConferenceEquipment.Add(new ConferenceEquipment
+                        foreach (var equipmentId in equipmentIds)
                         {
-                            Id = Guid.NewGuid(),
-                            ConferenceId = conferenceId,
-                            EquipmentId = equipmentId,
-                            EquipmentName = equipment.Name,
-                            EquipmentPrice = equipment.RentalPrice,
-                            EquipmentType = "8",
-                            SlotDate = slotDate,  // ✅ 新增日期
-                            StartTime = start,    // ✅ 新增開始時間
-                            EndTime = end,        // ✅ 新增結束時間
-                            EquipmentStatus = 1,  // ✅ 鎖定中
-                            LockedAt = DateTime.Now,
-                            CreatedAt = DateTime.Now
-                        });
+                            if (!equipmentDict.TryGetValue(equipmentId, out var equipment))
+                                continue;
+
+                            db.ConferenceEquipment.Add(new ConferenceEquipment
+                            {
+                                Id = Guid.NewGuid(),
+                                ConferenceId = conferenceId,
+                                EquipmentId = equipmentId,
+                                EquipmentName = equipment.Name,
+                                EquipmentPrice = equipment.RentalPrice,
+                                EquipmentType = "8",
+                                SlotDate = slotDate,  // ✅ 日期
+                                StartTime = start,    // ✅ 開始時間
+                                EndTime = end,        // ✅ 結束時間
+                                EquipmentStatus = 1,  // ✅ 鎖定中
+                                LockedAt = DateTime.Now,
+                                CreatedAt = DateTime.Now
+                            });
+                        }
                     }
-                }
 
-                // 新增攤位 (Type = 9)
-                if (boothIds != null && boothIds.Any())
-                {
-                    foreach (var boothId in boothIds)
+                    // 新增攤位 (Type = 9)
+                    if (boothIds != null && boothIds.Any())
                     {
-                        if (!equipmentDict.TryGetValue(boothId, out var booth))
-                            continue;
-
-                        db.ConferenceEquipment.Add(new ConferenceEquipment
+                        foreach (var boothId in boothIds)
                         {
-                            Id = Guid.NewGuid(),
-                            ConferenceId = conferenceId,
-                            EquipmentId = boothId,
-                            EquipmentName = booth.Name,
-                            EquipmentPrice = booth.RentalPrice,
-                            EquipmentType = "9",
-                            SlotDate = slotDate,  // ✅ 新增日期
-                            StartTime = start,    // ✅ 新增開始時間
-                            EndTime = end,        // ✅ 新增結束時間
-                            EquipmentStatus = 1,  // ✅ 鎖定中
-                            LockedAt = DateTime.Now,
-                            CreatedAt = DateTime.Now
-                        });
+                            if (!equipmentDict.TryGetValue(boothId, out var booth))
+                                continue;
+
+                            db.ConferenceEquipment.Add(new ConferenceEquipment
+                            {
+                                Id = Guid.NewGuid(),
+                                ConferenceId = conferenceId,
+                                EquipmentId = boothId,
+                                EquipmentName = booth.Name,
+                                EquipmentPrice = booth.RentalPrice,
+                                EquipmentType = "9",
+                                SlotDate = slotDate,  // ✅ 日期
+                                StartTime = start,    // ✅ 開始時間
+                                EndTime = end,        // ✅ 結束時間
+                                EquipmentStatus = 1,  // ✅ 鎖定中
+                                LockedAt = DateTime.Now,
+                                CreatedAt = DateTime.Now
+                            });
+                        }
                     }
                 }
             }

@@ -68,13 +68,88 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
-        // 判斷選擇的日期是否為假日（週六日）
+        // 判斷選擇的日期是否為假日（週六日）- 單日用
         this.isHoliday = computed(() => {
-            if (!this.form.date) return false;
-            const date = new Date(this.form.date);
+            if (!this.form.startDate) return false;
+            const date = new Date(this.form.startDate);
             const dayOfWeek = date.getDay();
             return dayOfWeek === 0 || dayOfWeek === 6; // 0=週日, 6=週六
         });
+
+        // 計算日期範圍（統一使用 startDate/endDate）
+        this.dateRange = computed(() => {
+            if (!this.form.startDate) return [];
+
+            // 如果沒有 endDate，預設與 startDate 相同（單日）
+            const endDate = this.form.endDate || this.form.startDate;
+
+            const dates = [];
+            let current = new Date(this.form.startDate);
+            const end = new Date(endDate);
+
+            while (current <= end) {
+                dates.push(current.toISOString().split('T')[0]);
+                current.setDate(current.getDate() + 1);
+            }
+            return dates;
+        });
+
+        // 判斷是否為中間天（需要自動全選）
+        this.isMiddleDay = (dateStr) => {
+            const dates = this.dateRange.value;
+            if (dates.length <= 2) return false;
+            const idx = dates.indexOf(dateStr);
+            return idx > 0 && idx < dates.length - 1;
+        };
+
+        // 判斷是否為首日
+        this.isFirstDay = (dateStr) => {
+            const dates = this.dateRange.value;
+            return dates.length > 0 && dates[0] === dateStr;
+        };
+
+        // 判斷是否為末日
+        this.isLastDay = (dateStr) => {
+            const dates = this.dateRange.value;
+            return dates.length > 0 && dates[dates.length - 1] === dateStr;
+        };
+
+        // 取得某日期的第一個時段
+        this.getFirstSlotForDate = (dateStr) => {
+            const slots = this.slotsByDate[dateStr] || [];
+            if (slots.length === 0) return null;
+            return slots.reduce((min, s) => s.StartTime < min.StartTime ? s : min, slots[0]);
+        };
+
+        // 取得某日期的最後一個時段
+        this.getLastSlotForDate = (dateStr) => {
+            const slots = this.slotsByDate[dateStr] || [];
+            if (slots.length === 0) return null;
+            return slots.reduce((max, s) => s.EndTime > max.EndTime ? s : max, slots[0]);
+        };
+
+        // 判斷某日期是否為假日
+        this.isHolidayForDate = (dateStr) => {
+            const date = new Date(dateStr);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6;
+        };
+
+        // 格式化 Tab 日期顯示
+        this.formatTabDate = (dateStr) => {
+            const date = new Date(dateStr);
+            const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekday = weekdays[date.getDay()];
+            return `${month}/${day} (${weekday})`;
+        };
+
+        // 取得某日期的已選時段數量
+        this.getSelectedCountForDate = (dateStr) => {
+            const slots = this.selectedSlotsByDate[dateStr];
+            return slots ? slots.length : 0;
+        };
 
         // 取得時段的顯示價格（根據平日/假日）
         this.getSlotPrice = (slot) => {
@@ -112,7 +187,8 @@ window.$config = {
             content: '',
             organizerUnit: '',
             chairman: '',
-            date: '',
+            startDate: '',  // 開始日期
+            endDate: '',    // 結束日期（單日時與 startDate 相同）
             meetingType: 'physical',
             departmentId: null,
             building: '',
@@ -128,6 +204,18 @@ window.$config = {
             attachments: [],
             parkingTicketPurchase: 0  // 停車券加購張數
         });
+
+        // ========== 跨日預約相關 ==========
+        // isMultiDay 改為 computed：開始日期 ≠ 結束日期 即為跨日
+        this.isMultiDay = computed(() => {
+            if (!this.form.startDate || !this.form.endDate) return false;
+            return this.form.startDate !== this.form.endDate;
+        });
+        this.activeTab = ref('');      // 當前選中的日期 Tab
+        this.slotsByDate = reactive({});        // 每天的時段資料 { '2025-01-20': [...], ... }
+        this.selectedSlotsByDate = reactive({}); // 每天的已選時段 { '2025-01-20': [{key, isSetup}], ... }
+        this.loadingSlots = reactive({});        // 每天的載入狀態
+        this.middleDayErrors = reactive({});     // 中間天錯誤訊息
 
         /* ========= 附件管理 ========= */
         this.agendaFile = ref(null);
@@ -346,30 +434,44 @@ window.$config = {
             // ✅ 檢查是否為免費會議室
             const room = this.selectedRoom.value;
 
-            console.group('💰 計算會議室費用');
-            console.log('會議室:', room?.Name);
-            console.log('BookingSettings:', room?.BookingSettings);
-            console.log('是否假日:', this.isHoliday.value);
-
             if (room && room.BookingSettings === 3) {  // BookingSettings.Free = 3
-                console.log('✅ 免費會議室,費用為 0');
-                console.groupEnd();
                 return 0;
             }
 
-            // ✅ 一般收費會議室
+            // ✅ 跨日模式：計算所有日期的費用
+            if (this.isMultiDay.value) {
+                let totalCost = 0;
+                for (const dateStr of this.dateRange.value) {
+                    const slots = this.selectedSlotsByDate[dateStr] || [];
+                    const dateSlots = this.slotsByDate[dateStr] || [];
+
+                    for (const slotInfo of slots) {
+                        const slot = dateSlots.find(s => s.Key === slotInfo.key);
+                        if (!slot) continue;
+
+                        let price;
+                        if (slotInfo.isSetup && slot.SetupPrice != null) {
+                            price = slot.SetupPrice;
+                        } else if (this.isHolidayForDate(dateStr) && slot.HolidayPrice) {
+                            price = slot.HolidayPrice;
+                        } else {
+                            price = slot.Price;
+                        }
+                        totalCost += price;
+                    }
+                }
+                return totalCost;
+            }
+
+            // ✅ 單日模式：原有邏輯
             if (!this.form.selectedSlots.length) {
-                console.log('⏸ 未選擇時段');
-                console.groupEnd();
                 return 0;
             }
 
-            // ✅ 根據平日/假日/場布計算費用
             const selectedKeys = this.form.selectedSlots.map(s => s.key);
             const cost = this.timeSlots.value
                 .filter(slot => selectedKeys.includes(slot.Key))
                 .reduce((sum, slot) => {
-                    // 檢查是否為場布模式
                     const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
                     const isSetup = slotInfo?.isSetup || false;
 
@@ -384,8 +486,6 @@ window.$config = {
                     return sum + price;
                 }, 0);
 
-            console.log('💵 計算費用:', cost);
-            console.groupEnd();
             return cost;
         });
 
@@ -434,20 +534,72 @@ window.$config = {
                 addAlert('請填寫會議名稱', { type: 'warning' });
                 return;
             }
-            if (!this.form.date) {
-                addAlert('請選擇會議日期', { type: 'warning' });
+
+            // 日期驗證（統一處理單日/多日）
+            if (!this.form.startDate) {
+                addAlert('請選擇開始日期', { type: 'warning' });
                 return;
             }
-            if (this.form.date < this.minBookingDate.value) {
-                addAlert(`會議日期必須在 ${this.minAdvanceBookingDays.value} 天後（最早可選 ${this.minBookingDate.value}）`, { type: 'warning' });
+            if (this.form.startDate < this.minBookingDate.value) {
+                addAlert(`開始日期必須在 ${this.minAdvanceBookingDays.value} 天後（最早可選 ${this.minBookingDate.value}）`, { type: 'warning' });
                 return;
             }
+
+            // 檢查是否有錯誤（中間天被佔用、首日末日限制等）
+            for (const dateStr of this.dateRange.value) {
+                if (this.middleDayErrors[dateStr]) {
+                    addAlert(this.middleDayErrors[dateStr], { type: 'danger' });
+                    return;
+                }
+            }
+
+            // 檢查是否有選擇時段
+            let hasAnySlots = false;
+            for (const dateStr of this.dateRange.value) {
+                const slots = this.selectedSlotsByDate[dateStr] || [];
+                if (slots.length > 0) {
+                    hasAnySlots = true;
+                    break;
+                }
+            }
+            if (!hasAnySlots) {
+                addAlert('請至少選擇一個時段', { type: 'warning' });
+                return;
+            }
+
+            // ✅ 跨日模式額外驗證（開始日期 ≠ 結束日期）
+            if (this.isMultiDay.value) {
+                // 首日驗證：必須選到最後一個時段
+                const firstDate = this.dateRange.value[0];
+                const firstDateSlots = this.slotsByDate[firstDate] || [];
+                if (firstDateSlots.length > 0) {
+                    const sortedFirstDay = [...firstDateSlots].sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+                    const lastSlotOfFirstDay = sortedFirstDay[sortedFirstDay.length - 1];
+                    const firstDaySelected = this.selectedSlotsByDate[firstDate] || [];
+                    const hasLastSlot = firstDaySelected.some(s => s.key === lastSlotOfFirstDay.Key);
+                    if (!hasLastSlot) {
+                        addAlert(`首日 ${this.formatTabDate(firstDate)} 必須選擇到最後時段，才能連續到隔天`, { type: 'warning' });
+                        return;
+                    }
+                }
+
+                // 末日驗證：必須從第一個時段開始選
+                const lastDate = this.dateRange.value[this.dateRange.value.length - 1];
+                const lastDateSlots = this.slotsByDate[lastDate] || [];
+                if (lastDateSlots.length > 0) {
+                    const sortedLastDay = [...lastDateSlots].sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+                    const firstSlotOfLastDay = sortedLastDay[0];
+                    const lastDaySelected = this.selectedSlotsByDate[lastDate] || [];
+                    const hasFirstSlot = lastDaySelected.some(s => s.key === firstSlotOfLastDay.Key);
+                    if (!hasFirstSlot) {
+                        addAlert(`末日 ${this.formatTabDate(lastDate)} 必須從第一時段開始選，才能與前一天連續`, { type: 'warning' });
+                        return;
+                    }
+                }
+            }
+
             if (!this.form.roomId) {
                 addAlert('請選擇會議室', { type: 'warning' });
-                return;
-            }
-            if (!this.form.selectedSlots.length) {
-                addAlert('請選擇時段', { type: 'warning' });
                 return;
             }
             if (!this.form.paymentMethod) {
@@ -629,7 +781,14 @@ window.$config = {
 
         /* ====== 載入設備和攤位 ====== */
         this.loadEquipmentByRoom = async () => {
-            if (!this.form.roomId || !this.form.date || !this.form.selectedSlots.length) {
+            // 收集所有選擇的時段
+            let allSlotKeys = [];
+            for (const dateStr of this.dateRange.value) {
+                const slots = this.selectedSlotsByDate[dateStr] || [];
+                allSlotKeys = allSlotKeys.concat(slots.map(s => s.key));
+            }
+
+            if (!this.form.roomId || !this.form.startDate || allSlotKeys.length === 0) {
                 console.warn('⏸ 條件不足,無法載入設備');
                 return;
             }
@@ -637,8 +796,8 @@ window.$config = {
             try {
                 const body = {
                     roomId: this.form.roomId,
-                    date: this.form.date,
-                    slotKeys: this.form.selectedSlots.map(s => s.key),
+                    date: this.form.startDate,
+                    slotKeys: allSlotKeys,
                     excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
                 };
 
@@ -696,39 +855,295 @@ window.$config = {
             }
         };
 
-        /* ====== 載入時段 ====== */
-        this.updateTimeSlots = async () => {
-            console.group('🟦 updateTimeSlots Debug');
+        /* ====== 跨日模式：載入某天的時段 ====== */
+        this.loadSlotsForDate = async (dateStr) => {
+            if (!this.form.roomId) return;
 
-            if (!this.form.roomId || !this.form.date) {
-                console.warn('⏸ 條件不足');
-                console.groupEnd();
-                return;
-            }
-
-            this.selectedRoom.value = this.rooms.value.find(r => r.Id === this.form.roomId) || null;
-            this.form.selectedSlots = [];
-            this.timeSlots.value = [];
-
-            const dateStr = this.form.date instanceof Date
-                ? this.form.date.toISOString().split('T')[0]
-                : this.form.date;
-
-            const payload = {
-                roomId: this.form.roomId,
-                date: dateStr,
-                excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
-            };
+            this.loadingSlots[dateStr] = true;
+            delete this.middleDayErrors[dateStr];
 
             try {
-                const res = await global.api.select.roomslots({ body: payload });
-                console.log('✅ API data =', res.data);
-                this.timeSlots.value = res.data || [];
+                const res = await global.api.select.roomslots({
+                    body: {
+                        roomId: this.form.roomId,
+                        date: dateStr,
+                        excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
+                    }
+                });
+
+                const slots = res.data || [];
+                this.slotsByDate[dateStr] = slots;
+
+                // 排序時段（依開始時間）
+                slots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+
+                // 初始化已選時段
+                if (!this.selectedSlotsByDate[dateStr]) {
+                    this.selectedSlotsByDate[dateStr] = [];
+                }
+
+                // 跨日模式才需要檢查限制
+                if (this.isMultiDay.value) {
+                    // 中間天檢查：必須整天空閒，自動全選
+                    if (this.isMiddleDay(dateStr)) {
+                        const hasOccupied = slots.some(s => s.Occupied);
+                        if (hasOccupied) {
+                            this.middleDayErrors[dateStr] = `${this.formatTabDate(dateStr)} 已有其他預約，無法進行跨日預約`;
+                            this.selectedSlotsByDate[dateStr] = [];
+                        } else {
+                            // 自動全選，預設為一般使用
+                            this.selectedSlotsByDate[dateStr] = slots.map(s => ({
+                                key: s.Key,
+                                isSetup: false
+                            }));
+                        }
+                    }
+                    // 首日檢查：最後一個時段必須可用
+                    else if (this.isFirstDay(dateStr)) {
+                        const lastSlot = slots.length > 0 ? slots[slots.length - 1] : null;
+                        if (lastSlot && lastSlot.Occupied) {
+                            this.middleDayErrors[dateStr] = `${this.formatTabDate(dateStr)} 最後時段已被預約，無法作為跨日首日`;
+                            this.selectedSlotsByDate[dateStr] = [];
+                        }
+                    }
+                    // 末日檢查：第一個時段必須可用
+                    else if (this.isLastDay(dateStr)) {
+                        const firstSlot = slots.length > 0 ? slots[0] : null;
+                        if (firstSlot && firstSlot.Occupied) {
+                            this.middleDayErrors[dateStr] = `${this.formatTabDate(dateStr)} 第一時段已被預約，無法作為跨日末日`;
+                            this.selectedSlotsByDate[dateStr] = [];
+                        }
+                    }
+                }
+                // 單日模式：無特殊限制
+
             } catch (err) {
-                console.error('🔥 roomslots API error', err);
+                console.error(`❌ 載入 ${dateStr} 時段失敗:`, err);
+                this.middleDayErrors[dateStr] = '載入時段失敗，請重試';
             } finally {
-                console.groupEnd();
+                this.loadingSlots[dateStr] = false;
             }
+        };
+
+        /* ====== 跨日模式：載入所有日期的時段 ====== */
+        this.loadAllDateSlots = async () => {
+            if (!this.form.roomId) return;
+
+            // 清空舊資料
+            Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
+            Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
+            Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
+            Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
+
+            // 設定第一個日期為 active tab
+            if (this.dateRange.value.length > 0) {
+                this.activeTab.value = this.dateRange.value[0];
+            }
+
+            // 載入所有日期的時段
+            for (const dateStr of this.dateRange.value) {
+                await this.loadSlotsForDate(dateStr);
+            }
+        };
+
+        /* ====== 跨日模式：檢查時段是否已選（某日期） ====== */
+        this.isSlotSelectedForDate = (dateStr, slot) => {
+            const slots = this.selectedSlotsByDate[dateStr];
+            return slots ? slots.some(s => s.key === slot.Key) : false;
+        };
+
+        /* ====== 跨日模式：檢查時段是否為場布（某日期） ====== */
+        this.isSlotSetupForDate = (dateStr, slot) => {
+            const slots = this.selectedSlotsByDate[dateStr];
+            if (!slots) return false;
+            const found = slots.find(s => s.key === slot.Key);
+            return found ? found.isSetup : false;
+        };
+
+        /* ====== 跨日模式：設定時段類型（某日期） ====== */
+        this.setSlotTypeForDate = (dateStr, slot, isSetup) => {
+            const slots = this.selectedSlotsByDate[dateStr];
+            if (!slots) return;
+            const found = slots.find(s => s.key === slot.Key);
+            if (found) {
+                found.isSetup = isSetup;
+            }
+        };
+
+        /* ====== 跨日模式：取得時段顯示價格（某日期） ====== */
+        this.getSlotDisplayPriceForDate = (dateStr, slot) => {
+            const isSetup = this.isSlotSetupForDate(dateStr, slot);
+            if (isSetup && slot.SetupPrice != null) {
+                return slot.SetupPrice;
+            }
+            if (this.isHolidayForDate(dateStr) && slot.HolidayPrice) {
+                return slot.HolidayPrice;
+            }
+            return slot.Price;
+        };
+
+        /* ====== 檢查時段是否可選（某日期） ====== */
+        this.isSlotAvailableForDate = (dateStr, slot) => {
+            if (slot.Occupied) return false;
+
+            // 中間天不允許操作（已全選）- 只在跨日模式有意義
+            if (this.isMultiDay.value && this.isMiddleDay(dateStr)) {
+                return false;
+            }
+
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            if (dateSlots.length === 0) return false;
+
+            // 排序後的時段
+            const sortedSlots = [...dateSlots].sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+            const firstSlot = sortedSlots[0];
+            const lastSlot = sortedSlots[sortedSlots.length - 1];
+
+            const selectedSlotsList = this.selectedSlotsByDate[dateStr] || [];
+
+            // 已選中的可以操作（取消選擇）
+            if (this.isSlotSelectedForDate(dateStr, slot)) return true;
+
+            // 跨日模式：首日只能從尾巴開始選（必須包含最後時段）
+            if (this.isMultiDay.value && this.isFirstDay(dateStr) && !this.isLastDay(dateStr)) {
+                if (selectedSlotsList.length === 0) {
+                    return slot.Key === lastSlot.Key;
+                }
+                const selectedKeys = selectedSlotsList.map(s => s.key);
+                const selectedSlotsData = sortedSlots.filter(s => selectedKeys.includes(s.Key));
+                if (selectedSlotsData.length === 0) return slot.Key === lastSlot.Key;
+
+                const minStart = selectedSlotsData.reduce((min, s) => s.StartTime < min ? s.StartTime : min, selectedSlotsData[0].StartTime);
+                return slot.EndTime === minStart;
+            }
+
+            // 跨日模式：末日只能從頭開始選（必須包含第一時段）
+            if (this.isMultiDay.value && this.isLastDay(dateStr) && !this.isFirstDay(dateStr)) {
+                if (selectedSlotsList.length === 0) {
+                    return slot.Key === firstSlot.Key;
+                }
+                const selectedKeys = selectedSlotsList.map(s => s.key);
+                const selectedSlotsData = sortedSlots.filter(s => selectedKeys.includes(s.Key));
+                if (selectedSlotsData.length === 0) return slot.Key === firstSlot.Key;
+
+                const maxEnd = selectedSlotsData.reduce((max, s) => s.EndTime > max ? s.EndTime : max, selectedSlotsData[0].EndTime);
+                return slot.StartTime === maxEnd;
+            }
+
+            // 單日模式 或 其他情況：使用原本的相鄰邏輯
+            if (selectedSlotsList.length === 0) return true;
+
+            const selectedKeys = selectedSlotsList.map(s => s.key);
+            const selectedSlotsData = sortedSlots.filter(s => selectedKeys.includes(s.Key));
+            if (selectedSlotsData.length === 0) return true;
+
+            const minStart = selectedSlotsData.reduce((min, s) => s.StartTime < min ? s.StartTime : min, selectedSlotsData[0].StartTime);
+            const maxEnd = selectedSlotsData.reduce((max, s) => s.EndTime > max ? s.EndTime : max, selectedSlotsData[0].EndTime);
+
+            return slot.EndTime === minStart || slot.StartTime === maxEnd;
+        };
+
+        /* ====== 檢查時段是否在邊緣（某日期） ====== */
+        this.isSlotAtEdgeForDate = (dateStr, slot) => {
+            if (!this.isSlotSelectedForDate(dateStr, slot)) return false;
+
+            const selectedSlotsList = this.selectedSlotsByDate[dateStr] || [];
+            const dateSlots = this.slotsByDate[dateStr] || [];
+
+            // 排序後的時段
+            const sortedSlots = [...dateSlots].sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+            const firstSlotOfDay = sortedSlots[0];
+            const lastSlotOfDay = sortedSlots[sortedSlots.length - 1];
+
+            const selectedKeys = selectedSlotsList.map(s => s.key);
+            const selectedSlotsData = sortedSlots.filter(s => selectedKeys.includes(s.Key));
+
+            if (selectedSlotsData.length === 0) return false;
+
+            const minStart = selectedSlotsData.reduce((min, s) => s.StartTime < min ? s.StartTime : min, selectedSlotsData[0].StartTime);
+            const maxEnd = selectedSlotsData.reduce((max, s) => s.EndTime > max ? s.EndTime : max, selectedSlotsData[0].EndTime);
+
+            // 跨日模式：首日只能從前面取消（不能取消最後時段）
+            if (this.isMultiDay.value && this.isFirstDay(dateStr) && !this.isLastDay(dateStr)) {
+                if (selectedSlotsData.length === 1) {
+                    // 只選了一個，最後時段不能取消
+                    if (slot.Key === lastSlotOfDay.Key) return false;
+                    return true;
+                }
+                if (slot.Key === lastSlotOfDay.Key) return false;
+                return slot.StartTime === minStart;
+            }
+
+            // 跨日模式：末日只能從後面取消（不能取消第一時段）
+            if (this.isMultiDay.value && this.isLastDay(dateStr) && !this.isFirstDay(dateStr)) {
+                if (selectedSlotsData.length === 1) {
+                    // 只選了一個，第一時段不能取消
+                    if (slot.Key === firstSlotOfDay.Key) return false;
+                    return true;
+                }
+                if (slot.Key === firstSlotOfDay.Key) return false;
+                return slot.EndTime === maxEnd;
+            }
+
+            // 單日模式：只有一個可直接取消，多個則兩邊都可取消
+            if (selectedSlotsData.length === 1) return true;
+            return slot.StartTime === minStart || slot.EndTime === maxEnd;
+        };
+
+        /* ====== 切換時段選擇（某日期） ====== */
+        this.toggleTimeSlotForDate = (dateStr, slot) => {
+            if (slot.Occupied) return;
+
+            // 跨日模式：中間天不允許操作（已全選）
+            if (this.isMultiDay.value && this.isMiddleDay(dateStr)) return;
+
+            if (!this.selectedSlotsByDate[dateStr]) {
+                this.selectedSlotsByDate[dateStr] = [];
+            }
+
+            const isSelected = this.isSlotSelectedForDate(dateStr, slot);
+
+            if (isSelected) {
+                if (this.isSlotAtEdgeForDate(dateStr, slot)) {
+                    const idx = this.selectedSlotsByDate[dateStr].findIndex(s => s.key === slot.Key);
+                    if (idx > -1) {
+                        this.selectedSlotsByDate[dateStr].splice(idx, 1);
+                    }
+                }
+            } else {
+                if (this.isSlotAvailableForDate(dateStr, slot)) {
+                    this.selectedSlotsByDate[dateStr].push({ key: slot.Key, isSetup: false });
+                }
+            }
+        };
+
+        /* ====== 跨日模式：取得某日期已選時段的文字描述 ====== */
+        this.getSelectedSlotsTextForDate = (dateStr) => {
+            const slots = this.selectedSlotsByDate[dateStr] || [];
+            if (slots.length === 0) return '未選擇';
+
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            const selectedSlots = dateSlots.filter(s => slots.some(sel => sel.key === s.Key));
+
+            selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+
+            return selectedSlots.map(slot => {
+                const startTime = slot.StartTime.slice(0, 5);
+                const endTime = slot.EndTime.slice(0, 5);
+                const slotInfo = slots.find(s => s.key === slot.Key);
+                const suffix = slotInfo?.isSetup ? ' [場布]' : '';
+                return `${startTime}-${endTime}${suffix}`;
+            }).join(', ');
+        };
+
+        /* ====== 載入時段（統一使用 loadAllDateSlots） ====== */
+        this.updateTimeSlots = async () => {
+            if (!this.form.roomId || !this.form.startDate) {
+                console.warn('⏸ 條件不足');
+                return;
+            }
+            this.selectedRoom.value = this.rooms.value.find(r => r.Id === this.form.roomId) || null;
+            await this.loadAllDateSlots();
         };
 
         this.displayedSlots = computed(() => {
@@ -936,7 +1351,9 @@ window.$config = {
                 this.form.content = data.Description || '';
                 this.form.organizerUnit = data.OrganizerUnit || '';
                 this.form.chairman = data.Chairman || '';
-                this.form.date = data.ReservationDate || '';
+                // 設定日期（支援跨日）
+                this.form.startDate = data.StartDate || data.ReservationDate || '';
+                this.form.endDate = data.EndDate || data.ReservationDate || '';
                 this.form.paymentMethod = data.PaymentMethod || '';
                 this.form.departmentCode = data.DepartmentCode || '';
 
@@ -1062,6 +1479,21 @@ window.$config = {
                 return;
             }
 
+            // ✅ 組裝 SlotInfos（統一從 selectedSlotsByDate 取得）
+            let slotInfos = [];
+            let slotKeys = [];
+
+            for (const [dateStr, slots] of Object.entries(this.selectedSlotsByDate)) {
+                for (const slot of slots) {
+                    slotInfos.push({
+                        key: slot.key,
+                        isSetup: slot.isSetup,
+                        date: dateStr  // 包含日期資訊
+                    });
+                    slotKeys.push(slot.key);
+                }
+            }
+
             const payload = {
                 name: this.form.name,
                 description: this.form.content,
@@ -1070,7 +1502,10 @@ window.$config = {
                 usageType: 1,
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,
-                reservationDate: this.form.date,
+                // 日期欄位（統一使用 startDate/endDate）
+                reservationDate: this.form.startDate,
+                startDate: this.form.startDate,
+                endDate: this.form.endDate || this.form.startDate,
                 paymentMethod: this.form.paymentMethod,
                 departmentCode: this.form.paymentMethod === 'cost-sharing' ? this.form.departmentCode : null,
                 roomCost: this.roomCost.value,
@@ -1080,8 +1515,8 @@ window.$config = {
                 parkingTicketCost: this.parkingTicketCost.value,
                 totalAmount: this.totalAmount.value,
                 roomId: this.form.roomId,
-                slotKeys: this.form.selectedSlots.map(s => s.key),  // 保持向下相容
-                slotInfos: this.form.selectedSlots.map(s => ({ key: s.key, isSetup: s.isSetup })),  // 新格式
+                slotKeys: slotKeys,  // 保持向下相容
+                slotInfos: slotInfos,  // 新格式（含日期）
                 equipmentIds: [...this.form.selectedEquipment],
                 boothIds: [...this.form.selectedBooths],
                 attendeeIds: [this.initiatorId.value],
@@ -1176,7 +1611,8 @@ window.$config = {
             } else if (presetRoomId && presetBuilding && presetFloor && presetDepartmentId) {
 
                 if (presetDate) {
-                    this.form.date = presetDate;
+                    this.form.startDate = presetDate;
+                    this.form.endDate = presetDate;
                     console.log('✅ 自動帶入搜尋日期:', presetDate);
                 }
 
@@ -1275,19 +1711,9 @@ window.$config = {
             );
 
             watch(
-                () => this.form.date,
-                () => {
-                    this.updateTimeSlots();
-                    if (this.form.roomId) {
-                        this.loadEquipmentByRoom();
-                    }
-                }
-            );
-
-            watch(
                 () => [...this.form.selectedSlots],
                 (newSlots, oldSlots) => {
-                    if (this.form.roomId && this.form.date && newSlots.length > 0) {
+                    if (this.form.roomId && this.form.startDate && newSlots.length > 0) {
                         console.log('🔄 時段變更,重新檢查設備可用性');
 
                         this.form.selectedEquipment = [];
@@ -1297,6 +1723,44 @@ window.$config = {
                     }
                 },
                 { deep: true }
+            );
+
+            // ✅ 日期範圍變更時，重新載入時段（統一處理單日/多日）
+            watch(
+                () => [this.form.startDate, this.form.endDate],
+                ([newStart, newEnd], [oldStart, oldEnd]) => {
+                    if (!this.form.roomId || !newStart) return;
+
+                    // 清空舊資料
+                    Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
+                    Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
+                    Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
+                    Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
+                    this.form.selectedSlots = [];
+                    this.timeSlots.value = [];
+
+                    // 載入新日期範圍的時段
+                    this.loadAllDateSlots();
+                },
+                { deep: true }
+            );
+
+            // ✅ 會議室變更時，重新載入時段
+            watch(
+                () => this.form.roomId,
+                (roomId) => {
+                    if (roomId && this.form.startDate) {
+                        this.selectedRoom.value = this.rooms.value.find(r => r.Id === roomId) || null;
+                        // 清空舊資料
+                        Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
+                        Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
+                        Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
+                        Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
+                        this.form.selectedSlots = [];
+                        this.timeSlots.value = [];
+                        this.loadAllDateSlots();
+                    }
+                }
             );
 
             window.addEventListener('message', (event) => {

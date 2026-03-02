@@ -75,7 +75,6 @@
                                 <th style="width:120px;">預約單號</th>
                                 <th>申請人</th>
                                 <th>日期</th>
-                                <th>時間</th>
                                 <th>會議室</th>
                                 <th>金額</th>
                                 <th>狀態</th>
@@ -87,7 +86,6 @@
                                 <td>{{ item.bookingNo }}</td>
                                 <td>{{ item.applicantName }}</td>
                                 <td>{{ item.date }}</td>
-                                <td>{{ item.time }}</td>
                                 <td>{{ item.roomName }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
                                 <td>
@@ -109,7 +107,7 @@
                                 </td>
                             </tr>
                             <tr v-if="reservation.approvalList.length === 0">
-                                <td colspan="8" class="text-center text-muted">
+                                <td colspan="7" class="text-center text-muted">
                                     {{ reservation.query.reservationStatus ? '沒有符合條件的資料' : '目前沒有待審核的租借申請' }}
                                 </td>
                             </tr>
@@ -129,7 +127,6 @@
                                 <th style="width:120px;">預約單號</th>
                                 <th>申請人</th>
                                 <th>日期</th>
-                                <th>時間</th>
                                 <th>會議室</th>
                                 <th>付款方式</th>
                                 <th>金額</th>
@@ -144,7 +141,6 @@
                                 <td>{{ item.bookingNo }}</td>
                                 <td>{{ item.applicantName }}</td>
                                 <td>{{ item.date }}</td>
-                                <td>{{ item.time }}</td>
                                 <td>{{ item.roomName }}</td>
                                 <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
@@ -156,7 +152,7 @@
                                 <td>{{ item.uploadTime || '-' }}</td>
                             </tr>
                             <tr v-if="reservation.paymentList.length === 0">
-                                <td colspan="9" class="text-center text-muted">
+                                <td colspan="8" class="text-center text-muted">
                                     {{ reservation.query.paymentStatus ? '沒有符合條件的資料' : '目前沒有待審核的付款憑證' }}
                                 </td>
                             </tr>
@@ -187,7 +183,7 @@
                 <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentReview.applicantName }}</div>
                 <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentReview.roomName }}</div>
                 <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentReview.date }}</div>
-                <div class="col-md-6"><strong>時間：</strong>{{ reservation.currentReview.time }}</div>
+                <div class="col-md-6"><strong>時間：</strong>{{ reservation.formatTimeDisplay(reservation.currentReview) }}</div>
             </div>
         </div>
 
@@ -260,7 +256,7 @@
                         <!-- 繳費期限 -->
                         <div class="col-md-6">
                             <label class="form-label">繳費期限</label>
-                            <input type="date" class="form-control"        v-model="reservation.vm.paymentDeadline"
+                            <input type="date" class="form-control" v-model="reservation.vm.paymentDeadline"
                                    :min="reservation.today">
                             <div class="form-text text-muted">不填則使用系統預設期限</div>
                         </div>
@@ -340,7 +336,7 @@
                         <!-- 預約時間 -->
                         <div class="mb-4">
                             <div class="row g-2 small">
-                                <div class="col-md-6"><strong>時間：</strong>{{ reservation.currentPayment.time }}</div>
+                                <div class="col-md-6"><strong>時間：</strong>{{ reservation.formatTimeDisplay(reservation.currentPayment) }}</div>
                             </div>
                         </div>
 

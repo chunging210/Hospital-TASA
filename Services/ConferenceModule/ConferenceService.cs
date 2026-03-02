@@ -47,7 +47,9 @@ namespace TASA.Services.ConferenceModule
 
             // ===== 新預約系統專用 =====
             public Guid? RoomId { get; set; }  // 新系統:單一會議室
-            public DateTime? ReservationDate { get; set; }  // 預約日期
+            public DateTime? ReservationDate { get; set; }  // 預約日期（單日模式）
+            public DateTime? StartDate { get; set; }  // 開始日期（跨日模式）
+            public DateTime? EndDate { get; set; }    // 結束日期（跨日模式）
             public List<string>? SlotKeys { get; set; }     // 時段陣列 ["09:00-10:00", "10:00-11:00"]（向後相容）
             public List<SlotInfoVM>? SlotInfos { get; set; }  // 新格式: 包含 isSetup 資訊
 
@@ -55,6 +57,7 @@ namespace TASA.Services.ConferenceModule
             {
                 public string Key { get; set; } = string.Empty;  // 時段 Key "09:00:00-10:00:00"
                 public bool IsSetup { get; set; } = false;       // 是否為場布
+                public string? Date { get; set; }                // 日期 "2025-01-20"（跨日模式用）
             }
             public List<Guid>? EquipmentIds { get; set; } = [];
             public List<Guid>? BoothIds { get; set; } = [];
@@ -134,9 +137,11 @@ namespace TASA.Services.ConferenceModule
             // 新欄位：支援新預約系統
             public string? RoomLocation { get; set; }
             public DateOnly? SlotDate { get; set; }
+            public DateOnly? SlotDateEnd { get; set; }  // ✅ 跨日預約結束日期
             public TimeOnly? SlotStart { get; set; }
             public TimeOnly? SlotEnd { get; set; }
             public int SlotCount { get; set; }
+            public bool IsMultiDay => SlotDate.HasValue && SlotDateEnd.HasValue && SlotDate != SlotDateEnd;  // ✅ 是否為跨日
         }
 
         /// <summary>
@@ -190,6 +195,9 @@ namespace TASA.Services.ConferenceModule
                         : x.Room.Select(y => y.Name).FirstOrDefault(),
                     SlotDate = x.ConferenceRoomSlots.Any()
                         ? x.ConferenceRoomSlots.Min(s => (DateOnly?)s.SlotDate)
+                        : null,
+                    SlotDateEnd = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Max(s => (DateOnly?)s.SlotDate)
                         : null,
                     SlotStart = x.ConferenceRoomSlots.Any()
                         ? x.ConferenceRoomSlots.Min(s => (TimeOnly?)s.StartTime)

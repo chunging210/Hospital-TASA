@@ -305,6 +305,46 @@ const reservation = new function () {
         this.paymentVm.rejectReason = '';
     };
 
+    // ========= 格式化時間顯示（從 slots 陣列計算） =========
+    this.formatTimeDisplay = (item) => {
+        // 如果 time 欄位已有值且不是 "-"，直接使用
+        if (item.time && item.time !== '-') {
+            return item.time;
+        }
+
+        // 如果沒有 slots 資料，返回預設值
+        if (!item.slots || item.slots.length === 0) {
+            return '-';
+        }
+
+        // 按日期和時間排序
+        const sortedSlots = [...item.slots].sort((a, b) => {
+            if (a.slotDate !== b.slotDate) {
+                return a.slotDate.localeCompare(b.slotDate);
+            }
+            return a.startTime.localeCompare(b.startTime);
+        });
+
+        const firstSlot = sortedSlots[0];
+        const lastSlot = sortedSlots[sortedSlots.length - 1];
+
+        // 單日：顯示 "HH:mm ~ HH:mm"
+        if (firstSlot.slotDate === lastSlot.slotDate) {
+            return `${firstSlot.startTime} ~ ${lastSlot.endTime}`;
+        }
+
+        // 跨日：顯示 "M/d HH:mm ~ M/d HH:mm"
+        const formatDate = (dateStr) => {
+            const parts = dateStr.split('/');
+            if (parts.length >= 3) {
+                return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+            }
+            return dateStr;
+        };
+
+        return `${formatDate(firstSlot.slotDate)} ${firstSlot.startTime} ~ ${formatDate(lastSlot.slotDate)} ${lastSlot.endTime}`;
+    };
+
     // ========= 計算價格明細 =========
     this.calculatePricing = () => {
         const base = this.currentReview.totalAmount || 0;

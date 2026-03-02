@@ -92,7 +92,6 @@
                                                     <th class="align-middle">承辦單位</th>
                                                     <th class="align-middle">會議主席</th>
                                                     <th class="align-middle">預約日期</th>
-                                                    <th class="align-middle">時間</th>
                                                     <th class="align-middle">會議室</th>
                                                     <th class="align-middle">繳費截止日</th>
                                                     <th class="align-middle">付款方式</th>
@@ -111,7 +110,6 @@
                                                     <td>{{ item.organizerUnit || '-' }}</td>
                                                     <td>{{ item.chairman || '-' }}</td>
                                                     <td>{{ item.reservationDate }}</td>
-                                                    <td>{{ item.timeSlot }}</td>
                                                     <td>{{ item.roomName }}</td>
                                                     <td>{{ item.paymentDeadline }}</td>
                                                     <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>
@@ -152,13 +150,12 @@
                                                         <th class="align-middle">承辦單位</th>
                                                         <th class="align-middle">會議主席</th>
                                                         <th class="align-middle">預約日期</th>
-                                                        <th class="align-middle">時間</th>
                                                         <th class="align-middle">會議室</th>
                                                         <th class="align-middle">繳費截止日</th>
                                                         <th class="align-middle">付款方式</th>
                                                         <th class="align-middle">金額</th>
                                                         <th class="align-middle">成本中心代碼</th>
-                                                        <th class="align-middle">狀態</th> <!-- ✅ 改為單一狀態欄 -->
+                                                        <th class="align-middle">狀態</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -170,7 +167,6 @@
                                                         <td>{{ item.organizerUnit || '-' }}</td>
                                                         <td>{{ item.chairman || '-' }}</td>
                                                         <td>{{ item.reservationDate }}</td>
-                                                        <td>{{ item.timeSlot }}</td>
                                                         <td>{{ item.roomName }}</td>
                                                         <td>{{ item.paymentDeadline }}</td>
                                                         <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>

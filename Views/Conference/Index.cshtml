@@ -43,7 +43,6 @@
                             <th>承辦單位</th>
                             <th>會議主席</th>
                             <th>會議日期</th>
-                            <th>時間</th>
                             <th>與會地點</th>
                             <th>發起會議者</th>
                         </tr>
@@ -53,12 +52,20 @@
                             <td class="text-ellipsis">{{item.Name}}</td>
                             <td>{{item.OrganizerUnit || '-'}}</td>
                             <td>{{item.Chairman || '-'}}</td>
-                            <td>{{item.SlotDate || (item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-')}}</td>
-                            <td>{{item.SlotStart ? item.SlotStart.slice(0,5) + ' ~ ' + item.SlotEnd.slice(0,5) :
-                                (item.StartTime ? item.StartTime.format('HH:MM') + ' ~ ' + item.EndTime.format('HH:MM')
-                                : '-')}}</td>
-                                <td>{{item.RoomLocation || '-'}}</td>
-                                <td>{{item.CreateByName}}</td>
+                            <!-- ✅ 列表：顯示日期範圍 -->
+                            <td>
+                                <template v-if="item.SlotDate">
+                                    {{ item.SlotDate }}
+                                    <template v-if="item.SlotDateEnd && item.SlotDate !== item.SlotDateEnd">
+                                        ~ {{ item.SlotDateEnd }}
+                                    </template>
+                                </template>
+                                <template v-else>
+                                    {{ item.StartTime ? item.StartTime.format('yyyy-mm-dd') : '-' }}
+                                </template>
+                            </td>
+                            <td>{{item.RoomLocation || '-'}}</td>
+                            <td>{{item.CreateByName}}</td>
                                 @* <td class="hstack gap-3">
                                     <button v-if="item.ZeroTouch" @@click="zerotouch.get(item.Id)"
                                             class="btn btn-sm btn-secondary">ZeroTouch</button>

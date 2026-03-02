@@ -85,16 +85,20 @@
                                                 </div>
                                             </div>
 
-                                            <!-- 會議日期 -->
+                                            <!-- 會議日期（統一使用開始/結束日期） -->
                                             <div class="row">
-                                                <div class="col-xl-6">
-                                                    <div class="mb-3 mt-2 row align-items-center">
-                                                        <div class="col-sm-12 col-xl-auto">
-                                                            <label class="col-form-label">會議日期</label>
+                                                <div class="col-xl-12">
+                                                    <div class="row g-3 align-items-end">
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <label class="col-form-label">開始日期</label>
+                                                            <input class="form-control" type="date" v-model="form.startDate"
+                                                                   :min="minBookingDate"
+                                                                   @@change="!form.endDate && (form.endDate = form.startDate)">
                                                         </div>
-                                                        <div class="col-sm-12 col-xl-auto">
-                                                            <input class="form-control" type="date" v-model="form.date"
-                                                                   :min="minBookingDate">
+                                                        <div class="col-sm-12 col-xl-3">
+                                                            <label class="col-form-label">結束日期</label>
+                                                            <input class="form-control" type="date" v-model="form.endDate"
+                                                                   :min="form.startDate || minBookingDate">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -197,7 +201,7 @@
                                                         <div class="col-sm-12 col-xl-3">
                                                             <select class="form-select" v-model="form.roomId"
                                                                     :disabled="!form.floor">
-                                                                <option value="null">請選擇會議室</option>
+                                                                <option :value="null">請選擇會議室</option>
                                                                 <option v-for="room in filteredRooms" :key="room.Id"
                                                                         :value="room.Id">
                                                                     {{ room.Name }}
@@ -207,70 +211,119 @@
 
                                                     </div>
 
-                                                    <!-- 時段選擇 -->
-                                                    <div v-if="form.roomId" class="mt-4">
-                                                        <label class="form-label">選擇時段(可多選)</label>
+                                                    <!-- 時段選擇（統一使用 dateRange） -->
+                                                    <div v-if="form.roomId && dateRange.length > 0" class="mt-4">
+                                                        <label class="form-label">選擇時段{{ dateRange.length > 1 ? '（分日選擇）' : '' }}</label>
                                                         <span v-if="selectedRoom && selectedRoom.BookingSettings === 3"
                                                               class="badge bg-success ms-2">
                                                             <i class="bx bx-gift"></i> 免費使用
                                                         </span>
-                                                        <p class="text-muted small">
-                                                            點擊時段進行選擇,已被預約的時段無法選擇
-                                                            <span
-                                                                v-if="selectedRoom && selectedRoom.BookingSettings === 3"
-                                                                class="text-success fw-bold">
-                                                                (此會議室免費使用)
-                                                            </span>
-                                                        </p>
 
-                                                        <div class="time-slot-grid">
-                                                            <div v-for="slot in displayedSlots" :key="slot.Key"
-                                                                 class="time-slot-card" :class="{
-                                                                selected: isSlotSelected(slot) && !isSlotSetup(slot),
-                                                                'selected-setup': isSlotSelected(slot) && isSlotSetup(slot),
-                                                                occupied: slot.Occupied,
-                                                                disabled: !isSlotAvailable(slot)
-                                                                }" @@click="toggleTimeSlot(slot)">
-                                                                <div class="slot-time">
-                                                                    <strong>{{ slot.Name || '時段' }}</strong>
-                                                                    <div class="text-muted small">
-                                                                        {{ slot.StartTime.slice(0,5) }} - {{
-                                                                        slot.EndTime.slice(0,5) }}
+                                                        <!-- 日期 Tab 導航 -->
+                                                        <ul class="nav nav-tabs mb-3" role="tablist">
+                                                            <li class="nav-item" v-for="(dateStr, index) in dateRange" :key="dateStr" role="presentation">
+                                                                <button class="nav-link" :class="{ active: activeTab === dateStr, 'text-danger': middleDayErrors[dateStr] }"
+                                                                        @@click="activeTab = dateStr" type="button" role="tab">
+                                                                    {{ formatTabDate(dateStr) }}
+                                                                    @* <span v-if="isFirstDay(dateStr) && !isLastDay(dateStr)" class="badge bg-success ms-1" title="首日：從最後時段開始選">
+                                                                        首日
+                                                                    </span>
+                                                                    <span v-if="isLastDay(dateStr) && !isFirstDay(dateStr)" class="badge bg-warning text-dark ms-1" title="末日：從第一時段開始選">
+                                                                        末日
+                                                                    </span>
+                                                                    <span v-if="isMiddleDay(dateStr)" class="badge bg-info ms-1" title="中間天自動全選">
+                                                                        全天
+                                                                    </span> *@
+                                                                    <span v-if="middleDayErrors[dateStr]" class="badge bg-danger ms-1">
+                                                                        <i class="bx bx-error-circle"></i>
+                                                                    @* </span>
+                                                                    <span v-else-if="getSelectedCountForDate(dateStr) > 0" class="badge bg-primary ms-1">
+                                                                        {{ getSelectedCountForDate(dateStr) }}
+                                                                    </span> *@
+                                                                </button>
+                                                            </li>
+                                                        </ul>
+
+                                                        <!-- Tab 內容 -->
+                                                        <div class="tab-content">
+                                                            <div v-for="dateStr in dateRange" :key="'content-' + dateStr"
+                                                                 class="tab-pane" :class="{ 'show active': activeTab === dateStr }">
+
+                                                                @* <!-- 首日提示 -->
+                                                                <div v-if="isFirstDay(dateStr) && !isLastDay(dateStr)" class="alert alert-info mb-3">
+                                                                    <i class="bx bx-info-circle"></i>
+                                                                    <strong>首日：</strong>請從<span class="text-danger fw-bold">最後時段</span>開始選擇，往前擴展。選擇必須連續到當天結束，才能與隔天銜接。
+                                                                </div>
+
+                                                                <!-- 末日提示 -->
+                                                                <div v-if="isLastDay(dateStr) && !isFirstDay(dateStr)" class="alert alert-info mb-3">
+                                                                    <i class="bx bx-info-circle"></i>
+                                                                    <strong>末日：</strong>請從<span class="text-danger fw-bold">第一時段</span>開始選擇，往後擴展。選擇必須從當天開始，才能與前一天銜接。
+                                                                </div>
+
+                                                                <!-- 中間天提示 -->
+                                                                <div v-if="isMiddleDay(dateStr)" class="alert alert-warning mb-3">
+                                                                    <i class="bx bx-info-circle"></i>
+                                                                    <strong>中間天：</strong>系統自動選取所有時段，您可以調整每個時段的使用類型（一般/場布）
+                                                                </div> *@
+
+                                                                <!-- 載入中 -->
+                                                                <div v-if="loadingSlots[dateStr]" class="text-center py-4">
+                                                                    <div class="spinner-border text-primary" role="status">
+                                                                        <span class="visually-hidden">載入中...</span>
                                                                     </div>
                                                                 </div>
 
-                                                                <div class="slot-price">
-                                                                    <span
-                                                                        v-if="selectedRoom && selectedRoom.BookingSettings === 3">
-                                                                        免費
-                                                                    </span>
-                                                                    <span v-else>
-                                                                        {{ slot.Occupied ? '已預約' : '$' +
-                                                                        getSlotDisplayPrice(slot) }}
-                                                                        <small
-                                                                        v-if="!slot.Occupied && isSlotSetup(slot) && slot.SetupPrice"
-                                                                        class="text-warning d-block">(場布價)</small>
-                                                                        <small
-                                                                        v-else-if="!slot.Occupied && isHoliday && slot.HolidayPrice"
-                                                                        class="text-warning d-block">(假日價)</small>
-                                                                    </span>
+                                                                <!-- 中間天被佔用錯誤 -->
+                                                                <div v-else-if="middleDayErrors[dateStr]" class="alert alert-danger">
+                                                                    <i class="bx bx-error-circle"></i>
+                                                                    {{ middleDayErrors[dateStr] }}
                                                                 </div>
 
-                                                                <!-- 使用類型切換按鈕 -->
-                                                                <div v-if="isSlotSelected(slot) && slot.SetupPrice"
-                                                                     class="slot-type-toggle" @@click.stop>
-                                                                    <button type="button"
-                                                                            class="btn btn-sm"
-                                                                            :class="isSlotSetup(slot) ? 'btn-outline-primary' : 'btn-primary'"
-                                                                            @@click="setSlotType(slot, false)">
-                                                                        一般使用
-                                                                    </button>
-                                                                    <button type="button"
-                                                                            class="btn btn-sm"
-                                                                            :class="isSlotSetup(slot) ? 'btn-warning' : 'btn-outline-warning'"
-                                                                            @@click="setSlotType(slot, true)">
-                                                                        場地佈置
-                                                                    </button>
+                                                                <!-- 時段選擇 -->
+                                                                <div v-else class="time-slot-grid">
+                                                                    <div v-for="slot in slotsByDate[dateStr]" :key="dateStr + '-' + slot.Key"
+                                                                         class="time-slot-card" :class="{
+                                                                        selected: isSlotSelectedForDate(dateStr, slot) && !isSlotSetupForDate(dateStr, slot),
+                                                                        'selected-setup': isSlotSelectedForDate(dateStr, slot) && isSlotSetupForDate(dateStr, slot),
+                                                                        occupied: slot.Occupied,
+                                                                        disabled: !isSlotAvailableForDate(dateStr, slot)
+                                                                        }" @@click="toggleTimeSlotForDate(dateStr, slot)">
+                                                                        <div class="slot-time">
+                                                                            <strong>{{ slot.Name || '時段' }}</strong>
+                                                                            <div class="text-muted small">
+                                                                                {{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="slot-price">
+                                                                            <span v-if="selectedRoom && selectedRoom.BookingSettings === 3">
+                                                                                免費
+                                                                            </span>
+                                                                            <span v-else>
+                                                                                {{ slot.Occupied ? '已預約' : '$' + getSlotDisplayPriceForDate(dateStr, slot) }}
+                                                                                <small v-if="!slot.Occupied && isSlotSetupForDate(dateStr, slot) && slot.SetupPrice"
+                                                                                       class="text-warning d-block">(場布價)</small>
+                                                                                <small v-else-if="!slot.Occupied && isHolidayForDate(dateStr) && slot.HolidayPrice"
+                                                                                       class="text-warning d-block">(假日價)</small>
+                                                                            </span>
+                                                                        </div>
+
+                                                                        <!-- 使用類型切換按鈕 -->
+                                                                        <div v-if="isSlotSelectedForDate(dateStr, slot) && slot.SetupPrice"
+                                                                             class="slot-type-toggle" @@click.stop>
+                                                                            <button type="button" class="btn btn-sm"
+                                                                                    :class="isSlotSetupForDate(dateStr, slot) ? 'btn-outline-primary' : 'btn-primary'"
+                                                                                    @@click="setSlotTypeForDate(dateStr, slot, false)">
+                                                                                一般使用
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-sm"
+                                                                                    :class="isSlotSetupForDate(dateStr, slot) ? 'btn-warning' : 'btn-outline-warning'"
+                                                                                    @@click="setSlotTypeForDate(dateStr, slot, true)">
+                                                                                場地佈置
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -788,7 +841,10 @@
 
                         <div style="display: flex; padding: 8px 0;">
                             <div style="min-width: 110px; color: #666;">會議日期:</div>
-                            <div style="flex: 1;">{{ formatDate(form.date) }}</div>
+                            <div style="flex: 1;">
+                                <span v-if="!isMultiDay">{{ formatDate(form.startDate) }}</span>
+                                <span v-else>{{ formatDate(form.startDate) }} ~ {{ formatDate(form.endDate) }}（共 {{ dateRange.length }} 天）</span>
+                            </div>
                         </div>
 
                         <div style="display: flex; padding: 8px 0;">
@@ -798,7 +854,14 @@
 
                         <div style="display: flex; padding: 8px 0;">
                             <div style="min-width: 110px; color: #666;">選擇時段:</div>
-                            <div style="flex: 1;">{{ getSelectedSlotsText() }}</div>
+                            <div style="flex: 1;">
+                                <span v-if="!isMultiDay">{{ getSelectedSlotsText() }}</span>
+                                <div v-else>
+                                    <div v-for="dateStr in dateRange" :key="'modal-' + dateStr" class="mb-1">
+                                        <strong>{{ formatTabDate(dateStr) }}:</strong> {{ getSelectedSlotsTextForDate(dateStr) }}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div style="display: flex; padding: 8px 0;">
