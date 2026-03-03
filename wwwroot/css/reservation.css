@@ -270,3 +270,190 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ===== 審核歷程水平步驟樣式 ===== */
+.steps-wrapper {
+    position: relative;
+}
+
+.steps-scroll {
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+    cursor: grab;
+}
+
+.steps-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.steps {
+    display: flex;
+    align-items: flex-start;
+    min-width: max-content;
+    padding: 12px 8px 8px;
+}
+
+.step {
+    width: 130px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+/* 連接線 */
+.step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: calc(50% + 26px);
+    width: calc(100% - 52px);
+    height: 4px;
+    background: #e2e8f0;
+    z-index: 0;
+}
+
+.step.done:not(:last-child)::after,
+.step.decision:not(:last-child)::after {
+    background: #3b82f6;
+}
+
+.step.rejected:not(:last-child)::after {
+    background: #ef4444;
+}
+
+/* 圓形節點 */
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.step.done .step-circle {
+    background: #3b82f6;
+    color: white;
+    box-shadow: 0 0 0 5px #dbeafe;
+}
+
+.step.decision .step-circle {
+    background: #2563eb;
+    color: white;
+    box-shadow: 0 0 0 5px #bfdbfe;
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.step.skipped .step-circle {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 3px dashed #cbd5e1;
+}
+
+.step.pending .step-circle {
+    background: #f1f5f9;
+    color: #cbd5e1;
+    border: 3px solid #e2e8f0;
+}
+
+.step.rejected .step-circle {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 0 0 5px #fee2e2;
+}
+
+/* 文字區 */
+.step-label {
+    margin-top: 12px;
+    text-align: center;
+    width: 100%;
+}
+
+.step-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.step-status {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.step.done .step-status { color: #3b82f6; }
+.step.decision .step-status { color: #2563eb; }
+.step.skipped .step-status { color: #94a3b8; }
+.step.pending .step-status { color: #cbd5e1; }
+.step.rejected .step-status { color: #ef4444; }
+
+.step-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
+}
+
+.tag-decision {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.tag-skip {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.step-reviewer {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.step-meta {
+    font-size: 0.7rem;
+    color: #b0bec5;
+    margin-top: 2px;
+}
+
+.scroll-hint {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 6px;
+}
+
+/* ===== 審核歷程展開/收合樣式 ===== */
+.approval-header {
+    cursor: pointer;
+    padding: 8px 0;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+.approval-header:hover {
+    background-color: #f8f9fa;
+}
+
+.expand-icon {
+    transition: transform 0.3s ease;
+}
+
+.expand-icon.rotated {
+    transform: rotate(180deg);
+}

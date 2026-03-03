@@ -66,6 +66,7 @@ const global = new function () {
             reservationlist: GET,      // 租借審核列表
             approve: POST,             // 租借審核通過
             reject: POST,              // 租借審核拒絕
+            fasttrack: POST,           // 決行（直接通過所有剩餘關卡）
 
             // ===== 付款審核 (總務/管理者) =====
             paymentlist: GET,

@@ -50,7 +50,11 @@ const reservation = new function () {
     // ✅ 今天日期（用於日期選擇器的 min 限制）
     this.today = new Date().toISOString().split('T')[0];
 
-    this.currentReview = reactive({});
+    this.currentReview = reactive({
+        currentApprovalLevel: 0,
+        totalApprovalLevels: 1,
+        currentApproverName: null
+    });
 
     // ========= 付款審核表單 =========
     this.paymentVm = reactive({
@@ -183,6 +187,10 @@ const reservation = new function () {
                     filePath: x.FilePath,
                     totalAmount: x.TotalAmount,
                     status: x.Status,
+                    // ✅ 多階層審核欄位
+                    currentApprovalLevel: x.CurrentApprovalLevel,
+                    totalApprovalLevels: x.TotalApprovalLevels,
+                    currentApproverName: x.CurrentApproverName,
                     slots: (x.Slots || []).map(s => ({
                         id: s.Id,
                         slotDate: s.SlotDate,
@@ -280,7 +288,13 @@ const reservation = new function () {
     // ========= 開啟租借審核抽屜 =========
     this.openApprovalReview = (item) => {
         console.log('📋 開啟租借審核, item:', item);
-        copy(this.currentReview, item);
+        // ✅ 複製資料，包含多階層審核欄位
+        copy(this.currentReview, {
+            ...item,
+            currentApprovalLevel: item.currentApprovalLevel || 0,
+            totalApprovalLevels: item.totalApprovalLevels || 1,
+            currentApproverName: item.currentApproverName || null
+        });
 
         // 重設表單
         this.vm.result = 'approve';
@@ -413,6 +427,8 @@ const reservation = new function () {
 
         if (this.vm.result === 'approve') {
             await this.approveReservation();
+        } else if (this.vm.result === 'fasttrack') {
+            await this.fastTrackReservation();
         } else {
             await this.rejectReservation();
         }
@@ -437,6 +453,28 @@ const reservation = new function () {
         } catch (err) {
             console.error('❌ 審核失敗:', err);
             addAlert('審核失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
+        }
+    };
+
+    // ========= 決行（直接通過所有剩餘關卡）=========
+    this.fastTrackReservation = async () => {
+        try {
+            await global.api.reservations.fasttrack({
+                body: {
+                    conferenceId: this.currentReview.id,
+                    discountAmount: this.pricing.discount,
+                    discountReason: this.vm.discountReason || null,
+                    paymentDeadline: this.vm.paymentDeadline || null
+                }
+            });
+
+            addAlert('已決行通過!', { type: 'success' });
+            this.closeDrawer('approvalDrawer');
+            await this.getApprovalList(!!approvalPageRef);
+
+        } catch (err) {
+            console.error('❌ 決行失敗:', err);
+            addAlert('決行失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
         }
     };
 

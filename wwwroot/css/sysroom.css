@@ -1868,6 +1868,44 @@ body {
     text-align: center;
 }
 
+/* ===== 審核關卡樣式 ===== */
+.approval-levels-list {
+    margin-bottom: 16px;
+}
+
+.approval-level-item {
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.approval-level-item:hover {
+    background: #e9ecef;
+}
+
+.approval-level-item .badge {
+    font-size: 12px;
+    padding: 6px 12px;
+    min-width: 70px;
+}
+
+.approver-list {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+}
+
+.approver-item {
+    transition: background-color 0.15s ease;
+}
+
+.approver-item:hover {
+    background-color: #e9ecef !important;
+}
+
+.approver-item:last-child {
+    border-bottom: none !important;
+}
+
 .view-toggle {
     display: inline-flex;
     align-items: center;

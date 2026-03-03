@@ -77,7 +77,25 @@ namespace TASA.Controllers.API
         }
 
         /// <summary>
-        /// 4. 取得租借審核列表 (ReservationStatus = 1)
+        /// 3-1. 決行（直接通過所有剩餘關卡）
+        /// </summary>
+        [HttpPost("fasttrack")]
+        public IActionResult FastTrackApproval([FromBody] ApproveVM request)
+        {
+            var userId = GetCurrentUserId();
+
+            // ✅ 權限檢查
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+            {
+                throw new HttpException("您沒有審核租借的權限");
+            }
+
+            service.ReservationService.FastTrackApproval(request, userId);
+            return Ok();
+        }
+
+        /// <summary>
+        /// 4. 取得租借審核列表 - 只顯示「輪到我審核」的預約
         /// </summary>
         [HttpGet("reservationlist")]
         public IActionResult ReservationList([FromQuery] ReservationQueryVM query)
@@ -89,7 +107,8 @@ namespace TASA.Controllers.API
                 throw new HttpException("您沒有查看租借審核列表的權限");
             }
 
-            return Ok(service.ReservationService.AllList(query).ToPage(Request, Response));
+            // ✅ 使用專門的「我的待審核」列表，只顯示輪到我審核的預約
+            return Ok(service.ReservationService.MyPendingApprovalList(userId, query).ToPage(Request, Response));
         }
 
         // ===== 付款審核 (總務/管理者) - ✅ 使用 PaymentService =====

@@ -57,7 +57,8 @@ namespace TASA.Services
         Lazy<SysConfigService> sysConfigService,
         Lazy<ReservationAutoManagementService> reservationAutoManagementService,
         Lazy<RoomManagerDelegateService> roomManagerDelegateService,
-        Lazy<CaptchaService> captchaService
+        Lazy<CaptchaService> captchaService,
+        Lazy<RoomApprovalLevelService> roomApprovalLevelService
 
     )
     {
@@ -106,6 +107,8 @@ namespace TASA.Services
         public RoomManagerDelegateService RoomManagerDelegateService => roomManagerDelegateService.Value;
 
         public CaptchaService CaptchaService => captchaService.Value;
+
+        public RoomApprovalLevelService RoomApprovalLevelService => roomApprovalLevelService.Value;
 
     }
 }

@@ -67,7 +67,16 @@ namespace TASA.Models.Configurations
         .HasPrincipalKey(u => u.Id)
         .OnDelete(DeleteBehavior.SetNull)
         .HasConstraintName("FK_SysRoom_Manager");
-                    }
+
+            // 停車券設定
+            entity.Property(e => e.EnableParkingTicket)
+                .HasDefaultValue(false)
+                .HasComment("是否啟用停車券功能");
+
+            entity.Property(e => e.ParkingTicketPrice)
+                .HasDefaultValue(100m)
+                .HasComment("停車券單價");
+        }
         partial void OnConfigurePartial(EntityTypeBuilder<SysRoom> entity);
     }
 }

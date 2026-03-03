@@ -92,4 +92,19 @@ namespace TASA.Models.Enums
         /// <summary>已退回 - 會計退回,需重新上傳</summary>
         Rejected = 2
     }
+
+    /// <summary>
+    /// 審核關卡狀態 (ConferenceApprovalHistory.Status)
+    /// </summary>
+    public enum ApprovalStatus : byte
+    {
+        /// <summary>待審核 - 等待該關審核人處理</summary>
+        Pending = 0,
+
+        /// <summary>已核准 - 該關審核通過</summary>
+        Approved = 1,
+
+        /// <summary>已拒絕 - 該關審核拒絕</summary>
+        Rejected = 2
+    }
 }

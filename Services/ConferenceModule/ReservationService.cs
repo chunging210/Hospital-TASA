@@ -89,6 +89,11 @@ namespace TASA.Services.ConferenceModule
             public string? FileName { get; set; }
             public string? Note { get; set; }
 
+            // ✅ 多階層審核欄位
+            public int CurrentApprovalLevel { get; set; }
+            public int TotalApprovalLevels { get; set; }
+            public string? CurrentApproverName { get; set; }  // 當前審核人名稱
+
             public List<SlotDetailVM> Slots { get; set; } = new();
         }
 
@@ -134,6 +139,22 @@ namespace TASA.Services.ConferenceModule
             public List<string> Equipments { get; set; } = new();  // 加租設備名稱列表
             public List<string> Booths { get; set; } = new();  // 攤位加租名稱列表
             public List<AttachmentViewVM> Attachments { get; set; } = new();  // 附件列表
+
+            // ✅ 審核歷程
+            public List<ApprovalHistoryVM> ApprovalHistory { get; set; } = new();
+        }
+
+        public class ApprovalHistoryVM
+        {
+            public int Level { get; set; }
+            public string ApproverName { get; set; } = string.Empty;
+            public string? ApprovedByName { get; set; }  // 實際審核人（可能是代理人）
+            public string Status { get; set; } = string.Empty;  // Pending, Approved, Rejected
+            public string StatusText { get; set; } = string.Empty;  // 待審核, 已通過, 已拒絕, 決行跳過
+            public string? ApprovedAt { get; set; }
+            public string? Reason { get; set; }  // 拒絕原因或決行標記
+            public int? DiscountAmount { get; set; }
+            public string? DiscountReason { get; set; }
         }
 
         public class AttachmentViewVM
@@ -287,6 +308,124 @@ namespace TASA.Services.ConferenceModule
                     FileName = null,
                     Note = null,
 
+                    // ✅ 多階層審核欄位
+                    CurrentApprovalLevel = x.Conference.CurrentApprovalLevel,
+                    TotalApprovalLevels = x.Conference.TotalApprovalLevels,
+                    CurrentApproverName = x.Conference.ApprovalHistory
+                        .Where(h => h.Level == x.Conference.CurrentApprovalLevel + 1 && h.Status == ApprovalStatus.Pending)
+                        .Select(h => h.Approver.Name)
+                        .FirstOrDefault(),
+
+                    Slots = x.Conference.ConferenceRoomSlots
+                            .OrderBy(s => s.SlotDate)
+                            .ThenBy(s => s.StartTime)
+                            .Select(s => new SlotDetailVM
+                            {
+                                Id = s.Id,
+                                SlotDate = s.SlotDate.ToString("yyyy/MM/dd"),
+                                StartTime = s.StartTime.ToString(@"HH\:mm"),
+                                EndTime = s.EndTime.ToString(@"HH\:mm"),
+                                SlotStatus = s.SlotStatus
+                            }).ToList()
+                });
+        }
+
+        /// <summary>
+        /// ✅ 我的待審核列表 - 只顯示「輪到我審核」的預約
+        /// </summary>
+        public IQueryable<ReservationListVM> MyPendingApprovalList(Guid userId, ReservationQueryVM query)
+        {
+            // ✅ 取得今天日期，用於檢查代理人
+            var today = DateOnly.FromDateTime(DateTime.Now);
+
+            // ✅ 查詢「輪到我審核」或「我是代理人」的預約
+            var queryable = db.Conference
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(c => c.ReservationStatus == ReservationStatus.PendingApproval)
+                .Where(c => c.ApprovalHistory.Any(h =>
+                    h.Level == c.CurrentApprovalLevel + 1 &&
+                    h.Status == ApprovalStatus.Pending &&
+                    (
+                        h.ApproverId == userId ||  // 本人
+                        db.RoomManagerDelegate.Any(d =>  // 代理人
+                            d.DelegateUserId == userId &&
+                            d.ManagerId == h.ApproverId &&
+                            d.IsEnabled &&
+                            d.DeleteAt == null &&
+                            d.StartDate <= today &&
+                            d.EndDate >= today
+                        )
+                    )
+                ));
+
+            // ✅ 篩選條件
+            if (query.ReservationStatus.HasValue)
+            {
+                queryable = queryable.Where(x => x.ReservationStatus == query.ReservationStatus.Value);
+            }
+
+            return queryable
+                .WhereIf(query.Keyword, x =>
+                    x.Name.Contains(query.Keyword!) ||
+                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
+                    x.Id.ToString().StartsWith(query.Keyword!))
+                .OrderByDescending(x => x.CreateAt)
+                .Select(x => new
+                {
+                    Conference = x,
+                    LatestProof = x.ConferencePaymentProofs
+                        .Where(p => p.DeleteAt == null)
+                        .OrderByDescending(p => p.UploadedAt)
+                        .FirstOrDefault()
+                })
+                .Select(x => new ReservationListVM()
+                {
+                    Id = x.Conference.Id,
+                    BookingNo = x.Conference.Id.ToString().Substring(0, 8),
+                    ApplicantName = x.Conference.CreateByNavigation.Name,
+                    ConferenceName = x.Conference.Name,
+                    OrganizerUnit = x.Conference.OrganizerUnit,
+                    Chairman = x.Conference.Chairman,
+                    Date = x.Conference.ConferenceRoomSlots.Any()
+                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                                : x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                                  x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
+                            : "-",
+                    Time = x.Conference.ConferenceRoomSlots.Any()
+                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                                  $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                                : "-")
+                            : "-",
+                    RoomName = x.Conference.ConferenceRoomSlots
+                            .Select(s => s.Room.Name)
+                            .FirstOrDefault() ?? "-",
+                    TotalAmount = x.Conference.TotalAmount,
+                    ParkingTicketCount = x.Conference.ParkingTicketCount,
+                    Status = "待審核",
+                    PaymentStatusText = "未付款",
+                    PaymentDeadline = null,
+                    PaymentMethod = x.Conference.PaymentMethod,
+                    DepartmentCode = x.Conference.DepartmentCode,
+                    RejectReason = null,
+                    PaymentRejectReason = null,
+                    UploadTime = null,
+                    PaymentType = null,
+                    LastFiveDigits = null,
+                    TransferAmount = null,
+                    TransferAt = null,
+                    FilePath = null,
+                    FileName = null,
+                    Note = null,
+                    // ✅ 多階層審核欄位
+                    CurrentApprovalLevel = x.Conference.CurrentApprovalLevel,
+                    TotalApprovalLevels = x.Conference.TotalApprovalLevels,
+                    CurrentApproverName = x.Conference.ApprovalHistory
+                        .Where(h => h.Level == x.Conference.CurrentApprovalLevel + 1 && h.Status == ApprovalStatus.Pending)
+                        .Select(h => h.Approver.Name)
+                        .FirstOrDefault(),
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
                             .ThenBy(s => s.StartTime)
@@ -528,55 +667,205 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// ✅ 審核通過
+        /// ✅ 審核通過（多階段審核）
         /// </summary>
         public void ApproveReservation(ApproveVM vm, Guid reviewedBy)
         {
             var conference = db.Conference
                 .Include(c => c.ConferenceRoomSlots)
                 .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
-            // ✅ 計算繳費期限
+            // ✅ 取得下一關待審核的紀錄
+            var nextLevel = conference.CurrentApprovalLevel + 1;
+            var currentApproval = conference.ApprovalHistory
+                .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
+                ?? throw new HttpException("找不到待審核的關卡");
+
+            // ✅ 檢查審核人權限（本人或代理人）
+            var canApprove = currentApproval.ApproverId == reviewedBy
+                          || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
+
+            if (!canApprove)
+                throw new HttpException("您沒有權限審核此關卡");
+
+            // ✅ 更新該關卡狀態
+            currentApproval.Status = ApprovalStatus.Approved;
+            currentApproval.ApprovedAt = DateTime.Now;
+            currentApproval.ApprovedBy = reviewedBy;
+            currentApproval.DiscountAmount = vm.DiscountAmount;
+            currentApproval.DiscountReason = vm.DiscountReason;
+            currentApproval.PaymentDeadline = vm.PaymentDeadline;
+
+            // ✅ 更新預約的當前審核層級
+            conference.CurrentApprovalLevel = nextLevel;
+            conference.UpdateAt = DateTime.Now;
+
+            // ✅ 累積折扣（每關都可以設定，加總）
+            if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
+            {
+                conference.DiscountAmount = (conference.DiscountAmount ?? 0) + vm.DiscountAmount.Value;
+                conference.DiscountReason = string.IsNullOrEmpty(conference.DiscountReason)
+                    ? vm.DiscountReason
+                    : $"{conference.DiscountReason}; {vm.DiscountReason}";
+                conference.TotalAmount = Math.Max(0, conference.TotalAmount - vm.DiscountAmount.Value);
+            }
+
+            var isLastLevel = nextLevel >= conference.TotalApprovalLevels;
+
+            if (isLastLevel)
+            {
+                // ✅ 最後一關：完成審核，進入待繳費
+                DateTime paymentDeadline;
+                if (vm.PaymentDeadline.HasValue)
+                {
+                    if (vm.PaymentDeadline.Value.Date < DateTime.Today)
+                        throw new HttpException("繳費期限不能小於今天");
+                    paymentDeadline = vm.PaymentDeadline.Value;
+                }
+                else
+                {
+                    var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
+                    paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                }
+
+                conference.ReservationStatus = ReservationStatus.PendingPayment;
+                conference.ReviewedAt = DateTime.Now;
+                conference.ReviewedBy = reviewedBy;
+                conference.PaymentDeadline = paymentDeadline;
+
+                // 時段狀態變更
+                foreach (var slot in conference.ConferenceRoomSlots)
+                {
+                    slot.SlotStatus = SlotStatus.Reserved;
+                }
+
+                // 設備狀態變更
+                foreach (var equipment in conference.ConferenceEquipments)
+                {
+                    equipment.EquipmentStatus = 2;  // 已預約
+                }
+
+                db.SaveChanges();
+
+                _ = service.LogServices.LogAsync("預約審核",
+                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 總折扣: {conference.DiscountAmount ?? 0}");
+
+                // 寄送審核通過通知給申請人
+                service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
+            }
+            else
+            {
+                // ✅ 還有下一關：通知下一位審核人
+                db.SaveChanges();
+
+                _ = service.LogServices.LogAsync("預約審核",
+                    $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核通過 - {conference.Name} ({conference.Id})");
+
+                // 取得下一關審核人並寄信通知
+                var nextApproval = conference.ApprovalHistory
+                    .FirstOrDefault(h => h.Level == nextLevel + 1);
+
+                if (nextApproval != null)
+                {
+                    service.ConferenceMail.NotifyNextApprover(vm.ConferenceId, nextApproval.ApproverId, nextLevel + 1, conference.TotalApprovalLevels);
+                }
+            }
+        }
+
+        /// <summary>
+        /// ✅ 決行（直接通過所有剩餘關卡）
+        /// </summary>
+        public void FastTrackApproval(ApproveVM vm, Guid reviewedBy)
+        {
+            var conference = db.Conference
+                .Include(c => c.ConferenceRoomSlots)
+                .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
+                .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
+                ?? throw new HttpException("會議不存在");
+
+            if (conference.ReservationStatus != ReservationStatus.PendingApproval)
+                throw new HttpException("該預約不在待審核狀態");
+
+            // ✅ 取得當前待審核的關卡
+            var nextLevel = conference.CurrentApprovalLevel + 1;
+            var currentApproval = conference.ApprovalHistory
+                .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
+                ?? throw new HttpException("找不到待審核的關卡");
+
+            // ✅ 檢查審核人權限（本人或代理人）
+            var canApprove = currentApproval.ApproverId == reviewedBy
+                          || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
+
+            if (!canApprove)
+                throw new HttpException("您沒有權限審核此關卡");
+
+            // ✅ 更新當前關卡狀態（標記為決行）
+            currentApproval.Status = ApprovalStatus.Approved;
+            currentApproval.ApprovedAt = DateTime.Now;
+            currentApproval.ApprovedBy = reviewedBy;
+            currentApproval.DiscountAmount = vm.DiscountAmount;
+            currentApproval.DiscountReason = vm.DiscountReason;
+            currentApproval.PaymentDeadline = vm.PaymentDeadline;
+            currentApproval.Reason = "【決行】";  // 標記為決行
+
+            // ✅ 將所有後續關卡也標記為通過（決行跳過）
+            var remainingApprovals = conference.ApprovalHistory
+                .Where(h => h.Level > nextLevel && h.Status == ApprovalStatus.Pending)
+                .ToList();
+
+            foreach (var approval in remainingApprovals)
+            {
+                approval.Status = ApprovalStatus.Approved;
+                approval.ApprovedAt = DateTime.Now;
+                approval.ApprovedBy = reviewedBy;
+                approval.Reason = $"【決行跳過】由第 {nextLevel} 關決行";
+            }
+
+            // ✅ 累積折扣
+            if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
+            {
+                conference.DiscountAmount = (conference.DiscountAmount ?? 0) + vm.DiscountAmount.Value;
+                conference.DiscountReason = string.IsNullOrEmpty(conference.DiscountReason)
+                    ? vm.DiscountReason
+                    : $"{conference.DiscountReason}; {vm.DiscountReason}";
+                conference.TotalAmount = Math.Max(0, conference.TotalAmount - vm.DiscountAmount.Value);
+            }
+
+            // ✅ 直接進入待繳費狀態
             DateTime paymentDeadline;
             if (vm.PaymentDeadline.HasValue)
             {
-                // 有自訂繳費期限，驗證不能小於今天
                 if (vm.PaymentDeadline.Value.Date < DateTime.Today)
                     throw new HttpException("繳費期限不能小於今天");
                 paymentDeadline = vm.PaymentDeadline.Value;
             }
             else
             {
-                // 沒有自訂，使用 DB 設定
                 var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
                 paymentDeadline = DateTime.Now.AddDays(deadlineDays);
             }
 
+            conference.CurrentApprovalLevel = conference.TotalApprovalLevels;  // 跳到最後
             conference.ReservationStatus = ReservationStatus.PendingPayment;
             conference.ReviewedAt = DateTime.Now;
             conference.ReviewedBy = reviewedBy;
             conference.PaymentDeadline = paymentDeadline;
             conference.UpdateAt = DateTime.Now;
 
-            // ✅ 存儲折扣資訊
-            if (vm.DiscountAmount.HasValue && vm.DiscountAmount > 0)
-            {
-                conference.DiscountAmount = vm.DiscountAmount.Value;
-                conference.DiscountReason = vm.DiscountReason;
-                conference.TotalAmount = Math.Max(0, conference.TotalAmount - vm.DiscountAmount.Value);
-            }
-
+            // 時段狀態變更
             foreach (var slot in conference.ConferenceRoomSlots)
             {
                 slot.SlotStatus = SlotStatus.Reserved;
             }
 
-            // ✅ 設備狀態變更: 鎖定中 → 已預約
+            // 設備狀態變更
             foreach (var equipment in conference.ConferenceEquipments)
             {
                 equipment.EquipmentStatus = 2;  // 已預約
@@ -584,54 +873,91 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約審核",
-                $"審核通過 - {conference.Name} ({conference.Id}), 折扣: {vm.DiscountAmount ?? 0}");
+            _ = service.LogServices.LogAsync("預約決行",
+                $"第 {nextLevel} 關決行通過（跳過剩餘 {remainingApprovals.Count} 關）- {conference.Name} ({conference.Id})");
 
-            // 寄送審核通過通知
-            service.ConferenceMail.ReservationApproved(vm.ConferenceId, vm.DiscountAmount, vm.DiscountReason);
+            // 寄送審核通過通知給申請人
+            service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
         }
 
         /// <summary>
-        /// ✅ 審核拒絕
+        /// ✅ 審核拒絕（多階段審核 - 任一關拒絕即結束）
         /// </summary>
         public void RejectReservation(RejectVM vm, Guid reviewedBy)
         {
             var conference = db.Conference
                 .Include(c => c.ConferenceRoomSlots)
                 .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
 
+            // ✅ 取得當前待審核的關卡
+            var nextLevel = conference.CurrentApprovalLevel + 1;
+            var currentApproval = conference.ApprovalHistory
+                .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
+                ?? throw new HttpException("找不到待審核的關卡");
+
+            // ✅ 檢查審核人權限（本人或代理人）
+            var canApprove = currentApproval.ApproverId == reviewedBy
+                          || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
+
+            if (!canApprove)
+                throw new HttpException("您沒有權限審核此關卡");
+
+            // ✅ 更新該關卡狀態
+            currentApproval.Status = ApprovalStatus.Rejected;
+            currentApproval.ApprovedAt = DateTime.Now;
+            currentApproval.ApprovedBy = reviewedBy;
+            currentApproval.Reason = vm.Reason;
+
+            // ✅ 更新預約狀態
             conference.ReservationStatus = ReservationStatus.Rejected;
             conference.ReviewedAt = DateTime.Now;
             conference.ReviewedBy = reviewedBy;
             conference.RejectReason = vm.Reason ?? "";
             conference.UpdateAt = DateTime.Now;
 
+            // 釋放時段
             foreach (var slot in conference.ConferenceRoomSlots)
             {
                 slot.SlotStatus = SlotStatus.Available;
                 slot.ReleasedAt = DateTime.Now;
             }
 
-            // ✅ 設備釋放
+            // 釋放設備
             foreach (var equipment in conference.ConferenceEquipments)
             {
                 equipment.EquipmentStatus = 0;  // 可用
                 equipment.ReleasedAt = DateTime.Now;
             }
 
-
             db.SaveChanges();
 
             _ = service.LogServices.LogAsync("預約拒絕",
-                $"拒絕預約 - {conference.Name} ({conference.Id}) 原因: {vm.Reason}");
+                $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核拒絕 - {conference.Name} ({conference.Id}) 原因: {vm.Reason}");
 
             // 寄送審核拒絕通知
             service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
+        }
+
+        /// <summary>
+        /// 檢查是否為有效的代理人
+        /// </summary>
+        private bool IsActiveDelegate(Guid userId, Guid managerId)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            return db.RoomManagerDelegate
+                .AsNoTracking()
+                .Any(d => d.DelegateUserId == userId
+                       && d.ManagerId == managerId
+                       && d.IsEnabled
+                       && d.DeleteAt == null
+                       && d.StartDate <= today
+                       && d.EndDate >= today);
         }
 
         /// <summary>
@@ -868,6 +1194,10 @@ namespace TASA.Services.ConferenceModule
                     .ThenInclude(s => s.Room)
                 .Include(c => c.ConferenceEquipments)
                 .Include(c => c.ConferencePaymentProofs.Where(p => p.DeleteAt == null))
+                .Include(c => c.ApprovalHistory)
+                    .ThenInclude(h => h.Approver)
+                .Include(c => c.ApprovalHistory)
+                    .ThenInclude(h => h.ApprovedByUser)
                 .Where(c => c.Id == conferenceId && !c.DeleteAt.HasValue)
                 .FirstOrDefault();
 
@@ -961,7 +1291,27 @@ namespace TASA.Services.ConferenceModule
                 DiscountReason = conference.DiscountReason,      // ✅ 折扣原因
                 Equipments = equipments,
                 Booths = booths,
-                Attachments = attachments
+                Attachments = attachments,
+                // ✅ 審核歷程
+                ApprovalHistory = conference.ApprovalHistory
+                    .OrderBy(h => h.Level)
+                    .Select(h => new ApprovalHistoryVM
+                    {
+                        Level = h.Level,
+                        ApproverName = h.Approver?.Name ?? "-",
+                        ApprovedByName = h.ApprovedByUser?.Name,
+                        Status = h.Status.ToString(),
+                        StatusText = h.Status == ApprovalStatus.Pending ? "待審核" :
+                                    h.Status == ApprovalStatus.Approved ?
+                                        (h.Reason?.Contains("決行跳過") == true ? "決行跳過" :
+                                         h.Reason?.Contains("決行") == true ? "已通過【決行】" : "已通過") :
+                                    h.Status == ApprovalStatus.Rejected ? "已拒絕" : "未知",
+                        ApprovedAt = h.ApprovedAt?.ToString("yyyy/MM/dd HH:mm"),
+                        Reason = h.Reason,
+                        DiscountAmount = h.DiscountAmount,
+                        DiscountReason = h.DiscountReason
+                    })
+                    .ToList()
             };
         }
 
@@ -1185,6 +1535,10 @@ namespace TASA.Services.ConferenceModule
             Console.WriteLine($"📝 [CreateReservation] 會議室: {room.Name}, 分院ID: {room.DepartmentId}");
 
 
+            // 取得審核鏈
+            var approvalChain = service.RoomApprovalLevelService.GetApprovalChain(vm.RoomId!.Value);
+            var totalLevels = approvalChain.Count;
+
             return new Conference
             {
                 Id = conferenceId,
@@ -1203,6 +1557,8 @@ namespace TASA.Services.ConferenceModule
                 Status = 1,
                 DepartmentId = room.DepartmentId,
                 ReservationStatus = ReservationStatus.PendingApproval,
+                CurrentApprovalLevel = 0,  // ✅ 尚未開始審核
+                TotalApprovalLevels = totalLevels,  // ✅ 總共幾關
                 ReviewedAt = null,
                 ReviewedBy = null,
                 ApprovedAt = null,
@@ -1218,7 +1574,7 @@ namespace TASA.Services.ConferenceModule
                 ParkingTicketCost = vm.ParkingTicketCost ?? 0,
                 TotalAmount = (int)(vm.TotalAmount ?? 0),
                 CreateBy = userId,
-                CreateAt = DateTime.Now, 
+                CreateAt = DateTime.Now,
                 UpdateAt = DateTime.Now,
                 Email = null,
                 ConferenceUser = new List<ConferenceUser>
@@ -1230,7 +1586,17 @@ namespace TASA.Services.ConferenceModule
                         IsAttendees = true,
                         IsRecorder = false
                     }
-                }
+                },
+                // ✅ 快照審核鏈到 ApprovalHistory
+                ApprovalHistory = approvalChain.Select(x => new ConferenceApprovalHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = conferenceId,
+                    Level = x.Level,
+                    ApproverId = x.ApproverId,
+                    Status = ApprovalStatus.Pending,
+                    CreateAt = DateTime.Now
+                }).ToList()
             };
         }
 

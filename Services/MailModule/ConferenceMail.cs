@@ -160,44 +160,76 @@ namespace TASA.Services.MailModule
                 Console.WriteLine("📧 [ReservationCreated] ⚠️ 預約者沒有 Email，跳過");
             }
 
-            // 2️⃣ 寄給會議室管理者
-            var managerEmail = room?.Manager?.Email;
-            var managerName = room?.Manager?.Name ?? "管理者";
+            // 2️⃣ 寄給第一關審核人（從審核鏈取得）
+            var firstApproval = db.ConferenceApprovalHistory
+                .Include(h => h.Approver)
+                .Where(h => h.ConferenceId == conferenceId && h.Level == 1)
+                .FirstOrDefault();
 
-            Console.WriteLine($"📧 [ReservationCreated] 管理者 Email: {managerEmail ?? "NULL"}");
-
-            if (!string.IsNullOrEmpty(managerEmail))
+            if (firstApproval != null)
             {
-                var managerMail = NewMailMessage();
-                managerMail.Subject = $"[新預約待審核] - {reservation.Name}";
-                managerMail.Body = BuildReservationPendingApprovalBody(
-                    managerName,
-                    applicantName,
-                    bookingNo,
-                    reservation.Name,
-                    reservation.OrganizerUnit,
-                    reservation.Chairman,
-                    roomName,
-                    slotDate,
-                    slotTime,
-                    reservation.TotalAmount
-                );
-                managerMail.To.Add(managerEmail);
+                var approverEmail = firstApproval.Approver?.Email;
+                var approverName = firstApproval.Approver?.Name ?? "審核人";
 
-                Console.WriteLine($"📧 [ReservationCreated] 準備寄信給管理者: {managerEmail}");
-                try
+                Console.WriteLine($"📧 [ReservationCreated] 第一關審核人 Email: {approverEmail ?? "NULL"}");
+
+                // 取得代理人
+                var today = DateOnly.FromDateTime(DateTime.Now);
+                var delegateUser = db.RoomManagerDelegate
+                    .AsNoTracking()
+                    .Include(d => d.DelegateUser)
+                    .Where(d => d.ManagerId == firstApproval.ApproverId
+                             && d.IsEnabled
+                             && d.DeleteAt == null
+                             && d.StartDate <= today
+                             && d.EndDate >= today)
+                    .Select(d => d.DelegateUser)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrEmpty(approverEmail))
                 {
-                    SendAsync(managerMail, className, functionName).GetAwaiter().GetResult();
-                    Console.WriteLine($"📧 [ReservationCreated] ✅ 管理者信件已發送: {managerEmail}");
+                    var approverMail = NewMailMessage();
+                    approverMail.Subject = $"[新預約待審核] 第1/{reservation.TotalApprovalLevels}關 - {reservation.Name}";
+                    approverMail.Body = BuildReservationPendingApprovalBody(
+                        approverName,
+                        applicantName,
+                        bookingNo,
+                        reservation.Name,
+                        reservation.OrganizerUnit,
+                        reservation.Chairman,
+                        roomName,
+                        slotDate,
+                        slotTime,
+                        reservation.TotalAmount
+                    );
+                    approverMail.To.Add(approverEmail);
+
+                    // 如果有代理人，副本給代理人
+                    if (delegateUser != null && !string.IsNullOrEmpty(delegateUser.Email))
+                    {
+                        approverMail.CC.Add(delegateUser.Email);
+                        Console.WriteLine($"📧 [ReservationCreated] 副本給代理人: {delegateUser.Email}");
+                    }
+
+                    Console.WriteLine($"📧 [ReservationCreated] 準備寄信給第一關審核人: {approverEmail}");
+                    try
+                    {
+                        SendAsync(approverMail, className, functionName).GetAwaiter().GetResult();
+                        Console.WriteLine($"📧 [ReservationCreated] ✅ 審核人信件已發送: {approverEmail}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"📧 [ReservationCreated] ❌ 審核人信件發送失敗: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Console.WriteLine($"📧 [ReservationCreated] ❌ 管理者信件發送失敗: {ex.Message}");
+                    Console.WriteLine("📧 [ReservationCreated] ⚠️ 第一關審核人沒有 Email，跳過");
                 }
             }
             else
             {
-                Console.WriteLine("📧 [ReservationCreated] ⚠️ 會議室沒有管理者或管理者沒有 Email，跳過");
+                Console.WriteLine("📧 [ReservationCreated] ⚠️ 找不到第一關審核人，跳過");
             }
         }
 
@@ -494,6 +526,180 @@ namespace TASA.Services.MailModule
             {
                 Console.WriteLine($"📧 [ReservationRejected] ❌ 信件發送失敗: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 通知下一位審核人（多階段審核）
+        /// </summary>
+        public void NotifyNextApprover(Guid conferenceId, Guid approverId, int currentLevel, int totalLevels, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        {
+            Console.WriteLine($"📧 [NotifyNextApprover] 開始處理，ConferenceId: {conferenceId}, Level: {currentLevel}/{totalLevels}");
+
+            if (!Enable)
+            {
+                Console.WriteLine("📧 [NotifyNextApprover] 信件服務未啟用，跳過");
+                return;
+            }
+
+            using var db = dbContextFactory.CreateDbContext();
+
+            var reservation = db.Conference
+                .Include(c => c.CreateByNavigation)
+                .Include(c => c.ConferenceRoomSlots)
+                    .ThenInclude(s => s.Room)
+                .FirstOrDefault(c => c.Id == conferenceId);
+
+            if (reservation == null)
+            {
+                Console.WriteLine($"📧 [NotifyNextApprover] 找不到預約資料，ConferenceId: {conferenceId}");
+                return;
+            }
+
+            // 取得審核人資訊
+            var approver = db.AuthUser.AsNoTracking().FirstOrDefault(u => u.Id == approverId);
+            if (approver == null || string.IsNullOrEmpty(approver.Email))
+            {
+                Console.WriteLine("📧 [NotifyNextApprover] ⚠️ 審核人沒有 Email，跳過");
+                return;
+            }
+
+            // 取得代理人（如果有）
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var delegateUser = db.RoomManagerDelegate
+                .AsNoTracking()
+                .Include(d => d.DelegateUser)
+                .Where(d => d.ManagerId == approverId
+                         && d.IsEnabled
+                         && d.DeleteAt == null
+                         && d.StartDate <= today
+                         && d.EndDate >= today)
+                .Select(d => d.DelegateUser)
+                .FirstOrDefault();
+
+            var roomSlot = reservation.ConferenceRoomSlots.FirstOrDefault();
+            var room = roomSlot?.Room;
+            var roomName = room != null ? $"{room.Building} {room.Floor} {room.Name}" : "未指定";
+            var slotDate = roomSlot?.SlotDate.ToString("yyyy/MM/dd") ?? "-";
+            var slotTime = reservation.ConferenceRoomSlots.Any()
+                ? $"{reservation.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {reservation.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                : "-";
+            var bookingNo = reservation.Id.ToString().Substring(0, 8);
+            var applicantName = reservation.CreateByNavigation?.Name ?? "使用者";
+
+            var mail = NewMailMessage();
+            mail.Subject = $"[待您審核] 第{currentLevel}關 - {reservation.Name}";
+            mail.Body = BuildNextApproverNotifyBody(
+                approver.Name,
+                currentLevel,
+                totalLevels,
+                bookingNo,
+                reservation.Name,
+                applicantName,
+                reservation.OrganizerUnit,
+                roomName,
+                slotDate,
+                slotTime
+            );
+
+            // 寄給審核人
+            mail.To.Add(approver.Email);
+
+            // 如果有代理人，也寄一份
+            if (delegateUser != null && !string.IsNullOrEmpty(delegateUser.Email))
+            {
+                mail.CC.Add(delegateUser.Email);
+                Console.WriteLine($"📧 [NotifyNextApprover] 副本給代理人: {delegateUser.Email}");
+            }
+
+            Console.WriteLine($"📧 [NotifyNextApprover] 準備寄信給審核人: {approver.Email}");
+            try
+            {
+                SendAsync(mail, className, functionName).GetAwaiter().GetResult();
+                Console.WriteLine($"📧 [NotifyNextApprover] ✅ 信件已發送");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"📧 [NotifyNextApprover] ❌ 信件發送失敗: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 建立下一位審核人通知郵件內容
+        /// </summary>
+        private string BuildNextApproverNotifyBody(
+            string approverName,
+            int currentLevel,
+            int totalLevels,
+            string bookingNo,
+            string conferenceName,
+            string applicantName,
+            string organizerUnit,
+            string roomName,
+            string slotDate,
+            string slotTime)
+        {
+            return $@"
+<html>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <h2 style='color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px;'>
+            待您審核通知
+        </h2>
+
+        <p>親愛的 {approverName} 您好，</p>
+
+        <p>有一筆會議室預約正在等待您的審核（第 <strong>{currentLevel}</strong> 關，共 {totalLevels} 關）：</p>
+
+        <div style='background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;'>
+            <table style='width: 100%; border-collapse: collapse;'>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d; width: 100px;'>預約編號</td>
+                    <td style='padding: 8px 0; font-weight: bold;'>{bookingNo}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>會議名稱</td>
+                    <td style='padding: 8px 0; font-weight: bold;'>{conferenceName}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>申請人</td>
+                    <td style='padding: 8px 0;'>{applicantName}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>承辦單位</td>
+                    <td style='padding: 8px 0;'>{organizerUnit}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>會議室</td>
+                    <td style='padding: 8px 0;'>{roomName}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>預約日期</td>
+                    <td style='padding: 8px 0;'>{slotDate}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0; color: #6c757d;'>預約時段</td>
+                    <td style='padding: 8px 0;'>{slotTime}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p>請登入系統進行審核：</p>
+        <p style='text-align: center;'>
+            <a href='{BaseUrl}admin/reservation'
+               style='display: inline-block; background-color: #0d6efd; color: white; padding: 12px 30px;
+                      text-decoration: none; border-radius: 6px; font-weight: bold;'>
+                前往審核
+            </a>
+        </p>
+
+        <hr style='border: none; border-top: 1px solid #dee2e6; margin: 30px 0;'>
+
+        <p style='color: #6c757d; font-size: 14px;'>
+            此為系統自動發送的通知信件，請勿直接回覆。
+        </p>
+    </div>
+</body>
+</html>";
         }
 
         /// <summary>

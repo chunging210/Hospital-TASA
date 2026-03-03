@@ -22,6 +22,8 @@ class VM {
     DepartmentId = null;
     ManagerId = null;
     AgreementPath = null;
+    EnableParkingTicket = false;  // ✅ 停車券功能
+    ParkingTicketPrice = 100;     // ✅ 停車券單價
 }
 
 // ✅ Enum 定義（與後端對應）
@@ -172,6 +174,183 @@ const manager = new function () {
     // 清除選擇
     this.clearSelection = () => {
         this.selectedManager.value = null;
+        this.searchKeyword.value = '';
+    };
+};
+
+// ✅ 審核關卡管理
+const approvalChain = new function () {
+    this.levels = reactive([]);  // 審核關卡列表
+    this.availableApprovers = reactive([]);  // 可選的審核人
+    this.searchKeyword = ref('');
+    this.isAddingLevel = ref(false);
+
+    // 載入會議室的審核關卡
+    this.loadLevels = async (roomId) => {
+        if (!roomId) {
+            this.levels.splice(0);
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/RoomApprovalLevel/list/${roomId}`);
+            if (!response.ok) throw new Error('載入失敗');
+            const data = await response.json();
+            copy(this.levels, data || []);
+            console.log(`✅ 載入審核關卡: ${this.levels.length} 關`);
+        } catch (err) {
+            console.error('❌ 載入審核關卡失敗:', err);
+            this.levels.splice(0);
+        }
+    };
+
+    // 載入可選的審核人
+    this.loadAvailableApprovers = async (roomId) => {
+        // 如果有 roomId，從 API 載入
+        if (roomId) {
+            try {
+                // 排除已選的審核人
+                const excludeIds = this.levels.map(l => l.ApproverId);
+                const queryString = excludeIds.length > 0
+                    ? `?${excludeIds.map(id => `excludeIds=${id}`).join('&')}`
+                    : '';
+
+                const response = await fetch(`/api/RoomApprovalLevel/approvers/${roomId}${queryString}`);
+                if (!response.ok) throw new Error('載入失敗');
+                const data = await response.json();
+                copy(this.availableApprovers, data || []);
+                console.log(`✅ 載入可選審核人: ${this.availableApprovers.length} 人`);
+            } catch (err) {
+                console.error('❌ 載入可選審核人失敗:', err);
+                this.availableApprovers.splice(0);
+            }
+        } else {
+            // 新增模式：使用 manager.list 作為可選審核人來源
+            this.refreshFromManagerList();
+        }
+    };
+
+    // 從 manager.list 刷新可選審核人（用於新增模式）
+    this.refreshFromManagerList = () => {
+        const excludeIds = this.levels.map(l => l.ApproverId);
+        const filtered = manager.list.filter(u => !excludeIds.includes(u.Id));
+        copy(this.availableApprovers, filtered.map(u => ({
+            Id: u.Id,
+            Name: u.Name,
+            Email: u.Email
+        })));
+        console.log(`✅ 從員工列表刷新可選審核人: ${this.availableApprovers.length} 人`);
+    };
+
+    // 過濾審核人列表
+    this.filteredApprovers = computed(() => {
+        if (!this.searchKeyword.value) return this.availableApprovers;
+        const keyword = this.searchKeyword.value.toLowerCase();
+        return this.availableApprovers.filter(u =>
+            u.Name?.toLowerCase().includes(keyword) ||
+            u.Email?.toLowerCase().includes(keyword)
+        );
+    });
+
+    // 開始新增關卡
+    this.addLevel = () => {
+        // 檢查是否已選擇分院（新增模式且是管理員時需要先選分院）
+        if (!room.vm.Id && !room.vm.DepartmentId) {
+            addAlert('請先選擇分院', { type: 'warning' });
+            return;
+        }
+
+        // 檢查員工列表是否已載入
+        if (!room.vm.Id && manager.list.length === 0) {
+            addAlert('員工列表尚未載入，請稍後再試', { type: 'warning' });
+            return;
+        }
+
+        this.isAddingLevel.value = true;
+        this.searchKeyword.value = '';
+        // 重新載入可選審核人（排除已選的）
+        if (room.vm.Id) {
+            this.loadAvailableApprovers(room.vm.Id);
+        } else {
+            // 新增模式：使用 manager.list
+            this.refreshFromManagerList();
+        }
+    };
+
+    // 取消新增
+    this.cancelAdd = () => {
+        this.isAddingLevel.value = false;
+        this.searchKeyword.value = '';
+    };
+
+    // 選擇審核人
+    this.selectApprover = (user) => {
+        // 檢查是否重複
+        if (this.levels.some(l => l.ApproverId === user.Id)) {
+            addAlert('此審核人已在關卡中', { type: 'warning' });
+            return;
+        }
+
+        this.levels.push({
+            Id: null,  // 新增的還沒有 ID
+            Level: this.levels.length + 1,
+            ApproverId: user.Id,
+            ApproverName: user.Name,
+            ApproverEmail: user.Email
+        });
+
+        this.isAddingLevel.value = false;
+        this.searchKeyword.value = '';
+
+        // 更新可選審核人列表（移除已選的）
+        const idx = this.availableApprovers.findIndex(a => a.Id === user.Id);
+        if (idx > -1) {
+            this.availableApprovers.splice(idx, 1);
+        }
+
+        console.log(`✅ 新增審核關卡: ${user.Name}`);
+    };
+
+    // 移除關卡
+    this.removeLevel = (index) => {
+        const removed = this.levels.splice(index, 1)[0];
+        if (removed) {
+            // 將移除的審核人加回可選列表
+            this.availableApprovers.push({
+                Id: removed.ApproverId,
+                Name: removed.ApproverName,
+                Email: removed.ApproverEmail
+            });
+        }
+        console.log(`✅ 移除審核關卡: index=${index}`);
+    };
+
+    // 儲存審核關卡
+    this.save = async (roomId) => {
+        if (!roomId) return;
+
+        try {
+            const response = await fetch('/api/RoomApprovalLevel/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    RoomId: roomId,
+                    Approvers: this.levels.map(l => ({ ApproverId: l.ApproverId }))
+                })
+            });
+            if (!response.ok) throw new Error('儲存失敗');
+            console.log('✅ 儲存審核關卡成功');
+        } catch (err) {
+            console.error('❌ 儲存審核關卡失敗:', err);
+            throw err;
+        }
+    };
+
+    // 清空
+    this.clear = () => {
+        this.levels.splice(0);
+        this.availableApprovers.splice(0);
+        this.isAddingLevel.value = false;
         this.searchKeyword.value = '';
     };
 };
@@ -392,6 +571,8 @@ const room = new function () {
                     this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
                     this.vm.ManagerId = response.data.ManagerId;
                     this.vm.AgreementPath = response.data.AgreementPath;  // ✅ 聲明書路徑
+                    this.vm.EnableParkingTicket = response.data.EnableParkingTicket || false;  // ✅ 停車券
+                    this.vm.ParkingTicketPrice = response.data.ParkingTicketPrice || 100;
 
                     // ✅ 編輯時清空新上傳的聲明書
                     this.form.agreementBase64 = null;
@@ -447,6 +628,10 @@ const room = new function () {
                         });
                     }
 
+                    // ✅ 載入審核關卡
+                    await approvalChain.loadLevels(response.data.Id);
+                    await approvalChain.loadAvailableApprovers(response.data.Id);
+
                     if (this.offcanvas) {
                         this.offcanvas.show();
                     }
@@ -467,12 +652,15 @@ const room = new function () {
             this.vm.PricingType = PricingType.Period;
             this.vm.BookingSettings = BookingSettings.InternalOnly;
             this.vm.AgreementPath = null;
+            this.vm.EnableParkingTicket = false;  // ✅ 停車券
+            this.vm.ParkingTicketPrice = 100;
             this.generateCreateTimeSlotDefaults();
 
             this.vm.ManagerId = null;
             this.form.agreementBase64 = null;    // ✅ 重設聲明書
             this.form.agreementFileName = null;
             manager.clearSelection();
+            approvalChain.clear();  // ✅ 清空審核關卡
 
             if (!isAdmin.value && userDepartmentId.value) {
                 this.vm.DepartmentId = userDepartmentId.value;
@@ -488,7 +676,7 @@ const room = new function () {
         }
     }
 
-    this.save = () => {
+    this.save = async () => {
         const method = this.vm.Id
             ? global.api.admin.roomupdate
             : global.api.admin.roominsert;
@@ -521,20 +709,28 @@ const room = new function () {
             })),
             PricingDetails: this.getPricingDetails(),
             AgreementBase64: this.form.agreementBase64,      // ✅ 聲明書
-            AgreementFileName: this.form.agreementFileName   // ✅ 聲明書檔名
+            AgreementFileName: this.form.agreementFileName,  // ✅ 聲明書檔名
+            EnableParkingTicket: this.vm.EnableParkingTicket,  // ✅ 停車券
+            ParkingTicketPrice: this.vm.ParkingTicketPrice || 100
         };
 
         console.log('🔍 [SAVE normalized]', body);
 
-        method({ body })
-            .then(() => {
-                addAlert('操作成功');
-                this.getList();
-                this.offcanvas?.hide();
-            })
-            .catch(err => {
-                addAlert(err.details || '操作失敗', { type: 'danger' });
-            });
+        try {
+            const response = await method({ body });
+            const roomId = response.data?.Id || this.vm.Id;
+
+            // ✅ 儲存審核關卡（只有編輯模式或有設定關卡時才儲存）
+            if (roomId && approvalChain.levels.length > 0) {
+                await approvalChain.save(roomId);
+            }
+
+            addAlert('操作成功');
+            this.getList();
+            this.offcanvas?.hide();
+        } catch (err) {
+            addAlert(err.details || '操作失敗', { type: 'danger' });
+        }
     };
 
 
@@ -798,6 +994,7 @@ window.$config = {
         this.department = department;
         this.isAdmin = isAdmin;
         this.manager = manager;
+        this.approvalChain = approvalChain;  // ✅ 審核關卡
         this.userDepartmentName = userDepartmentName;
         // ✅ 加上這些
         this.todaySchedule = room.todaySchedule;
@@ -894,10 +1091,16 @@ window.$config = {
             // ✅ 監聽分院變更（新增/編輯共用）
             watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {
                 if (!newDeptId || newDeptId === oldDeptId) return;
-                if (room.vm.Id || isAdmin.value) {
-                    console.log('✅ 分院變更,重新載入員工:', newDeptId);
-                    manager.clearSelection();
-                    manager.getList(newDeptId);
+
+                console.log('✅ 分院變更,重新載入員工:', newDeptId);
+                manager.clearSelection();
+                manager.getList(newDeptId);
+
+                // ✅ 分院變更時，清空審核關卡（因為審核人來自該分院）
+                if (oldDeptId && approvalChain.levels.length > 0) {
+                    console.log('⚠️ 分院變更，清空已選的審核關卡');
+                    approvalChain.clear();
+                    addAlert('分院已變更，審核關卡已重置', { type: 'warning' });
                 }
             });
         });

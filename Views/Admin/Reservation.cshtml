@@ -77,7 +77,7 @@
                                 <th>日期</th>
                                 <th>會議室</th>
                                 <th>金額</th>
-                                <th>狀態</th>
+                                <th>審核進度</th>
                                 <th>動作</th>
                             </tr>
                         </thead>
@@ -89,8 +89,9 @@
                                 <td>{{ item.roomName }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
                                 <td>
-                                    <span class="badge" :class="getApprovalStatusClass(item.status)">
-                                        {{ item.status }}
+                                    <!-- ✅ 多階層審核進度顯示 -->
+                                    <span class="badge bg-info">
+                                        第 {{ item.currentApprovalLevel + 1 }}/{{ item.totalApprovalLevels }} 關
                                     </span>
                                 </td>
                                 <td>
@@ -187,6 +188,27 @@
             </div>
         </div>
 
+        <!-- ✅ 多階層審核進度顯示 -->
+        <div class="mb-3" v-if="reservation.currentReview.totalApprovalLevels > 1">
+            <h6 class="mb-2">
+                <span class="material-icons me-1" style="font-size: 18px;">check_circle</span>
+                審核進度
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height: 20px;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         :style="{ width: ((reservation.currentReview.currentApprovalLevel / reservation.currentReview.totalApprovalLevels) * 100) + '%' }">
+                    </div>
+                </div>
+                <span class="badge bg-info">
+                    第 {{ reservation.currentReview.currentApprovalLevel + 1 }}/{{ reservation.currentReview.totalApprovalLevels }} 關
+                </span>
+            </div>
+            <small class="text-muted mt-1 d-block" v-if="reservation.currentReview.currentApproverName">
+                目前審核人：{{ reservation.currentReview.currentApproverName }}
+            </small>
+        </div>
+
         <hr>
 
         <!-- ✅ 只有「待審核」才顯示表單,其他狀態只顯示資訊 -->
@@ -206,6 +228,15 @@
                                    value="reject" v-model="reservation.vm.result">
                             <label class="form-check-label" for="approval-reject">拒絕</label>
                         </div>
+                        <!-- 決行：只有在還有後續關卡時才顯示 -->
+                        <div class="form-check" v-if="reservation.currentReview.totalApprovalLevels > reservation.currentReview.currentApprovalLevel + 1">
+                            <input class="form-check-input" type="radio" name="approval-result" id="approval-fasttrack"
+                                   value="fasttrack" v-model="reservation.vm.result">
+                            <label class="form-check-label text-success fw-bold" for="approval-fasttrack">
+                                <i class="mdi mdi-check-all"></i> 決行
+                            </label>
+                            <small class="text-muted d-block">（直接通過，跳過後續 {{ reservation.currentReview.totalApprovalLevels - reservation.currentReview.currentApprovalLevel - 1 }} 關）</small>
+                        </div>
                     </div>
                 </div>
 
@@ -216,8 +247,8 @@
                               required></textarea>
                 </div>
 
-                <!-- 折扣設定 -->
-                <div v-if="reservation.vm.result === 'approve'" class="col-12">
+                <!-- 折扣設定（核准或決行時顯示） -->
+                <div v-if="reservation.vm.result === 'approve' || reservation.vm.result === 'fasttrack'" class="col-12">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">折扣方式</label>

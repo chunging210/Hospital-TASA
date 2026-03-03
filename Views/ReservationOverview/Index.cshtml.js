@@ -40,6 +40,7 @@ window.$config = {
         this.personalReservationsPage = ref(null);
         /* ========= 選中項目 ========= */
         this.selectedItem = ref(null);
+        this.approvalHistoryExpanded = ref(false);  // ✅ 審核歷程展開狀態
 
         /* ========= ✅ DOM Refs (重要!) ========= */
         this.counterPayFiles = ref(null);
@@ -124,6 +125,47 @@ window.$config = {
 
         this.getPaymentMethodText = (method) => {
             return EnumHelper.getPaymentMethodText(method);
+        };
+
+        // ✅ 審核歷程時間軸樣式
+        this.getTimelineClass = (status) => {
+            switch (status) {
+                case 'Approved': return 'timeline-approved';
+                case 'Rejected': return 'timeline-rejected';
+                default: return 'timeline-pending';
+            }
+        };
+
+        // ✅ 審核進度摘要（例如：2/3 關已通過）
+        this.getApprovalProgress = (history) => {
+            if (!history || history.length === 0) return '';
+            const total = history.length;
+            const approved = history.filter(h => h.Status === 'Approved').length;
+            const rejected = history.some(h => h.Status === 'Rejected');
+            if (rejected) return '已拒絕';
+            if (approved === total) return '全部通過';
+            return `${approved}/${total} 關已通過`;
+        };
+
+        // ✅ 進度徽章樣式
+        this.getProgressBadgeClass = (history) => {
+            if (!history || history.length === 0) return 'bg-secondary';
+            const rejected = history.some(h => h.Status === 'Rejected');
+            if (rejected) return 'bg-danger';
+            const allApproved = history.every(h => h.Status === 'Approved');
+            if (allApproved) return 'bg-success';
+            return 'bg-secondary';
+        };
+
+        // ✅ 步驟樣式（done/decision/skipped/pending/rejected）
+        this.getStepClass = (history) => {
+            if (history.Status === 'Rejected') return 'rejected';
+            if (history.Status === 'Approved') {
+                if (history.Reason?.includes('決行') && !history.Reason?.includes('跳過')) return 'decision';
+                if (history.Reason?.includes('跳過')) return 'skipped';
+                return 'done';
+            }
+            return 'pending';
         };
 
         /* ========= 資料載入 ========= */
@@ -446,6 +488,9 @@ window.$config = {
                     discountAmount: detail.DiscountAmount || null,
                     discountReason: detail.DiscountReason || '',
 
+                    // ✅ 審核歷程
+                    approvalHistory: detail.ApprovalHistory || [],
+
                     openedFrom: this.activeTab.value
                 };
 
@@ -453,6 +498,9 @@ window.$config = {
                 if (this.isTransferPayment(detail.PaymentMethod)) {
                     this.paymentForm.amount = detail.TotalAmount;
                 }
+
+                // ✅ 重置審核歷程展開狀態
+                this.approvalHistoryExpanded.value = false;
 
                 this.bookingDrawerInstance.value?.show();
             } catch (err) {

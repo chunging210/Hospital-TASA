@@ -134,6 +134,10 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<RoomManagerDelegate> RoomManagerDelegate { get; set; }
 
+    public virtual DbSet<SysRoomApprovalLevel> SysRoomApprovalLevel { get; set; }
+
+    public virtual DbSet<ConferenceApprovalHistory> ConferenceApprovalHistory { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -175,6 +179,8 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.CostCenterConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.RoomManagerDelegateConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.SysRoomApprovalLevelConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferenceApprovalHistoryConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

@@ -63,6 +63,8 @@ namespace TASA.Services
             public PricingType PricingType { get; set; }
             public BookingSettings BookingSettings { get; set; }
             public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
+            public bool EnableParkingTicket { get; set; }  // ✅ 停車券功能
+            public decimal ParkingTicketPrice { get; set; }  // ✅ 停車券單價
         }
 
         public record RoomByFloorQueryVM
@@ -285,7 +287,9 @@ namespace TASA.Services
                     Name = x.Name,
                     PricingType = x.PricingType,
                     BookingSettings = x.BookingSettings,
-                    AgreementPath = x.AgreementPath  // ✅ 聲明書路徑
+                    AgreementPath = x.AgreementPath,  // ✅ 聲明書路徑
+                    EnableParkingTicket = x.EnableParkingTicket,  // ✅ 停車券功能
+                    ParkingTicketPrice = x.ParkingTicketPrice  // ✅ 停車券單價
                 })
                 .ToList();
 

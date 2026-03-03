@@ -253,6 +253,10 @@ namespace TASA.Services.RoomModule
             public Guid? ManagerId { get; set; }  // ✅ 加這個
             public ManagerInfoVM? Manager { get; set; }  // ✅ 加這個
             public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
+
+            // ✅ 停車券設定
+            public bool EnableParkingTicket { get; set; }
+            public decimal ParkingTicketPrice { get; set; }
         }
 
         public record DepartmentInfoVM
@@ -289,6 +293,10 @@ namespace TASA.Services.RoomModule
             public Guid? ManagerId { get; set; }
             public string? AgreementBase64 { get; set; }  // ✅ 聲明書 Base64（前端上傳用）
             public string? AgreementFileName { get; set; }  // ✅ 聲明書檔名
+
+            // ✅ 停車券設定
+            public bool EnableParkingTicket { get; set; }
+            public decimal ParkingTicketPrice { get; set; } = 100;
         }
 
         [Serializable]
@@ -373,6 +381,10 @@ namespace TASA.Services.RoomModule
                 } : null,
 
                 AgreementPath = room.AgreementPath,  // ✅ 聲明書路徑
+
+                // ✅ 停車券設定
+                EnableParkingTicket = room.EnableParkingTicket,
+                ParkingTicketPrice = room.ParkingTicketPrice,
 
                 PricingDetails = new List<PricingDetailVM>(),
 
@@ -645,7 +657,7 @@ namespace TASA.Services.RoomModule
         }
 
         // ✅ 改成接收 InsertVM（Images 是完整物件）
-        public void Insert(InsertVM vm)
+        public Guid Insert(InsertVM vm)
         {
             // ===== 1. 驗證基本欄位 =====
             ValidateBasicFields(vm);
@@ -701,6 +713,8 @@ namespace TASA.Services.RoomModule
                 IsEnabled = vm.IsEnabled,
                 ManagerId = vm.ManagerId,
                 AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName),  // ✅ 聲明書
+                EnableParkingTicket = vm.EnableParkingTicket,  // ✅ 停車券
+                ParkingTicketPrice = vm.ParkingTicketPrice,
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
             };
@@ -745,6 +759,8 @@ namespace TASA.Services.RoomModule
             _ = service.LogServices.LogAsync("會議室新增",
                 $"{newSysRoom.Name}({newSysRoom.Id}) IsEnabled:{newSysRoom.IsEnabled} " +
                 $"PricingType:{newSysRoom.PricingType} BookingSettings:{newSysRoom.BookingSettings}");
+
+            return newSysRoom.Id;
         }
 
         private string SaveImage(string base64Data, string? fileType)
@@ -928,8 +944,11 @@ namespace TASA.Services.RoomModule
             data.ManagerId = vm.ManagerId;
 
             // ✅ 更新聲明書（有上傳新的才更新）
-
             data.AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName);
+
+            // ✅ 更新停車券設定
+            data.EnableParkingTicket = vm.EnableParkingTicket;
+            data.ParkingTicketPrice = vm.ParkingTicketPrice;
             
 
             // ===== 6. 更新圖片 (可選) =====

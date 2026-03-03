@@ -116,6 +116,18 @@ public partial class Conference
     [Column(TypeName = "tinyint(1) unsigned")]
     public ReservationStatus ReservationStatus { get; set; } = ReservationStatus.PendingApproval;
 
+    /// <summary>
+    /// 目前審核到第幾關 (0=尚未開始審核)
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int CurrentApprovalLevel { get; set; } = 0;
+
+    /// <summary>
+    /// 該預約總共需要幾關審核（快照自會議室設定）
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int TotalApprovalLevels { get; set; } = 1;
+
 
     /// <summary>
     /// ✅ 新增：拒絕原因
@@ -346,4 +358,9 @@ public partial class Conference
 
     public virtual ICollection<ConferenceAttachment> Attachments { get; set; } = new List<ConferenceAttachment>();
 
+    /// <summary>
+    /// 審核紀錄
+    /// </summary>
+    [InverseProperty("Conference")]
+    public virtual ICollection<ConferenceApprovalHistory> ApprovalHistory { get; set; } = new List<ConferenceApprovalHistory>();
 }

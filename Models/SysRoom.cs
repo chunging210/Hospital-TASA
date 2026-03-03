@@ -118,6 +118,17 @@ public partial class SysRoom
     [StringLength(500)]
     public string? AgreementPath { get; set; }
 
+    /// <summary>
+    /// 是否啟用停車券功能
+    /// </summary>
+    public bool EnableParkingTicket { get; set; } = false;
+
+    /// <summary>
+    /// 停車券單價
+    /// </summary>
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal ParkingTicketPrice { get; set; } = 100;
+
     [InverseProperty("Room")]
     public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
 
@@ -139,5 +150,9 @@ public partial class SysRoom
 
     public virtual ICollection<Equipment> Equipment { get; set; } = new List<Equipment>();
 
-
+    /// <summary>
+    /// 審核關卡設定
+    /// </summary>
+    [InverseProperty("Room")]
+    public virtual ICollection<SysRoomApprovalLevel> ApprovalLevels { get; set; } = new List<SysRoomApprovalLevel>();
 }

@@ -508,18 +508,26 @@ window.$config = {
             return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
         });
 
-        // 停車券贈送張數（每滿 5 萬送 30 張）
+        // ✅ 停車券單價（從會議室設定取得）
+        this.parkingTicketUnitPrice = computed(() => {
+            return this.selectedRoom.value?.ParkingTicketPrice || 100;
+        });
+
+        // 停車券贈送張數（每滿 5 萬送 30 張，僅啟用停車券時有效）
         this.freeTicketCount = computed(() => {
+            if (!this.selectedRoom.value?.EnableParkingTicket) return 0;
             return Math.floor(this.subtotal.value / 50000) * 30;
         });
 
-        // 停車券加購費用（每張 100 元）
+        // 停車券加購費用（使用會議室設定的單價）
         this.parkingTicketCost = computed(() => {
-            return (this.form.parkingTicketPurchase || 0) * 100;
+            if (!this.selectedRoom.value?.EnableParkingTicket) return 0;
+            return (this.form.parkingTicketPurchase || 0) * this.parkingTicketUnitPrice.value;
         });
 
         // 停車券總張數（贈送 + 加購）
         this.totalTicketCount = computed(() => {
+            if (!this.selectedRoom.value?.EnableParkingTicket) return 0;
             return this.freeTicketCount.value + (this.form.parkingTicketPurchase || 0);
         });
 
