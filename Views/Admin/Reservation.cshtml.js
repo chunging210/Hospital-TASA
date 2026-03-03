@@ -268,6 +268,9 @@ const reservation = new function () {
                     transferAmount: x.TransferAmount,
                     transferAt: x.TransferAt,
                     note: x.Note,
+                    // ✅ 優惠證明
+                    discountProofPath: x.DiscountProofPath,
+                    discountProofName: x.DiscountProofName,
                     slots: (x.Slots || []).map(s => ({
                         id: s.Id,
                         slotDate: s.SlotDate,
@@ -643,6 +646,13 @@ window.$config = {
             }
         });
 
+        // ✅ 查看大圖
+        const viewFullImage = (imagePath) => {
+            if (imagePath && imagePath !== '-') {
+                window.open(imagePath, '_blank');
+            }
+        };
+
         return {
             reservation,
             approvalPage,
@@ -651,7 +661,8 @@ window.$config = {
             isCounterPayment,
             isTransferPayment,
             getApprovalStatusClass,
-            getPaymentStatusClass
+            getPaymentStatusClass,
+            viewFullImage
         };
     }
 };

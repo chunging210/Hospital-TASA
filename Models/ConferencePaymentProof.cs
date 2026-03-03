@@ -74,6 +74,18 @@ public partial class ConferencePaymentProof
     public string Note { get; set; }
 
     /// <summary>
+    /// 優惠證明檔案路徑
+    /// </summary>
+    [StringLength(500)]
+    public string? DiscountProofPath { get; set; }
+
+    /// <summary>
+    /// 優惠證明檔案名稱
+    /// </summary>
+    [StringLength(255)]
+    public string? DiscountProofName { get; set; }
+
+    /// <summary>
     /// 審核狀態 1 = 未付款 2 = 待查帳 (已上傳憑證)3 = 已收款(全額)4 = 已收款(訂金30%)5 = 已收款(尾款70%)
     /// </summary>
     [Column(TypeName = "tinyint(1) unsigned")]

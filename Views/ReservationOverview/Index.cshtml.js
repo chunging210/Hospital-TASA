@@ -44,6 +44,8 @@ window.$config = {
 
         /* ========= ✅ DOM Refs (重要!) ========= */
         this.counterPayFiles = ref(null);
+        this.counterDiscountProof = ref(null);  // 臨櫃優惠證明
+        this.transferDiscountProof = ref(null); // 匯款優惠證明
 
         /* ========= ✅ 付款表單資料 ========= */
         this.paymentForm = reactive({
@@ -393,6 +395,12 @@ window.$config = {
                     formData.append('files', files[i]);
                 }
 
+                // ✅ 附加優惠證明（如果有的話）
+                const discountProofInput = this.counterDiscountProof?.value;
+                if (discountProofInput?.files?.[0]) {
+                    formData.append('discountProofFile', discountProofInput.files[0]);
+                }
+
                 // ✅ 呼叫 API
                 await global.api.payment.uploadcounter({ body: formData });
 
@@ -405,6 +413,9 @@ window.$config = {
                 if (fileInput) {
                     fileInput.value = '';
                 }
+                if (discountProofInput) {
+                    discountProofInput.value = '';
+                }
 
             } catch (err) {
                 console.error('❌ 上傳憑證失敗:', err);
@@ -412,7 +423,7 @@ window.$config = {
             }
         };
 
-        // ✅ 上傳匯款資訊
+        // ✅ 上傳匯款資訊（改用 FormData 以支援優惠證明上傳）
         this.submitTransferPayment = async () => {
             if (!this.paymentForm.last5 || this.paymentForm.last5.length !== 5) {
                 addAlert('請輸入正確的 5 碼轉帳末碼', { type: 'warning' });
@@ -425,15 +436,22 @@ window.$config = {
             }
 
             try {
-                const payload = {
-                    reservationIds: [this.selectedItem.value.reservationNo],
-                    last5: this.paymentForm.last5,
-                    amount: parseInt(this.paymentForm.amount),
-                    transferAt: this.paymentForm.transferAt || null,
-                    note: this.paymentForm.transferNote || ''
-                };
+                const formData = new FormData();
+                formData.append('reservationIds', JSON.stringify([this.selectedItem.value.reservationNo]));
+                formData.append('last5', this.paymentForm.last5);
+                formData.append('amount', parseInt(this.paymentForm.amount));
+                if (this.paymentForm.transferAt) {
+                    formData.append('transferAt', this.paymentForm.transferAt);
+                }
+                formData.append('note', this.paymentForm.transferNote || '');
 
-                await global.api.payment.transfer({ body: payload });
+                // ✅ 附加優惠證明（如果有的話）
+                const discountProofInput = this.transferDiscountProof?.value;
+                if (discountProofInput?.files?.[0]) {
+                    formData.append('discountProofFile', discountProofInput.files[0]);
+                }
+
+                await global.api.payment.transfer({ body: formData });
 
                 addAlert('匯款資訊已提交，等待審核', { type: 'success' });
                 this.bookingDrawerInstance.value?.hide();
@@ -444,6 +462,9 @@ window.$config = {
                 this.paymentForm.amount = 0;
                 this.paymentForm.transferAt = '';
                 this.paymentForm.transferNote = '';
+                if (discountProofInput) {
+                    discountProofInput.value = '';
+                }
 
             } catch (err) {
                 console.error('❌ 提交匯款資訊失敗:', err);

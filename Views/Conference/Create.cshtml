@@ -353,7 +353,7 @@
                                     <div class="feed-item-list flex-grow-1">
                                         <label class="col-form-label pe-3">設備加租</label>
 
-                                        <div v-if="form.selectedSlots.length > 0">
+                                        <div v-if="hasAnySelectedSlots">
                                             <p class="text-muted small">選擇需要的額外設備</p>
                                             <div class="equipment-grid">
                                                 <div v-for="equipment in availableEquipment" :key="equipment.id"
@@ -396,7 +396,7 @@
                                     <div class="feed-item-list flex-grow-1">
                                         <label class="col-form-label pe-3">攤位加租</label>
 
-                                        <div v-if="form.selectedSlots.length > 0">
+                                        <div v-if="hasAnySelectedSlots">
                                             <div class="equipment-grid">
                                                 <div v-for="booth in availableBooths" :key="booth.id"
                                                      class="equipment-item" :class="{

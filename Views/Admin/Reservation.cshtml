@@ -443,6 +443,24 @@
                                         <span class="text-muted">{{ reservation.currentPayment.note }}</span>
                                     </p>
                                 </template>
+
+                                <!-- ===== 優惠證明（通用） ===== -->
+                                <template v-if="reservation.currentPayment.discountProofPath">
+                                    <hr class="my-2">
+                                    <h6 class="text-muted small mb-2">
+                                        <span class="material-icons" style="font-size: 16px;">verified</span>
+                                        優惠證明
+                                    </h6>
+                                    <div class="text-center mb-2">
+                                        <img :src="reservation.currentPayment.discountProofPath"
+                                             :alt="reservation.currentPayment.discountProofName"
+                                             class="img-fluid rounded border" style="max-height: 300px; cursor: pointer;"
+                                             @@click="viewFullImage(reservation.currentPayment.discountProofPath)" />
+                                    </div>
+                                    <p class="text-muted small text-center mb-0">
+                                        {{ reservation.currentPayment.discountProofName }}
+                                    </p>
+                                </template>
                             </div>
                         </div>
 

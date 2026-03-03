@@ -90,6 +90,10 @@ namespace TASA.Services.ConferenceModule
             public string? FileName { get; set; }
             public string? Note { get; set; }
 
+            // ✅ 優惠證明
+            public string? DiscountProofPath { get; set; }
+            public string? DiscountProofName { get; set; }
+
             // ✅ 多階層審核欄位
             public int CurrentApprovalLevel { get; set; }
             public int TotalApprovalLevels { get; set; }
@@ -602,6 +606,10 @@ namespace TASA.Services.ConferenceModule
                     FilePath = x.LatestProof != null ? x.LatestProof.FilePath : null,
                     FileName = x.LatestProof != null ? x.LatestProof.FileName : null,
                     Note = x.LatestProof != null ? x.LatestProof.Note : null,
+
+                    // ✅ 優惠證明
+                    DiscountProofPath = x.LatestProof != null ? x.LatestProof.DiscountProofPath : null,
+                    DiscountProofName = x.LatestProof != null ? x.LatestProof.DiscountProofName : null,
 
                     Slots = x.Conference.ConferenceRoomSlots
                         .OrderBy(s => s.SlotDate)

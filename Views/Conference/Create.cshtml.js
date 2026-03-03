@@ -473,55 +473,28 @@ window.$config = {
                 return 0;
             }
 
-            // ✅ 跨日模式：計算所有日期的費用
-            if (this.isMultiDay.value) {
-                let totalCost = 0;
-                for (const dateStr of this.dateRange.value) {
-                    const slots = this.selectedSlotsByDate[dateStr] || [];
-                    const dateSlots = this.slotsByDate[dateStr] || [];
+            // ✅ 統一使用 selectedSlotsByDate 和 slotsByDate 計算（單日和跨日都適用）
+            let totalCost = 0;
+            for (const dateStr of this.dateRange.value) {
+                const slots = this.selectedSlotsByDate[dateStr] || [];
+                const dateSlots = this.slotsByDate[dateStr] || [];
 
-                    for (const slotInfo of slots) {
-                        const slot = dateSlots.find(s => s.Key === slotInfo.key);
-                        if (!slot) continue;
-
-                        let price;
-                        if (slotInfo.isSetup && slot.SetupPrice != null) {
-                            price = slot.SetupPrice;
-                        } else if (this.isHolidayForDate(dateStr) && slot.HolidayPrice) {
-                            price = slot.HolidayPrice;
-                        } else {
-                            price = slot.Price;
-                        }
-                        totalCost += price;
-                    }
-                }
-                return totalCost;
-            }
-
-            // ✅ 單日模式：原有邏輯
-            if (!this.form.selectedSlots.length) {
-                return 0;
-            }
-
-            const selectedKeys = this.form.selectedSlots.map(s => s.key);
-            const cost = this.timeSlots.value
-                .filter(slot => selectedKeys.includes(slot.Key))
-                .reduce((sum, slot) => {
-                    const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
-                    const isSetup = slotInfo?.isSetup || false;
+                for (const slotInfo of slots) {
+                    const slot = dateSlots.find(s => s.Key === slotInfo.key);
+                    if (!slot) continue;
 
                     let price;
-                    if (isSetup && slot.SetupPrice != null) {
+                    if (slotInfo.isSetup && slot.SetupPrice != null) {
                         price = slot.SetupPrice;
-                    } else if (this.isHoliday.value && slot.HolidayPrice) {
+                    } else if (this.isHolidayForDate(dateStr) && slot.HolidayPrice) {
                         price = slot.HolidayPrice;
                     } else {
                         price = slot.Price;
                     }
-                    return sum + price;
-                }, 0);
-
-            return cost;
+                    totalCost += price;
+                }
+            }
+            return totalCost;
         });
 
         this.equipmentCost = computed(() => {
@@ -541,6 +514,15 @@ window.$config = {
         // 小計（會議室 + 設備 + 攤位，用於計算停車券贈送）
         this.subtotal = computed(() => {
             return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
+        });
+
+        // 檢查是否有任何已選時段（用於設備/攤位區塊顯示）
+        this.hasAnySelectedSlots = computed(() => {
+            for (const dateStr of this.dateRange.value) {
+                const slots = this.selectedSlotsByDate[dateStr] || [];
+                if (slots.length > 0) return true;
+            }
+            return false;
         });
 
         // ✅ 停車券單價（從會議室設定取得）
@@ -707,24 +689,11 @@ window.$config = {
             return `${this.form.building} ${this.form.floor} ${room?.Name || ''}`;
         };
 
-        // ✅ 取得選擇的時段文字
+        // ✅ 取得選擇的時段文字（單日模式使用，統一使用 selectedSlotsByDate）
         this.getSelectedSlotsText = () => {
-            const selectedKeys = this.form.selectedSlots.map(s => s.key);
-            const selectedSlots = this.timeSlots.value.filter(slot =>
-                selectedKeys.includes(slot.Key)
-            );
-
-            if (selectedSlots.length === 0) return '無';
-
-            selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
-
-            return selectedSlots.map(slot => {
-                const startTime = slot.StartTime.slice(0, 5);
-                const endTime = slot.EndTime.slice(0, 5);
-                const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
-                const suffix = slotInfo?.isSetup ? ' [場佈]' : '';
-                return `${slot.Name || ''} (${startTime} - ${endTime})${suffix}`;
-            }).join(', ');
+            if (!this.form.startDate) return '無';
+            // 單日模式直接使用 getSelectedSlotsTextForDate
+            return this.getSelectedSlotsTextForDate(this.form.startDate);
         };
 
         // ✅ 取得設備名稱
@@ -1187,6 +1156,12 @@ window.$config = {
             }
             this.selectedRoom.value = this.rooms.value.find(r => r.Id === this.form.roomId) || null;
             await this.loadAllDateSlots();
+
+            // ✅ 單日模式：同步更新 timeSlots（供費用計算和顯示使用）
+            if (!this.isMultiDay.value && this.form.startDate) {
+                this.timeSlots.value = this.slotsByDate[this.form.startDate] || [];
+                console.log('✅ 單日模式：同步 timeSlots', this.timeSlots.value.length, '個時段');
+            }
         };
 
         this.displayedSlots = computed(() => {
@@ -1338,28 +1313,42 @@ window.$config = {
         };
 
         this.calculateDuration = () => {
-            if (!this.selectedRoom.value || !this.form.selectedSlots.length) {
+            if (!this.selectedRoom.value || !this.hasAnySelectedSlots.value) {
                 return { hours: 0, minutes: 0 };
             }
 
-            const selectedKeys = this.form.selectedSlots.map(s => s.key);
-            const selectedSlots = this.timeSlots.value.filter(slot =>
-                selectedKeys.includes(slot.Key)
-            );
+            // 收集所有日期的已選時段
+            let allSelectedSlots = [];
+            for (const dateStr of this.dateRange.value) {
+                const selectedKeys = (this.selectedSlotsByDate[dateStr] || []).map(s => s.key);
+                const dateSlots = this.slotsByDate[dateStr] || [];
+                const selectedSlots = dateSlots.filter(slot => selectedKeys.includes(slot.Key));
+                allSelectedSlots = allSelectedSlots.concat(selectedSlots.map(s => ({ ...s, date: dateStr })));
+            }
 
-            if (!selectedSlots.length) {
+            if (!allSelectedSlots.length) {
                 return { hours: 0, minutes: 0 };
             }
 
-            selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+            // 計算總時長（跨日需要加總每天的時長）
+            let totalSeconds = 0;
+            for (const dateStr of this.dateRange.value) {
+                const selectedKeys = (this.selectedSlotsByDate[dateStr] || []).map(s => s.key);
+                const dateSlots = this.slotsByDate[dateStr] || [];
+                const selectedSlots = dateSlots.filter(slot => selectedKeys.includes(slot.Key));
 
-            const firstSlot = selectedSlots[0];
-            const lastSlot = selectedSlots[selectedSlots.length - 1];
+                if (selectedSlots.length === 0) continue;
 
-            const startTime = this.parseTime(firstSlot.StartTime);
-            const endTime = this.parseTime(lastSlot.EndTime);
+                selectedSlots.sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+                const firstSlot = selectedSlots[0];
+                const lastSlot = selectedSlots[selectedSlots.length - 1];
 
-            const totalMinutes = (endTime - startTime) / 60;
+                const startTime = this.parseTime(firstSlot.StartTime);
+                const endTime = this.parseTime(lastSlot.EndTime);
+                totalSeconds += (endTime - startTime);
+            }
+
+            const totalMinutes = totalSeconds / 60;
             const hours = Math.floor(totalMinutes / 60);
             const minutes = totalMinutes % 60;
 
@@ -1447,19 +1436,34 @@ window.$config = {
                 await this.updateTimeSlots();
                 await new Promise(resolve => setTimeout(resolve, 300));
 
-                // 處理時段資料 - 支援新舊格式
+                // 處理時段資料 - 支援新舊格式，同步到 selectedSlotsByDate
                 if (data.SlotInfos && Array.isArray(data.SlotInfos)) {
-                    // 新格式：包含 isSetup 資訊
-                    this.form.selectedSlots = data.SlotInfos.map(s => ({
-                        key: s.Key || s.key,
-                        isSetup: s.IsSetup || s.isSetup || false
-                    }));
+                    // 新格式：包含 isSetup 和 date 資訊
+                    // 按日期分組
+                    const slotsByDateMap = {};
+                    data.SlotInfos.forEach(s => {
+                        const slotDate = s.Date || s.date || this.form.startDate;
+                        if (!slotsByDateMap[slotDate]) {
+                            slotsByDateMap[slotDate] = [];
+                        }
+                        slotsByDateMap[slotDate].push({
+                            key: s.Key || s.key,
+                            isSetup: s.IsSetup || s.isSetup || false
+                        });
+                    });
+                    // 設定到 selectedSlotsByDate
+                    for (const [dateStr, slots] of Object.entries(slotsByDateMap)) {
+                        this.selectedSlotsByDate[dateStr] = slots;
+                    }
+                    console.log('✅ 已載入時段 (新格式):', slotsByDateMap);
                 } else if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
-                    // 舊格式：只有 key，預設為一般使用
-                    this.form.selectedSlots = data.SlotKeys.map(key => ({
+                    // 舊格式：只有 key，預設為一般使用，歸到 startDate
+                    const slots = data.SlotKeys.map(key => ({
                         key: key,
                         isSetup: false
                     }));
+                    this.selectedSlotsByDate[this.form.startDate] = slots;
+                    console.log('✅ 已載入時段 (舊格式):', slots);
                 }
 
                 await this.loadEquipmentByRoom();
@@ -1757,10 +1761,11 @@ window.$config = {
                 }
             );
 
+            // 監聽 selectedSlotsByDate 的變化（統一處理單日和跨日）
             watch(
-                () => [...this.form.selectedSlots],
-                (newSlots, oldSlots) => {
-                    if (this.form.roomId && this.form.startDate && newSlots.length > 0) {
+                () => JSON.stringify(this.selectedSlotsByDate),
+                (newVal, oldVal) => {
+                    if (this.form.roomId && this.form.startDate && this.hasAnySelectedSlots.value) {
                         console.log('🔄 時段變更,重新檢查設備可用性');
 
                         this.form.selectedEquipment = [];
@@ -1768,14 +1773,13 @@ window.$config = {
 
                         this.loadEquipmentByRoom();
                     }
-                },
-                { deep: true }
+                }
             );
 
             // ✅ 日期範圍變更時，重新載入時段（統一處理單日/多日）
             watch(
                 () => [this.form.startDate, this.form.endDate],
-                ([newStart, newEnd], [oldStart, oldEnd]) => {
+                async ([newStart, newEnd], [oldStart, oldEnd]) => {
                     if (!this.form.roomId || !newStart) return;
 
                     // 清空舊資料
@@ -1787,7 +1791,12 @@ window.$config = {
                     this.timeSlots.value = [];
 
                     // 載入新日期範圍的時段
-                    this.loadAllDateSlots();
+                    await this.loadAllDateSlots();
+
+                    // ✅ 單日模式：同步更新 timeSlots
+                    if (!this.isMultiDay.value && newStart) {
+                        this.timeSlots.value = this.slotsByDate[newStart] || [];
+                    }
                 },
                 { deep: true }
             );
@@ -1795,7 +1804,7 @@ window.$config = {
             // ✅ 會議室變更時，重新載入時段
             watch(
                 () => this.form.roomId,
-                (roomId) => {
+                async (roomId) => {
                     if (roomId && this.form.startDate) {
                         this.selectedRoom.value = this.rooms.value.find(r => r.Id === roomId) || null;
                         // 清空舊資料
@@ -1805,7 +1814,12 @@ window.$config = {
                         Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
                         this.form.selectedSlots = [];
                         this.timeSlots.value = [];
-                        this.loadAllDateSlots();
+                        await this.loadAllDateSlots();
+
+                        // ✅ 單日模式：同步更新 timeSlots
+                        if (!this.isMultiDay.value && this.form.startDate) {
+                            this.timeSlots.value = this.slotsByDate[this.form.startDate] || [];
+                        }
                     }
                 }
             );

@@ -15,6 +15,7 @@ namespace TASA.Services.ConferenceModule
             public List<string> ReservationIds { get; set; } = new();
             public List<IFormFile> Files { get; set; } = new();
             public string? Note { get; set; }
+            public IFormFile? DiscountProofFile { get; set; }  // 優惠證明
         }
 
 
@@ -25,6 +26,7 @@ namespace TASA.Services.ConferenceModule
             public int Amount { get; set; }
             public DateTime? TransferAt { get; set; }
             public string? Note { get; set; }
+            public IFormFile? DiscountProofFile { get; set; }  // 優惠證明
         }
 
         public class ApprovePaymentVM
@@ -57,6 +59,25 @@ namespace TASA.Services.ConferenceModule
                 Directory.CreateDirectory(_uploadPath);
 
             var proofIds = new List<Guid>();
+
+            // 先處理優惠證明（如果有的話）
+            string? discountProofPath = null;
+            string? discountProofName = null;
+            if (vm.DiscountProofFile != null && vm.DiscountProofFile.Length > 0)
+            {
+                var discountProofId = Guid.NewGuid();
+                var discountExt = Path.GetExtension(vm.DiscountProofFile.FileName);
+                var discountFileName = $"discount_{discountProofId}{discountExt}";
+                var discountFilePath = Path.Combine(_uploadPath, discountFileName);
+
+                using (var stream = new FileStream(discountFilePath, FileMode.Create))
+                {
+                    await vm.DiscountProofFile.CopyToAsync(stream);
+                }
+
+                discountProofPath = $"/uploads/payment-proofs/{discountFileName}";
+                discountProofName = vm.DiscountProofFile.FileName;
+            }
 
             // 處理每個預約單號
             foreach (var reservationNo in vm.ReservationIds)
@@ -96,7 +117,9 @@ namespace TASA.Services.ConferenceModule
                         Note = vm.Note,
                         Status = ProofStatus.PendingReview,
                         UploadedAt = DateTime.Now,
-                        UploadedBy = userId
+                        UploadedBy = userId,
+                        DiscountProofPath = discountProofPath,
+                        DiscountProofName = discountProofName
                     };
 
                     db.ConferencePaymentProof.Add(proof);
@@ -144,6 +167,29 @@ namespace TASA.Services.ConferenceModule
             if (vm.ReservationIds == null || vm.ReservationIds.Count == 0)
                 throw new HttpException("沒有選擇任何預約");
 
+            // 確保上傳目錄存在
+            if (!Directory.Exists(_uploadPath))
+                Directory.CreateDirectory(_uploadPath);
+
+            // 先處理優惠證明（如果有的話）
+            string? discountProofPath = null;
+            string? discountProofName = null;
+            if (vm.DiscountProofFile != null && vm.DiscountProofFile.Length > 0)
+            {
+                var discountProofId = Guid.NewGuid();
+                var discountExt = Path.GetExtension(vm.DiscountProofFile.FileName);
+                var discountFileName = $"discount_{discountProofId}{discountExt}";
+                var discountFilePath = Path.Combine(_uploadPath, discountFileName);
+
+                using (var stream = new FileStream(discountFilePath, FileMode.Create))
+                {
+                    await vm.DiscountProofFile.CopyToAsync(stream);
+                }
+
+                discountProofPath = $"/uploads/payment-proofs/{discountFileName}";
+                discountProofName = vm.DiscountProofFile.FileName;
+            }
+
             var proofIds = new List<Guid>();
 
             foreach (var reservationNo in vm.ReservationIds)
@@ -172,7 +218,9 @@ namespace TASA.Services.ConferenceModule
                     Note = vm.Note,
                     Status = ProofStatus.PendingReview,
                     UploadedAt = DateTime.Now,
-                    UploadedBy = userId
+                    UploadedBy = userId,
+                    DiscountProofPath = discountProofPath,
+                    DiscountProofName = discountProofName
                 };
 
                 db.ConferencePaymentProof.Add(proof);

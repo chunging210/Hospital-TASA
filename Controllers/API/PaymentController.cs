@@ -18,7 +18,8 @@ namespace TASA.Controllers.API
         public async Task<IActionResult> UploadCounter(
             [FromForm] IFormFileCollection files,
             [FromForm] string reservationIds,
-            [FromForm] string? note)
+            [FromForm] string? note,
+            [FromForm] IFormFile? discountProofFile)
         {
             var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reservationIds)
                 ?? new List<string>();
@@ -27,7 +28,8 @@ namespace TASA.Controllers.API
             {
                 ReservationIds = ids,
                 Files = files.ToList(),
-                Note = note
+                Note = note,
+                DiscountProofFile = discountProofFile
             };
 
             var proofIds = await service.PaymentService.UploadCounterProof(vm);
@@ -35,11 +37,30 @@ namespace TASA.Controllers.API
         }
 
         /// <summary>
-        /// 提交匯款資訊
+        /// 提交匯款資訊（改用 FormData 以支援檔案上傳）
         /// </summary>
         [HttpPost("transfer")]
-        public async Task<IActionResult> Transfer([FromBody] TransferPaymentVM vm)
+        public async Task<IActionResult> Transfer(
+            [FromForm] string reservationIds,
+            [FromForm] string last5,
+            [FromForm] int amount,
+            [FromForm] DateTime? transferAt,
+            [FromForm] string? note,
+            [FromForm] IFormFile? discountProofFile)
         {
+            var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reservationIds)
+                ?? new List<string>();
+
+            var vm = new TransferPaymentVM
+            {
+                ReservationIds = ids,
+                Last5 = last5,
+                Amount = amount,
+                TransferAt = transferAt,
+                Note = note,
+                DiscountProofFile = discountProofFile
+            };
+
             var proofIds = await service.PaymentService.SubmitTransferInfo(vm);
             return Ok(proofIds);
         }

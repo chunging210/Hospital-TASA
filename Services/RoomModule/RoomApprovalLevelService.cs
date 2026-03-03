@@ -208,7 +208,7 @@ namespace TASA.Services.RoomModule
                         .Where(u => u.DepartmentId == room.DepartmentId
                                  && u.IsEnabled
                                  && u.DeleteAt == null
-                                 && u.AuthRole.Any(r => r.Name == "DIRECTOR"))
+                                 && u.AuthRole.Any(r => r.Code == "DIRECTOR"))
                         .FirstOrDefault();
 
                     if (director != null)
@@ -222,7 +222,7 @@ namespace TASA.Services.RoomModule
                     .AsNoTracking()
                     .Where(u => u.IsEnabled
                              && u.DeleteAt == null
-                             && u.AuthRole.Any(r => r.Name == "ADMIN" || r.Name == "ADMINN"))
+                             && u.AuthRole.Any(r => r.Code == "ADMIN" || r.Code == "ADMINN"))
                     .FirstOrDefault();
 
                 if (admin != null)
