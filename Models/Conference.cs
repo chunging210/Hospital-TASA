@@ -58,6 +58,12 @@ public partial class Conference
     public string Description { get; set; }
 
     /// <summary>
+    /// 預計到達人數
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int? ExpectedAttendees { get; set; }
+
+    /// <summary>
     /// 開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)
     /// </summary>
     [Column(TypeName = "datetime")]

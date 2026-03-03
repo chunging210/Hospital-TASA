@@ -187,10 +187,13 @@ const reservation = new function () {
                     filePath: x.FilePath,
                     totalAmount: x.TotalAmount,
                     status: x.Status,
+                    rejectReason: x.RejectReason,
                     // ✅ 多階層審核欄位
                     currentApprovalLevel: x.CurrentApprovalLevel,
                     totalApprovalLevels: x.TotalApprovalLevels,
                     currentApproverName: x.CurrentApproverName,
+                    // ✅ 預計到達人數
+                    expectedAttendees: x.ExpectedAttendees,
                     slots: (x.Slots || []).map(s => ({
                         id: s.Id,
                         slotDate: s.SlotDate,
@@ -293,7 +296,9 @@ const reservation = new function () {
             ...item,
             currentApprovalLevel: item.currentApprovalLevel || 0,
             totalApprovalLevels: item.totalApprovalLevels || 1,
-            currentApproverName: item.currentApproverName || null
+            currentApproverName: item.currentApproverName || null,
+            expectedAttendees: item.expectedAttendees || null,  // ✅ 預計到達人數
+            rejectReason: item.rejectReason || null  // ✅ 拒絕原因
         });
 
         // 重設表單

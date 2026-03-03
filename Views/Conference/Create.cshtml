@@ -67,20 +67,27 @@
                                                 <label for="meetingContent" class="ms-2">會議內容</label>
                                             </div>
 
-                                            <!-- 承辦單位 & 會議主席 -->
+                                            <!-- 承辦單位 & 會議主席 & 預計人數 -->
                                             <div class="row">
-                                                <div class="col-xl-6">
+                                                <div class="col-xl-4">
                                                     <div class="form-floating mb-3">
                                                         <input type="text" class="form-control" id="organizerUnit"
                                                                placeholder="請填寫承辦單位" v-model="form.organizerUnit">
                                                         <label for="organizerUnit" class="ms-2">承辦單位</label>
                                                     </div>
                                                 </div>
-                                                <div class="col-xl-6">
+                                                <div class="col-xl-4">
                                                     <div class="form-floating mb-3">
                                                         <input type="text" class="form-control" id="chairman"
                                                                placeholder="請填寫會議主席" v-model="form.chairman">
                                                         <label for="chairman" class="ms-2">會議主席</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-xl-4">
+                                                    <div class="form-floating mb-3">
+                                                        <input type="number" class="form-control" id="expectedAttendees"
+                                                               placeholder="請填寫人數" v-model.number="form.expectedAttendees" min="1">
+                                                        <label for="expectedAttendees" class="ms-2">預計到達人數</label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -264,7 +271,7 @@
                                                                 <!-- 中間天提示 -->
                                                                 <div v-if="isMiddleDay(dateStr)" class="alert alert-warning mb-3">
                                                                     <i class="bx bx-info-circle"></i>
-                                                                    <strong>中間天：</strong>系統自動選取所有時段，您可以調整每個時段的使用類型（一般/場布）
+                                                                    <strong>中間天：</strong>系統自動選取所有時段，您可以調整每個時段的使用類型（一般/場佈）
                                                                 </div> *@
 
                                                                 <!-- 載入中 -->
@@ -303,7 +310,7 @@
                                                                             <span v-else>
                                                                                 {{ slot.Occupied ? '已預約' : '$' + getSlotDisplayPriceForDate(dateStr, slot) }}
                                                                                 <small v-if="!slot.Occupied && isSlotSetupForDate(dateStr, slot) && slot.SetupPrice"
-                                                                                       class="text-warning d-block">(場布價)</small>
+                                                                                       class="text-warning d-block">(場佈價)</small>
                                                                                 <small v-else-if="!slot.Occupied && isHolidayForDate(dateStr) && slot.HolidayPrice"
                                                                                        class="text-warning d-block">(假日價)</small>
                                                                             </span>
@@ -832,6 +839,11 @@
                         <div style="display: flex; padding: 8px 0;" v-if="form.chairman">
                             <div style="min-width: 110px; color: #666;">會議主席:</div>
                             <div style="flex: 1;">{{ form.chairman }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;" v-if="form.expectedAttendees">
+                            <div style="min-width: 110px; color: #666;">預計人數:</div>
+                            <div style="flex: 1;">{{ form.expectedAttendees }} 人</div>
                         </div>
 
                         <div style="display: flex; padding: 8px 0;" v-if="form.content">

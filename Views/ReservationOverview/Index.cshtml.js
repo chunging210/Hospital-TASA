@@ -464,6 +464,7 @@ window.$config = {
                     reserverName: detail.ApplicantName,
                     conferenceName: detail.ConferenceName,
                     description: detail.Description || '',  // 會議內容
+                    expectedAttendees: detail.ExpectedAttendees || null,  // ✅ 預計人數
                     organizerUnit: detail.OrganizerUnit,
                     chairman: detail.Chairman,
                     reservationDate: detail.Date,

@@ -541,7 +541,7 @@
     font-size: 30px;
 }
 
-/* ===== 場布模式 - 橘色樣式 ===== */
+/* ===== 場佈模式 - 橘色樣式 ===== */
 .time-slot-card.selected-setup {
     border-color: #fd7e14 !important;
     background: #fff3e6 !important;
@@ -594,7 +594,7 @@
     color: #fff;
 }
 
-/* 場布模式的價格標籤 */
+/* 場佈模式的價格標籤 */
 .setup-price-label {
     font-size: 10px;
     color: #fd7e14;

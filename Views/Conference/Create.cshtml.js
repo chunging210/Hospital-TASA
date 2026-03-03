@@ -187,6 +187,7 @@ window.$config = {
             content: '',
             organizerUnit: '',
             chairman: '',
+            expectedAttendees: null,  // ✅ 預計到達人數
             startDate: '',  // 開始日期
             endDate: '',    // 結束日期（單日時與 startDate 相同）
             meetingType: 'physical',
@@ -687,7 +688,7 @@ window.$config = {
                 const startTime = slot.StartTime.slice(0, 5);
                 const endTime = slot.EndTime.slice(0, 5);
                 const slotInfo = this.form.selectedSlots.find(s => s.key === slot.Key);
-                const suffix = slotInfo?.isSetup ? ' [場布]' : '';
+                const suffix = slotInfo?.isSetup ? ' [場佈]' : '';
                 return `${slot.Name || ''} (${startTime} - ${endTime})${suffix}`;
             }).join(', ');
         };
@@ -960,7 +961,7 @@ window.$config = {
             return slots ? slots.some(s => s.key === slot.Key) : false;
         };
 
-        /* ====== 跨日模式：檢查時段是否為場布（某日期） ====== */
+        /* ====== 跨日模式：檢查時段是否為場佈（某日期） ====== */
         this.isSlotSetupForDate = (dateStr, slot) => {
             const slots = this.selectedSlotsByDate[dateStr];
             if (!slots) return false;
@@ -1139,7 +1140,7 @@ window.$config = {
                 const startTime = slot.StartTime.slice(0, 5);
                 const endTime = slot.EndTime.slice(0, 5);
                 const slotInfo = slots.find(s => s.key === slot.Key);
-                const suffix = slotInfo?.isSetup ? ' [場布]' : '';
+                const suffix = slotInfo?.isSetup ? ' [場佈]' : '';
                 return `${startTime}-${endTime}${suffix}`;
             }).join(', ');
         };
@@ -1170,13 +1171,13 @@ window.$config = {
             return this.form.selectedSlots.some(s => s.key === slot.Key);
         };
 
-        // 檢查時段是否為場布模式
+        // 檢查時段是否為場佈模式
         this.isSlotSetup = (slot) => {
             const found = this.form.selectedSlots.find(s => s.key === slot.Key);
             return found ? found.isSetup : false;
         };
 
-        // 設定時段類型（一般/場布）
+        // 設定時段類型（一般/場佈）
         this.setSlotType = (slot, isSetup) => {
             const found = this.form.selectedSlots.find(s => s.key === slot.Key);
             if (found) {
@@ -1184,7 +1185,7 @@ window.$config = {
             }
         };
 
-        // 取得時段顯示價格（根據平日/假日/場布）
+        // 取得時段顯示價格（根據平日/假日/場佈）
         this.getSlotDisplayPrice = (slot) => {
             const isSetup = this.isSlotSetup(slot);
             if (isSetup && slot.SetupPrice != null) {
@@ -1357,6 +1358,7 @@ window.$config = {
 
                 this.form.name = data.ConferenceName || '';
                 this.form.content = data.Description || '';
+                this.form.expectedAttendees = data.ExpectedAttendees || null;  // ✅ 預計到達人數
                 this.form.organizerUnit = data.OrganizerUnit || '';
                 this.form.chairman = data.Chairman || '';
                 // 設定日期（支援跨日）
@@ -1505,6 +1507,7 @@ window.$config = {
             const payload = {
                 name: this.form.name,
                 description: this.form.content,
+                expectedAttendees: this.form.expectedAttendees || null,  // ✅ 預計到達人數
                 organizerUnit: this.form.organizerUnit,
                 chairman: this.form.chairman,
                 usageType: 1,

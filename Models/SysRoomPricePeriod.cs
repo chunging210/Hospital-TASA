@@ -55,7 +55,7 @@ public partial class SysRoomPricePeriod
     public decimal? HolidayPrice { get; set; }
 
     /// <summary>
-    /// 場布價格
+    /// 場佈價格
     /// </summary>
     [Column(TypeName = "decimal(10,2)")]
     public decimal? SetupPrice { get; set; }

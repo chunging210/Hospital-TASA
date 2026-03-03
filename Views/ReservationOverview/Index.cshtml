@@ -270,6 +270,14 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-12" v-if="selectedItem.expectedAttendees">
+                        <div class="row">
+                            <div class="col-md-6 d-flex flex-sm-column">
+                                <span class="form-label text-secondary font-size-18">預計人數</span>
+                                <label class="form-label fw-bold">{{ selectedItem.expectedAttendees }} 人</label>
+                            </div>
+                        </div>
+                    </div>
                     <!-- 會議內容 -->
                     <div class="col-md-12" v-if="selectedItem.description">
                         <div class="row">

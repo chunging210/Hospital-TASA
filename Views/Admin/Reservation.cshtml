@@ -89,10 +89,13 @@
                                 <td>{{ item.roomName }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
                                 <td>
-                                    <!-- ✅ 多階層審核進度顯示 -->
-                                    <span class="badge bg-info">
+                                    <!-- ✅ 根據狀態顯示不同內容 -->
+                                    <span v-if="item.status === '待審核'" class="badge bg-info">
                                         第 {{ item.currentApprovalLevel + 1 }}/{{ item.totalApprovalLevels }} 關
                                     </span>
+                                    <span v-else-if="item.status === '已核准'" class="badge bg-success">已核准</span>
+                                    <span v-else-if="item.status === '已拒絕'" class="badge bg-danger">已拒絕</span>
+                                    <span v-else class="badge bg-secondary">{{ item.status }}</span>
                                 </td>
                                 <td>
                                     <button v-if="item.status === '待審核'" class="btn btn-sm btn-outline-primary"
@@ -185,6 +188,9 @@
                 <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentReview.roomName }}</div>
                 <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentReview.date }}</div>
                 <div class="col-md-6"><strong>時間：</strong>{{ reservation.formatTimeDisplay(reservation.currentReview) }}</div>
+                <div class="col-md-6" v-if="reservation.currentReview.expectedAttendees">
+                    <strong>預計人數:</strong>{{ reservation.currentReview.expectedAttendees }} 人
+                </div>
             </div>
         </div>
 
@@ -200,11 +206,15 @@
                          :style="{ width: ((reservation.currentReview.currentApprovalLevel / reservation.currentReview.totalApprovalLevels) * 100) + '%' }">
                     </div>
                 </div>
-                <span class="badge bg-info">
+                <!-- ✅ 已完成審核時顯示完成狀態，否則顯示當前進度 -->
+                <span v-if="reservation.currentReview.currentApprovalLevel >= reservation.currentReview.totalApprovalLevels" class="badge bg-success">
+                    {{ reservation.currentReview.totalApprovalLevels }}/{{ reservation.currentReview.totalApprovalLevels }} 關（已完成）
+                </span>
+                <span v-else class="badge bg-info">
                     第 {{ reservation.currentReview.currentApprovalLevel + 1 }}/{{ reservation.currentReview.totalApprovalLevels }} 關
                 </span>
             </div>
-            <small class="text-muted mt-1 d-block" v-if="reservation.currentReview.currentApproverName">
+            <small class="text-muted mt-1 d-block" v-if="reservation.currentReview.currentApproverName && reservation.currentReview.currentApprovalLevel < reservation.currentReview.totalApprovalLevels">
                 目前審核人：{{ reservation.currentReview.currentApproverName }}
             </small>
         </div>

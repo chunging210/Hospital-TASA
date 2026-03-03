@@ -25,6 +25,7 @@ namespace TASA.Models.Configurations
     .HasComment("更新時間");
             entity.Property(e => e.DeleteAt).HasComment("刪除");
             entity.Property(e => e.Description).HasComment("會議內容");
+            entity.Property(e => e.ExpectedAttendees).HasComment("預計到達人數");
             entity.Property(e => e.DurationHH).HasComment("持續時間(小時)");
             entity.Property(e => e.DurationSS).HasComment("持續時間(分鐘)");
             entity.Property(e => e.Email).HasComment("電子郵件通知信箱群");

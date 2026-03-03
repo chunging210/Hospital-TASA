@@ -23,6 +23,7 @@ namespace TASA.Services.ConferenceModule
         {
             public string ConferenceName { get; set; }
             public string Description { get; set; }
+            public int? ExpectedAttendees { get; set; }  // ✅ 預計到達人數
             public string OrganizerUnit { get; set; }
             public string Chairman { get; set; }
             public string ReservationDate { get; set; }
@@ -94,6 +95,9 @@ namespace TASA.Services.ConferenceModule
             public int TotalApprovalLevels { get; set; }
             public string? CurrentApproverName { get; set; }  // 當前審核人名稱
 
+            // ✅ 預計到達人數
+            public int? ExpectedAttendees { get; set; }
+
             public List<SlotDetailVM> Slots { get; set; } = new();
         }
 
@@ -116,6 +120,7 @@ namespace TASA.Services.ConferenceModule
             public string ApplicantName { get; set; }
             public string ConferenceName { get; set; }
             public string? Description { get; set; }  // 會議內容
+            public int? ExpectedAttendees { get; set; }  // ✅ 預計到達人數
             public string OrganizerUnit { get; set; }
             public string Chairman { get; set; }
             public string Date { get; set; }
@@ -316,6 +321,9 @@ namespace TASA.Services.ConferenceModule
                         .Select(h => h.Approver.Name)
                         .FirstOrDefault(),
 
+                    // ✅ 預計到達人數
+                    ExpectedAttendees = x.Conference.ExpectedAttendees,
+
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
                             .ThenBy(s => s.StartTime)
@@ -331,38 +339,101 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// ✅ 我的待審核列表 - 只顯示「輪到我審核」的預約
+        /// ✅ 我的審核列表 - 根據狀態顯示不同資料
+        /// - Admin：可以查看所有預約
+        /// - 一般審核人員：
+        ///   - 待審核：顯示「輪到我審核」的預約
+        ///   - 已核准/已拒絕：顯示「我曾經審核過」的預約
         /// </summary>
         public IQueryable<ReservationListVM> MyPendingApprovalList(Guid userId, ReservationQueryVM query)
         {
             // ✅ 取得今天日期，用於檢查代理人
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            // ✅ 查詢「輪到我審核」或「我是代理人」的預約
+            // ✅ 檢查是否為 Admin
+            var isAdmin = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN");
+
             var queryable = db.Conference
                 .AsNoTracking()
-                .WhereNotDeleted()
-                .Where(c => c.ReservationStatus == ReservationStatus.PendingApproval)
-                .Where(c => c.ApprovalHistory.Any(h =>
-                    h.Level == c.CurrentApprovalLevel + 1 &&
-                    h.Status == ApprovalStatus.Pending &&
-                    (
-                        h.ApproverId == userId ||  // 本人
-                        db.RoomManagerDelegate.Any(d =>  // 代理人
-                            d.DelegateUserId == userId &&
-                            d.ManagerId == h.ApproverId &&
-                            d.IsEnabled &&
-                            d.DeleteAt == null &&
-                            d.StartDate <= today &&
-                            d.EndDate >= today
-                        )
-                    )
-                ));
+                .WhereNotDeleted();
 
-            // ✅ 篩選條件
-            if (query.ReservationStatus.HasValue)
+            // ✅ Admin 可以看到所有預約
+            if (isAdmin)
             {
-                queryable = queryable.Where(x => x.ReservationStatus == query.ReservationStatus.Value);
+                // 根據狀態篩選（如果有選擇的話）
+                if (query.ReservationStatus.HasValue)
+                {
+                    queryable = queryable.Where(c => c.ReservationStatus == query.ReservationStatus.Value);
+                }
+                // 全部狀態時不加篩選，顯示所有預約
+            }
+            // ✅ 一般審核人員：根據篩選狀態決定查詢邏輯
+            else if (!query.ReservationStatus.HasValue)
+            {
+                // 全部狀態：查詢「輪到我審核的待審核」+「我曾經審核過的已核准/已拒絕」
+                queryable = queryable
+                    .Where(c =>
+                        // 待審核且輪到我審核
+                        (c.ReservationStatus == ReservationStatus.PendingApproval &&
+                         c.ApprovalHistory.Any(h =>
+                            h.Level == c.CurrentApprovalLevel + 1 &&
+                            h.Status == ApprovalStatus.Pending &&
+                            (
+                                h.ApproverId == userId ||
+                                db.RoomManagerDelegate.Any(d =>
+                                    d.DelegateUserId == userId &&
+                                    d.ManagerId == h.ApproverId &&
+                                    d.IsEnabled &&
+                                    d.DeleteAt == null &&
+                                    d.StartDate <= today &&
+                                    d.EndDate >= today
+                                )
+                            )
+                         ))
+                        ||
+                        // 已核准/已拒絕且我曾經審核過
+                        ((c.ReservationStatus == ReservationStatus.PendingPayment ||
+                          c.ReservationStatus == ReservationStatus.Rejected ||
+                          c.ReservationStatus == ReservationStatus.Confirmed) &&
+                         c.ApprovalHistory.Any(h =>
+                            h.Status != ApprovalStatus.Pending &&
+                            (h.ApprovedBy == userId || h.ApproverId == userId)
+                         ))
+                    );
+            }
+            else if (query.ReservationStatus.Value == ReservationStatus.PendingApproval)
+            {
+                // 待審核：查詢「輪到我審核」或「我是代理人」的預約
+                queryable = queryable
+                    .Where(c => c.ReservationStatus == ReservationStatus.PendingApproval)
+                    .Where(c => c.ApprovalHistory.Any(h =>
+                        h.Level == c.CurrentApprovalLevel + 1 &&
+                        h.Status == ApprovalStatus.Pending &&
+                        (
+                            h.ApproverId == userId ||  // 本人
+                            db.RoomManagerDelegate.Any(d =>  // 代理人
+                                d.DelegateUserId == userId &&
+                                d.ManagerId == h.ApproverId &&
+                                d.IsEnabled &&
+                                d.DeleteAt == null &&
+                                d.StartDate <= today &&
+                                d.EndDate >= today
+                            )
+                        )
+                    ));
+            }
+            else
+            {
+                // 已核准/已拒絕：查詢「我曾經審核過」的預約
+                queryable = queryable
+                    .Where(c => c.ReservationStatus == query.ReservationStatus.Value)
+                    .Where(c => c.ApprovalHistory.Any(h =>
+                        h.Status != ApprovalStatus.Pending &&  // 已審核過
+                        (
+                            h.ApprovedBy == userId ||  // 我審核的
+                            h.ApproverId == userId  // 或我是原本的審核人
+                        )
+                    ));
             }
 
             return queryable
@@ -404,13 +475,18 @@ namespace TASA.Services.ConferenceModule
                             .FirstOrDefault() ?? "-",
                     TotalAmount = x.Conference.TotalAmount,
                     ParkingTicketCount = x.Conference.ParkingTicketCount,
-                    Status = "待審核",
-                    PaymentStatusText = "未付款",
+                    Status = x.Conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
+                             x.Conference.ReservationStatus == ReservationStatus.PendingPayment ? "已核准" :
+                             x.Conference.ReservationStatus == ReservationStatus.Rejected ? "已拒絕" :
+                             x.Conference.ReservationStatus == ReservationStatus.Confirmed ? "已完成" : "未知",
+                    PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                                        x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+                                        x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" : "未付款",
                     PaymentDeadline = null,
                     PaymentMethod = x.Conference.PaymentMethod,
                     DepartmentCode = x.Conference.DepartmentCode,
-                    RejectReason = null,
-                    PaymentRejectReason = null,
+                    RejectReason = x.Conference.RejectReason,
+                    PaymentRejectReason = x.LatestProof != null ? x.LatestProof.RejectReason : null,
                     UploadTime = null,
                     PaymentType = null,
                     LastFiveDigits = null,
@@ -426,6 +502,10 @@ namespace TASA.Services.ConferenceModule
                         .Where(h => h.Level == x.Conference.CurrentApprovalLevel + 1 && h.Status == ApprovalStatus.Pending)
                         .Select(h => h.Approver.Name)
                         .FirstOrDefault(),
+
+                    // ✅ 預計到達人數
+                    ExpectedAttendees = x.Conference.ExpectedAttendees,
+
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
                             .ThenBy(s => s.StartTime)
@@ -1160,6 +1240,7 @@ namespace TASA.Services.ConferenceModule
             {
                 ConferenceName = conference.Name,
                 Description = conference.Description,
+                ExpectedAttendees = conference.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = conference.OrganizerUnit,
                 Chairman = conference.Chairman,
                 ReservationDate = conference.ConferenceRoomSlots.Any()
@@ -1244,6 +1325,7 @@ namespace TASA.Services.ConferenceModule
                 ApplicantName = conference.CreateByNavigation?.Name ?? "-",
                 ConferenceName = conference.Name,
                 Description = conference.Description,
+                ExpectedAttendees = conference.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = conference.OrganizerUnit,
                 Chairman = conference.Chairman,
                 // ✅ Detail：顯示完整起迄時間（含日期）
@@ -1427,7 +1509,7 @@ namespace TASA.Services.ConferenceModule
                         !TimeOnly.TryParse(parts[1].Trim(), out var end))
                         throw new HttpException($"時段格式錯誤: {slotKey}");
 
-                    slotsByDate[slotDateOnly].Add((start, end, false));  // 預設非場布
+                    slotsByDate[slotDateOnly].Add((start, end, false));  // 預設非場佈
                 }
             }
             else
@@ -1547,6 +1629,7 @@ namespace TASA.Services.ConferenceModule
                 MCU = null,
                 Recording = false,
                 Description = vm.Description,
+                ExpectedAttendees = vm.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = vm.OrganizerUnit,
                 Chairman = vm.Chairman,
                 StartTime = null,
@@ -1617,6 +1700,7 @@ namespace TASA.Services.ConferenceModule
 
             conference.Name = vm.Name;
             conference.Description = vm.Description;
+            conference.ExpectedAttendees = vm.ExpectedAttendees;  // ✅ 預計到達人數
             conference.OrganizerUnit = vm.OrganizerUnit;
             conference.Chairman = vm.Chairman;
             conference.DepartmentId = room.DepartmentId;  // ✅ 更新分院ID
@@ -1666,7 +1750,7 @@ namespace TASA.Services.ConferenceModule
                     {
                         if (isSetup && priceInfo.SetupPrice.HasValue)
                         {
-                            // 場布價格（固定，不分平假日）
+                            // 場佈價格（固定，不分平假日）
                             price = priceInfo.SetupPrice.Value;
                         }
                         else if (isHoliday && priceInfo.HolidayPrice.HasValue)

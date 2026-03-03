@@ -29,6 +29,7 @@ namespace TASA.Services.ConferenceModule
             public string? Description { get; set; }
             public string? OrganizerUnit { get; set; }  // 承辦單位
             public string? Chairman { get; set; }       // 會議主席
+            public int? ExpectedAttendees { get; set; } // ✅ 預計到達人數
 
             // ===== 舊系統(即時會議/傳統會議)專用 =====
             public DateTime? StartTime { get; set; }
@@ -56,7 +57,7 @@ namespace TASA.Services.ConferenceModule
             public record SlotInfoVM
             {
                 public string Key { get; set; } = string.Empty;  // 時段 Key "09:00:00-10:00:00"
-                public bool IsSetup { get; set; } = false;       // 是否為場布
+                public bool IsSetup { get; set; } = false;       // 是否為場佈
                 public string? Date { get; set; }                // 日期 "2025-01-20"（跨日模式用）
             }
             public List<Guid>? EquipmentIds { get; set; } = [];

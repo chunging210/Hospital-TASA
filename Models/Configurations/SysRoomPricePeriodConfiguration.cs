@@ -34,7 +34,7 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.DeleteAt).HasComment("刪除時間");
             entity.Property(e => e.SetupPrice)
                 .HasColumnType("decimal(10,2)")
-                .HasComment("場布價格");
+                .HasComment("場佈價格");
 
             entity.HasOne(d => d.Room)
                 .WithMany(p => p.SysRoomPricePeriod)
