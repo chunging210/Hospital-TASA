@@ -136,6 +136,10 @@
                                     <a href="/admin/loginlog" class="dropdown-item">登入日誌</a>
                                     <a href="/admin/sysconfig" class="dropdown-item">系統設定</a>
                                     <a href="/admin/sysdepartment" class="dropdown-item">單位總覽</a>
+                                    @if (user?.IsAdmin == true)
+                                    {
+                                        <a href="/admin/holiday" class="dropdown-item">國定假日管理</a>
+                                    }
                                 </div>
                             </li>
                         }

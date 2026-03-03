@@ -1,0 +1,135 @@
+<div class="page-content" v-cloak>
+    <div class="container-fluid">
+
+        <!-- 主要內容卡片 -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header mx-4 mt-3">
+                <div class="row align-items-center">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">event</span>國定假日管理
+                    </div>
+                    <div class="col-xl col-sm-12 text-end">
+                        <!-- 年度選擇 -->
+                        <select v-model.number="holiday.state.selectedYear" @@change="holiday.loadHolidays"
+                                class="form-select d-inline-block me-2" style="width: auto;">
+                            <option v-for="year in holiday.yearOptions" :value="year">{{ year }} 年</option>
+                        </select>
+                        <!-- 同步政府假日按鈕 -->
+                        <button class="btn btn-success me-2" @@click="holiday.syncHolidays"
+                                :disabled="holiday.state.syncing">
+                            <span v-if="holiday.state.syncing" class="spinner-border spinner-border-sm me-1"></span>
+                            <span class="material-icons me-1" v-else>sync</span>
+                            同步政府假日
+                        </button>
+                        <!-- 上傳 JSON 按鈕 -->
+                        <label class="btn btn-outline-primary" :class="{ 'disabled': holiday.state.uploading }">
+                            <span v-if="holiday.state.uploading" class="spinner-border spinner-border-sm me-1"></span>
+                            <span class="material-icons me-1" v-else>upload_file</span>
+                            上傳 JSON
+                            <input type="file" accept=".json" @@change="holiday.uploadFile" style="display: none;">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- 說明區塊 -->
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-start">
+                        <span class="material-icons me-2">info</span>
+                        <div>
+                            <strong>使用說明：</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>同步政府假日</strong>：點擊按鈕自動從政府開放資料同步該年度的國定假日</li>
+                                <li><strong>上傳 JSON</strong>：手動上傳 JSON 格式的假日檔案（可從 <a href="https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/" target="_blank">這裡下載</a>）</li>
+                            </ul>
+                            <hr class="my-2">
+                            <strong>假日價格計算規則：</strong>
+                            <ul class="mb-0 mt-1">
+                                <li><strong>國定假日</strong>：使用假日價格</li>
+                                <li><strong>補班日</strong>：雖為週六日，但使用平日價格</li>
+                                <li><strong>週六日</strong>：若無特別設定，使用假日價格</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 假日列表 -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 150px;">日期</th>
+                                <th style="width: 100px;">星期</th>
+                                <th>名稱</th>
+                                <th style="width: 120px;">類型</th>
+                                <th style="width: 100px;">狀態</th>
+                                <th style="width: 150px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in holiday.list" :key="item.Id">
+                                <td>{{ item.Date }}</td>
+                                <td>{{ holiday.getDayOfWeek(item.Date) }}</td>
+                                <td>{{ item.Name }}</td>
+                                <td>
+                                    <span v-if="item.IsWorkday" class="badge bg-warning text-dark">補班日</span>
+                                    <span v-else class="badge bg-danger">假日</span>
+                                </td>
+                                <td>
+                                    <span v-if="item.IsEnabled" class="badge bg-success">啟用</span>
+                                    <span v-else class="badge bg-secondary">停用</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary me-1"
+                                            @@click="holiday.toggleEnabled(item.Id)">
+                                        {{ item.IsEnabled ? '停用' : '啟用' }}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            @@click="holiday.deleteHoliday(item.Id)">
+                                        刪除
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr v-if="holiday.list.length === 0">
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <span class="material-icons mb-2" style="font-size: 48px;">event_busy</span>
+                                    <p class="mb-0">{{ holiday.state.selectedYear }} 年尚無假日資料</p>
+                                    <p class="small">請上傳 JSON 檔案匯入資料</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 統計資訊 -->
+                <div class="row mt-4" v-if="holiday.list.length > 0">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h5 class="text-danger mb-0">{{ holiday.getStats().holidays }}</h5>
+                                <small class="text-muted">國定假日</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h5 class="text-warning mb-0">{{ holiday.getStats().workdays }}</h5>
+                                <small class="text-muted">補班日</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h5 class="text-primary mb-0">{{ holiday.getStats().total }}</h5>
+                                <small class="text-muted">總計</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

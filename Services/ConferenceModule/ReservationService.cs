@@ -1729,10 +1729,8 @@ namespace TASA.Services.ConferenceModule
 
             foreach (var (slotDate, requestedSlots) in slotsByDate)
             {
-                // ✅ 查詢該日期是否為假日
-                var dateTime = slotDate.ToDateTime(TimeOnly.MinValue);
-                var dayOfWeek = dateTime.DayOfWeek;
-                var isHoliday = dayOfWeek == DayOfWeek.Saturday || dayOfWeek == DayOfWeek.Sunday;
+                // ✅ 查詢該日期是否為假日（包含國定假日、補班日判斷）
+                var isHoliday = service.HolidayService.IsHoliday(slotDate);
 
                 foreach (var (start, end, isSetup) in requestedSlots)
                 {

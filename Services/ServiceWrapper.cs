@@ -12,6 +12,7 @@ using TASA.Services.VisitorModule;
 using TASA.Services.DelegateModule;
 using TASA.Services.WebexModule;
 using TASA.Services.CaptchaModule;
+using TASA.Services.HolidayModule;
 using TASA.Services;
 
 namespace TASA.Services
@@ -58,7 +59,8 @@ namespace TASA.Services
         Lazy<ReservationAutoManagementService> reservationAutoManagementService,
         Lazy<RoomManagerDelegateService> roomManagerDelegateService,
         Lazy<CaptchaService> captchaService,
-        Lazy<RoomApprovalLevelService> roomApprovalLevelService
+        Lazy<RoomApprovalLevelService> roomApprovalLevelService,
+        Lazy<HolidayService> holidayService
 
     )
     {
@@ -109,6 +111,8 @@ namespace TASA.Services
         public CaptchaService CaptchaService => captchaService.Value;
 
         public RoomApprovalLevelService RoomApprovalLevelService => roomApprovalLevelService.Value;
+
+        public HolidayService HolidayService => holidayService.Value;
 
     }
 }

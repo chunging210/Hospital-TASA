@@ -138,6 +138,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<ConferenceApprovalHistory> ConferenceApprovalHistory { get; set; }
 
+    public virtual DbSet<SysHoliday> SysHoliday { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -181,6 +183,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.RoomManagerDelegateConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomApprovalLevelConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceApprovalHistoryConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.SysHolidayConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

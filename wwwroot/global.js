@@ -157,6 +157,15 @@ const global = new function () {
             getall: GET,
             update: POST,
         }),
+        holiday: {
+            list: (year) => fetch(`/api/holiday/list/${year}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
+            years: () => fetch('/api/holiday/years').then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
+            sync: (year) => fetch(`/api/holiday/sync/${year}`, { method: 'POST' }).then(r => r.ok ? r.json().then(data => ({ data })) : r.json().then(e => Promise.reject(e))),
+            upload: (formData) => fetch('/api/holiday/upload', { method: 'POST', body: formData }).then(r => r.ok ? r.json().then(data => ({ data })) : r.json().then(e => Promise.reject(e))),
+            delete: (id) => fetch(`/api/holiday/${id}`, { method: 'DELETE' }).then(r => r.ok ? r.json().then(data => ({ data })) : r.json().then(e => Promise.reject(e))),
+            toggle: (id) => fetch(`/api/holiday/toggle/${id}`, { method: 'POST' }).then(r => r.ok ? r.json().then(data => ({ data })) : r.json().then(e => Promise.reject(e))),
+            check: (date) => fetch(`/api/holiday/check/${date}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
+        },
     }
 }
 

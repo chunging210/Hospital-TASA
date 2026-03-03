@@ -61,6 +61,44 @@ window.$config = {
 
         this.minAdvanceBookingDays = ref(7);
 
+        // 國定假日資料 (格式: { "2025-01-01": true, "2025-02-08": false } - true=假日, false=補班日)
+        this.holidayDates = ref({});
+
+        // 載入國定假日資料
+        this.loadHolidays = async () => {
+            const currentYear = new Date().getFullYear();
+            const years = [currentYear, currentYear + 1];
+
+            for (const year of years) {
+                try {
+                    const res = await global.api.holiday.list(year);
+                    if (res.data) {
+                        res.data.forEach(h => {
+                            if (h.IsEnabled) {
+                                // IsWorkday=true 表示補班日(用平日價), IsWorkday=false 表示假日(用假日價)
+                                this.holidayDates.value[h.Date] = !h.IsWorkday;
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.warn(`載入 ${year} 年假日資料失敗:`, err);
+                }
+            }
+            console.log('✅ 已載入國定假日:', Object.keys(this.holidayDates.value).length, '筆');
+        };
+
+        // 檢查日期是否為假日 (包含國定假日和週六日)
+        this.checkIsHoliday = (dateStr) => {
+            // 1. 先檢查國定假日/補班日
+            if (this.holidayDates.value.hasOwnProperty(dateStr)) {
+                return this.holidayDates.value[dateStr]; // true=假日價, false=平日價(補班日)
+            }
+            // 2. 沒有特別設定，判斷週六日
+            const date = new Date(dateStr);
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 0 || dayOfWeek === 6;
+        };
+
         // 最早可預約日期 computed
         this.minBookingDate = computed(() => {
             const today = new Date();
@@ -68,12 +106,10 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
-        // 判斷選擇的日期是否為假日（週六日）- 單日用
+        // 判斷選擇的日期是否為假日 - 單日用
         this.isHoliday = computed(() => {
             if (!this.form.startDate) return false;
-            const date = new Date(this.form.startDate);
-            const dayOfWeek = date.getDay();
-            return dayOfWeek === 0 || dayOfWeek === 6; // 0=週日, 6=週六
+            return this.checkIsHoliday(this.form.startDate);
         });
 
         // 計算日期範圍（統一使用 startDate/endDate）
@@ -128,11 +164,9 @@ window.$config = {
             return slots.reduce((max, s) => s.EndTime > max.EndTime ? s : max, slots[0]);
         };
 
-        // 判斷某日期是否為假日
+        // 判斷某日期是否為假日 (跨日模式用)
         this.isHolidayForDate = (dateStr) => {
-            const date = new Date(dateStr);
-            const dayOfWeek = date.getDay();
-            return dayOfWeek === 0 || dayOfWeek === 6;
+            return this.checkIsHoliday(dateStr);
         };
 
         // 格式化 Tab 日期顯示
@@ -1580,6 +1614,8 @@ window.$config = {
                 console.error('載入系統設定失敗:', err);
             }
 
+            // 載入國定假日資料
+            await this.loadHolidays();
 
             // 點擊外部關閉下拉選單
             document.addEventListener('click', (e) => {
