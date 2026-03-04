@@ -1,0 +1,448 @@
+@{
+    Layout = "_Page";
+}
+
+@section head {
+<style>
+    :root {
+        --grad-start: #3ecfcf;
+        --grad-end: #2b5ce6;
+        --grad: linear-gradient(to top, #3b76e1, #36e4cd);
+        --primary: #2b7de9;
+        --text-dark: #1a2340;
+        --text-muted: #6b7a99;
+        --border: #e4e9f2;
+        --bg-page: #f0f4fa;
+    }
+
+    .availability-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 28px;
+        background: var(--bg-page);
+        min-height: 100vh;
+    }
+
+    /* 主卡片 */
+    .main-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 16px rgba(43, 92, 230, 0.09);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    /* 頂部標題 + 篩選 */
+    .main-header {
+        padding: 28px 32px 24px;
+        background: #fff;
+    }
+
+    .main-header h3 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .main-header .header-icon {
+        font-size: 32px;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        vertical-align: middle;
+    }
+
+    .main-header .subtitle {
+        font-size: 15px;
+        color: var(--text-muted);
+        margin: 5px 0 24px 0;
+    }
+
+    .main-header label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 6px;
+    }
+
+    .main-header .form-control,
+    .main-header .form-select {
+        font-size: 16px;
+        border-color: #d0d8ec;
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: var(--text-dark);
+    }
+
+    .main-header .form-control:focus,
+    .main-header .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(43, 92, 230, 0.1);
+    }
+
+    /* 分隔線 */
+    .main-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0;
+    }
+
+    /* 內容區 */
+    .main-body {
+        padding: 24px 32px 32px;
+        background: #f7f9fd;
+    }
+
+    /* 圖例 */
+    .legend {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 20px;
+        align-items: center;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    .legend-dot {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .legend-dot.available {
+        background: var(--grad);
+    }
+
+    .legend-dot.occupied {
+        background: #e74c8b;
+    }
+
+    /* 大樓區塊 */
+    .building-section {
+        background: #fff;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 8px rgba(43, 92, 230, 0.07);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    .building-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .building-header {
+        background: var(--grad);
+        color: #fff;
+        padding: 16px 24px;
+        font-weight: 700;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: opacity 0.2s;
+        user-select: none;
+    }
+
+    .building-header:hover {
+        opacity: 0.9;
+    }
+
+    .building-header .material-icons {
+        font-size: 24px;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
+    /* 樓層 */
+    .floor-section {
+        border-bottom: 1px solid #eef1f8;
+    }
+
+    .floor-section:last-child {
+        border-bottom: none;
+    }
+
+    /* 會議室卡片 */
+    .room-card {
+        padding: 18px 24px;
+        border-bottom: 1px solid #f2f4f9;
+    }
+
+    .room-card:last-child {
+        border-bottom: none;
+    }
+
+    .room-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 14px;
+    }
+
+    .room-name {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--text-dark);
+    }
+
+    .room-capacity {
+        font-size: 15px;
+        margin-left: 14px;
+        font-weight: 500;
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .room-capacity .material-icons {
+        font-size: 18px;
+    }
+
+    /* 時段 badge */
+    .slots-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .slot-badge {
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-size: 15px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: transform 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .slot-available {
+        background: linear-gradient(135deg, rgba(62,207,207,0.1) 0%, rgba(43,92,230,0.1) 100%);
+        color: var(--primary);
+        border: 1.5px solid rgba(43, 125, 233, 0.35);
+    }
+
+    @* .slot-available:hover {
+        background: var(--grad);
+        color: #fff;
+        border-color: transparent;
+        cursor: pointer;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(43, 92, 230, 0.25);
+    } *@
+
+    .slot-occupied {
+        background: #fff0f5;
+        color: #c0397a;
+        border: 1.5px solid #f4a0c8;
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+
+    /* 無資料 */
+    .no-data {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-muted);
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 8px rgba(43, 92, 230, 0.06);
+    }
+
+    .no-data .material-icons {
+        font-size: 68px;
+        margin-bottom: 16px;
+        display: block;
+        opacity: 0.3;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .no-data h5 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+    }
+
+    .no-data p {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    /* 載入中 */
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 80px;
+        background: #fff;
+        border-radius: 12px;
+    }
+
+    /* 查詢按鈕 */
+    .btn-search {
+        background: var(--grad);
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 11px 20px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: opacity 0.2s, transform 0.15s;
+        cursor: pointer;
+    }
+
+    .btn-search:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+    }
+
+    .btn-search .material-icons {
+        font-size: 20px;
+    }
+</style>
+}
+
+<div id="app" v-cloak class="availability-container">
+    <div class="main-card">
+
+        <!-- ── 頂部：標題 + 篩選 ── -->
+        <div class="main-header">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="material-icons header-icon">event_available</span>
+                <h3>會議室預約時段查詢</h3>
+            </div>
+
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">選擇日期</label>
+                    <input type="date" class="form-control" v-model="selectedDate" @@change="loadAvailability">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">分院</label>
+                    <select class="form-select" v-model="selectedDepartment" @@change="onDepartmentChange">
+                        <option v-for="dept in departments" :key="dept.Id" :value="dept.Id">{{ dept.Name }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">大樓</label>
+                    <select class="form-select" v-model="selectedBuilding" @@change="loadAvailability">
+                        <option value="">全部大樓</option>
+                        <option v-for="building in buildings" :key="building" :value="building">{{ building }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn-search" @@click="loadAvailability">
+                        <span class="material-icons">search</span>
+                        查詢
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 分隔線 ── -->
+        <div class="main-divider"></div>
+
+        <!-- ── 內容區 ── -->
+        <div class="main-body">
+
+            <!-- 圖例 -->
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="legend-dot available"></span>
+                    <span>可預約</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot occupied"></span>
+                    <span>已被預約</span>
+                </div>
+            </div>
+
+            <!-- 載入中 -->
+            <div v-if="loading" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+            </div>
+
+            <!-- 無資料 -->
+            <div v-else-if="!data || data.buildings.length === 0" class="no-data">
+                <span class="material-icons">event_busy</span>
+                <h5>找不到會議室</h5>
+                <p>請調整篩選條件後重試</p>
+            </div>
+
+            <!-- 結果列表 -->
+            <div v-else>
+                <div v-for="building in data.buildings" :key="building.Building" class="building-section">
+
+                    <!-- 大樓標題 -->
+                    <div class="building-header" @@click="toggleBuilding(building.Building)">
+                        <span>
+                            <span class="material-icons">apartment</span>
+                            {{ building.Building }}
+                        </span>
+                        <span class="material-icons" style="font-size:26px;">
+                            {{ expandedBuildings[building.Building] ? 'expand_less' : 'expand_more' }}
+                        </span>
+                    </div>
+
+                    <!-- 樓層 & 會議室 -->
+                    <div v-show="expandedBuildings[building.Building]">
+                        <div v-for="floor in building.Floors" :key="floor.Floor" class="floor-section">
+                            <div v-for="room in floor.Rooms" :key="room.Id" class="room-card">
+                                <div class="room-info">
+                                    <span class="room-name">{{ room.FullName }}</span>
+                                    <span class="room-capacity">
+                                        <span class="material-icons">people</span>
+                                        {{ room.Capacity }} 人
+                                    </span>
+                                </div>
+                                <div class="slots-container" v-if="room.Slots && room.Slots.length > 0">
+                                    <span v-for="slot in room.Slots"
+                                          :key="slot.Key"
+                                          class="slot-badge"
+                                          :class="slot.Occupied ? 'slot-occupied' : 'slot-available'">
+                                        {{ slot.StartTime }}-{{ slot.EndTime }}
+                                        <span v-if="slot.Name" class="ms-1">({{ slot.Name }})</span>
+                                    </span>
+                                </div>
+                                <div v-else class="text-muted" style="font-size:16px;">
+                                    尚未設定時段
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+        <!-- /main-body -->
+
+    </div>
+    <!-- /main-card -->
+</div>
