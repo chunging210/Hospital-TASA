@@ -1,0 +1,675 @@
+@{
+    Layout = "_Page";
+}
+
+@section head {
+<style>
+    :root {
+        --brand-gradient: linear-gradient(to top, #3b76e1, #36e4cd);
+        --primary: #0d6efd;
+        --primary-light: #e7f1ff;
+        --text-dark: #212529;
+        --text-muted: #6c757d;
+        --border: #e5eaf0;
+        --bg-page: #f5f5f5;
+        --occupied-bg: #f1f3f5;
+        --occupied-text: #adb5bd;
+    }
+
+    .availability-container {
+        max-width: 2200px;
+        margin: 0 auto;
+        padding: 30px;
+        background: var(--bg-page);
+        min-height: 100vh;
+    }
+
+    .main-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    /* Header */
+    .main-header {
+        padding: 28px 36px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .main-header h3 {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0;
+        background: var(--brand-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .header-icon {
+        font-size: 42px;
+        background: var(--brand-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        vertical-align: middle;
+    }
+
+    .main-header .subtitle {
+        font-size: 20px;
+        color: var(--text-muted);
+        margin: 6px 0 0 54px;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+        padding: 16px 36px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: flex-end;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-bar label {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .filter-bar .form-select,
+    .filter-bar .form-control {
+        font-size: 20px;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--text-dark);
+    }
+
+    .filter-bar .form-select:focus,
+    .filter-bar .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13,110,253,0.15);
+    }
+
+    /* View toggle */
+    .view-toggle {
+        display: flex;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .view-toggle button {
+        border: none;
+        background: #fff;
+        color: var(--text-muted);
+        font-size: 20px;
+        font-weight: 600;
+        padding: 12px 26px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-right: 1px solid var(--border);
+    }
+
+    .view-toggle button:last-child { border-right: none; }
+
+    .view-toggle button.active {
+        background: var(--brand-gradient);
+        color: #fff;
+    }
+
+    .view-toggle button:not(.active):hover {
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    /* Nav controls */
+    .nav-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .nav-btn {
+        background: #fff;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-dark);
+        transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .nav-btn .material-icons { font-size: 28px; }
+
+    .nav-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-dark);
+        min-width: 280px;
+        text-align: center;
+    }
+
+    /* Legend */
+    .legend-bar {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        padding: 12px 36px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+
+    .legend-swatch {
+        width: 40px;
+        height: 16px;
+        border-radius: 4px;
+    }
+
+    .legend-tip {
+        margin-left: auto;
+        font-size: 17px;
+        color: var(--text-muted);
+    }
+
+    /* Body */
+    .main-body {
+        padding: 24px 30px 36px;
+        background: #fafbfc;
+    }
+
+    /* Building block */
+    .building-block {
+        background: #fff;
+        border-radius: 10px;
+        margin-bottom: 18px;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .building-block:last-child { margin-bottom: 0; }
+
+    .building-hdr {
+        background: var(--brand-gradient);
+        color: #fff;
+        padding: 16px 28px;
+        font-weight: 700;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+    }
+
+    .building-hdr:hover { filter: brightness(1.05); }
+    .building-hdr .material-icons { font-size: 28px; vertical-align: middle; margin-right: 10px; }
+
+    .building-badge {
+        background: rgba(255,255,255,0.25);
+        border-radius: 20px;
+        padding: 3px 14px;
+        font-size: 18px;
+        font-weight: 500;
+        margin-left: 12px;
+    }
+
+    /* ═══════ DAY VIEW ═══════ */
+    .time-header {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        background: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .room-label-col {
+        width: 240px;
+        min-width: 240px;
+        flex-shrink: 0;
+        padding: 12px 20px;
+        border-right: 1px solid var(--border);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+    }
+
+    .time-cols { flex: 1; display: flex; overflow: hidden; }
+
+    .time-col {
+        flex: 1;
+        text-align: center;
+        padding: 12px 0;
+        font-size: 17px;
+        font-weight: 600;
+        border-right: 1px dashed #e9ecef;
+        color: var(--text-muted);
+    }
+
+    .time-col:last-child { border-right: none; }
+    .time-col.work-hour { color: var(--primary); }
+
+    .room-row {
+        display: flex;
+        align-items: stretch;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.15s;
+    }
+
+    .room-row:last-child { border-bottom: none; }
+    .room-row:hover { background: #fafbfc; }
+
+    .room-label {
+        width: 240px;
+        min-width: 240px;
+        flex-shrink: 0;
+        padding: 14px 20px;
+        border-right: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: inherit;
+    }
+
+    .room-label .rname { font-weight: 600; font-size: 22px; color: var(--text-dark); line-height: 1.3; }
+    .room-label .rcap  { font-size: 17px; color: var(--primary); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .room-label .rcap .material-icons { font-size: 19px; }
+
+    .timeline-area { flex: 1; position: relative; min-height: 70px; overflow: hidden; }
+
+    .timeline-grid { position: absolute; inset: 0; display: flex; }
+    .grid-col { flex: 1; border-right: 1px dashed #eee; }
+    .grid-col:last-child { border-right: none; }
+    .grid-col.even { background: #fafbfc; }
+    .grid-col.odd  { background: #fff; }
+
+    .slot-block {
+        position: absolute;
+        top: 8px; bottom: 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 1px solid transparent;
+    }
+
+    .slot-block.available {
+        background: var(--primary-light);
+        border-color: var(--primary);
+    }
+
+    .slot-block.occupied {
+        background: var(--occupied-bg);
+        border-color: #ddd;
+    }
+
+    /* ═══════ WEEK VIEW ═══════ */
+    .week-header {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        background: #f8f9fa;
+    }
+
+    .week-room-col {
+        width: 240px;
+        min-width: 240px;
+        flex-shrink: 0;
+        padding: 12px 20px;
+        border-right: 1px solid var(--border);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+    }
+
+    .week-day-cols { flex: 1; display: flex; }
+
+    .week-day-col {
+        flex: 1;
+        text-align: center;
+        padding: 12px 4px;
+        font-size: 20px;
+        font-weight: 700;
+        border-right: 1px solid #eee;
+        color: var(--text-dark);
+    }
+
+    .week-day-col:last-child { border-right: none; }
+    .week-day-col.today-col  { color: var(--primary); background: var(--primary-light); }
+    .week-day-col.weekend-col { color: #dc3545; }
+
+    .week-row {
+        display: flex;
+        align-items: stretch;
+        border-bottom: 1px solid #f0f0f0;
+        min-height: 70px;
+    }
+
+    .week-row:last-child { border-bottom: none; }
+
+    .week-room-label {
+        width: 240px;
+        min-width: 240px;
+        flex-shrink: 0;
+        padding: 12px 20px;
+        border-right: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .week-room-label .rname { font-weight: 600; font-size: 21px; color: var(--text-dark); }
+    .week-room-label .rcap  { font-size: 16px; color: var(--primary); display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+    .week-room-label .rcap .material-icons { font-size: 18px; }
+
+    .week-day-cell {
+        flex: 1;
+        border-right: 1px solid #f0f0f0;
+        padding: 8px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .week-day-cell:last-child { border-right: none; }
+    .week-day-cell:hover { background: #f5f8ff; }
+    .week-day-cell.today-cell { background: rgba(13,110,253,0.03); }
+
+    .week-slot-chip {
+        border-radius: 5px;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 4px 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+        max-width: 100%;
+        border: 1px solid transparent;
+    }
+
+    .week-slot-chip.available {
+        background: var(--primary-light);
+        color: var(--primary);
+        border-color: rgba(13,110,253,0.3);
+    }
+
+    .week-slot-chip.occupied {
+        background: var(--occupied-bg);
+        color: var(--occupied-text);
+        border-color: #ddd;
+    }
+
+    .week-empty { font-size: 16px; color: #ccc; text-align: center; padding: 6px 0; }
+
+    /* No data / loading */
+    .no-data {
+        text-align: center;
+        padding: 80px 30px;
+        color: var(--text-muted);
+        background: #fff;
+        border-radius: 10px;
+    }
+
+    .no-data .material-icons {
+        font-size: 80px;
+        margin-bottom: 20px;
+        display: block;
+        color: var(--primary);
+        opacity: 0.3;
+    }
+
+    .no-data h5 { font-size: 28px; font-weight: 600; color: var(--text-dark); }
+    .no-data p { font-size: 20px; }
+
+    .loading-box {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 100px;
+        background: #fff;
+        border-radius: 10px;
+    }
+
+    .loading-box .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+}
+
+<div id="app" v-cloak class="availability-container">
+    <div class="main-card">
+
+        <!-- Header -->
+        <div class="main-header">
+            <div class="d-flex align-items-center gap-3">
+                <span class="material-icons header-icon">event_available</span>
+                <h3>會議室預約時段查詢</h3>
+            </div>
+            <p class="subtitle">查看各會議室時段的預約狀況</p>
+
+            <!-- 版本切換按鈕 -->
+            <div style="display:flex;gap:12px;margin-top:16px;">
+                <a href="/availability" style="padding:8px 20px;border-radius:6px;font-size:15px;font-weight:600;text-decoration:none;background:#f0f0f0;color:#6c757d;">版本 A（卡片式）</a>
+                <a href="/availability2" style="padding:8px 20px;border-radius:6px;font-size:15px;font-weight:600;text-decoration:none;background:linear-gradient(to top, #3b76e1, #36e4cd);color:#fff;">版本 B（時間軸）</a>
+            </div>
+        </div>
+
+        <!-- Filter + nav bar -->
+        <div class="filter-bar">
+            <!-- 日期 -->
+            <div>
+                <label>選擇日期</label>
+                <input type="date" class="form-control" v-model="selectedDate" @@change="loadAvailability" style="width:200px;">
+            </div>
+            <!-- 分院 -->
+            <div>
+                <label>分院</label>
+                <select class="form-select" v-model="selectedDepartment" @@change="onDepartmentChange" style="width:220px;">
+                    <option v-for="dept in departments" :key="dept.Id" :value="dept.Id">{{ dept.Name }}</option>
+                </select>
+            </div>
+            <!-- 大樓 -->
+            <div>
+                <label>大樓</label>
+                <select class="form-select" v-model="selectedBuilding" @@change="loadAvailability" style="width:200px;">
+                    <option value="">全部大樓</option>
+                    <option v-for="b in buildings" :key="b" :value="b">{{ b }}</option>
+                </select>
+            </div>
+
+            <!-- 視圖切換 + 導航（靠右） -->
+            <div class="nav-controls">
+                <!-- 視圖切換 -->
+                <div class="view-toggle">
+                    <button :class="{ active: viewMode === 'day' }"  @@click="switchView('day')">日</button>
+                    <button :class="{ active: viewMode === 'week' }" @@click="switchView('week')">週</button>
+                </div>
+                <!-- 前後導航 -->
+                <button class="nav-btn" @@click="navigate(-1)">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <span class="nav-title">{{ viewTitle }}</span>
+                <button class="nav-btn" @@click="navigate(1)">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend-bar">
+            <div class="legend-item">
+                <div class="legend-swatch" style="background:#e7f1ff;border:2px solid #0d6efd;"></div>可預約
+            </div>
+            <div class="legend-item">
+                <div class="legend-swatch" style="background:#f1f3f5;border:2px solid #ddd;"></div>已被預約
+            </div>
+            <span class="legend-tip" v-if="viewMode === 'week'">點擊日期格可切換到日視圖</span>
+        </div>
+
+        <!-- Body -->
+        <div class="main-body">
+
+            <!-- Loading -->
+            <div v-if="loading" class="loading-box">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+            </div>
+
+            <!-- ════ DAY VIEW ════ -->
+            <template v-else-if="viewMode === 'day'">
+                <div v-if="!data || data.buildings.length === 0" class="no-data">
+                    <span class="material-icons">event_busy</span>
+                    <h5>找不到會議室</h5>
+                    <p>請調整篩選條件後重試</p>
+                </div>
+                <div v-else>
+                    <div v-for="building in data.buildings" :key="building.Building" class="building-block">
+                        <div class="building-hdr" @@click="toggleBuilding(building.Building)">
+                            <span>
+                                <span class="material-icons">apartment</span>
+                                {{ building.Building }}
+                                <span class="building-badge">{{ countRooms(building) }} 間</span>
+                            </span>
+                            <span class="material-icons" style="font-size:26px;transition:transform .2s;"
+                                  :style="expandedBuildings[building.Building] ? '' : 'transform:rotate(-90deg)'">
+                                expand_less
+                            </span>
+                        </div>
+                        <div v-show="expandedBuildings[building.Building]">
+                            <div class="time-header">
+                                <div class="room-label-col">會議室</div>
+                                <div class="time-cols">
+                                    <div v-for="h in hours" :key="h" class="time-col"
+                                         :class="h >= 8 && h < 18 ? 'work-hour' : ''">
+                                        {{ pad(h) }}
+                                    </div>
+                                </div>
+                            </div>
+                            <template v-for="floor in building.Floors" :key="floor.Floor">
+                                <div v-for="room in floor.Rooms" :key="room.Id" class="room-row">
+                                    <div class="room-label">
+                                        <div class="rname">{{ shortName(room.FullName) }}</div>
+                                        <div class="rcap">
+                                            <span class="material-icons">people</span>{{ room.Capacity }} 人
+                                        </div>
+                                    </div>
+                                    <div class="timeline-area">
+                                        <div class="timeline-grid">
+                                            <div v-for="h in hours" :key="h" class="grid-col"
+                                                 :class="h % 2 === 0 ? 'even' : 'odd'"></div>
+                                        </div>
+                                        <template v-for="block in buildBlocks(room.Slots)" :key="block.key">
+                                            <div v-if="block.type !== 'empty'"
+                                                 class="slot-block" :class="block.type"
+                                                 :style="blockStyle(block)">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ════ WEEK VIEW ════ -->
+            <template v-else-if="viewMode === 'week'">
+                <div v-if="!rangeData || rangeData.buildings.length === 0" class="no-data">
+                    <span class="material-icons">event_busy</span>
+                    <h5>找不到會議室</h5>
+                </div>
+                <div v-else>
+                    <div v-for="building in rangeData.buildings" :key="building.Building" class="building-block">
+                        <div class="building-hdr" @@click="toggleBuilding(building.Building)">
+                            <span>
+                                <span class="material-icons">apartment</span>
+                                {{ building.Building }}
+                                <span class="building-badge">{{ countRooms(building) }} 間</span>
+                            </span>
+                            <span class="material-icons" style="font-size:26px;transition:transform .2s;"
+                                  :style="expandedBuildings[building.Building] ? '' : 'transform:rotate(-90deg)'">
+                                expand_less
+                            </span>
+                        </div>
+                        <div v-show="expandedBuildings[building.Building]">
+                            <!-- Week header -->
+                            <div class="week-header">
+                                <div class="week-room-col">會議室</div>
+                                <div class="week-day-cols">
+                                    <div v-for="d in rangeData.dates" :key="d"
+                                         class="week-day-col"
+                                         :class="{ 'today-col': isToday(d), 'weekend-col': isWeekend(d) }">
+                                        {{ formatDateLabel(d) }}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Week rows -->
+                            <template v-for="floor in building.Floors" :key="floor.Floor">
+                                <div v-for="room in floor.Rooms" :key="room.Id" class="week-row">
+                                    <div class="week-room-label">
+                                        <div class="rname">{{ shortName(room.FullName) }}</div>
+                                        <div class="rcap">
+                                            <span class="material-icons">people</span>{{ room.Capacity }} 人
+                                        </div>
+                                    </div>
+                                    <div v-for="d in rangeData.dates" :key="d"
+                                         class="week-day-cell"
+                                         :class="{ 'today-cell': isToday(d) }"
+                                         @@click="drillToDay(d)">
+                                        <template v-if="room.SlotsByDate[d] && room.SlotsByDate[d].length > 0">
+                                            <div v-for="slot in room.SlotsByDate[d]" :key="slot.Key"
+                                                 class="week-slot-chip"
+                                                 :class="slot.Occupied ? 'occupied' : 'available'"
+                                                 :title="slot.StartTime + '-' + slot.EndTime + (slot.Occupied ? ' 已預約' : ' 可預約')">
+                                                {{ slot.StartTime }}-{{ slot.EndTime }}
+                                            </div>
+                                        </template>
+                                        <div v-else class="week-empty">—</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </div>
+</div>

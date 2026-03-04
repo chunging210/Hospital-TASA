@@ -323,6 +323,219 @@
     .btn-search .material-icons {
         font-size: 20px;
     }
+
+    /* 版本切換 */
+    .version-switch {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .version-btn {
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .version-btn.active {
+        background: var(--grad);
+        color: #fff;
+    }
+
+    .version-btn:not(.active) {
+        background: #f0f0f0;
+        color: var(--text-muted);
+    }
+
+    .version-btn:not(.active):hover {
+        background: #e0e8f5;
+        color: var(--primary);
+    }
+
+    /* 視圖切換 + 導航 */
+    .view-nav-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 32px;
+        background: #f7f9fd;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+
+    .view-toggle {
+        display: flex;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .view-toggle button {
+        border: none;
+        background: #fff;
+        color: var(--text-muted);
+        font-size: 16px;
+        font-weight: 600;
+        padding: 10px 24px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-right: 1px solid var(--border);
+    }
+
+    .view-toggle button:last-child { border-right: none; }
+
+    .view-toggle button.active {
+        background: var(--grad);
+        color: #fff;
+    }
+
+    .view-toggle button:not(.active):hover {
+        background: #e8f0ff;
+        color: var(--primary);
+    }
+
+    .nav-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+
+    .nav-btn {
+        background: #fff;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-dark);
+        transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+        border-color: var(--primary);
+        background: #e8f0ff;
+    }
+
+    .nav-btn .material-icons { font-size: 24px; }
+
+    .nav-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-dark);
+        min-width: 220px;
+        text-align: center;
+    }
+
+    /* ═══════ 週視圖樣式 ═══════ */
+    .week-header {
+        display: flex;
+        border-bottom: 2px solid var(--border);
+        background: #f8f9fa;
+    }
+
+    .week-room-col {
+        width: 220px;
+        min-width: 220px;
+        flex-shrink: 0;
+        padding: 12px 20px;
+        border-right: 1px solid var(--border);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+    }
+
+    .week-day-cols { flex: 1; display: flex; }
+
+    .week-day-col {
+        flex: 1;
+        text-align: center;
+        padding: 12px 4px;
+        font-size: 16px;
+        font-weight: 700;
+        border-right: 1px solid #eee;
+        color: var(--text-dark);
+    }
+
+    .week-day-col:last-child { border-right: none; }
+    .week-day-col.today-col  { color: var(--primary); background: rgba(43,125,233,0.08); }
+    .week-day-col.weekend-col { color: #dc3545; }
+
+    .week-row {
+        display: flex;
+        align-items: stretch;
+        border-bottom: 1px solid #f0f0f0;
+        min-height: 80px;
+    }
+
+    .week-row:last-child { border-bottom: none; }
+
+    .week-room-label {
+        width: 220px;
+        min-width: 220px;
+        flex-shrink: 0;
+        padding: 12px 20px;
+        border-right: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .week-room-label .rname { font-weight: 600; font-size: 16px; color: var(--text-dark); }
+    .week-room-label .rcap  { font-size: 14px; color: var(--primary); display: flex; align-items: center; gap: 3px; margin-top: 4px; }
+    .week-room-label .rcap .material-icons { font-size: 16px; }
+
+    .week-day-cell {
+        flex: 1;
+        border-right: 1px solid #f0f0f0;
+        padding: 8px 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .week-day-cell:last-child { border-right: none; }
+    .week-day-cell:hover { background: #f0f5ff; }
+    .week-day-cell.today-cell { background: rgba(43,125,233,0.03); }
+
+    .week-slot-chip {
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 5px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.3;
+        max-width: 100%;
+        text-align: center;
+    }
+
+    .week-slot-chip.available {
+        background: linear-gradient(135deg, rgba(62,207,207,0.15) 0%, rgba(43,92,230,0.15) 100%);
+        color: var(--primary);
+        border: 1px solid rgba(43,125,233,0.3);
+    }
+
+    .week-slot-chip.occupied {
+        background: #fff0f5;
+        color: #c0397a;
+        border: 1px solid #f4a0c8;
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+
+    .week-empty { font-size: 14px; color: #ccc; text-align: center; padding: 8px 0; }
 </style>
 }
 
@@ -336,7 +549,13 @@
                 <h3>會議室預約時段查詢</h3>
             </div>
 
-            <div class="row g-3 align-items-end">
+            <!-- 版本切換按鈕 -->
+            <div class="version-switch">
+                <a href="/availability" class="version-btn active">版本 A（卡片式）</a>
+                <a href="/availability2" class="version-btn">版本 B（時間軸）</a>
+            </div>
+
+            <div class="row g-3 align-items-end mt-2">
                 <div class="col-md-3">
                     <label class="form-label">選擇日期</label>
                     <input type="date" class="form-control" v-model="selectedDate" @@change="loadAvailability">
@@ -366,6 +585,23 @@
         <!-- ── 分隔線 ── -->
         <div class="main-divider"></div>
 
+        <!-- ── 視圖切換 + 導航 ── -->
+        <div class="view-nav-bar">
+            <div class="view-toggle">
+                <button :class="{ active: viewMode === 'day' }" @@click="switchView('day')">日</button>
+                <button :class="{ active: viewMode === 'week' }" @@click="switchView('week')">週</button>
+            </div>
+            <div class="nav-controls">
+                <button class="nav-btn" @@click="navigate(-1)">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <span class="nav-title">{{ viewTitle }}</span>
+                <button class="nav-btn" @@click="navigate(1)">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+        </div>
+
         <!-- ── 內容區 ── -->
         <div class="main-body">
 
@@ -388,15 +624,17 @@
                 </div>
             </div>
 
-            <!-- 無資料 -->
-            <div v-else-if="!data || data.buildings.length === 0" class="no-data">
-                <span class="material-icons">event_busy</span>
-                <h5>找不到會議室</h5>
-                <p>請調整篩選條件後重試</p>
-            </div>
+            <!-- ════ 日視圖 ════ -->
+            <template v-if="viewMode === 'day'">
+                <!-- 無資料 -->
+                <div v-if="!data || data.buildings.length === 0" class="no-data">
+                    <span class="material-icons">event_busy</span>
+                    <h5>找不到會議室</h5>
+                    <p>請調整篩選條件後重試</p>
+                </div>
 
-            <!-- 結果列表 -->
-            <div v-else>
+                <!-- 結果列表 -->
+                <div v-else>
                 <div v-for="building in data.buildings" :key="building.Building" class="building-section">
 
                     <!-- 大樓標題 -->
@@ -438,7 +676,74 @@
                     </div>
 
                 </div>
-            </div>
+                </div>
+            </template>
+
+            <!-- ════ 週視圖 ════ -->
+            <template v-if="viewMode === 'week'">
+                <!-- 無資料 -->
+                <div v-if="!rangeData || rangeData.buildings.length === 0" class="no-data">
+                    <span class="material-icons">event_busy</span>
+                    <h5>找不到會議室</h5>
+                    <p>請調整篩選條件後重試</p>
+                </div>
+
+                <!-- 週視圖結果 -->
+                <div v-else>
+                    <div v-for="building in rangeData.buildings" :key="building.Building" class="building-section">
+                        <!-- 大樓標題 -->
+                        <div class="building-header" @@click="toggleBuilding(building.Building)">
+                            <span>
+                                <span class="material-icons">apartment</span>
+                                {{ building.Building }}
+                            </span>
+                            <span class="material-icons" style="font-size:26px;">
+                                {{ expandedBuildings[building.Building] ? 'expand_less' : 'expand_more' }}
+                            </span>
+                        </div>
+
+                        <div v-show="expandedBuildings[building.Building]">
+                            <!-- 週標題列 -->
+                            <div class="week-header">
+                                <div class="week-room-col">會議室</div>
+                                <div class="week-day-cols">
+                                    <div v-for="d in rangeData.dates" :key="d"
+                                         class="week-day-col"
+                                         :class="{ 'today-col': isToday(d), 'weekend-col': isWeekend(d) }">
+                                        {{ formatDateLabel(d) }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 各樓層 & 會議室 -->
+                            <template v-for="floor in building.Floors" :key="floor.Floor">
+                                <div v-for="room in floor.Rooms" :key="room.Id" class="week-row">
+                                    <div class="week-room-label">
+                                        <div class="rname">{{ room.FullName }}</div>
+                                        <div class="rcap">
+                                            <span class="material-icons">people</span>{{ room.Capacity }} 人
+                                        </div>
+                                    </div>
+                                    <div v-for="d in rangeData.dates" :key="d"
+                                         class="week-day-cell"
+                                         :class="{ 'today-cell': isToday(d) }"
+                                         @@click="drillToDay(d)">
+                                        <template v-if="room.SlotsByDate[d] && room.SlotsByDate[d].length > 0">
+                                            <div v-for="slot in room.SlotsByDate[d]" :key="slot.Key"
+                                                 class="week-slot-chip"
+                                                 :class="slot.Occupied ? 'occupied' : 'available'"
+                                                 :title="slot.StartTime + '-' + slot.EndTime + (slot.Occupied ? ' 已預約' : ' 可預約')">
+                                                {{ slot.StartTime }}-{{ slot.EndTime }}
+                                            </div>
+                                        </template>
+                                        <div v-else class="week-empty">—</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
 
         </div>
         <!-- /main-body -->

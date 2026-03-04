@@ -1,27 +1,39 @@
-// Public Availability Page
 const { ref, reactive, computed, onMounted } = Vue;
 
 window.$config = {
     setup: () => new function () {
         const self = this;
 
-        // ── 狀態 ──
-        this.loading = ref(false);
-        this.viewMode = ref('day');   // 'day' | 'week'
-        this.selectedDate = ref('');
-        this.selectedDepartment = ref('');
-        this.selectedBuilding = ref('');
-        this.departments = ref([]);
-        this.buildings = ref([]);
-        this.data = ref(null);        // 日視圖資料
-        this.rangeData = ref(null);   // 週視圖資料
-        this.expandedBuildings = reactive({});
+        const HOUR_START = 8;
+        const HOUR_END   = 21;
+        this.hours = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
 
-        // 初始化日期為今天
+        // ── 狀態 ──
+        this.loading            = ref(false);
+        this.viewMode           = ref('day');   // 'day' | 'week'
+        this.selectedDate       = ref('');
+        this.selectedDepartment = ref('');
+        this.selectedBuilding   = ref('');
+        this.departments        = ref([]);
+        this.buildings          = ref([]);
+        this.data               = ref(null);    // 日視圖資料
+        this.rangeData          = ref(null);    // 週視圖資料
+        this.expandedBuildings  = reactive({});
+
         const today = new Date();
         this.selectedDate.value = today.toISOString().split('T')[0];
 
-        // ── 工具函數 ──
+        // ── 工具 ──
+        this.pad = h => String(h).padStart(2, '0');
+
+        this.shortName = fullName => {
+            const parts = fullName.trim().split(/\s+/);
+            return parts[parts.length - 1] || fullName;
+        };
+
+        this.countRooms = building =>
+            building.Floors.reduce((s, f) => s + f.Rooms.length, 0);
+
         this.formatDateLabel = dateStr => {
             const d = new Date(dateStr + 'T00:00:00');
             const weekDays = ['日','一','二','三','四','五','六'];
@@ -90,51 +102,87 @@ window.$config = {
             return `${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}`;
         });
 
-        // 切換大樓展開/收合
-        this.toggleBuilding = (buildingName) => {
-            self.expandedBuildings[buildingName] = !self.expandedBuildings[buildingName];
+        // ── Gantt block 建立（日視圖用）──
+        const toDecimal = t => {
+            const [h, m] = t.split(':').map(Number);
+            return h + m / 60;
         };
 
-        // 載入分院列表
-        this.loadDepartments = async () => {
+        this.buildBlocks = slots => {
+            if (!slots?.length) return [];
+            const map = {};
+            slots.forEach(slot => {
+                const s = Math.floor(toDecimal(slot.StartTime));
+                const e = Math.floor(toDecimal(slot.EndTime));
+                for (let h = s; h < e; h++) map[h] = slot;
+            });
+            const blocks = [];
+            let i = HOUR_START;
+            while (i < HOUR_END) {
+                const slot = map[i];
+                if (!slot) {
+                    let span = 1;
+                    while (i + span < HOUR_END && !map[i + span]) span++;
+                    blocks.push({ type: 'empty', hour: i, span });
+                    i += span;
+                } else {
+                    let span = 1;
+                    while (i + span < HOUR_END && map[i + span]?.Key === slot.Key) span++;
+                    blocks.push({
+                        key:       `${slot.Key}-${i}`,
+                        type:      slot.Occupied ? 'occupied' : 'available',
+                        hour:      i, span,
+                        // label:     slot.Occupied ? (slot.Name || '已預約') : '可預約',
+                        startTime: slot.StartTime,
+                        endTime:   slot.EndTime,
+                    });
+                    i += span;
+                }
+            }
+            return blocks;
+        };
+
+        this.blockStyle = block => {
+            const total = HOUR_END - HOUR_START;
+            const left  = ((block.hour - HOUR_START) / total) * 100;
+            const width = (block.span / total) * 100;
+            return { left: `calc(${left}% + 2px)`, width: `calc(${width}% - 4px)` };
+        };
+
+        this.toggleBuilding = name => {
+            self.expandedBuildings[name] = !self.expandedBuildings[name];
+        };
+
+        // ── API ──
+        const loadDepartments = async () => {
             try {
                 const res = await fetch('/api/public/departments');
                 if (res.ok) {
                     self.departments.value = await res.json();
                     if (self.departments.value.length > 0 && !self.selectedDepartment.value) {
                         const taipei = self.departments.value.find(d => d.Name.includes('臺北'));
-                        self.selectedDepartment.value = taipei ? taipei.Id : self.departments.value[0].Id;
+                        self.selectedDepartment.value = taipei?.Id ?? self.departments.value[0].Id;
                     }
                 }
-            } catch (err) {
-                console.error('載入分院失敗:', err);
-            }
+            } catch (err) { console.error(err); }
         };
 
-        // 載入大樓列表
-        this.loadBuildings = async () => {
+        const loadBuildings = async () => {
             try {
                 let url = '/api/public/buildings';
-                if (self.selectedDepartment.value) {
+                if (self.selectedDepartment.value)
                     url += `?departmentId=${self.selectedDepartment.value}`;
-                }
                 const res = await fetch(url);
-                if (res.ok) {
-                    self.buildings.value = await res.json();
-                }
-            } catch (err) {
-                console.error('載入大樓失敗:', err);
-            }
+                if (res.ok) self.buildings.value = await res.json();
+            } catch (err) { console.error(err); }
         };
 
-        // 分院變更時
         this.onDepartmentChange = async () => {
             self.selectedBuilding.value = '';
-            await self.loadBuildings();
+            await loadBuildings();
             await self.loadAvailability();
         };
 
-        // 載入空檔資料
         this.loadAvailability = async () => {
             self.loading.value = true;
             try {
@@ -144,12 +192,11 @@ window.$config = {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            date: self.selectedDate.value,
+                            date:         self.selectedDate.value,
                             departmentId: self.selectedDepartment.value || null,
-                            building: self.selectedBuilding.value || null
+                            building:     self.selectedBuilding.value   || null
                         })
                     });
-
                     if (res.ok) {
                         self.data.value = await res.json();
                         self.data.value?.buildings?.forEach(b => {
@@ -164,13 +211,12 @@ window.$config = {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            startDate: start,
-                            endDate: end,
+                            startDate:    start,
+                            endDate:      end,
                             departmentId: self.selectedDepartment.value || null,
-                            building: self.selectedBuilding.value || null
+                            building:     self.selectedBuilding.value   || null
                         })
                     });
-
                     if (res.ok) {
                         self.rangeData.value = await res.json();
                         self.rangeData.value?.buildings?.forEach(b => {
@@ -186,13 +232,10 @@ window.$config = {
             }
         };
 
-        // 初始化
         onMounted(async () => {
-            await self.loadDepartments();
-            if (self.selectedDepartment.value) {
-                await self.loadBuildings();
-                await self.loadAvailability();
-            }
+            await loadDepartments();
+            await loadBuildings();
+            await self.loadAvailability();
         });
     }
 };
