@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Services.WebexModule;
@@ -7,8 +7,17 @@ namespace TASA.Controllers.Mvc
 {
     public class WebexController(TASAContext db) : Controller
     {
+        // [DISABLED] Webex 功能暫時禁用
+        // 如需啟用，請將下方的 WEBEX_ENABLED 改為 true
+        private const bool WEBEX_ENABLED = false;
+
         public IActionResult Index()
         {
+            if (!WEBEX_ENABLED)
+            {
+                return Content("Webex 功能暫時禁用");
+            }
+
             var code = "";
             if (Request.Query.ContainsKey("code"))
             {

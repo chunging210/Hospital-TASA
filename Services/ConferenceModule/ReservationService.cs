@@ -40,10 +40,19 @@ namespace TASA.Services.ConferenceModule
             public int RoomCost { get; set; }
             public int EquipmentCost { get; set; }
             public int BoothCost { get; set; }
+            public int SmallBoothCost { get; set; }  // ✅ 小型攤位費用
             public int ParkingTicketCount { get; set; }
             public int ParkingTicketCost { get; set; }
             public int TotalAmount { get; set; }
+            public List<SmallBoothDetailDTO> SmallBooths { get; set; } = new();  // ✅ 小型攤位詳情
             public List<AttachmentDTO> Attachments { get; set; } = new();
+            public class SmallBoothDetailDTO
+            {
+                public Guid Id { get; set; }
+                public string Name { get; set; } = string.Empty;
+                public int Quantity { get; set; }
+                public decimal Price { get; set; }
+            }
             public class AttachmentDTO
             {
                 public Guid Id { get; set; }
@@ -147,6 +156,7 @@ namespace TASA.Services.ConferenceModule
             // 新增欄位
             public List<string> Equipments { get; set; } = new();  // 加租設備名稱列表
             public List<string> Booths { get; set; } = new();  // 攤位加租名稱列表
+            public List<string> SmallBooths { get; set; } = new();  // ✅ 小型攤位列表 (格式: "名稱 x 數量")
             public List<AttachmentViewVM> Attachments { get; set; } = new();  // 附件列表
 
             // ✅ 審核歷程
@@ -650,7 +660,7 @@ namespace TASA.Services.ConferenceModule
             CreateRoomSlots(conferenceId, roomId, slotsByDate);
 
             // 建立設備和攤位關聯（支援多日）
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotsByDate);
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, vm.SmallBooths, slotsByDate);
 
             if (vm.Attachments != null && vm.Attachments.Any())
             {
@@ -730,7 +740,7 @@ namespace TASA.Services.ConferenceModule
             db.ConferenceEquipment.RemoveRange(oldEquipments);
 
             // 建立新設備和攤位關聯（支援多日）
-            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, slotsByDate);
+            CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, vm.SmallBooths, slotsByDate);
 
             // 軟刪除舊附件
             var oldAttachments = db.ConferenceAttachment
@@ -1219,14 +1229,31 @@ namespace TASA.Services.ConferenceModule
                 .Select(s => $"{s.StartTime:HH\\:mm\\:ss}-{s.EndTime:HH\\:mm\\:ss}")
                 .ToList();
 
+            // Type = 8 設備加租
             var equipmentIds = conference.ConferenceEquipments
-                .Where(e => e.EquipmentType != "9")
+                .Where(e => e.EquipmentType == "8")
                 .Select(e => e.EquipmentId)
+                .Distinct()
                 .ToList();
 
+            // Type = 9 攤位租借
             var boothIds = conference.ConferenceEquipments
                 .Where(e => e.EquipmentType == "9")
                 .Select(e => e.EquipmentId)
+                .Distinct()
+                .ToList();
+
+            // Type = 10 小型攤位（含數量）
+            var smallBooths = conference.ConferenceEquipments
+                .Where(e => e.EquipmentType == "10")
+                .GroupBy(e => new { e.EquipmentId, e.EquipmentName, e.EquipmentPrice })
+                .Select(g => new GetReservationDetailDTO.SmallBoothDetailDTO
+                {
+                    Id = g.Key.EquipmentId,
+                    Name = g.Key.EquipmentName,
+                    Quantity = g.First().Quantity,
+                    Price = g.Key.EquipmentPrice
+                })
                 .ToList();
 
             var firstRoom = conference.ConferenceRoomSlots.FirstOrDefault()?.Room;
@@ -1263,9 +1290,11 @@ namespace TASA.Services.ConferenceModule
                 SlotKeys = slotKeys,
                 EquipmentIds = equipmentIds,
                 BoothIds = boothIds,
+                SmallBooths = smallBooths,  // ✅ 小型攤位
                 RoomCost = conference.RoomCost,
                 EquipmentCost = conference.EquipmentCost,
                 BoothCost = conference.BoothCost,
+                SmallBoothCost = conference.SmallBoothCost,  // ✅ 小型攤位費用
                 TotalAmount = conference.TotalAmount,
                 Attachments = attachments
             };
@@ -1293,18 +1322,26 @@ namespace TASA.Services.ConferenceModule
             if (conference == null)
                 throw new HttpException("找不到預約");
 
-            // 取得設備名稱（排除攤位，攤位 EquipmentType = "9"）
+            // 取得設備名稱（只取 Type = 8 設備加租）
             // 使用快照欄位 EquipmentName
             var equipments = conference.ConferenceEquipments
-                .Where(e => e.EquipmentType != "9")
+                .Where(e => e.EquipmentType == "8")
                 .Select(e => e.EquipmentName)
                 .Distinct()
                 .ToList();
 
-            // 取得攤位名稱
+            // 取得攤位名稱 (Type = 9)
             var booths = conference.ConferenceEquipments
                 .Where(e => e.EquipmentType == "9")
                 .Select(e => e.EquipmentName)
+                .Distinct()
+                .ToList();
+
+            // 取得小型攤位 (Type = 10) - 顯示「名稱 x 數量」
+            var smallBooths = conference.ConferenceEquipments
+                .Where(e => e.EquipmentType == "10")
+                .GroupBy(e => new { e.EquipmentId, e.EquipmentName })
+                .Select(g => $"{g.Key.EquipmentName} x {g.First().Quantity}")
                 .Distinct()
                 .ToList();
 
@@ -1381,6 +1418,7 @@ namespace TASA.Services.ConferenceModule
                 DiscountReason = conference.DiscountReason,      // ✅ 折扣原因
                 Equipments = equipments,
                 Booths = booths,
+                SmallBooths = smallBooths,  // ✅ 小型攤位
                 Attachments = attachments,
                 // ✅ 審核歷程
                 ApprovalHistory = conference.ApprovalHistory
@@ -1661,6 +1699,7 @@ namespace TASA.Services.ConferenceModule
                 RoomCost = (int)(vm.RoomCost ?? 0),
                 EquipmentCost = (int)(vm.EquipmentCost ?? 0),
                 BoothCost = (int)(vm.BoothCost ?? 0),
+                SmallBoothCost = (int)(vm.SmallBoothCost ?? 0),  // ✅ 小型攤位費用
                 ParkingTicketCount = vm.ParkingTicketCount ?? 0,
                 ParkingTicketCost = vm.ParkingTicketCost ?? 0,
                 TotalAmount = (int)(vm.TotalAmount ?? 0),
@@ -1717,6 +1756,7 @@ namespace TASA.Services.ConferenceModule
             conference.RoomCost = (int)(vm.RoomCost ?? 0);
             conference.EquipmentCost = (int)(vm.EquipmentCost ?? 0);
             conference.BoothCost = (int)(vm.BoothCost ?? 0);
+            conference.SmallBoothCost = (int)(vm.SmallBoothCost ?? 0);  // ✅ 小型攤位費用
             conference.ParkingTicketCount = vm.ParkingTicketCount ?? 0;
             conference.ParkingTicketCost = vm.ParkingTicketCost ?? 0;
             conference.TotalAmount = (int)(vm.TotalAmount ?? 0);
@@ -1891,12 +1931,13 @@ namespace TASA.Services.ConferenceModule
         /// <summary>
         /// 建立設備和攤位關聯（支援多日）
         /// </summary>
-        private void CreateEquipmentLinks(Guid conferenceId, List<Guid>? equipmentIds, List<Guid>? boothIds, Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>> slotsByDate)
+        private void CreateEquipmentLinks(Guid conferenceId, List<Guid>? equipmentIds, List<Guid>? boothIds, List<InsertVM.SmallBoothVM>? smallBooths, Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>> slotsByDate)
         {
             // ✅ 收集所有需要的設備 ID
             var allEquipmentIds = new List<Guid>();
             if (equipmentIds != null) allEquipmentIds.AddRange(equipmentIds);
             if (boothIds != null) allEquipmentIds.AddRange(boothIds);
+            if (smallBooths != null) allEquipmentIds.AddRange(smallBooths.Select(sb => sb.BoothId));
 
             if (!allEquipmentIds.Any()) return;
 
@@ -1952,6 +1993,34 @@ namespace TASA.Services.ConferenceModule
                                 EquipmentName = booth.Name,
                                 EquipmentPrice = booth.RentalPrice,
                                 EquipmentType = "9",
+                                SlotDate = slotDate,  // ✅ 日期
+                                StartTime = start,    // ✅ 開始時間
+                                EndTime = end,        // ✅ 結束時間
+                                EquipmentStatus = 1,  // ✅ 鎖定中
+                                LockedAt = DateTime.Now,
+                                CreatedAt = DateTime.Now
+                            });
+                        }
+                    }
+
+                    // 新增小型攤位 (Type = 10) - 支援數量
+                    if (smallBooths != null && smallBooths.Any())
+                    {
+                        foreach (var smallBooth in smallBooths)
+                        {
+                            if (smallBooth.Quantity <= 0) continue;
+                            if (!equipmentDict.TryGetValue(smallBooth.BoothId, out var booth))
+                                continue;
+
+                            db.ConferenceEquipment.Add(new ConferenceEquipment
+                            {
+                                Id = Guid.NewGuid(),
+                                ConferenceId = conferenceId,
+                                EquipmentId = smallBooth.BoothId,
+                                EquipmentName = booth.Name,
+                                EquipmentPrice = booth.RentalPrice,
+                                EquipmentType = "10",
+                                Quantity = smallBooth.Quantity,  // ✅ 數量
                                 SlotDate = slotDate,  // ✅ 日期
                                 StartTime = start,    // ✅ 開始時間
                                 EndTime = end,        // ✅ 結束時間

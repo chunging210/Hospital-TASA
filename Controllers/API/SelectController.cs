@@ -28,6 +28,14 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.EquipmentByRoom(query));
         }
 
+        /// <summary>
+        /// 取得小型攤位列表（僅 Admin 可用）
+        /// </summary>
+        [HttpGet("smallbooths")]
+        public IActionResult SmallBooths()
+        {
+            return Ok(service.SelectServices.SmallBooths());
+        }
 
         [HttpGet("role")]
         public IActionResult Role()

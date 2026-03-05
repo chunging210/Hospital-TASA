@@ -215,6 +215,7 @@ window.$config = {
         this.initiatorId = ref('');
         this.availableEquipment = ref([]);
         this.availableBooths = ref([]);
+        this.availableSmallBooths = ref([]);  // 小型攤位列表
 
         this.form = reactive({
             name: '',
@@ -234,6 +235,7 @@ window.$config = {
             selectedSlots: [],  // 新格式: [{ key: '09:00:00-10:00:00', isSetup: false }]
             selectedEquipment: [],
             selectedBooths: [],
+            smallBoothQuantities: {},  // 小型攤位數量 { equipmentId: quantity }
             paymentMethod: '',
             departmentCode: '',
             attachments: [],
@@ -456,6 +458,23 @@ window.$config = {
             }
         };
 
+        /* ========= 載入小型攤位（頁面載入時呼叫） ========= */
+        this.loadSmallBooths = async () => {
+            try {
+                const res = await global.api.select.smallbooths();
+                const data = res.data || res || [];
+                this.availableSmallBooths.value = (Array.isArray(data) ? data : []).map(e => ({
+                    id: e.Id,
+                    name: e.Name,
+                    price: e.RentalPrice
+                }));
+                console.log('✅ 小型攤位載入完成:', this.availableSmallBooths.value);
+            } catch (err) {
+                console.error('❌ 載入小型攤位失敗:', err);
+                this.availableSmallBooths.value = [];
+            }
+        };
+
         /* ========= 計算樓層選項 ========= */
         this.availableFloors = computed(() => {
             const b = this.buildings.value.find(x => x.Building === this.form.building);
@@ -511,9 +530,23 @@ window.$config = {
             }, 0);
         });
 
-        // 小計（會議室 + 設備 + 攤位，用於計算停車券贈送）
+        // 小型攤位費用
+        this.smallBoothCost = computed(() => {
+            let total = 0;
+            for (const [boothId, quantity] of Object.entries(this.form.smallBoothQuantities)) {
+                if (quantity > 0) {
+                    const booth = this.availableSmallBooths.value.find(b => b.id === boothId);
+                    if (booth) {
+                        total += booth.price * quantity;
+                    }
+                }
+            }
+            return total;
+        });
+
+        // 小計（會議室 + 設備 + 攤位 + 小型攤位，用於計算停車券贈送）
         this.subtotal = computed(() => {
-            return this.roomCost.value + this.equipmentCost.value + this.boothCost.value;
+            return this.roomCost.value + this.equipmentCost.value + this.boothCost.value + this.smallBoothCost.value;
         });
 
         // 檢查是否有任何已選時段（用於設備/攤位區塊顯示）
@@ -826,7 +859,7 @@ window.$config = {
                 }
 
                 this.availableEquipment.value = allData
-                    .filter(e => e.TypeName !== '攤位租借')
+                    .filter(e => e.TypeName !== '攤位租借' && e.TypeName !== '小型攤位')
                     .map(e => ({
                         id: e.Id,
                         name: e.Name,
@@ -848,6 +881,8 @@ window.$config = {
                         occupied: e.Occupied || false,
                         image: e.ImagePath || null
                     }));
+
+                // 小型攤位已在 loadSmallBooths 載入，這裡不處理
 
                 console.log('✅ 設備:', this.availableEquipment.value);
                 console.log('✅ 攤位:', this.availableBooths.value);
@@ -1312,6 +1347,24 @@ window.$config = {
             }
         };
 
+        // 小型攤位數量操作
+        this.increaseSmallBoothQuantity = (boothId) => {
+            const current = this.form.smallBoothQuantities[boothId] || 0;
+            this.form.smallBoothQuantities[boothId] = current + 1;
+        };
+
+        this.decreaseSmallBoothQuantity = (boothId) => {
+            const current = this.form.smallBoothQuantities[boothId] || 0;
+            if (current > 0) {
+                this.form.smallBoothQuantities[boothId] = current - 1;
+            }
+        };
+
+        this.updateSmallBoothQuantity = (boothId, value) => {
+            const quantity = parseInt(value) || 0;
+            this.form.smallBoothQuantities[boothId] = Math.max(0, quantity);
+        };
+
         this.calculateDuration = () => {
             if (!this.selectedRoom.value || !this.hasAnySelectedSlots.value) {
                 return { hours: 0, minutes: 0 };
@@ -1542,6 +1595,14 @@ window.$config = {
                 }
             }
 
+            // 組裝小型攤位資料（過濾掉數量為0的）
+            const smallBoothData = [];
+            for (const [boothId, quantity] of Object.entries(this.form.smallBoothQuantities)) {
+                if (quantity > 0) {
+                    smallBoothData.push({ boothId, quantity });
+                }
+            }
+
             const payload = {
                 name: this.form.name,
                 description: this.form.content,
@@ -1560,6 +1621,7 @@ window.$config = {
                 roomCost: this.roomCost.value,
                 equipmentCost: this.equipmentCost.value,
                 boothCost: this.boothCost.value,
+                smallBoothCost: this.smallBoothCost.value,
                 parkingTicketCount: this.totalTicketCount.value,
                 parkingTicketCost: this.parkingTicketCost.value,
                 totalAmount: this.totalAmount.value,
@@ -1568,6 +1630,7 @@ window.$config = {
                 slotInfos: slotInfos,  // 新格式（含日期）
                 equipmentIds: [...this.form.selectedEquipment],
                 boothIds: [...this.form.selectedBooths],
+                smallBooths: smallBoothData,  // 小型攤位資料
                 attendeeIds: [this.initiatorId.value],
                 attachments: attachments
             };
@@ -1633,7 +1696,8 @@ window.$config = {
                 this.loadDepartments();
             }
 
-            await this.loadEquipmentByRoom();
+            // ✅ 所有人都載入小型攤位
+            await this.loadSmallBooths();
 
             const params = new URLSearchParams(location.search);
             const editId = params.get('id');

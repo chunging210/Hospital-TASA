@@ -44,6 +44,7 @@ const global = new function () {
                 roomsbyfloor: POST,
                 roomslots: POST,
                 equipmentbyroom: POST,
+                smallbooths: GET,
                 roombyschedule: POST,
                 costcenters: GET,
                 smartsearch: POST,

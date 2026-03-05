@@ -1,3 +1,7 @@
+// [DISABLED] SeatSetting 功能暫時禁用
+// 如需啟用，請取消以下註解並在 ServiceWrapper.cs 中啟用相關服務
+
+/*
 // Services/SeatSettingModule/SeatSettingService.cs
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -12,26 +16,23 @@ namespace TASA.Services.SeatSettingModule
     {
         public record ListVM
         {
-            public uint No { get; set; }              // ulong → uint
+            public uint No { get; set; }
             public Guid Id { get; set; }
             public string? LogoPath { get; set; }
             public int FontSizeSmall { get; set; }
             public int FontSizeMedium { get; set; }
             public int FontSizeLarge { get; set; }
             public bool IsEnabled { get; set; }
-            public DateTime CreateAt { get; set; }    // CreatedAt → CreateAt
+            public DateTime CreateAt { get; set; }
         }
 
-        /// <summary>
-        /// 列表
-        /// </summary>
         public IQueryable<ListVM> List(bool? isEnabled)
         {
             return db.SeatSettings
                 .AsNoTracking()
-                .WhereNotDeleted()                     // IgnoreDelete → WhereNotDeleted
+                .WhereNotDeleted()
                 .WhereIf(isEnabled.HasValue, x => x.IsEnabled == isEnabled)
-                .Mapping(x => new ListVM              // Mapping<ListVM>() → Mapping(x => new ListVM)
+                .Mapping(x => new ListVM
                 {
                     No = x.No,
                     Id = x.Id,
@@ -46,17 +47,17 @@ namespace TASA.Services.SeatSettingModule
 
         public record DetailVM
         {
-            public uint No { get; set; }              // ulong → uint
+            public uint No { get; set; }
             public Guid Id { get; set; }
             public string? LogoPath { get; set; }
             public int FontSizeSmall { get; set; }
             public int FontSizeMedium { get; set; }
             public int FontSizeLarge { get; set; }
             public bool IsEnabled { get; set; }
-            public DateTime CreateAt { get; set; }    // CreatedAt → CreateAt
-            public Guid CreateBy { get; set; }        // CreatedBy → CreateBy
-            public DateTime? UpdateAt { get; set; }   // UpdatedAt → UpdateAt
-            public Guid? UpdateBy { get; set; }       // UpdatedBy → UpdateBy
+            public DateTime CreateAt { get; set; }
+            public Guid CreateBy { get; set; }
+            public DateTime? UpdateAt { get; set; }
+            public Guid? UpdateBy { get; set; }
         }
 
         public record SaveVM
@@ -79,9 +80,6 @@ namespace TASA.Services.SeatSettingModule
             public bool IsEnabled { get; set; } = true;
         }
 
-        /// <summary>
-        /// 儲存設定 (有就更新,沒有才新增)
-        /// </summary>
         public Guid Save(SaveVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id;
@@ -90,20 +88,18 @@ namespace TASA.Services.SeatSettingModule
                 throw new HttpException("無法取得使用者資訊");
             }
 
-            // 先找第一筆資料
             var existingData = db.SeatSettings
-                .WhereNotDeleted()                    // IgnoreDelete → WhereNotDeleted
+                .WhereNotDeleted()
                 .FirstOrDefault();
 
             if (existingData != null)
             {
-                // 有資料 = 更新
                 existingData.LogoPath = vm.LogoPath;
                 existingData.FontSizeSmall = vm.FontSizeSmall;
                 existingData.FontSizeMedium = vm.FontSizeMedium;
                 existingData.FontSizeLarge = vm.FontSizeLarge;
                 existingData.IsEnabled = vm.IsEnabled;
-                existingData.UpdateAt = DateTime.Now;   // DateTime.Now → DateTime.Now
+                existingData.UpdateAt = DateTime.Now;
                 existingData.UpdateBy = userId.Value;
 
                 db.SaveChanges();
@@ -112,7 +108,6 @@ namespace TASA.Services.SeatSettingModule
             }
             else
             {
-                // 沒資料 = 新增
                 var newData = new SeatSettings
                 {
                     Id = Guid.NewGuid(),
@@ -121,7 +116,7 @@ namespace TASA.Services.SeatSettingModule
                     FontSizeMedium = vm.FontSizeMedium,
                     FontSizeLarge = vm.FontSizeLarge,
                     IsEnabled = vm.IsEnabled,
-                    CreateAt = DateTime.Now,        // DateTime.Now → DateTime.Now
+                    CreateAt = DateTime.Now,
                     CreateBy = userId.Value,
                 };
 
@@ -132,15 +127,12 @@ namespace TASA.Services.SeatSettingModule
             }
         }
 
-        /// <summary>
-        /// 取得設定 (永遠只取第一筆)
-        /// </summary>
         public DetailVM? GetSetting()
         {
             return db.SeatSettings
                 .AsNoTracking()
-                .WhereNotDeleted()                     // IgnoreDelete → WhereNotDeleted
-                .Mapping(x => new DetailVM            // Mapping<DetailVM>() → Mapping(x => new DetailVM)
+                .WhereNotDeleted()
+                .Mapping(x => new DetailVM
                 {
                     No = x.No,
                     Id = x.Id,
@@ -157,9 +149,6 @@ namespace TASA.Services.SeatSettingModule
                 .FirstOrDefault();
         }
 
-        /// <summary>
-        /// 取得簡化的設定資料 (給前端用)
-        /// </summary>
         public SeatSettings? GetDetail()
         {
             return db.SeatSettings
@@ -168,9 +157,6 @@ namespace TASA.Services.SeatSettingModule
                 .FirstOrDefault();
         }
 
-        /// <summary>
-        /// 詳細資料 (by Id)
-        /// </summary>        
         public DetailVM? Detail(Guid id)
         {
             return db.SeatSettings
@@ -193,9 +179,6 @@ namespace TASA.Services.SeatSettingModule
                 .FirstOrDefault(x => x.Id == id);
         }
 
-        /// <summary>
-        /// 上傳 Logo (非同步版本)
-        /// </summary>
         public async Task<string> UploadLogoAsync(IFormFile file)
         {
             var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "seat-logos");
@@ -216,9 +199,6 @@ namespace TASA.Services.SeatSettingModule
             return $"/uploads/seat-logos/{fileName}";
         }
 
-        /// <summary>
-        /// 刪除 (軟刪除)
-        /// </summary>
         public void Delete(Guid id)
         {
             var data = db.SeatSettings
@@ -227,10 +207,11 @@ namespace TASA.Services.SeatSettingModule
 
             if (data != null)
             {
-                data.DeleteAt = DateTime.Now;      // DateTime.Now → DateTime.Now
+                data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("電子桌牌設定", $"刪除設定({data.Id})");
             }
         }
     }
 }
+*/

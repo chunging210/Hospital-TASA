@@ -27,6 +27,7 @@
                             <option value="2">聲音設備</option>
                             <option value="8">設備加租</option>
                             <option value="9">攤位租借</option>
+                            <option value="10">小型攤位</option>
                         </select>
                     </div>
 
@@ -126,12 +127,13 @@
                                     <option value="2">聲音設備</option>
                                     <option value="8">設備加租</option>
                                     <option value="9">攤位租借</option>
+                                    <option value="10">小型攤位</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- 產品型號 -->
-                        <div v-if="equipment.vm.Type !== 9" class="row mb-4">
+                        <!-- 產品型號（攤位租借/小型攤位不需要） -->
+                        <div v-if="equipment.vm.Type !== 9 && equipment.vm.Type !== 10" class="row mb-4">
                             <label class="col-sm-3 col-form-label">產品型號</label>
                             <div class="col-sm-9">
                                 <input v-model="equipment.vm.ProductModel" type="text" class="form-control"
@@ -142,7 +144,7 @@
 
                         <!-- 分院 -->
                         <div v-if="isAdmin" class="row mb-4">
-                            <label class="col-sm-3 col-form-label">分院</label>
+                            <label class="col-sm-3 col-form-label">分院 <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <select v-model="selectedDepartment" class="form-select">
                                     <option value="">請選擇分院</option>
@@ -153,8 +155,8 @@
                             </div>
                         </div>
 
-                        <!-- 大樓名稱 -->
-                        <div class="row mb-4">
+                        <!-- 大樓名稱（小型攤位不需要） -->
+                        <div v-if="equipment.vm.Type !== 10" class="row mb-4">
                             <label class="col-sm-3 col-form-label">大樓名稱</label>
                             <div class="col-sm-9">
                                 <select v-model="equipment.vm.Building" @@change="equipment.onBuildingChange"
@@ -168,8 +170,8 @@
                             </div>
                         </div>
 
-                        <!-- 樓層名稱 -->
-                        <div class="row mb-4">
+                        <!-- 樓層名稱（小型攤位不需要） -->
+                        <div v-if="equipment.vm.Type !== 10" class="row mb-4">
                             <label class="col-sm-3 col-form-label">樓層</label>
                             <div class="col-sm-9">
                                 <select v-model="equipment.vm.Floor" @@change="equipment.onFloorChange" class="form-select"
@@ -184,8 +186,8 @@
                             </div>
                         </div>
 
-                        <!-- 會議室名稱 -->
-                        <div class="row mb-4">
+                        <!-- 會議室名稱（小型攤位不需要） -->
+                        <div v-if="equipment.vm.Type !== 10" class="row mb-4">
                             <label class="col-sm-3 col-form-label">會議室名稱</label>
                             <div class="col-sm-9">
                                 <select v-model="equipment.vm.RoomId" class="form-select" :disabled="!equipment.vm.Floor">
@@ -199,8 +201,8 @@
                             </div>
                         </div>
 
-                        <!-- 租借金額 (只在設備加租/攤位租借時顯示) -->
-                        <div v-if="[8, 9].includes(equipment.vm.Type)" class="row mb-4">
+                        <!-- 租借金額 (只在設備加租/攤位租借/小型攤位時顯示) -->
+                        <div v-if="[8, 9, 10].includes(equipment.vm.Type)" class="row mb-4">
                             <label class="col-sm-3 col-form-label">租借金額 <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <div class="input-group">
@@ -208,12 +210,14 @@
                                     <input v-model.number="equipment.vm.RentalPrice" type="number" class="form-control"
                                            placeholder="0" min="0" step="1">
                                 </div>
-                                <small class="form-text text-muted">僅限設備加租/攤位租借使用</small>
+                                <small class="form-text text-muted">
+                                    {{ equipment.vm.Type === 10 ? '小型攤位每攤價格' : '僅限設備加租/攤位租借使用' }}
+                                </small>
                             </div>
                         </div>
 
-                        <!-- 設備照片 -->
-                        <div class="row mb-4">
+                        <!-- 設備照片（小型攤位不需要） -->
+                        <div v-if="equipment.vm.Type !== 10" class="row mb-4">
                             <label class="col-sm-3 col-form-label">設備照片</label>
                             <div class="col-sm-9">
                                 <!-- 預覽區 -->

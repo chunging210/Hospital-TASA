@@ -653,3 +653,97 @@
     color: #495057;
     padding-left: 0.5rem;
 }
+/* 加購項目卡片樣式 */
+.addon-card {
+    border: 1px solid #e5eaf0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #fafbfc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.addon-card:hover {
+    border-color: #0d6efd;
+    background: #fff;
+}
+
+.addon-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.addon-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.addon-price {
+    font-size: 13px;
+    color: #0d6efd;
+}
+
+.addon-hint {
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.addon-qty {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f8f9fa;
+    color: #495057;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-btn:hover:not(:disabled) {
+    background: #e9ecef;
+}
+
+.qty-btn:disabled {
+    color: #adb5bd;
+    cursor: not-allowed;
+}
+
+.qty-input {
+    width: 45px;
+    height: 32px;
+    border: none;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qty-input:focus {
+    outline: none;
+    background: #fff;
+}

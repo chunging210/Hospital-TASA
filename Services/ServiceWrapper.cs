@@ -7,8 +7,8 @@ using TASA.Services.EcsModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.MailModule;
 using TASA.Services.RoomModule;
-using TASA.Services.SeatSettingModule;
-using TASA.Services.VisitorModule;
+// [DISABLED] using TASA.Services.SeatSettingModule;
+// [DISABLED] using TASA.Services.VisitorModule;
 using TASA.Services.DelegateModule;
 using TASA.Services.WebexModule;
 using TASA.Services.CaptchaModule;
@@ -53,8 +53,8 @@ namespace TASA.Services
 
         Lazy<WebexService> webexService,
         Lazy<WebexMeetingService> webexMeetingService,
-        Lazy<SeatSettingService> seatSettingService,
-        Lazy<VisitorService> visitorService,
+        // [DISABLED] Lazy<SeatSettingService> seatSettingService,
+        // [DISABLED] Lazy<VisitorService> visitorService,
         Lazy<SysConfigService> sysConfigService,
         Lazy<ReservationAutoManagementService> reservationAutoManagementService,
         Lazy<RoomManagerDelegateService> roomManagerDelegateService,
@@ -99,9 +99,9 @@ namespace TASA.Services
         public WebexService WebexService => webexService.Value;
         public WebexMeetingService WebexMeetingService => webexMeetingService.Value;
 
-        public SeatSettingService SeatSettingService => seatSettingService.Value;
+        // [DISABLED] public SeatSettingService SeatSettingService => seatSettingService.Value;
 
-        public VisitorService VisitorService => visitorService.Value;
+        // [DISABLED] public VisitorService VisitorService => visitorService.Value;
         public SysConfigService SysConfigService => sysConfigService.Value;
 
         public ReservationAutoManagementService ReservationAutoManagementService => reservationAutoManagementService.Value;

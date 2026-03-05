@@ -1,3 +1,7 @@
+// [DISABLED] Visitor 功能暫時禁用
+// 如需啟用，請取消以下註解並在 ServiceWrapper.cs 中啟用相關服務
+
+/*
 using Microsoft.AspNetCore.Mvc;
 using TASA.Extensions;
 using TASA.Services;
@@ -43,3 +47,4 @@ namespace TASA.Controllers.API
         }
     }
 }
+*/

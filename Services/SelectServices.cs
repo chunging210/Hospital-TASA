@@ -664,8 +664,28 @@ namespace TASA.Services
                 2 => "聲音設備",
                 8 => "設備加租",
                 9 => "攤位租借",
+                10 => "小型攤位",
                 _ => "未知"
             };
+        }
+
+        /// <summary>
+        /// 取得小型攤位列表
+        /// </summary>
+        public object SmallBooths()
+        {
+            return db.Equipment
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x => x.IsEnabled)
+                .Where(x => x.Type == 10)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name,
+                    x.RentalPrice
+                })
+                .ToList();
         }
 
         public class CostCenterVM
@@ -966,12 +986,12 @@ namespace TASA.Services
                     Console.WriteLine($"Date (parsed): {dateOnly}");
                 }
 
-                // 1️⃣ 取得可用的設備列表
+                // 1️⃣ 取得可用的設備列表（包含小型攤位 Type=10）
                 var allEquipment = db.Equipment
                     .AsNoTracking()
                     .WhereNotDeleted()
                     .Where(x => x.IsEnabled)
-                    .Where(x => x.Type == 8 || x.Type == 9)
+                    .Where(x => x.Type == 8 || x.Type == 9 || x.Type == 10)
                     .Where(x =>
                         x.RoomId == null ||
                         (query.RoomId.HasValue && x.RoomId == query.RoomId)

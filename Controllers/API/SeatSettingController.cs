@@ -1,3 +1,7 @@
+// [DISABLED] SeatSetting 功能暫時禁用
+// 如需啟用，請取消以下註解並在 ServiceWrapper.cs 中啟用相關服務
+
+/*
 // Controllers/API/SeatSettingController.cs
 using Microsoft.AspNetCore.Mvc;
 using TASA.Extensions;
@@ -81,7 +85,6 @@ namespace TASA.Controllers.API
             }
             catch (Exception ex)
             {
-                // 這裡先把錯誤訊息回給前端，等等 JS 會印出來
                 return StatusCode(500, new { message = "上傳失敗", error = ex.Message, stack = ex.StackTrace });
             }
         }
@@ -97,3 +100,4 @@ namespace TASA.Controllers.API
         }
     }
 }
+*/

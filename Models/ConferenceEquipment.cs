@@ -33,10 +33,10 @@ public partial class ConferenceEquipment
     public Guid EquipmentId { get; set; }
 
     /// <summary>
-    /// 類型 8=設備加租 9=攤位
+    /// 類型 8=設備加租 9=攤位 10=小型攤位
     /// </summary>
     [Required]
-    [StringLength(1)]
+    [StringLength(2)]
     public string EquipmentType { get; set; }
 
     /// <summary>
@@ -87,6 +87,12 @@ public partial class ConferenceEquipment
     /// </summary>
     [Column(TypeName = "datetime")]
     public DateTime? ReleasedAt { get; set; }
+
+    /// <summary>
+    /// 數量 (小型攤位用)
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int Quantity { get; set; } = 1;
 
     /// <summary>
     /// 建立時間

@@ -1,3 +1,7 @@
+// [DISABLED] Visitor 功能暫時禁用
+// 如需啟用，請取消以下註解並在 ServiceWrapper.cs 中啟用相關服務
+
+/*
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -26,9 +30,6 @@ namespace TASA.Services.VisitorModule
             public int MeetingCount { get; set; } = 0;
         }
 
-        /// <summary>
-        /// 列表 - 參照舊版邏輯，支持多欄位搜尋
-        /// </summary>
         public IQueryable<ListVM> List(VisitorQueryVM query)
         {
 
@@ -36,7 +37,6 @@ namespace TASA.Services.VisitorModule
                 .AsNoTracking()
                 .WhereNotDeleted();
 
-            // 搜尋關鍵字
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var keyword = query.Keyword.Trim().ToLower();
@@ -52,7 +52,6 @@ namespace TASA.Services.VisitorModule
                 );
             }
 
-            // 車型篩選
             if (!string.IsNullOrWhiteSpace(query.CarType))
             {
                 queryBase = queryBase.Where(x => x.CarType == query.CarType);
@@ -102,9 +101,6 @@ namespace TASA.Services.VisitorModule
             public DateTime? UpdatedAt { get; set; }
         }
 
-        /// <summary>
-        /// 詳細資料
-        /// </summary>
         public DetailVM? Detail(Guid id)
         {
             return db.Visitor
@@ -139,52 +135,39 @@ namespace TASA.Services.VisitorModule
         {
             public Guid? Id { get; set; }
 
-            // ✅ 必填：中文名稱
             [RequiredI18n]
             [StringLength(100)]
             public string? CName { get; set; }
 
-            // ✅ 英文名稱（選填）
             [StringLength(100)]
             [RegularExpression(@"^[A-Za-z\s\.'-]{0,100}$",
                 ErrorMessage = "英文名僅能包含英文字母、空白與 . ' -")]
             public string? EName { get; set; }
 
-            // ✅ 必填：公司名稱
             [RequiredI18n]
             [StringLength(100)]
             public string? CompanyName { get; set; }
 
-            // ✅ 職稱（選填）
             [StringLength(100)]
             public string? JobTitle { get; set; }
 
-            // ✅ 必填：電話（10 碼數字）
             [RequiredI18n]
             [RegularExpression(@"^\d{10}$", ErrorMessage = "電話需為 10 碼數字")]
             public string? Phone { get; set; }
 
-            // ✅ 必填：Email
             [RequiredI18n]
             [EmailAddress(ErrorMessage = "Email 格式不正確")]
             public string? Email { get; set; }
 
-            // ✅ 車牌（選填）
             [RegularExpression(@"^$|^[A-Z0-9-]{1,20}$", ErrorMessage = "車牌號碼格式不正確")]
             public string? LicensePlate { get; set; }
 
-            // ✅ 車種（選填）
             [StringLength(50)]
             public string? CarType { get; set; }
 
-
-            // ✅ 是否啟用
             public bool IsEnabled { get; set; } = true;
         }
 
-        /// <summary>
-        /// 新增
-        /// </summary>
         public Guid Insert(InsertVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id;
@@ -193,7 +176,6 @@ namespace TASA.Services.VisitorModule
                 throw new HttpException("無法取得使用者資訊");
             }
 
-            // 檢查重複 (同時根據 CName 和 Phone)
             if (db.Visitor.WhereNotDeleted().Any(x => x.CName == vm.CName && x.Phone == vm.Phone))
             {
                 throw new HttpException(I18nMessgae.DataExists);
@@ -221,9 +203,6 @@ namespace TASA.Services.VisitorModule
             return data.Id;
         }
 
-        /// <summary>
-        /// 編輯
-        /// </summary>
         public void Update(InsertVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id;
@@ -232,7 +211,6 @@ namespace TASA.Services.VisitorModule
                 throw new HttpException("無法取得使用者資訊");
             }
 
-            // 檢查重複 (排除自己)
             if (db.Visitor.WhereNotDeleted().Any(x => x.Id != vm.Id && x.CName == vm.CName && x.Phone == vm.Phone))
             {
                 throw new HttpException(I18nMessgae.DataExists);
@@ -258,9 +236,6 @@ namespace TASA.Services.VisitorModule
             _ = service.LogServices.LogAsync("訪客編輯", $"{data.CName}({data.Id})");
         }
 
-        /// <summary>
-        /// 刪除
-        /// </summary>
         public void Delete(Guid id)
         {
             var data = db.Visitor
@@ -276,3 +251,4 @@ namespace TASA.Services.VisitorModule
         }
     }
 }
+*/

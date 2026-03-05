@@ -236,6 +236,12 @@ public partial class Conference
     public int BoothCost { get; set; } = 0;
 
     /// <summary>
+    /// 小型攤位費用
+    /// </summary>
+    [Column(TypeName = "int(11)")]
+    public int SmallBoothCost { get; set; } = 0;
+
+    /// <summary>
     /// 停車券張數（贈送 + 加購）
     /// </summary>
     [Column(TypeName = "int(11)")]

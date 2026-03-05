@@ -144,19 +144,19 @@ namespace TASA.Services.EquipmentModule
                 }
             }
 
-            // ✅ 2️⃣ 驗證：設備加租(8)/攤位租借(9) 必須有租借金額
-            if ((vm.Type == 8 || vm.Type == 9) && vm.RentalPrice <= 0)
+            // ✅ 2️⃣ 驗證：設備加租(8)/攤位租借(9)/小型攤位(10) 必須有租借金額
+            if ((vm.Type == 8 || vm.Type == 9 || vm.Type == 10) && vm.RentalPrice <= 0)
             {
-                throw new HttpException("設備加租和攤位租借必須設定租借金額");
+                throw new HttpException("設備加租、攤位租借和小型攤位必須設定租借金額");
             }
 
             // ✅ 3️⃣ 檢核重複（根據設備類型檢核不同欄位）
-            if (vm.Type == 9)
+            if (vm.Type == 9 || vm.Type == 10)
             {
-                // 攤位租借(9)：檢核名稱重複（排除自己）
-                if (db.Equipment.WhereNotDeleted().Any(x => x.Name == vm.Name && x.Id != vm.Id))
+                // 攤位租借(9)/小型攤位(10)：檢核同類型的名稱重複（排除自己）
+                if (db.Equipment.WhereNotDeleted().Any(x => x.Name == vm.Name && x.Type == vm.Type && x.Id != vm.Id))
                 {
-                    throw new HttpException("此攤位名稱已存在");
+                    throw new HttpException(vm.Type == 10 ? "此小型攤位名稱已存在" : "此攤位名稱已存在");
                 }
             }
             else if ((vm.Type >= 1 && vm.Type <= 4) || vm.Type == 8)
@@ -237,8 +237,8 @@ namespace TASA.Services.EquipmentModule
                 departmentId = currentUser.DepartmentId;
             }
 
-            // ✅ 權限檢查:非管理者強制使用自己的分院
-            if (!currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
+            // ✅ 權限檢查:非管理者強制使用自己的分院（小型攤位除外）
+            if (vm.Type != 10 && !currentUser.IsAdmin && currentUser.DepartmentId.HasValue)
             {
                 if (departmentId != currentUser.DepartmentId)
                 {
@@ -246,16 +246,19 @@ namespace TASA.Services.EquipmentModule
                 }
             }
 
-            // 儲存照片
-            var savedImagePath = SaveImage(imageFile);
+            // 小型攤位(10)不綁定會議室，但需要分院
+            var finalRoomId = vm.Type == 10 ? null : vm.RoomId;
+
+            // 儲存照片（小型攤位不儲存照片）
+            var savedImagePath = vm.Type == 10 ? null : SaveImage(imageFile);
 
             var newEquipment = new Equipment()
             {
                 Id = Guid.NewGuid(),
                 Name = vm.Name,
-                ProductModel = vm.Type == 9 ? null : vm.ProductModel,  // 攤位租借無型號
+                ProductModel = (vm.Type == 9 || vm.Type == 10) ? null : vm.ProductModel,  // 攤位租借/小型攤位無型號
                 Type = (byte)vm.Type,
-                RoomId = vm.RoomId,
+                RoomId = finalRoomId,
                 DepartmentId = departmentId,  // ✅ 設定分院ID
                 RentalPrice = (vm.Type == 1 || vm.Type == 2) ? 0 : vm.RentalPrice,  // 影像/聲音設備無租金
                 Host = vm.Host,
@@ -306,7 +309,12 @@ namespace TASA.Services.EquipmentModule
 
             // ✅ 更新 DepartmentId
             Guid? departmentId = null;
-            if (vm.RoomId.HasValue)
+            if (vm.Type == 10)
+            {
+                // 小型攤位：使用提交的分院或保持原有
+                departmentId = vm.DepartmentId ?? data.DepartmentId ?? currentUser?.DepartmentId;
+            }
+            else if (vm.RoomId.HasValue)
             {
                 var room = db.SysRoom
                     .WhereNotDeleted()
@@ -321,13 +329,13 @@ namespace TASA.Services.EquipmentModule
 
             data.Name = vm.Name;
             data.Type = (byte)vm.Type;
-            data.RoomId = vm.RoomId;
+            data.RoomId = vm.Type == 10 ? null : vm.RoomId;  // 小型攤位不綁定會議室
             data.DepartmentId = departmentId;  // ✅ 更新分院ID
 
             // ✅ 根據類型重置不相關欄位
             // 影像設備(1)、聲音設備(2)：無租借金額
-            // 攤位租借(9)：無產品型號
-            data.ProductModel = vm.Type == 9 ? null : vm.ProductModel;
+            // 攤位租借(9)/小型攤位(10)：無產品型號
+            data.ProductModel = (vm.Type == 9 || vm.Type == 10) ? null : vm.ProductModel;
             data.RentalPrice = (vm.Type == 1 || vm.Type == 2) ? 0 : vm.RentalPrice;
             data.Host = vm.Host;
             data.Port = vm.Port;
@@ -335,8 +343,17 @@ namespace TASA.Services.EquipmentModule
             data.Password = vm.Password;
             data.IsEnabled = vm.IsEnabled;
 
-            // 處理照片
-            if (removeImage)
+            // 處理照片（小型攤位不處理照片）
+            if (vm.Type == 10)
+            {
+                // 小型攤位：清除照片
+                if (data.ImagePath != null)
+                {
+                    DeleteOldImage(data.ImagePath);
+                    data.ImagePath = null;
+                }
+            }
+            else if (removeImage)
             {
                 DeleteOldImage(data.ImagePath);
                 data.ImagePath = null;
@@ -421,6 +438,7 @@ namespace TASA.Services.EquipmentModule
                 4 => "分配器",
                 8 => "設備加租",
                 9 => "攤位租借",
+                10 => "小型攤位",
                 _ => "未知"
             };
         }

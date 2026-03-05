@@ -18,7 +18,7 @@ class VM {
     Account = '';
     Password = '';
     IsEnabled = true;
-    DepartmentId = '';
+    DepartmentId = null;  // 使用 null 而非空字串
     ImagePath = '';
 }
 
@@ -250,41 +250,47 @@ const equipment = new function () {
             return false;
         }
 
+        const type = Number(this.vm.Type);
+
+        // 所有類型都需要分院
         const deptId = selectedDepartment.value || userDepartmentId.value;
         if (!deptId) {
             addAlert('請選擇分院', { type: 'warning' });
             return false;
         }
 
-        // 如果選了大樓,就必須選到會議室
-        if (this.vm.Building && this.vm.Building !== '') {
-            if (!this.vm.Floor || this.vm.Floor === '') {
-                addAlert('已選擇大樓,請選擇樓層', { type: 'warning' });
-                return false;
-            }
+        // 小型攤位(10)不需要大樓/樓層/會議室
+        if (type !== 10) {
+            // 如果選了大樓,就必須選到會議室
+            if (this.vm.Building && this.vm.Building !== '') {
+                if (!this.vm.Floor || this.vm.Floor === '') {
+                    addAlert('已選擇大樓,請選擇樓層', { type: 'warning' });
+                    return false;
+                }
 
-            if (!this.vm.RoomId) {
-                addAlert('已選擇樓層,請選擇會議室', { type: 'warning' });
-                return false;
+                if (!this.vm.RoomId) {
+                    addAlert('已選擇樓層,請選擇會議室', { type: 'warning' });
+                    return false;
+                }
             }
         }
 
-        // 設備加租(8)/攤位租借(9) 必須有租借金額
-        if ([8, 9].includes(Number(this.vm.Type)) && this.vm.RentalPrice <= 0) {
-            addAlert('設備加租和攤位租借必須設定租借金額', { type: 'warning' });
+        // 設備加租(8)/攤位租借(9)/小型攤位(10) 必須有租借金額
+        if ([8, 9, 10].includes(type) && this.vm.RentalPrice <= 0) {
+            addAlert('設備加租、攤位租借和小型攤位必須設定租借金額', { type: 'warning' });
             return false;
         }
 
         // 檢核重複
-        const type = Number(this.vm.Type);
         const id = this.vm.Id;
 
-        if (type === 9) {
+        if (type === 9 || type === 10) {
+            // 攤位租借(9)/小型攤位(10)：檢核同類型的名稱重複
             const isDuplicate = this.list.some(item =>
-                item.Name === this.vm.Name && item.Id !== id
+                item.Name === this.vm.Name && item.Id !== id && item.Type === type
             );
             if (isDuplicate) {
-                addAlert('此攤位名稱已存在', { type: 'warning' });
+                addAlert(type === 10 ? '此小型攤位名稱已存在' : '此攤位名稱已存在', { type: 'warning' });
                 return false;
             }
         } else if ([1, 2, 3, 4, 8].includes(type)) {
@@ -318,10 +324,15 @@ const equipment = new function () {
 
         const method = this.vm.Id ? global.api.admin.equipmentupdate : global.api.admin.equipmentinsert;
 
+        const type = Number(this.vm.Type);
+
+        // 所有類型都需要 DepartmentId
+        const departmentId = selectedDepartment.value || userDepartmentId.value || this.vm.DepartmentId || null;
+
         const jsonData = {
             ...this.vm,
-            Type: Number(this.vm.Type),
-            DepartmentId: selectedDepartment.value || userDepartmentId.value || this.vm.DepartmentId
+            Type: type,
+            DepartmentId: departmentId
         };
 
         const formData = new FormData();

@@ -62,9 +62,17 @@ namespace TASA.Services.ConferenceModule
             }
             public List<Guid>? EquipmentIds { get; set; } = [];
             public List<Guid>? BoothIds { get; set; } = [];
+            public List<SmallBoothVM>? SmallBooths { get; set; } = [];
+
+            public record SmallBoothVM
+            {
+                public Guid BoothId { get; set; }
+                public int Quantity { get; set; }
+            }
             public decimal? RoomCost { get; set; }
             public decimal? EquipmentCost { get; set; }
             public decimal? BoothCost { get; set; }
+            public decimal? SmallBoothCost { get; set; }  // ✅ 小型攤位費用
             public int? ParkingTicketCount { get; set; }
             public int? ParkingTicketCost { get; set; }
             public decimal? TotalAmount { get; set; }
@@ -397,7 +405,8 @@ namespace TASA.Services.ConferenceModule
             };
 
             data.Status = GetStatus(vm.StartNow, data);
-            data.ConferenceWebex = service.WebexMeetingService.Create(data);
+            // [DISABLED] Webex 功能暫時禁用
+            // data.ConferenceWebex = service.WebexMeetingService.Create(data);
 
             db.Conference.Add(data);
             db.SaveChanges();
@@ -478,7 +487,8 @@ namespace TASA.Services.ConferenceModule
             data.ConferenceUser = GetUsers(vm.User, vm.Host, vm.Recorder);
             data.Department = [.. db.SysDepartment.Where(x => vm.Department.Contains(x.Id))];
             data.Status = GetStatus(vm.StartNow, data);
-            data.ConferenceWebex = service.WebexMeetingService.Create(data);
+            // [DISABLED] Webex 功能暫時禁用
+            // data.ConferenceWebex = service.WebexMeetingService.Create(data);
 
             db.SaveChanges();
 

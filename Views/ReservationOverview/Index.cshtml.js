@@ -504,6 +504,7 @@ window.$config = {
                     // 新增欄位
                     equipments: detail.Equipments || [],  // 加租設備
                     booths: detail.Booths || [],  // 攤位加租
+                    smallBooths: detail.SmallBooths || [],  // 小型攤位
                     attachments: detail.Attachments || [],  // 附件
 
                     // ✅ 折扣資訊

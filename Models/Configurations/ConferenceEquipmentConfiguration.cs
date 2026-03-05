@@ -33,8 +33,8 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
 
         entity.Property(e => e.EquipmentType)
             .IsRequired()
-            .HasMaxLength(1)
-            .HasComment("類型 8=設備加租 9=攤位");
+            .HasMaxLength(2)
+            .HasComment("類型 8=設備加租 9=攤位 10=小型攤位");
 
         entity.Property(e => e.EquipmentName)
             .IsRequired()
@@ -74,6 +74,11 @@ public partial class ConferenceEquipmentConfiguration : IEntityTypeConfiguration
         entity.Property(e => e.CreatedAt)
             .HasColumnType("datetime")
             .HasComment("建立時間");
+
+        entity.Property(e => e.Quantity)
+            .HasColumnType("int(11)")
+            .HasDefaultValueSql("'1'")
+            .HasComment("數量 (小型攤位用)");
 
         entity.HasOne(d => d.Conference)
             .WithMany(p => p.ConferenceEquipments)
