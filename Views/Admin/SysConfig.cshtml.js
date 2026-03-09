@@ -5,6 +5,8 @@ const { reactive, ref, onMounted } = Vue;
 const sysConfig = new function () {
     this.isAdmin = ref(false);  // 是否為管理員
     this.departmentId = ref(null);  // 使用者的分院 ID
+    this.selectedDepartmentId = ref(null);  // Admin 選擇查看的分院
+    this.departments = reactive([]);  // 分院列表
 
     this.settings = reactive({
         isRegistrationOpen: true,
@@ -24,9 +26,37 @@ const sysConfig = new function () {
         }
     };
 
-    // 載入設定 (GET /admin/api/sysconfig)
+    // 載入分院列表（Admin 用）
+    this.loadDepartments = async () => {
+        try {
+            const res = await global.api.select.department();
+            copy(this.departments, res.data || []);
+        } catch (err) {
+            console.error('❌ 無法取得分院列表:', err);
+        }
+    };
+
+    // 切換分院時載入該分院的設定
+    this.onDepartmentChange = () => {
+        this.loadSettings();
+    };
+
+    // 載入設定
     this.loadSettings = () => {
-        global.api.sysconfig.getall()
+        // 決定要載入哪個分院的設定
+        let apiCall;
+        if (this.isAdmin.value && this.selectedDepartmentId.value) {
+            // Admin 查看特定分院
+            apiCall = global.api.sysconfig.getbydepartment({ departmentId: this.selectedDepartmentId.value });
+        } else if (this.isAdmin.value && this.selectedDepartmentId.value === null) {
+            // Admin 查看全局設定
+            apiCall = global.api.sysconfig.getglobal();
+        } else {
+            // 一般用戶
+            apiCall = global.api.sysconfig.getall();
+        }
+
+        apiCall
             .then((response) => {
                 const data = response.data;
                 console.log('[SysConfig] 載入的資料:', data);
@@ -49,11 +79,18 @@ const sysConfig = new function () {
         // 準備要更新的設定
         const configs = [];
 
-        // 非 Admin 用戶需要傳遞 DepartmentId
-        const departmentId = this.isAdmin.value ? null : this.departmentId.value;
-
-        // 只有 Admin 才能修改「是否開啟訪客註冊」(全局設定)
+        // 決定要儲存到哪個分院
+        let departmentId;
         if (this.isAdmin.value) {
+            // Admin: 根據選擇的分院決定
+            departmentId = this.selectedDepartmentId.value;
+        } else {
+            // 非 Admin: 使用自己的分院
+            departmentId = this.departmentId.value;
+        }
+
+        // 只有 Admin 在編輯全局設定時才能修改「是否開啟訪客註冊」
+        if (this.isAdmin.value && this.selectedDepartmentId.value === null) {
             configs.push({ configKey: 'GUEST_REGISTRATION', configValue: this.settings.isRegistrationOpen.toString() });
         }
 
@@ -64,7 +101,8 @@ const sysConfig = new function () {
             { configKey: 'MANAGER_EMAIL', configValue: this.settings.managerEmail }
         );
 
-        console.log('[SysConfig] saveSettings() configs =', configs, 'departmentId =', departmentId);
+        const targetName = departmentId ? this.departments.find(d => d.Id === departmentId)?.Name : '全局';
+        console.log('[SysConfig] saveSettings() configs =', configs, 'departmentId =', departmentId, '(' + targetName + ')');
 
         // 一次送出所有設定
         global.api.sysconfig.update({
@@ -75,7 +113,7 @@ const sysConfig = new function () {
         })
             .then(() => {
                 console.log('[SysConfig] 所有設定已儲存');
-                addAlert('設定已儲存', { type: 'success' });
+                addAlert(`${targetName}設定已儲存`, { type: 'success' });
                 this.loadSettings(); // 重新載入確認
             })
             .catch(error => {
@@ -103,11 +141,18 @@ window.$config = {
     setup: () => new function () {
         this.settings = sysConfig.settings;
         this.isAdmin = sysConfig.isAdmin;
+        this.selectedDepartmentId = sysConfig.selectedDepartmentId;
+        this.departments = sysConfig.departments;
+        this.onDepartmentChange = sysConfig.onDepartmentChange;
         this.saveSettings = sysConfig.saveSettings;
         this.resetSettings = sysConfig.resetSettings;
 
         onMounted(async () => {
             await sysConfig.loadUserInfo();
+            // Admin 才載入分院列表
+            if (sysConfig.isAdmin.value) {
+                await sysConfig.loadDepartments();
+            }
             sysConfig.loadSettings();
         });
     }

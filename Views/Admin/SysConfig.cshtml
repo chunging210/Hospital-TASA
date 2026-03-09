@@ -6,9 +6,23 @@
         <!-- 主要內容卡片 -->
         <div class="card border-0 shadow-sm">
             <div class="card-header mx-4 mt-3">
-                <div class="row">
+                <div class="row align-items-center">
                     <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
                         <span class="material-icons">settings</span>系統設定
+                    </div>
+
+                    <!-- Admin 分院選擇器 -->
+                    <div class="col-xl-auto col-sm-12 ms-auto" v-if="isAdmin">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="form-label mb-0 text-muted text-nowrap">查看設定：</label>
+                            <select v-model="selectedDepartmentId" @@change="onDepartmentChange"
+                                    class="form-select" style="min-width: 200px;">
+                                <option :value="null">全局預設</option>
+                                <option v-for="dept in departments" :key="dept.Id" :value="dept.Id">
+                                    {{ dept.Name }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -16,8 +30,8 @@
 
             <div class="card-body p-5">
 
-                <!-- 1. 使用者註冊設定 (只有 Admin 能看到) -->
-                <div class="setting-item" v-if="isAdmin">
+                <!-- 1. 使用者註冊設定 (只有 Admin 且查看全局設定時才顯示) -->
+                <div class="setting-item" v-if="isAdmin && selectedDepartmentId === null">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="setting-label">

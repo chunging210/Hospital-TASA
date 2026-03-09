@@ -152,12 +152,16 @@ const global = new function () {
             update: POST,
             delete: DELETE,
         }),
-        sysconfig: apiMethods('/api/sysconfig', {
-            registrationstatus: GET,
-            registrationtoggle: POST,
-            getall: GET,
-            update: POST,
-        }),
+        sysconfig: {
+            ...apiMethods('/api/sysconfig', {
+                registrationstatus: GET,
+                registrationtoggle: POST,
+                getall: GET,
+                getglobal: GET,
+                update: POST,
+            }),
+            getbydepartment: (params) => fetch(`/api/sysconfig/getbydepartment/${params.departmentId}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
+        },
         holiday: {
             list: (year) => fetch(`/api/holiday/list/${year}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
             years: () => fetch('/api/holiday/years').then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
