@@ -1,0 +1,104 @@
+<div class="page-content" v-cloak>
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header mx-4 mt-3">
+                <div class="row d-flex align-items-center g-2">
+                    <!-- 標題 -->
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">assessment</span>會議報表
+                    </div>
+
+                    <!-- 日期範圍 -->
+                    <div class="col-12 col-lg-3">
+                        <div class="input-group input-group-sm">
+                            <input v-model="report.query.startDate" type="date" class="form-control">
+                            <span class="input-group-text">~</span>
+                            <input v-model="report.query.endDate" type="date" class="form-control">
+                        </div>
+                    </div>
+
+                    <!-- 會議室篩選 -->
+                    <div class="col-auto">
+                        <select v-model="report.query.roomId" class="form-select form-select-sm">
+                            <option value="">全部會議室</option>
+                            <option v-for="room in report.rooms" :key="room.Id" :value="room.Id">{{ room.Name }}</option>
+                        </select>
+                    </div>
+
+                    <!-- 繳款方式篩選 -->
+                    <div class="col-auto">
+                        <select v-model="report.query.paymentMethod" class="form-select form-select-sm">
+                            <option value="">全部繳款方式</option>
+                            <option value="cash">現金付款</option>
+                            <option value="transfer">銀行匯款</option>
+                            <option value="cost-sharing">成本分攤</option>
+                        </select>
+                    </div>
+
+                    <!-- 部門代碼篩選（成本分攤時顯示） -->
+                    <div class="col-auto" v-if="report.query.paymentMethod === 'cost-sharing'">
+                        <select v-model="report.query.departmentCode" class="form-select form-select-sm">
+                            <option value="">部門代碼</option>
+                            <option v-for="code in report.departmentCodes" :key="code" :value="code">{{ code }}</option>
+                        </select>
+                    </div>
+
+                    <!-- 匯出按鈕 -->
+                    <div class="col-auto ms-auto">
+                        <button @@click="report.exportExcel" class="btn btn-success btn-sm">
+                            <span class="material-icons align-middle" style="font-size: 18px;">file_download</span> 匯出 Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <caption>會議報表（已收款）</caption>
+                        <thead>
+                            <tr class="table-light">
+                                <th style="width: 85px;">單號</th>
+                                <th style="width: 105px;">會議名稱</th>
+                                <th style="width: 195px;">會議日期</th>
+                                <th style="width: 130px;">會議室</th>
+                                <th style="width: 95px;" class="text-end">金額</th>
+                                <th style="width: 80px;">繳款方式</th>
+                                <th style="width: 55px;" class="text-center">人數</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in report.list" :key="item.Id">
+                                <td class="text-nowrap">{{ item.BookingNo }}</td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 180px;">{{ item.ConferenceName }}</div>
+                                </td>
+                                <td class="text-nowrap">{{ item.DateRange }}</td>
+                                <td>{{ item.RoomName }}</td>
+                                <td class="text-end text-nowrap">NT${{ item.TotalAmount.toLocaleString() }}</td>
+                                <td class="text-nowrap">{{ item.PaymentMethodText }}</td>
+                                <td class="text-center">{{ item.ExpectedAttendees || '-' }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr v-if="report.list.length === 0">
+                                <td colspan="7" class="text-center text-muted">查無資料</td>
+                            </tr>
+                            <tr v-else class="table-warning fw-bold">
+                                <td></td>
+                                <td>合計</td>
+                                <td class="text-nowrap">共 {{ report.summary.totalCount }} 筆</td>
+                                <td></td>
+                                <td class="text-end text-nowrap">NT${{ report.summary.grandTotal.toLocaleString() }}</td>
+                                <td></td>
+                                <td class="text-center">{{ report.summary.totalAttendees }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <page ref="reportpage" @@reload="report.getList(true)"></page>
+            </div>
+        </div>
+    </div>
+</div>

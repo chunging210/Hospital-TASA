@@ -167,6 +167,11 @@ const global = new function () {
             toggle: (id) => fetch(`/api/holiday/toggle/${id}`, { method: 'POST' }).then(r => r.ok ? r.json().then(data => ({ data })) : r.json().then(e => Promise.reject(e))),
             check: (date) => fetch(`/api/holiday/check/${date}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
         },
+        report: apiMethods('/api/report', {
+            list: GET,
+            summary: GET,
+            departmentcodes: GET,
+        }),
     }
 }
 
