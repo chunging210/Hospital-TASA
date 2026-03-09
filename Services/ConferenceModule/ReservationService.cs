@@ -818,24 +818,35 @@ namespace TASA.Services.ConferenceModule
 
             if (isLastLevel)
             {
-                // ✅ 最後一關：完成審核，進入待繳費
-                DateTime paymentDeadline;
-                if (vm.PaymentDeadline.HasValue)
+                // ✅ 最後一關：完成審核
+                conference.ReviewedAt = DateTime.Now;
+                conference.ReviewedBy = reviewedBy;
+
+                // ✅ 成本分攤：直接變成已收款
+                if (conference.PaymentMethod == "cost-sharing")
                 {
-                    if (vm.PaymentDeadline.Value.Date < DateTime.Today)
-                        throw new HttpException("繳費期限不能小於今天");
-                    paymentDeadline = vm.PaymentDeadline.Value;
+                    conference.ReservationStatus = ReservationStatus.Confirmed;
+                    conference.PaymentStatus = PaymentStatus.Paid;
+                    conference.PaidAt = DateTime.Now;
                 }
                 else
                 {
-                    var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
-                    paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                    // 其他繳款方式：進入待繳費
+                    DateTime paymentDeadline;
+                    if (vm.PaymentDeadline.HasValue)
+                    {
+                        if (vm.PaymentDeadline.Value.Date < DateTime.Today)
+                            throw new HttpException("繳費期限不能小於今天");
+                        paymentDeadline = vm.PaymentDeadline.Value;
+                    }
+                    else
+                    {
+                        var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
+                        paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                    }
+                    conference.ReservationStatus = ReservationStatus.PendingPayment;
+                    conference.PaymentDeadline = paymentDeadline;
                 }
-
-                conference.ReservationStatus = ReservationStatus.PendingPayment;
-                conference.ReviewedAt = DateTime.Now;
-                conference.ReviewedBy = reviewedBy;
-                conference.PaymentDeadline = paymentDeadline;
 
                 // 時段狀態變更
                 foreach (var slot in conference.ConferenceRoomSlots)
@@ -852,7 +863,8 @@ namespace TASA.Services.ConferenceModule
                 db.SaveChanges();
 
                 _ = service.LogServices.LogAsync("預約審核",
-                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 總折扣: {conference.DiscountAmount ?? 0}");
+                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 總折扣: {conference.DiscountAmount ?? 0}" +
+                    (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""));
 
                 // 寄送審核通過通知給申請人
                 service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
@@ -936,26 +948,37 @@ namespace TASA.Services.ConferenceModule
                 conference.TotalAmount = Math.Max(0, conference.TotalAmount - vm.DiscountAmount.Value);
             }
 
-            // ✅ 直接進入待繳費狀態
-            DateTime paymentDeadline;
-            if (vm.PaymentDeadline.HasValue)
+            // ✅ 決行完成
+            conference.CurrentApprovalLevel = conference.TotalApprovalLevels;  // 跳到最後
+            conference.ReviewedAt = DateTime.Now;
+            conference.ReviewedBy = reviewedBy;
+            conference.UpdateAt = DateTime.Now;
+
+            // ✅ 成本分攤：直接變成已收款
+            if (conference.PaymentMethod == "cost-sharing")
             {
-                if (vm.PaymentDeadline.Value.Date < DateTime.Today)
-                    throw new HttpException("繳費期限不能小於今天");
-                paymentDeadline = vm.PaymentDeadline.Value;
+                conference.ReservationStatus = ReservationStatus.Confirmed;
+                conference.PaymentStatus = PaymentStatus.Paid;
+                conference.PaidAt = DateTime.Now;
             }
             else
             {
-                var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
-                paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                // 其他繳款方式：進入待繳費
+                DateTime paymentDeadline;
+                if (vm.PaymentDeadline.HasValue)
+                {
+                    if (vm.PaymentDeadline.Value.Date < DateTime.Today)
+                        throw new HttpException("繳費期限不能小於今天");
+                    paymentDeadline = vm.PaymentDeadline.Value;
+                }
+                else
+                {
+                    var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
+                    paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                }
+                conference.ReservationStatus = ReservationStatus.PendingPayment;
+                conference.PaymentDeadline = paymentDeadline;
             }
-
-            conference.CurrentApprovalLevel = conference.TotalApprovalLevels;  // 跳到最後
-            conference.ReservationStatus = ReservationStatus.PendingPayment;
-            conference.ReviewedAt = DateTime.Now;
-            conference.ReviewedBy = reviewedBy;
-            conference.PaymentDeadline = paymentDeadline;
-            conference.UpdateAt = DateTime.Now;
 
             // 時段狀態變更
             foreach (var slot in conference.ConferenceRoomSlots)
@@ -972,7 +995,8 @@ namespace TASA.Services.ConferenceModule
             db.SaveChanges();
 
             _ = service.LogServices.LogAsync("預約決行",
-                $"第 {nextLevel} 關決行通過（跳過剩餘 {remainingApprovals.Count} 關）- {conference.Name} ({conference.Id})");
+                $"第 {nextLevel} 關決行通過（跳過剩餘 {remainingApprovals.Count} 關）- {conference.Name} ({conference.Id})" +
+                (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""));
 
             // 寄送審核通過通知給申請人
             service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);

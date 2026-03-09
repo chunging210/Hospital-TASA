@@ -457,3 +457,53 @@
 .expand-icon.rotated {
     transform: rotate(180deg);
 }
+
+/* ===== 預約詳情 Offcanvas 內容排版修正 ===== */
+#bookingDrawer .offcanvas-body {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#bookingDrawer .form-label {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+#bookingDrawer label.form-label.fw-bold {
+    display: block;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+#bookingDrawer h5.border-bottom {
+    padding-bottom: 8px;
+    margin-bottom: 0;
+}
+
+#bookingDrawer .d-flex.flex-sm-column {
+    min-width: 0;
+}
+
+#bookingDrawer .alert {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+#bookingDrawer .offcanvas-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+@media (max-width: 576px) {
+    #bookingDrawer .d-flex.flex-sm-column {
+        flex-direction: column !important;
+    }
+
+    #bookingDrawer .form-label.text-secondary {
+        margin-bottom: 4px;
+    }
+}

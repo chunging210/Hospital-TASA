@@ -7,6 +7,7 @@ class VM {
     Name = '';
     Account = '';
     Email = '';
+    DepartmentId = null;
     Role = [];
     IsEnabled = true;
 }
@@ -63,7 +64,11 @@ const authuser = new function () {
         if (id) {
             global.api.admin.userdetail({ body: { id } })
                 .then((response) => {
+                    console.log('API 回傳:', response.data);
+                    console.log('DepartmentId:', response.data.DepartmentId);
                     copy(this.vm, response.data);
+                    console.log('vm.DepartmentId:', this.vm.DepartmentId);
+                    console.log('department.tree:', department.tree);
                     this.showModal();
                 })
                 .catch(error => {
@@ -129,23 +134,9 @@ window.$config = {
         });
 
         onMounted(() => {
-            console.log('🚀 onMounted 開始');
             department.gettree();
             role.getList();
             authuser.getList();
-            sysConfig.getRegistrationStatus();
-
-            window.addEventListener('registrationStatusChanged', (event) => {
-                console.log('👀 監聽到註冊狀態變化:', event.detail);
-                sysConfig.isRegistrationOpen.value = event.detail.isOpen;
-            });
-            // ✅ 延遲 log，確認資料已載入
-            setTimeout(() => {
-                console.log('⏱️ 1 秒後 - authuser.list 筆數:', authuser.list.length);
-                console.log('⏱️ 1 秒後 - 第一筆資料:', authuser.list[0]);
-                console.log('⏱️ 1 秒後 - IsStaff 欄位:', authuser.list[0]?.IsStaff);
-                console.log('⏱️ 1 秒後 - 一般職員總數:', authuser.list.filter(x => x.IsStaff).length);
-            }, 1000);
         });
     }
 }

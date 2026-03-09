@@ -17,6 +17,7 @@ namespace TASA.Services.ReportModule
             public Guid? RoomId { get; set; }
             public string? PaymentMethod { get; set; }     // 繳款方式篩選
             public string? DepartmentCode { get; set; }    // 部門代碼篩選（成本分攤用）
+            public string? Columns { get; set; }           // 匯出欄位（逗號分隔）
         }
 
         public class ReportItemVM
@@ -29,6 +30,7 @@ namespace TASA.Services.ReportModule
             public int TotalAmount { get; set; }
             public string PaymentMethodText { get; set; } = "";
             public int? ExpectedAttendees { get; set; }
+            public string BorrowingUnitName { get; set; } = ""; // 借用單位（成本分攤用）
         }
 
         public class ReportSummaryVM
@@ -117,7 +119,10 @@ namespace TASA.Services.ReportModule
                     PaymentMethodText = c.PaymentMethod == "cash" ? "現金付款" :
                                         c.PaymentMethod == "transfer" ? "銀行匯款" :
                                         c.PaymentMethod == "cost-sharing" ? "成本分攤" : "-",
-                    ExpectedAttendees = c.ExpectedAttendees
+                    ExpectedAttendees = c.ExpectedAttendees,
+                    BorrowingUnitName = c.DepartmentCode != null
+                        ? db.CostCenter.Where(cc => cc.Code == c.DepartmentCode).Select(cc => cc.Name).FirstOrDefault() ?? "-"
+                        : "-"
                 });
         }
 
@@ -136,20 +141,33 @@ namespace TASA.Services.ReportModule
         {
             var data = List(query).ToList();
 
+            // 解析要匯出的欄位
+            var columns = string.IsNullOrEmpty(query.Columns)
+                ? new HashSet<string> { "bookingNo", "borrowingUnit", "conferenceName", "dateRange", "roomName", "paymentMethod", "attendees", "amount" }
+                : new HashSet<string>(query.Columns.Split(','));
+
             using var workbook = new XLWorkbook();
             var worksheet = workbook.Worksheets.Add("會議報表");
 
             // 標題列
-            worksheet.Cell(1, 1).Value = "預約單號";
-            worksheet.Cell(1, 2).Value = "會議名稱";
-            worksheet.Cell(1, 3).Value = "會議日期";
-            worksheet.Cell(1, 4).Value = "會議室";
-            worksheet.Cell(1, 5).Value = "金額";
-            worksheet.Cell(1, 6).Value = "繳款方式";
-            worksheet.Cell(1, 7).Value = "與會人數";
+            var col = 1;
+            int? attendeesCol = null;
+            int? amountCol = null;
+
+            if (columns.Contains("bookingNo")) worksheet.Cell(1, col++).Value = "預約單號";
+            if (columns.Contains("borrowingUnit")) worksheet.Cell(1, col++).Value = "借用單位";
+            if (columns.Contains("conferenceName")) worksheet.Cell(1, col++).Value = "會議名稱";
+            if (columns.Contains("dateRange")) worksheet.Cell(1, col++).Value = "會議日期";
+            if (columns.Contains("roomName")) worksheet.Cell(1, col++).Value = "會議室";
+            if (columns.Contains("paymentMethod")) worksheet.Cell(1, col++).Value = "繳款方式";
+            if (columns.Contains("attendees")) { attendeesCol = col; worksheet.Cell(1, col++).Value = "人數"; }
+            if (columns.Contains("amount")) { amountCol = col; worksheet.Cell(1, col++).Value = "金額"; }
+
+            var totalCols = col - 1;
+            if (totalCols == 0) totalCols = 1; // 至少一欄
 
             // 標題樣式
-            var headerRange = worksheet.Range(1, 1, 1, 7);
+            var headerRange = worksheet.Range(1, 1, 1, totalCols);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
 
@@ -157,24 +175,26 @@ namespace TASA.Services.ReportModule
             for (int i = 0; i < data.Count; i++)
             {
                 var row = i + 2;
-                worksheet.Cell(row, 1).Value = data[i].BookingNo;
-                worksheet.Cell(row, 2).Value = data[i].ConferenceName;
-                worksheet.Cell(row, 3).Value = data[i].DateRange;
-                worksheet.Cell(row, 4).Value = data[i].RoomName;
-                worksheet.Cell(row, 5).Value = data[i].TotalAmount;
-                worksheet.Cell(row, 6).Value = data[i].PaymentMethodText;
-                worksheet.Cell(row, 7).Value = data[i].ExpectedAttendees?.ToString() ?? "-";
+                col = 1;
+                if (columns.Contains("bookingNo")) worksheet.Cell(row, col++).Value = data[i].BookingNo;
+                if (columns.Contains("borrowingUnit")) worksheet.Cell(row, col++).Value = data[i].BorrowingUnitName;
+                if (columns.Contains("conferenceName")) worksheet.Cell(row, col++).Value = data[i].ConferenceName;
+                if (columns.Contains("dateRange")) worksheet.Cell(row, col++).Value = data[i].DateRange;
+                if (columns.Contains("roomName")) worksheet.Cell(row, col++).Value = data[i].RoomName;
+                if (columns.Contains("paymentMethod")) worksheet.Cell(row, col++).Value = data[i].PaymentMethodText;
+                if (columns.Contains("attendees")) worksheet.Cell(row, col++).Value = data[i].ExpectedAttendees?.ToString() ?? "-";
+                if (columns.Contains("amount")) worksheet.Cell(row, col++).Value = data[i].TotalAmount;
             }
 
             // 加總列
             var summaryRow = data.Count + 2;
             worksheet.Cell(summaryRow, 1).Value = "合計";
-            worksheet.Cell(summaryRow, 3).Value = $"共 {data.Count} 筆";
-            worksheet.Cell(summaryRow, 5).Value = data.Sum(x => x.TotalAmount);
-            worksheet.Cell(summaryRow, 7).Value = data.Sum(x => x.ExpectedAttendees ?? 0);
+            if (totalCols >= 2) worksheet.Cell(summaryRow, 2).Value = $"共 {data.Count} 筆";
+            if (attendeesCol.HasValue) worksheet.Cell(summaryRow, attendeesCol.Value).Value = data.Sum(x => x.ExpectedAttendees ?? 0);
+            if (amountCol.HasValue) worksheet.Cell(summaryRow, amountCol.Value).Value = data.Sum(x => x.TotalAmount);
 
             // 加總列樣式
-            var summaryRange = worksheet.Range(summaryRow, 1, summaryRow, 7);
+            var summaryRange = worksheet.Range(summaryRow, 1, summaryRow, totalCols);
             summaryRange.Style.Font.Bold = true;
             summaryRange.Style.Fill.BackgroundColor = XLColor.LightYellow;
 

@@ -25,6 +25,18 @@ const report = new function () {
         totalAttendees: 0
     });
 
+    // 匯出欄位選擇（預設全選）
+    this.exportColumns = reactive({
+        bookingNo: true,
+        borrowingUnit: true,
+        conferenceName: true,
+        dateRange: true,
+        roomName: true,
+        paymentMethod: true,
+        attendees: true,
+        amount: true
+    });
+
     this.getList = async (pagination = false) => {
         try {
             this.loading.value = true;
@@ -103,6 +115,18 @@ const report = new function () {
         if (this.query.roomId) params.append('RoomId', this.query.roomId);
         if (this.query.paymentMethod) params.append('PaymentMethod', this.query.paymentMethod);
         if (this.query.departmentCode) params.append('DepartmentCode', this.query.departmentCode);
+
+        // 匯出欄位
+        const cols = [];
+        if (this.exportColumns.bookingNo) cols.push('bookingNo');
+        if (this.exportColumns.borrowingUnit && this.query.paymentMethod === 'cost-sharing') cols.push('borrowingUnit');
+        if (this.exportColumns.conferenceName) cols.push('conferenceName');
+        if (this.exportColumns.dateRange) cols.push('dateRange');
+        if (this.exportColumns.roomName) cols.push('roomName');
+        if (this.exportColumns.paymentMethod) cols.push('paymentMethod');
+        if (this.exportColumns.attendees) cols.push('attendees');
+        if (this.exportColumns.amount) cols.push('amount');
+        params.append('Columns', cols.join(','));
 
         window.location.href = `/api/report/export?${params.toString()}`;
     };
