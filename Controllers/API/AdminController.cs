@@ -7,6 +7,7 @@ using TASA.Services.DepartmentModule;
 using TASA.Services.EcsModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.RoomModule;
+using TASA.Services.CostCenterModule;
 using TASA.Extensions;
 
 namespace TASA.Controllers.API
@@ -204,6 +205,41 @@ namespace TASA.Controllers.API
         public IActionResult LoginLogList([FromBody] LoginLogServices.QueryVM query)
         {
             return Ok(service.LoginLogServices.List(query).ToPage(Request, Response));
+        }
+
+        /* --- 成本中心主管 --- */
+
+        [HttpGet("costcentermanagerlist")]
+        public IActionResult CostCenterManagerList([FromQuery] CostCenterManagerService.QueryVM query)
+        {
+            return Ok(service.CostCenterManagerService.List(query));
+        }
+
+        [HttpGet("costcentermanagerdetail")]
+        public IActionResult CostCenterManagerDetail(Guid id)
+        {
+            return Ok(service.CostCenterManagerService.Detail(id));
+        }
+
+        [HttpPost("costcentermanagerinsert")]
+        public IActionResult CostCenterManagerInsert(CostCenterManagerService.DetailVM vm)
+        {
+            service.CostCenterManagerService.Insert(vm);
+            return Ok();
+        }
+
+        [HttpPost("costcentermanagerupdate")]
+        public IActionResult CostCenterManagerUpdate(CostCenterManagerService.DetailVM vm)
+        {
+            service.CostCenterManagerService.Update(vm);
+            return Ok();
+        }
+
+        [HttpDelete("costcentermanagerdelete")]
+        public IActionResult CostCenterManagerDelete(Guid id)
+        {
+            service.CostCenterManagerService.Delete(id);
+            return Ok();
         }
     }
 }

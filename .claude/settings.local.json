@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(wc:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(git checkout:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(/mnt/c/Program\\\\ Files/dotnet/dotnet.exe build:*)"
     ]
   }
 }

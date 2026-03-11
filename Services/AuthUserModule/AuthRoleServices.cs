@@ -70,16 +70,16 @@ namespace TASA.Services.AuthUserModule
         }
 
         /// <summary>
-        /// ✅ 是否可以審核租借 (主任、管理者、開發者)
+        /// ✅ 是否可以審核租借 (主任、管理者、開發者、成本中心主管)
         /// </summary>
         public bool CanApproveReservation(Guid userId)
         {
             // 原有權限：ADMIN / DIRECTOR
             var hasRolePermission = HasAnyRole(userId, "ADMIN", "ADMINN", "DIRECTOR");
-            
+
             if (hasRolePermission)
                 return true;
-            
+
             // 檢查是否為任何會議室的管理者
             var isRoomManager = db.SysRoom
                 .AsNoTracking()
@@ -100,7 +100,14 @@ namespace TASA.Services.AuthUserModule
                        && d.StartDate <= today
                        && d.EndDate >= today);
 
-            return isDelegate;
+            if (isDelegate) return true;
+
+            // ✅ 檢查是否為成本中心主管
+            var isCostCenterManager = db.CostCenterManager
+                .AsNoTracking()
+                .Any(c => c.ManagerId == userId);
+
+            return isCostCenterManager;
         }
 
         /// <summary>
@@ -173,14 +180,20 @@ namespace TASA.Services.AuthUserModule
     var isRoomManager = managedRoomIds.Any();
     var hasRolePermission = roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR");
 
+    // ✅ 檢查是否為成本中心主管
+    var isCostCenterManager = db.CostCenterManager
+        .AsNoTracking()
+        .Any(c => c.ManagerId == userId);
+
     return new UserPermissionVM
     {
         Roles = roles,
-        CanApproveReservation = hasRolePermission || isRoomManager,
+        CanApproveReservation = hasRolePermission || isRoomManager || isCostCenterManager,
         CanApprovePayment = CanApprovePayment(userId),
         IsInternalStaff = IsInternalStaff(userId),
         IsExternalUser = IsExternalUser(userId),
         IsRoomManager = isRoomManager,
+        IsCostCenterManager = isCostCenterManager,
         ManagedRoomIds = managedRoomIds
     };
 }
@@ -195,9 +208,9 @@ namespace TASA.Services.AuthUserModule
             public bool CanApprovePayment { get; set; }
             public bool IsInternalStaff { get; set; }
             public bool IsExternalUser { get; set; }
-
-    public bool IsRoomManager { get; set; }  // ✅ 新增
-    public List<Guid> ManagedRoomIds { get; set; } = new();  
+            public bool IsRoomManager { get; set; }
+            public bool IsCostCenterManager { get; set; }  // ✅ 成本中心主管
+            public List<Guid> ManagedRoomIds { get; set; } = new();
         }
     }
 }

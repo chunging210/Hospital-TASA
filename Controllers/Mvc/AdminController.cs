@@ -68,5 +68,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult CostCenterManager()
+        {
+            return View();
+        }
     }
 }

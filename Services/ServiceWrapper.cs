@@ -14,6 +14,7 @@ using TASA.Services.WebexModule;
 using TASA.Services.CaptchaModule;
 using TASA.Services.HolidayModule;
 using TASA.Services.ReportModule;
+using TASA.Services.CostCenterModule;
 using TASA.Services;
 
 namespace TASA.Services
@@ -62,7 +63,8 @@ namespace TASA.Services
         Lazy<CaptchaService> captchaService,
         Lazy<RoomApprovalLevelService> roomApprovalLevelService,
         Lazy<HolidayService> holidayService,
-        Lazy<ReportService> reportService
+        Lazy<ReportService> reportService,
+        Lazy<CostCenterManagerService> costCenterManagerService
 
     )
     {
@@ -117,6 +119,8 @@ namespace TASA.Services
         public HolidayService HolidayService => holidayService.Value;
 
         public ReportService ReportService => reportService.Value;
+
+        public CostCenterManagerService CostCenterManagerService => costCenterManagerService.Value;
 
     }
 }

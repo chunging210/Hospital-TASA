@@ -1689,7 +1689,48 @@ namespace TASA.Services.ConferenceModule
 
             // 取得審核鏈
             var approvalChain = service.RoomApprovalLevelService.GetApprovalChain(vm.RoomId!.Value);
-            var totalLevels = approvalChain.Count;
+
+            // ✅ 成本分攤：檢查是否需要插入成本中心主管作為第一關
+            var approvalHistoryList = new List<ConferenceApprovalHistory>();
+            int levelOffset = 0;
+
+            if (vm.PaymentMethod == "cost-sharing" && !string.IsNullOrWhiteSpace(vm.DepartmentCode) && room.DepartmentId.HasValue)
+            {
+                // 查詢該成本代碼在該分院的主管
+                var costCenterManager = service.CostCenterManagerService.GetManager(vm.DepartmentCode, room.DepartmentId.Value);
+
+                if (costCenterManager != null)
+                {
+                    // 插入成本中心主管作為第一關
+                    approvalHistoryList.Add(new ConferenceApprovalHistory
+                    {
+                        Id = Guid.NewGuid(),
+                        ConferenceId = conferenceId,
+                        Level = 1,  // 第一關
+                        ApproverId = costCenterManager.Id,
+                        Status = ApprovalStatus.Pending,
+                        CreateAt = DateTime.Now
+                    });
+                    levelOffset = 1;  // 後續審核關卡向後順延
+                    Console.WriteLine($"📝 [CreateReservation] 成本分攤審核：插入成本中心主管 {costCenterManager.Name} 作為第一關");
+                }
+            }
+
+            // 加入原有的審核鏈（Level 向後順延）
+            foreach (var item in approvalChain)
+            {
+                approvalHistoryList.Add(new ConferenceApprovalHistory
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = conferenceId,
+                    Level = item.Level + levelOffset,
+                    ApproverId = item.ApproverId,
+                    Status = ApprovalStatus.Pending,
+                    CreateAt = DateTime.Now
+                });
+            }
+
+            var totalLevels = approvalHistoryList.Count;
 
             return new Conference
             {
@@ -1741,16 +1782,8 @@ namespace TASA.Services.ConferenceModule
                         IsRecorder = false
                     }
                 },
-                // ✅ 快照審核鏈到 ApprovalHistory
-                ApprovalHistory = approvalChain.Select(x => new ConferenceApprovalHistory
-                {
-                    Id = Guid.NewGuid(),
-                    ConferenceId = conferenceId,
-                    Level = x.Level,
-                    ApproverId = x.ApproverId,
-                    Status = ApprovalStatus.Pending,
-                    CreateAt = DateTime.Now
-                }).ToList()
+                // ✅ 快照審核鏈到 ApprovalHistory（包含成本中心主管）
+                ApprovalHistory = approvalHistoryList
             };
         }
 

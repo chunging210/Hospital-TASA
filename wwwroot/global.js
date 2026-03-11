@@ -144,6 +144,11 @@ const global = new function () {
             ecsdelete: DELETE,
             ecstest: GET,
             loginloglist: POST,
+            costcentermanagerlist: GET,
+            costcentermanagerdetail: GET,
+            costcentermanagerinsert: POST,
+            costcentermanagerupdate: POST,
+            costcentermanagerdelete: DELETE,
         }),
         adminwebex: apiMethods('/api/adminwebex', {
             list: GET,

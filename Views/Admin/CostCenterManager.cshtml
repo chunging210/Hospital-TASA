@@ -1,0 +1,154 @@
+<div v-cloak>
+<div class="page-content">
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header mx-4 mt-3">
+                <div class="row d-flex align-items-center">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">account_balance</span>成本中心主管設定
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <select v-model="query.departmentId" class="form-select" @@change="manager.getList()">
+                            <option :value="null">全部分院</option>
+                            <option v-for="item in department.list" :key="item.Id" :value="item.Id">
+                                {{ item.Name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-lg-2">
+                        <select v-model="query.costCenterCode" class="form-select" @@change="manager.getList()">
+                            <option :value="null">全部成本代碼</option>
+                            <option v-for="item in costCenter.list" :key="item.Code" :value="item.Code">
+                                {{ item.Code }} - {{ item.Name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-lg-3">
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="query.keyword"
+                                       placeholder="搜尋主管名稱/信箱...">
+                                <span class="material-icons search-icon">search</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-auto d-flex align-items-center ms-auto">
+                        <button @@click="manager.getVM()" class="btn btn-primary d-flex align-items-center"
+                            data-bs-toggle="modal" data-bs-target="#managerModal">
+                            <span class="material-icons me-2">add</span> 新增設定
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover table-responsive">
+                    <caption>成本中心主管列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th>分院</th>
+                            <th>成本代碼</th>
+                            <th>主管</th>
+                            <th>信箱</th>
+                            <th>建立時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in manager.list" @@dblclick="manager.getVM(item.Id)" :key="item.Id">
+                            <td>{{ item.DepartmentName }}</td>
+                            <td>{{ item.CostCenterCode }} - {{ item.CostCenterName }}</td>
+                            <td>{{ item.ManagerName }}</td>
+                            <td>{{ item.ManagerEmail }}</td>
+                            <td>{{ item.CreatedAt.format() }}</td>
+                            <td>
+                                <button @@click="manager.getVM(item.Id)" class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal" data-bs-target="#managerModal">編輯</button>
+                                <button @@click="manager.delete(item.Id)" class="btn btn-sm btn-outline-danger ms-1">刪除</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot v-if="manager.list.length == 0">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">查無資料</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 新增/編輯 Modal ===== -->
+<div class="modal fade" id="managerModal" tabindex="-1" aria-labelledby="managerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="managerModalLabel">
+                    {{ manager.vm.Id ? '編輯成本中心主管' : '新增成本中心主管' }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body px-4 mt-3">
+                <form>
+                    <!-- 分院 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">分院 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select v-model="manager.vm.DepartmentId" class="form-select"
+                                    @@change="manager.onDepartmentChange()">
+                                <option :value="null">請選擇分院</option>
+                                <option v-for="item in department.list" :key="item.Id" :value="item.Id">
+                                    {{ item.Name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 成本代碼 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">成本代碼 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select v-model="manager.vm.CostCenterCode" class="form-select">
+                                <option :value="''">請選擇成本代碼</option>
+                                <option v-for="item in costCenter.list" :key="item.Code" :value="item.Code">
+                                    {{ item.Code }} - {{ item.Name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 主管 -->
+                    <div class="row mb-4">
+                        <label class="col-sm-3 col-form-label">主管 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select v-model="manager.vm.ManagerId" class="form-select"
+                                    :disabled="!manager.vm.DepartmentId">
+                                <option :value="null">請選擇主管</option>
+                                <option v-for="item in internalUser.list" :key="item.Id" :value="item.Id">
+                                    {{ item.Name }} ({{ item.Email }})
+                                </option>
+                            </select>
+                            <small v-if="!manager.vm.DepartmentId" class="text-muted">請先選擇分院</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" @@click="manager.save()">
+                    {{ manager.vm.Id ? '確認修改' : '確認新增' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
