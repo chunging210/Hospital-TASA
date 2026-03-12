@@ -68,19 +68,41 @@ namespace TASA.Services.RoomModule
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .WhereIf(query.DepartmentId.HasValue, x => x.DepartmentId == query.DepartmentId);
 
-            // ✅ 會議室管理者過濾：只能看到自己管理的會議室
-            var userId = service.UserClaimsService.Me()?.Id;
-            if (userId.HasValue)
-            {
-                var userPermissions = service.AuthRoleServices.GetUserPermissions(userId.Value);
+            // ✅ 權限過濾
+            var currentUser = service.UserClaimsService.Me();
+            Console.WriteLine($"========== RoomService.List 權限檢查 ==========");
+            Console.WriteLine($"currentUser: {currentUser?.Name}");
+            Console.WriteLine($"IsAdmin: {currentUser?.IsAdmin}");
+            Console.WriteLine($"IsGlobalAdmin: {currentUser?.IsGlobalAdmin}");
+            Console.WriteLine($"IsDepartmentAdmin: {currentUser?.IsDepartmentAdmin}");
+            Console.WriteLine($"DepartmentId: {currentUser?.DepartmentId}");
+            Console.WriteLine($"Roles: {string.Join(", ", currentUser?.Role ?? new List<string>())}");
+            Console.WriteLine($"================================================");
 
-                // 如果是會議室管理者，但不是 Admin/Director
-                if (userPermissions.IsRoomManager &&
-                    !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+            if (currentUser != null)
+            {
+                // 分院 Admin：只能看到自己分院的會議室
+                if (currentUser.IsDepartmentAdmin && currentUser.DepartmentId.HasValue)
                 {
-                    var managedRoomIds = userPermissions.ManagedRoomIds;
-                    q = q.Where(x => managedRoomIds.Contains(x.Id));
-                    Console.WriteLine($"[RoomService.List] 會議室管理者過濾，只顯示 {managedRoomIds.Count} 間會議室");
+                    q = q.Where(x => x.DepartmentId == currentUser.DepartmentId.Value);
+                    Console.WriteLine($"[RoomService.List] 分院管理者過濾，只顯示分院 {currentUser.DepartmentId} 的會議室");
+                }
+                // 全院 Admin：不過濾，可以看到所有
+                else if (currentUser.IsGlobalAdmin)
+                {
+                    Console.WriteLine("[RoomService.List] 全院管理者，顯示所有會議室");
+                }
+                // 會議室管理者（非 Admin）：只能看到自己管理的會議室
+                else if (currentUser.Id.HasValue)
+                {
+                    var userPermissions = service.AuthRoleServices.GetUserPermissions(currentUser.Id.Value);
+                    if (userPermissions.IsRoomManager &&
+                        !userPermissions.Roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR"))
+                    {
+                        var managedRoomIds = userPermissions.ManagedRoomIds;
+                        q = q.Where(x => managedRoomIds.Contains(x.Id));
+                        Console.WriteLine($"[RoomService.List] 會議室管理者過濾，只顯示 {managedRoomIds.Count} 間會議室");
+                    }
                 }
             }
 
@@ -662,21 +684,26 @@ namespace TASA.Services.RoomModule
             // ===== 1. 驗證基本欄位 =====
             ValidateBasicFields(vm);
 
-            // ✅ 1.5 權限檢查:非管理者強制使用自己的分院ID
+            // ✅ 1.5 權限檢查
             var currentUser = service.UserClaimsService.Me();
             if (currentUser == null || currentUser.Id == null)
             {
                 throw new HttpException("使用者未登入");
             }
 
-            if (!currentUser.IsAdmin)
+            // 分院 Admin：強制使用自己的分院ID
+            if (currentUser.IsDepartmentAdmin)
+            {
+                vm.DepartmentId = currentUser.DepartmentId!.Value;
+            }
+            // 全院 Admin：可以選擇任何分院（不強制覆蓋）
+            // 非 Admin：強制使用自己的分院ID
+            else if (!currentUser.IsGlobalAdmin)
             {
                 if (currentUser.DepartmentId == null)
                 {
                     throw new HttpException("使用者沒有分院資訊,無法新增會議室");
                 }
-
-                // 強制覆蓋前端傳來的 DepartmentId
                 vm.DepartmentId = currentUser.DepartmentId.Value;
             }
 
@@ -872,21 +899,31 @@ namespace TASA.Services.RoomModule
                 throw new HttpException("會議室不存在");
 
 
-            // ✅ 權限檢查:非管理者只能編輯自己分院的會議室
+            // ✅ 權限檢查
             var currentUser = service.UserClaimsService.Me();
             if (currentUser == null || currentUser.Id == null)
             {
                 throw new HttpException("使用者未登入");
             }
 
-            if (!currentUser.IsAdmin)
+            // 分院 Admin：只能編輯自己分院的會議室
+            if (currentUser.IsDepartmentAdmin)
             {
                 if (data.DepartmentId != currentUser.DepartmentId)
                 {
                     throw new HttpException("您沒有權限編輯此會議室");
                 }
-
-                // 強制保持原分院ID,不允許改變
+                // 強制保持原分院ID，不允許改變
+                vm.DepartmentId = data.DepartmentId;
+            }
+            // 全院 Admin：可以編輯任何會議室
+            // 非 Admin：只能編輯自己分院的會議室
+            else if (!currentUser.IsGlobalAdmin)
+            {
+                if (data.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限編輯此會議室");
+                }
                 vm.DepartmentId = data.DepartmentId;
             }
 
@@ -1009,13 +1046,26 @@ namespace TASA.Services.RoomModule
                 throw new HttpException("會議室不存在");
             }
 
-            // ✅ 權限檢查:非管理者只能刪除自己分院的會議室
+            // ✅ 權限檢查
             var currentUser = service.UserClaimsService.Me();
-            if (currentUser != null && !currentUser.IsAdmin)
+            if (currentUser != null)
             {
-                if (data.DepartmentId != currentUser.DepartmentId)
+                // 分院 Admin：只能刪除自己分院的會議室
+                if (currentUser.IsDepartmentAdmin)
                 {
-                    throw new HttpException("您沒有權限刪除此會議室");
+                    if (data.DepartmentId != currentUser.DepartmentId)
+                    {
+                        throw new HttpException("您沒有權限刪除此會議室");
+                    }
+                }
+                // 全院 Admin：可以刪除任何會議室
+                // 非 Admin：只能刪除自己分院的會議室
+                else if (!currentUser.IsGlobalAdmin)
+                {
+                    if (data.DepartmentId != currentUser.DepartmentId)
+                    {
+                        throw new HttpException("您沒有權限刪除此會議室");
+                    }
                 }
             }
 

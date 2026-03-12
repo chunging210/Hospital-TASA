@@ -300,6 +300,7 @@ namespace TASA.Services
         }
         public IQueryable<RoomListVM> RoomList(SysRoomQueryVM query)
         {
+            var currentUser = service.UserClaimsService.Me();
 
             var q = db.SysRoom
                 .AsNoTracking()
@@ -318,7 +319,14 @@ namespace TASA.Services
                 );
             }
 
-            if (query.DepartmentId.HasValue)
+            // ✅ 分院 Admin：強制只能看到自己分院的會議室
+            if (currentUser != null && currentUser.IsDepartmentAdmin && currentUser.DepartmentId.HasValue)
+            {
+                q = q.Where(x => x.DepartmentId == currentUser.DepartmentId.Value);
+                Console.WriteLine($"[SelectServices.RoomList] 分院管理者過濾，只顯示分院 {currentUser.DepartmentId} 的會議室");
+            }
+            // 全院 Admin 或其他用戶：使用前端傳入的 DepartmentId 參數
+            else if (query.DepartmentId.HasValue)
             {
                 q = q.Where(x => x.DepartmentId == query.DepartmentId);
             }
@@ -375,12 +383,20 @@ namespace TASA.Services
 
         public IQueryable<InternalUserVM> InternalUser(Guid? departmentId = null)
         {
+            if (departmentId == Guid.Empty)
+            {
+                Console.WriteLine($"🔍 [Controller] departmentId 是 Guid.Empty,改為 null");
+                departmentId = null;
+            }
 
-                if (departmentId == Guid.Empty)
-    {
-        Console.WriteLine($"🔍 [Controller] departmentId 是 Guid.Empty,改為 null");
-        departmentId = null;
-    }
+            // 分院管理者強制使用自己的分院
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser?.IsDepartmentAdmin == true && currentUser.DepartmentId.HasValue)
+            {
+                departmentId = currentUser.DepartmentId;
+                Console.WriteLine($"🔒 [InternalUser] 分院管理者,強制使用分院: {departmentId}");
+            }
+
             Console.WriteLine($"📥 [InternalUser] departmentId: {departmentId}");
 
             var query = db.AuthUser

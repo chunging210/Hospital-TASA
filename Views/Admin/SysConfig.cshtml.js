@@ -4,6 +4,7 @@ const { reactive, ref, onMounted } = Vue;
 
 const sysConfig = new function () {
     this.isAdmin = ref(false);  // 是否為管理員
+    this.isGlobalAdmin = ref(false);  // 是否為全院管理者（Admin + 無分院）
     this.departmentId = ref(null);  // 使用者的分院 ID
     this.selectedDepartmentId = ref(null);  // Admin 選擇查看的分院
     this.departments = reactive([]);  // 分院列表
@@ -21,6 +22,13 @@ const sysConfig = new function () {
             const res = await global.api.auth.me();
             this.isAdmin.value = res.data.IsAdmin || false;
             this.departmentId.value = res.data.DepartmentId || null;
+            // 全院管理者 = Admin 且無分院
+            this.isGlobalAdmin.value = this.isAdmin.value && !this.departmentId.value;
+
+            // 分院管理者預設選擇自己的分院
+            if (!this.isGlobalAdmin.value && this.departmentId.value) {
+                this.selectedDepartmentId.value = this.departmentId.value;
+            }
         } catch (err) {
             console.error('❌ 無法取得使用者資訊:', err);
         }
@@ -141,6 +149,7 @@ window.$config = {
     setup: () => new function () {
         this.settings = sysConfig.settings;
         this.isAdmin = sysConfig.isAdmin;
+        this.isGlobalAdmin = sysConfig.isGlobalAdmin;
         this.selectedDepartmentId = sysConfig.selectedDepartmentId;
         this.departments = sysConfig.departments;
         this.onDepartmentChange = sysConfig.onDepartmentChange;
@@ -149,8 +158,8 @@ window.$config = {
 
         onMounted(async () => {
             await sysConfig.loadUserInfo();
-            // Admin 才載入分院列表
-            if (sysConfig.isAdmin.value) {
+            // 只有全院管理者才載入分院列表
+            if (sysConfig.isGlobalAdmin.value) {
                 await sysConfig.loadDepartments();
             }
             sysConfig.loadSettings();

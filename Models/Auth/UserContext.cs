@@ -17,6 +17,10 @@ namespace TASA.Models.Auth
         public bool IsAccountant { get; init; }
         public bool IsStaff { get; set; }
         public bool IsNormal { get; set; }
-        public bool IsRoomManager { get; set; } 
+        public bool IsRoomManager { get; set; }
+
+        // 計算屬性：區分全院管理者與分院管理者
+        public bool IsGlobalAdmin => IsAdmin && DepartmentId == null;
+        public bool IsDepartmentAdmin => IsAdmin && DepartmentId != null;
     }
 }

@@ -27,12 +27,20 @@ namespace TASA.Services.AuthUserModule
         }
         public IEnumerable<ListVM> List(BaseQueryVM query)
         {
-            return db.AuthUser
+            var q = db.AuthUser
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereIf(query.IsEnabled.HasValue, x => x.IsEnabled == query.IsEnabled)
-                .WhereIf(query.Keyword, x => x.Department.Name.Contains(query.Keyword!) || x.Name.Contains(query.Keyword!) || x.Account.Contains(query.Keyword!) || x.Email.Contains(query.Keyword!))
-                .Mapping(x => new ListVM()
+                .WhereIf(query.Keyword, x => x.Department.Name.Contains(query.Keyword!) || x.Name.Contains(query.Keyword!) || x.Account.Contains(query.Keyword!) || x.Email.Contains(query.Keyword!));
+
+            // 分院管理者只能看到自己分院的使用者
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser?.IsDepartmentAdmin == true && currentUser.DepartmentId.HasValue)
+            {
+                q = q.Where(x => x.DepartmentId == currentUser.DepartmentId.Value);
+            }
+
+            return q.Mapping(x => new ListVM()
                 {
                     DepartmentName = x.Department.Name,
                     IsNormal = x.AuthRole.Any(r => r.Code == AuthRoleServices.Normal),

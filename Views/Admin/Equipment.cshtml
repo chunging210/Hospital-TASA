@@ -142,8 +142,8 @@
                         </div>
 
 
-                        <!-- 分院 -->
-                        <div v-if="isAdmin" class="row mb-4">
+                        <!-- 分院（只有全院管理者才顯示） -->
+                        <div v-if="isGlobalAdmin" class="row mb-4">
                             <label class="col-sm-3 col-form-label">分院 <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <select v-model="selectedDepartment" class="form-select">

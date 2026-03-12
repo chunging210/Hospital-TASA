@@ -4,6 +4,8 @@ const { ref, reactive, onMounted, computed, watch } = Vue;
 
 let currentUser = null;
 const isAdmin = ref(false);  // ✅ 改用 ref
+const isGlobalAdmin = ref(false);  // ✅ 全院管理者
+const isDepartmentAdmin = ref(false);  // ✅ 分院管理者
 const userDepartmentId = ref(null);  // ✅ 改用 ref
 const userDepartmentName = ref('');  // ✅ 改用 ref
 
@@ -360,15 +362,19 @@ const loadCurrentUser = async () => {
     try {
         const userRes = await global.api.auth.me();
         currentUser = userRes.data;
-        isAdmin.value = currentUser.IsAdmin || false;  // ✅ 用 .value
-        userDepartmentId.value = currentUser.DepartmentId;  // ✅ 用 .value
-        userDepartmentName.value = currentUser.DepartmentName || '';  // ✅ 用 .value
+        isAdmin.value = currentUser.IsAdmin || false;
+        isGlobalAdmin.value = currentUser.IsGlobalAdmin || false;  // ✅ 全院管理者
+        isDepartmentAdmin.value = currentUser.IsDepartmentAdmin || false;  // ✅ 分院管理者
+        userDepartmentId.value = currentUser.DepartmentId;
+        userDepartmentName.value = currentUser.DepartmentName || '';
 
         console.log('✅ 使用者資訊:', {
             name: currentUser.Name,
-            isAdmin: isAdmin.value,  // ✅ 用 .value
-            departmentId: userDepartmentId.value,  // ✅ 用 .value
-            departmentName: userDepartmentName.value  // ✅ 用 .value
+            isAdmin: isAdmin.value,
+            isGlobalAdmin: isGlobalAdmin.value,
+            isDepartmentAdmin: isDepartmentAdmin.value,
+            departmentId: userDepartmentId.value,
+            departmentName: userDepartmentName.value
         });
     } catch (err) {
         console.error('❌ 無法取得使用者資訊:', err);
@@ -720,8 +726,8 @@ const room = new function () {
             const response = await method({ body });
             const roomId = response.data?.Id || this.vm.Id;
 
-            // ✅ 儲存審核關卡（只有編輯模式或有設定關卡時才儲存）
-            if (roomId && approvalChain.levels.length > 0) {
+            // ✅ 儲存審核關卡（編輯模式時一律儲存，即使清空也要讓後端軟刪除舊的）
+            if (roomId) {
                 await approvalChain.save(roomId);
             }
 
@@ -993,6 +999,8 @@ window.$config = {
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
         this.department = department;
         this.isAdmin = isAdmin;
+        this.isGlobalAdmin = isGlobalAdmin;  // ✅ 全院管理者
+        this.isDepartmentAdmin = isDepartmentAdmin;  // ✅ 分院管理者
         this.manager = manager;
         this.approvalChain = approvalChain;  // ✅ 審核關卡
         this.userDepartmentName = userDepartmentName;
@@ -1053,16 +1061,14 @@ window.$config = {
             room.getList(1);
 
             // ✅ 載入分院列表或員工
-            if (isAdmin.value) {
-                console.log('✅ 是管理者,載入分院列表');
+            if (isGlobalAdmin.value) {
+                // 全院管理者：載入分院列表，等選擇分院後再載入員工
+                console.log('✅ 全院管理者，載入分院列表');
                 department.getList();
-                // ✅ Admin 初始不載入員工,等選擇分院後再載入
-            } else {
-                // ✅ 非管理者:直接載入自己分院的員工
-                if (userDepartmentId.value) {
-                    console.log('✅ 非管理者,載入自己分院員工:', userDepartmentId.value);
-                    manager.getList(userDepartmentId.value);
-                }
+            } else if (userDepartmentId.value) {
+                // 分院管理者或非管理者：直接載入自己分院的員工
+                console.log('✅ 載入自己分院員工:', userDepartmentId.value);
+                manager.getList(userDepartmentId.value);
             }
 
             // ✅ Modal 事件監聽

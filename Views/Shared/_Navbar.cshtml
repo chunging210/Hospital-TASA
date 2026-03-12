@@ -1,6 +1,7 @@
 ﻿@inject TASA.Services.ServiceWrapper service
 @{
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
+    var isGlobalAdmin = user?.IsGlobalAdmin == true;  // 全院管理者（Admin 角色 + DepartmentId == null）
 }
 
 <header v-cloak v-if="name" class="ishorizontal-topbar">
@@ -135,11 +136,17 @@
                                     <a href="/admin/authuser" class="dropdown-item">使用者總覽</a>
                                     <a href="/admin/loginlog" class="dropdown-item">登入日誌</a>
                                     <a href="/admin/sysconfig" class="dropdown-item">系統設定</a>
-                                    <a href="/admin/sysdepartment" class="dropdown-item">單位總覽</a>
+                                    @if (isGlobalAdmin)
+                                    {
+                                        <a href="/admin/sysdepartment" class="dropdown-item">單位總覽</a>
+                                    }
                                     <a href="/admin/report" class="dropdown-item">會議報表</a>
-                                    @if (user?.IsAdmin == true)
+                                    @if (isGlobalAdmin)
                                     {
                                         <a href="/admin/holiday" class="dropdown-item">國定假日管理</a>
+                                    }
+                                    @if (user?.IsAdmin == true)
+                                    {
                                         <a href="/admin/costcentermanager" class="dropdown-item">成本中心主管</a>
                                     }
                                 </div>

@@ -8,7 +8,8 @@
                         <span class="material-icons">account_balance</span>成本中心主管設定
                     </div>
 
-                    <div class="col-12 col-lg-2">
+                    <!-- 分院選擇（只有全院管理者才顯示） -->
+                    <div class="col-12 col-lg-2" v-if="isGlobalAdmin">
                         <select v-model="query.departmentId" class="form-select" @@change="manager.getList()">
                             <option :value="null">全部分院</option>
                             <option v-for="item in department.list" :key="item.Id" :value="item.Id">
@@ -97,8 +98,8 @@
             <!-- Modal Body -->
             <div class="modal-body px-4 mt-3">
                 <form>
-                    <!-- 分院 -->
-                    <div class="row mb-4">
+                    <!-- 分院（只有全院管理者才顯示，分院管理者自動使用自己分院） -->
+                    <div class="row mb-4" v-if="isGlobalAdmin">
                         <label class="col-sm-3 col-form-label">分院 <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
                             <select v-model="manager.vm.DepartmentId" class="form-select"
@@ -108,6 +109,12 @@
                                     {{ item.Name }}
                                 </option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="row mb-4" v-else>
+                        <label class="col-sm-3 col-form-label">分院</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" :value="userDepartmentName" disabled>
                         </div>
                     </div>
 

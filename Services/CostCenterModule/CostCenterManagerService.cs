@@ -51,8 +51,14 @@ namespace TASA.Services.CostCenterModule
                     from user in userJoin.DefaultIfEmpty()
                     select new { ccm, dept, user };
 
-            // 篩選分院
-            if (query.DepartmentId.HasValue)
+            // 分院管理者只能看到自己分院的成本中心主管
+            var currentUser = service.UserClaimsService.Me();
+            if (currentUser?.IsDepartmentAdmin == true && currentUser.DepartmentId.HasValue)
+            {
+                q = q.Where(x => x.ccm.DepartmentId == currentUser.DepartmentId.Value);
+            }
+            // 篩選分院（前端傳入的參數）
+            else if (query.DepartmentId.HasValue)
             {
                 q = q.Where(x => x.ccm.DepartmentId == query.DepartmentId.Value);
             }

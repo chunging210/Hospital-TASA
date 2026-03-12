@@ -70,7 +70,7 @@ namespace TASA.Services.AuthUserModule
         }
 
         /// <summary>
-        /// ✅ 是否可以審核租借 (主任、管理者、開發者、成本中心主管)
+        /// ✅ 是否可以審核租借 (主任、管理者、開發者、成本中心主管、審核鏈上的人)
         /// </summary>
         public bool CanApproveReservation(Guid userId)
         {
@@ -89,6 +89,16 @@ namespace TASA.Services.AuthUserModule
                     && r.DeleteAt == null);
 
             if (isRoomManager) return true;
+
+            // 檢查是否在任何會議室的審核鏈上
+            var isApprover = db.SysRoomApprovalLevel
+                .AsNoTracking()
+                .Any(a => a.ApproverId == userId
+                       && a.DeleteAt == null
+                       && a.Room.IsEnabled
+                       && a.Room.DeleteAt == null);
+
+            if (isApprover) return true;
 
             // 檢查是否為有效的代理人
             var today = DateOnly.FromDateTime(DateTime.Now);
@@ -138,65 +148,92 @@ namespace TASA.Services.AuthUserModule
         /// ✅ 取得使用者權限摘要 (前端用)
         /// </summary>
         public UserPermissionVM GetUserPermissions(Guid userId)
-{
-    var roles = GetUserRoles(userId);
-    
-    // 查詢使用者管理的會議室
-    var managedRoomIds = db.SysRoom
-        .AsNoTracking()
-        .IgnoreQueryFilters()
-        .Where(r => r.ManagerId == userId
-                 && r.IsEnabled
-                 && r.DeleteAt == null)
-        .Select(r => r.Id)
-        .ToList();
+        {
+            var roles = GetUserRoles(userId);
 
-    // 合併被委派管理的會議室
-    var today = DateOnly.FromDateTime(DateTime.Now);
-    var delegatedManagerIds = db.RoomManagerDelegate
-        .AsNoTracking()
-        .Where(d => d.DelegateUserId == userId
-                 && d.IsEnabled
-                 && d.DeleteAt == null
-                 && d.StartDate <= today
-                 && d.EndDate >= today)
-        .Select(d => d.ManagerId)
-        .ToList();
+            // 查詢使用者管理的會議室 (從 ManagerId)
+            var managedRoomIds = db.SysRoom
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(r => r.ManagerId == userId
+                         && r.IsEnabled
+                         && r.DeleteAt == null)
+                .Select(r => r.Id)
+                .ToList();
 
-    if (delegatedManagerIds.Any())
-    {
-        var delegatedRoomIds = db.SysRoom
-            .AsNoTracking()
-            .IgnoreQueryFilters()
-            .Where(r => delegatedManagerIds.Contains(r.ManagerId!.Value)
-                     && r.IsEnabled
-                     && r.DeleteAt == null)
-            .Select(r => r.Id)
-            .ToList();
+            // 合併審核鏈上的會議室
+            var approvalRoomIds = db.SysRoomApprovalLevel
+                .AsNoTracking()
+                .Where(a => a.ApproverId == userId
+                         && a.DeleteAt == null
+                         && a.Room.IsEnabled
+                         && a.Room.DeleteAt == null)
+                .Select(a => a.RoomId)
+                .ToList();
 
-        managedRoomIds = managedRoomIds.Union(delegatedRoomIds).Distinct().ToList();
-    }
+            managedRoomIds = managedRoomIds.Union(approvalRoomIds).Distinct().ToList();
 
-    var isRoomManager = managedRoomIds.Any();
-    var hasRolePermission = roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR");
+            // 合併被委派管理的會議室
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var delegatedManagerIds = db.RoomManagerDelegate
+                .AsNoTracking()
+                .Where(d => d.DelegateUserId == userId
+                         && d.IsEnabled
+                         && d.DeleteAt == null
+                         && d.StartDate <= today
+                         && d.EndDate >= today)
+                .Select(d => d.ManagerId)
+                .ToList();
 
-    // ✅ 檢查是否為成本中心主管
-    var isCostCenterManager = db.CostCenterManager
-        .AsNoTracking()
-        .Any(c => c.ManagerId == userId);
+            if (delegatedManagerIds.Any())
+            {
+                // 被委派的原始管理者直接管理的會議室
+                var delegatedRoomIds = db.SysRoom
+                    .AsNoTracking()
+                    .IgnoreQueryFilters()
+                    .Where(r => delegatedManagerIds.Contains(r.ManagerId!.Value)
+                             && r.IsEnabled
+                             && r.DeleteAt == null)
+                    .Select(r => r.Id)
+                    .ToList();
 
-    return new UserPermissionVM
-    {
-        Roles = roles,
-        CanApproveReservation = hasRolePermission || isRoomManager || isCostCenterManager,
-        CanApprovePayment = CanApprovePayment(userId),
-        IsInternalStaff = IsInternalStaff(userId),
-        IsExternalUser = IsExternalUser(userId),
-        IsRoomManager = isRoomManager,
-        IsCostCenterManager = isCostCenterManager,
-        ManagedRoomIds = managedRoomIds
-    };
-}
+                // 被委派的原始管理者在審核鏈上的會議室
+                var delegatedApprovalRoomIds = db.SysRoomApprovalLevel
+                    .AsNoTracking()
+                    .Where(a => delegatedManagerIds.Contains(a.ApproverId)
+                             && a.DeleteAt == null
+                             && a.Room.IsEnabled
+                             && a.Room.DeleteAt == null)
+                    .Select(a => a.RoomId)
+                    .ToList();
+
+                managedRoomIds = managedRoomIds
+                    .Union(delegatedRoomIds)
+                    .Union(delegatedApprovalRoomIds)
+                    .Distinct()
+                    .ToList();
+            }
+
+            var isRoomManager = managedRoomIds.Any();
+            var hasRolePermission = roles.Any(r => r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR");
+
+            // ✅ 檢查是否為成本中心主管
+            var isCostCenterManager = db.CostCenterManager
+                .AsNoTracking()
+                .Any(c => c.ManagerId == userId);
+
+            return new UserPermissionVM
+            {
+                Roles = roles,
+                CanApproveReservation = hasRolePermission || isRoomManager || isCostCenterManager,
+                CanApprovePayment = CanApprovePayment(userId),
+                IsInternalStaff = IsInternalStaff(userId),
+                IsExternalUser = IsExternalUser(userId),
+                IsRoomManager = isRoomManager,
+                IsCostCenterManager = isCostCenterManager,
+                ManagedRoomIds = managedRoomIds
+            };
+        }
 
         /// <summary>
         /// 使用者權限 ViewModel

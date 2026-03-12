@@ -26,6 +26,7 @@ class VM {
 let currentUser = null;
 let equipmentpageRef = null;  // ✅ 保留這個
 const isAdmin = ref(false);
+const isGlobalAdmin = ref(false);  // 全院管理者（Admin + 無分院）
 const userDepartmentId = ref(null);
 const userDepartmentName = ref('');
 const isEditing = ref(false);
@@ -167,7 +168,8 @@ const equipment = new function () {
             this.imageState.preview = '';
             this.imageState.removeFlag = false;
 
-            selectedDepartment.value = isAdmin.value ? '' : userDepartmentId.value;
+            // 全院管理者：可選擇分院；分院管理者：自動使用自己的分院
+            selectedDepartment.value = isGlobalAdmin.value ? '' : userDepartmentId.value;
 
             if (selectedDepartment.value) {
                 try {
@@ -393,10 +395,13 @@ const loadCurrentUser = async () => {
         isAdmin.value = currentUser.IsAdmin || false;
         userDepartmentId.value = currentUser.DepartmentId;
         userDepartmentName.value = currentUser.DepartmentName || '';
+        // 全院管理者 = Admin 且無分院
+        isGlobalAdmin.value = isAdmin.value && !userDepartmentId.value;
 
         console.log('✅ 使用者資訊:', {
             name: currentUser.Name,
             isAdmin: isAdmin.value,
+            isGlobalAdmin: isGlobalAdmin.value,
             departmentId: userDepartmentId.value,
             departmentName: userDepartmentName.value
         });
@@ -452,8 +457,8 @@ window.$config = {
             // 1️⃣ 載入使用者資訊
             await loadCurrentUser();
 
-            // 2️⃣ 載入分院列表 (如果是管理員)
-            if (isAdmin.value) {
+            // 2️⃣ 載入分院列表 (只有全院管理者才需要)
+            if (isGlobalAdmin.value) {
                 equipment.loadDepartments();
             }
 
@@ -475,6 +480,7 @@ window.$config = {
             equipmentpage,  // ✅ 必須 return 這個
             selectedDepartment,
             isAdmin,
+            isGlobalAdmin,
             userDepartmentName
         };
     }

@@ -1,6 +1,6 @@
 // Views/Admin/CostCenterManager.cshtml.js
 import global from '/global.js';
-const { reactive, onMounted, watch } = Vue;
+const { reactive, ref, onMounted, watch } = Vue;
 
 class VM {
     Id = null;
@@ -8,6 +8,12 @@ class VM {
     DepartmentId = null;
     ManagerId = null;
 }
+
+// 全域狀態
+const isAdmin = ref(false);
+const isGlobalAdmin = ref(false);  // 全院管理者（Admin + 無分院）
+const userDepartmentId = ref(null);
+const userDepartmentName = ref('');
 
 const department = new function () {
     this.list = reactive([]);
@@ -92,7 +98,13 @@ const manager = new function () {
                 });
         } else {
             copy(this.vm, new VM());
-            internalUser.list.length = 0;
+            // 分院管理者新增時自動使用自己的分院
+            if (!isGlobalAdmin.value && userDepartmentId.value) {
+                this.vm.DepartmentId = userDepartmentId.value;
+                internalUser.getList(userDepartmentId.value);
+            } else {
+                internalUser.list.length = 0;
+            }
         }
     }
 
@@ -147,6 +159,27 @@ const manager = new function () {
     }
 }
 
+// 載入使用者資訊
+const loadCurrentUser = async () => {
+    try {
+        const userRes = await global.api.auth.me();
+        isAdmin.value = userRes.data.IsAdmin || false;
+        userDepartmentId.value = userRes.data.DepartmentId || null;
+        userDepartmentName.value = userRes.data.DepartmentName || '';
+        // 全院管理者 = Admin 且無分院
+        isGlobalAdmin.value = isAdmin.value && !userDepartmentId.value;
+
+        console.log('✅ 使用者資訊:', {
+            isAdmin: isAdmin.value,
+            isGlobalAdmin: isGlobalAdmin.value,
+            departmentId: userDepartmentId.value,
+            departmentName: userDepartmentName.value
+        });
+    } catch (err) {
+        console.error('❌ 無法取得使用者資訊:', err);
+    }
+};
+
 window.$config = {
     setup: () => new function () {
         this.department = department;
@@ -154,13 +187,29 @@ window.$config = {
         this.internalUser = internalUser;
         this.query = query;
         this.manager = manager;
+        this.isAdmin = isAdmin;
+        this.isGlobalAdmin = isGlobalAdmin;
+        this.userDepartmentId = userDepartmentId;
+        this.userDepartmentName = userDepartmentName;
 
         watch(() => query.keyword, () => {
             manager.getList();
         });
 
-        onMounted(() => {
-            department.getList();
+        onMounted(async () => {
+            // 1️⃣ 載入使用者資訊
+            await loadCurrentUser();
+
+            // 2️⃣ 只有全院管理者才載入分院列表
+            if (isGlobalAdmin.value) {
+                department.getList();
+            }
+
+            // 3️⃣ 分院管理者預設篩選自己分院
+            if (!isGlobalAdmin.value && userDepartmentId.value) {
+                query.departmentId = userDepartmentId.value;
+            }
+
             costCenter.getList();
             manager.getList();
         });

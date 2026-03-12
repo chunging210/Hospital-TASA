@@ -4,6 +4,8 @@ const { ref, reactive, onMounted, computed, watch, toRaw } = Vue;
 
 let currentUser = null;
 const isAdmin = ref(false);
+const isGlobalAdmin = ref(false);  // ✅ 全院管理者
+const isDepartmentAdmin = ref(false);  // ✅ 分院管理者
 const userDepartmentId = ref(null);
 const userDepartmentName = ref('');
 
@@ -34,12 +36,16 @@ const loadCurrentUser = async () => {
         const userRes = await global.api.auth.me();
         currentUser = userRes.data;
         isAdmin.value = currentUser.IsAdmin || false;
+        isGlobalAdmin.value = currentUser.IsGlobalAdmin || false;  // ✅ 全院管理者
+        isDepartmentAdmin.value = currentUser.IsDepartmentAdmin || false;  // ✅ 分院管理者
         userDepartmentId.value = currentUser.DepartmentId;
         userDepartmentName.value = currentUser.DepartmentName || '';
 
         console.log('✅ 使用者資訊:', {
             name: currentUser.Name,
             isAdmin: isAdmin.value,
+            isGlobalAdmin: isGlobalAdmin.value,
+            isDepartmentAdmin: isDepartmentAdmin.value,
             departmentId: userDepartmentId.value,
             departmentName: userDepartmentName.value
         });
@@ -458,6 +464,8 @@ window.$config = {
         this.selectedDepartment = selectedDepartment;
 
         this.isAdmin = isAdmin;
+        this.isGlobalAdmin = isGlobalAdmin;  // ✅ 全院管理者
+        this.isDepartmentAdmin = isDepartmentAdmin;  // ✅ 分院管理者
         this.userDepartmentName = userDepartmentName;
         this.gridColumns = gridColumns;
 
@@ -493,18 +501,18 @@ window.$config = {
 
             room.page = this.roompage.value;
 
-            if (isAdmin.value) {
-                console.log('✅ 是管理者,載入分院列表');
+            // ✅ 全院管理者：顯示分院選擇下拉選單
+            if (isGlobalAdmin.value) {
+                console.log('✅ 全院管理者，載入分院列表');
                 room.loadDepartments();
-                // ✅ 後端會自動過濾
                 room.getList({ page: 1, perPage: 6 });
-            } else {
-                console.log('⚠️ 不是管理者,自動設定為自己的分院');
+            }
+            // ✅ 分院管理者或一般用戶：自動設定為自己的分院
+            else {
+                console.log('⚠️ 分院管理者或一般用戶，自動設定為自己的分院');
                 if (userDepartmentId.value) {
                     room.query.departmentId = userDepartmentId.value;
                     selectedDepartment.value = userDepartmentId.value;
-
-                    // ✅ 後端會自動過濾,不傳參數
                     room.loadBuildingsByDepartment();
                 }
                 room.getList({ page: 1, perPage: 6 });

@@ -195,6 +195,7 @@ window.$config = {
 
         this.currentUser = ref(null);
         this.isAdmin = ref(false);
+        this.isGlobalAdmin = ref(false);  // 全院管理者（Admin + 無分院）
         this.isInternalStaff = ref(false);
 
         this.showAgreementPDF = ref(false);          // 控制 PDF 彈窗顯示
@@ -439,8 +440,11 @@ window.$config = {
 
                 this.isAdmin.value = this.currentUser.value.IsAdmin || false;
                 this.isInternalStaff.value = this.currentUser.value.IsInternal || false;
+                // 全院管理者 = Admin 且無分院
+                this.isGlobalAdmin.value = this.isAdmin.value && !this.currentUser.value.DepartmentId;
 
-                if (!this.isAdmin.value && this.currentUser.value.DepartmentId) {
+                // 非全院管理者：使用自己的分院
+                if (!this.isGlobalAdmin.value && this.currentUser.value.DepartmentId) {
                     this.form.departmentId = this.currentUser.value.DepartmentId;
                 }
 
@@ -716,7 +720,7 @@ window.$config = {
             const dept = this.departments.value.find(d => d.Id === this.form.departmentId);
             const room = this.rooms.value.find(r => r.Id === this.form.roomId);
 
-            if (this.isAdmin.value && dept) {
+            if (this.isGlobalAdmin.value && dept) {
                 return `${dept.Name} - ${this.form.building} ${this.form.floor} ${room?.Name || ''}`;
             }
             return `${this.form.building} ${this.form.floor} ${room?.Name || ''}`;
@@ -1692,7 +1696,7 @@ window.$config = {
             });
 
 
-            if (this.isAdmin.value) {
+            if (this.isGlobalAdmin.value) {
                 this.loadDepartments();
             }
 
@@ -1750,7 +1754,7 @@ window.$config = {
                 await this.loadEquipmentByRoom();
 
                 console.log('✅ 自動選好會議室', this.selectedRoom.value);
-            } else if (!this.isAdmin.value && this.form.departmentId) {
+            } else if (!this.isGlobalAdmin.value && this.form.departmentId) {
                 await this.loadBuildingsByDepartment(this.form.departmentId);
             }
 

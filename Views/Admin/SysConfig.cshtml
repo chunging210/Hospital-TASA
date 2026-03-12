@@ -11,8 +11,8 @@
                         <span class="material-icons">settings</span>系統設定
                     </div>
 
-                    <!-- Admin 分院選擇器 -->
-                    <div class="col-xl-auto col-sm-12 ms-auto" v-if="isAdmin">
+                    <!-- Admin 分院選擇器（只有全院管理者才顯示） -->
+                    <div class="col-xl-auto col-sm-12 ms-auto" v-if="isGlobalAdmin">
                         <div class="d-flex align-items-center gap-2">
                             <label class="form-label mb-0 text-muted text-nowrap">查看設定：</label>
                             <select v-model="selectedDepartmentId" @@change="onDepartmentChange"
@@ -30,8 +30,8 @@
 
             <div class="card-body p-5">
 
-                <!-- 1. 使用者註冊設定 (只有 Admin 且查看全局設定時才顯示) -->
-                <div class="setting-item" v-if="isAdmin && selectedDepartmentId === null">
+                <!-- 1. 使用者註冊設定 (只有全院 Admin 且查看全局設定時才顯示) -->
+                <div class="setting-item" v-if="isGlobalAdmin && selectedDepartmentId === null">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="setting-label">

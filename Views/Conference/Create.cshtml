@@ -169,8 +169,8 @@
 
                                                     <div class="row g-2">
 
-                                                        <!-- 分院 -->
-                                                        <div class="col-sm-12 col-xl-3" v-if="isAdmin">
+                                                        <!-- 分院（只有全院管理者才顯示） -->
+                                                        <div class="col-sm-12 col-xl-3" v-if="isGlobalAdmin">
                                                             <select class="form-select" v-model="form.departmentId">
                                                                 <option :value="null">請選擇分院</option>
                                                                 <option v-for="d in departments" :key="d.Id"

@@ -14,19 +14,19 @@ namespace TASA.Models
 
             // ✅ Query Filter - 使用實例方法
             modelBuilder.Entity<SysRoom>().HasQueryFilter(e =>
-                CurrentUserIsAdmin || e.DepartmentId == CurrentUserDepartmentId);
+                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 
             modelBuilder.Entity<Conference>().HasQueryFilter(e =>
-                CurrentUserIsAdmin || e.DepartmentId == CurrentUserDepartmentId);
+                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 
             modelBuilder.Entity<ConferenceTemplate>().HasQueryFilter(e =>
-                CurrentUserIsAdmin || e.DepartmentId == CurrentUserDepartmentId);
+                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 
             modelBuilder.Entity<Equipment>().HasQueryFilter(e =>
-                CurrentUserIsAdmin || e.DepartmentId == CurrentUserDepartmentId);
+                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 
             modelBuilder.Entity<LogSys>().HasQueryFilter(e =>
-                CurrentUserIsAdmin || e.DepartmentId == CurrentUserDepartmentId);
+                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
         }
 
     }

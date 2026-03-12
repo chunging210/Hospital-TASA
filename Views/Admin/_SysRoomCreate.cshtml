@@ -23,7 +23,8 @@
                     <div class="invalid-feedback">請輸入會議室名稱</div>
                 </div>
 
-                <div class="mb-3" v-if="isAdmin">
+                <!-- 只有全院 Admin 才能選擇分院 -->
+                <div class="mb-3" v-if="isGlobalAdmin">
                     <label class="form-label form-label-custom">分院 <span class="text-danger">*</span></label>
                     <select v-model="room.vm.DepartmentId" class="form-control" required>
                         <option :value="null">請選擇分院</option>
@@ -277,13 +278,13 @@
                     <h6 class="mb-0">審核關卡設定</h6>
                     <button type="button" class="btn btn-outline-primary btn-sm"
                             @@click="approvalChain.addLevel()"
-                            :disabled="approvalChain.isAddingLevel.value || (!room.vm.Id && isAdmin && !room.vm.DepartmentId)">
+                            :disabled="approvalChain.isAddingLevel.value || (!room.vm.Id && isGlobalAdmin && !room.vm.DepartmentId)">
                         <i class="mdi mdi-plus"></i> 新增關卡
                     </button>
                 </div>
 
-                <!-- 管理員新增模式：提示先選分院 -->
-                <div v-if="!room.vm.Id && isAdmin && !room.vm.DepartmentId" class="alert alert-info py-2 mb-3">
+                <!-- 全院管理員新增模式：提示先選分院 -->
+                <div v-if="!room.vm.Id && isGlobalAdmin && !room.vm.DepartmentId" class="alert alert-info py-2 mb-3">
                     <i class="mdi mdi-information-outline me-1"></i>
                     請先選擇分院，才能設定審核關卡
                 </div>

@@ -48,6 +48,10 @@ namespace TASA.Services.AuthModule
             public bool IsAccountant { get; set; }
             public bool IsRoomManager { get; set; }
             public bool IsInternal { get; set; }
+            // ✅ 全院管理者（Admin 且沒有分院）
+            public bool IsGlobalAdmin { get; set; }
+            // ✅ 分院管理者（Admin 且有分院）
+            public bool IsDepartmentAdmin { get; set; }
             // 委派代理人資訊
             public DelegateInfoVM? DelegateInfo { get; set; }
         };
@@ -82,6 +86,8 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
                         bool.TryParse(isRoomManagerClaim, out var result) && 
                         result;
     
+    var isAdmin = role.Any(x => x == AuthRoleServices.Admin);
+
     return new MeVM()
     {
         Id = userid,
@@ -89,11 +95,15 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
         Role = role,
         DepartmentId = departmentId,
         DepartmentName = departmentName,
-        IsAdmin = role.Any(x => x == AuthRoleServices.Admin),
+        IsAdmin = isAdmin,
         IsDirector = role.Any(x => x == AuthRoleServices.Director),
         IsAccountant = role.Any(x => x == AuthRoleServices.Accountant),
-        IsRoomManager = isRoomManager,  // ✅ 新增
-        IsInternal = !role.Any(x => x == AuthRoleServices.Normal)
+        IsRoomManager = isRoomManager,
+        IsInternal = !role.Any(x => x == AuthRoleServices.Normal),
+        // ✅ 全院管理者：Admin 且沒有分院
+        IsGlobalAdmin = isAdmin && departmentId == null,
+        // ✅ 分院管理者：Admin 且有分院
+        IsDepartmentAdmin = isAdmin && departmentId != null
     };
 }
 

@@ -60,6 +60,7 @@ public partial class TASAContext : DbContext
     }
 
     internal bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
+    internal bool CurrentUserIsGlobalAdmin => _userContext?.IsAdmin == true && _userContext?.DepartmentId == null;
     private Guid? CurrentUserDepartmentId => _userContext?.DepartmentId;
 
     internal bool CurrentUserIsNormal => _userContext?.IsNormal ?? true; // 預設為外部人員
