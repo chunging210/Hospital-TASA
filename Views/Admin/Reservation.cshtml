@@ -30,15 +30,14 @@
                         </select>
                     </div>
 
-                    <!-- ✅ 付款審核狀態篩選 -->
+                    <!-- ✅ 付款審核狀態篩選 (watch 會自動觸發查詢，不需要 @@change) -->
                     <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'payment'">
-                        <select v-model.number="reservation.query.paymentStatus" @@change="reservation.getList"
-                                class="form-select">
-                            <option :value="null">全部狀態</option>
-                            <option :value="1">未付款</option>
-                            <option :value="2">待查帳</option>
-                            <option :value="3">已收款</option>
-                            <option :value="4">待重新上傳</option>
+                        <select v-model="reservation.query.paymentStatus" class="form-select">
+                            <option value="">全部狀態</option>
+                            <option value="1">未付款</option>
+                            <option value="2">待查帳</option>
+                            <option value="3">已收款</option>
+                            <option value="4">待重新上傳</option>
                         </select>
                     </div>
                 </div>

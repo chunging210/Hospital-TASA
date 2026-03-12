@@ -82,8 +82,13 @@
                             <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
                                 <a href="/reservationoverview" class="dropdown-item">預約總覽</a>
                                 @{
+                                    // 可審核預約（包含成本中心主管）
                                     var canApproveReservation = user?.Id != null &&
-                                    service.AuthRoleServices.CanApproveReservation(user.Id.Value);
+                                        service.AuthRoleServices.CanApproveReservation(user.Id.Value);
+
+                                    // 會議室管理者或審核鏈上的人（不包含成本中心主管）
+                                    var isRoomManagerOrApprover = user?.Id != null &&
+                                        service.AuthRoleServices.IsRoomManagerOrApprover(user.Id.Value);
                                 }
                                 @if (user?.IsAdmin == true || user?.IsAccountant == true || user?.IsDirector == true ||
                                                                 canApproveReservation)
@@ -92,7 +97,7 @@
                                 }
                             </div>
                         </li>
-                        @if (user?.IsAdmin == true || user?.IsDirector == true || canApproveReservation){
+                        @if (user?.IsAdmin == true || user?.IsDirector == true || isRoomManagerOrApprover){
                             <li class="nav-item dropdown">
                                     <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
                                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -108,7 +113,7 @@
                         }
 
 
-                        @if (user?.IsAdmin == true || user?.IsDirector == true)
+                        @if (user?.IsAdmin == true || user?.IsDirector == true || isRoomManagerOrApprover)
                         {
                             <li class="nav-item dropdown">
                                 <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
@@ -123,8 +128,8 @@
                             </li>
                         }
 
-                        @if (user?.IsAdmin == true || canApproveReservation){
-                            
+                        @if (user?.IsAdmin == true || user?.IsAccountant == true){
+
                             <li class="nav-item dropdown">
                                 <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
                                     data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -133,14 +138,20 @@
                                     <div class="arrow-down"></div>
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
-                                    <a href="/admin/authuser" class="dropdown-item">使用者總覽</a>
-                                    <a href="/admin/loginlog" class="dropdown-item">登入日誌</a>
-                                    <a href="/admin/sysconfig" class="dropdown-item">系統設定</a>
+                                    @if (user?.IsAdmin == true)
+                                    {
+                                        <a href="/admin/authuser" class="dropdown-item">使用者總覽</a>
+                                        <a href="/admin/loginlog" class="dropdown-item">登入日誌</a>
+                                        <a href="/admin/sysconfig" class="dropdown-item">系統設定</a>
+                                    }
                                     @if (isGlobalAdmin)
                                     {
                                         <a href="/admin/sysdepartment" class="dropdown-item">單位總覽</a>
                                     }
-                                    <a href="/admin/report" class="dropdown-item">會議報表</a>
+                                    @if (user?.IsAdmin == true || user?.IsAccountant == true)
+                                    {
+                                        <a href="/admin/report" class="dropdown-item">會議報表</a>
+                                    }
                                     @if (isGlobalAdmin)
                                     {
                                         <a href="/admin/holiday" class="dropdown-item">國定假日管理</a>

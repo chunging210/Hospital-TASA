@@ -535,19 +535,42 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// ✅ 待查帳列表 - 已上傳憑證但未確認的預約
+        /// ✅ 付款審核列表 - 根據付款狀態篩選已審核通過的預約
         /// </summary>
         public IQueryable<ReservationListVM> PendingCheckList(ReservationQueryVM query)
         {
-            var queryable = db.Conference
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
-                .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment);
+            // ✅ 根據付款狀態決定查詢範圍
+            IQueryable<Conference> queryable;
 
             if (query.PaymentStatus.HasValue)
             {
-                queryable = queryable.Where(x => x.PaymentStatus == query.PaymentStatus.Value);
+                if (query.PaymentStatus.Value == PaymentStatus.Paid)
+                {
+                    // 已收款：查詢 ReservationStatus = Confirmed 且 PaymentStatus = Paid
+                    queryable = db.Conference
+                        .AsNoTracking()
+                        .WhereNotDeleted()
+                        .Where(x => x.ReservationStatus == ReservationStatus.Confirmed &&
+                                    x.PaymentStatus == PaymentStatus.Paid);
+                }
+                else
+                {
+                    // 未付款/待查帳/待重新上傳：查詢 ReservationStatus = PendingPayment
+                    queryable = db.Conference
+                        .AsNoTracking()
+                        .WhereNotDeleted()
+                        .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment &&
+                                    x.PaymentStatus == query.PaymentStatus.Value);
+                }
+            }
+            else
+            {
+                // 全部狀態：顯示待繳費 + 已收款的記錄
+                queryable = db.Conference
+                    .AsNoTracking()
+                    .WhereNotDeleted()
+                    .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment ||
+                                (x.ReservationStatus == ReservationStatus.Confirmed && x.PaymentStatus == PaymentStatus.Paid));
             }
 
             return queryable
@@ -559,8 +582,9 @@ namespace TASA.Services.ConferenceModule
                 .Select(x => new
                 {
                     Conference = x,
+                    // ✅ 取得最新的付款憑證（不限狀態，以便顯示已收款的歷史記錄）
                     LatestProof = x.ConferencePaymentProofs
-                        .Where(p => p.DeleteAt == null && p.Status == ProofStatus.PendingReview)
+                        .Where(p => p.DeleteAt == null)
                         .OrderByDescending(p => p.UploadedAt)
                         .FirstOrDefault()
                 })
@@ -785,9 +809,16 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
                 ?? throw new HttpException("找不到待審核的關卡");
 
-            // ✅ 檢查審核人權限（本人或代理人）
-            var canApprove = currentApproval.ApproverId == reviewedBy
-                          || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
+            // ✅ 檢查審核人權限（本人、代理人、或全域管理者）
+            var isGlobalAdmin = service.AuthRoleServices.IsGlobalAdmin(reviewedBy);
+            var isApprover = currentApproval.ApproverId == reviewedBy;
+            var isDelegate = IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
+
+            Console.WriteLine($"🔐 審核權限檢查 - reviewedBy: {reviewedBy}");
+            Console.WriteLine($"🔐 isGlobalAdmin: {isGlobalAdmin}, isApprover: {isApprover}, isDelegate: {isDelegate}");
+            Console.WriteLine($"🔐 currentApproval.ApproverId: {currentApproval.ApproverId}");
+
+            var canApprove = isGlobalAdmin || isApprover || isDelegate;
 
             if (!canApprove)
                 throw new HttpException("您沒有權限審核此關卡");
@@ -909,8 +940,10 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
                 ?? throw new HttpException("找不到待審核的關卡");
 
-            // ✅ 檢查審核人權限（本人或代理人）
-            var canApprove = currentApproval.ApproverId == reviewedBy
+            // ✅ 檢查審核人權限（本人、代理人、或全域管理者）
+            var isGlobalAdmin = service.AuthRoleServices.IsGlobalAdmin(reviewedBy);
+            var canApprove = isGlobalAdmin
+                          || currentApproval.ApproverId == reviewedBy
                           || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
 
             if (!canApprove)
@@ -1023,8 +1056,10 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(h => h.Level == nextLevel && h.Status == ApprovalStatus.Pending)
                 ?? throw new HttpException("找不到待審核的關卡");
 
-            // ✅ 檢查審核人權限（本人或代理人）
-            var canApprove = currentApproval.ApproverId == reviewedBy
+            // ✅ 檢查審核人權限（本人、代理人、或全域管理者）
+            var isGlobalAdmin = service.AuthRoleServices.IsGlobalAdmin(reviewedBy);
+            var canApprove = isGlobalAdmin
+                          || currentApproval.ApproverId == reviewedBy
                           || IsActiveDelegate(reviewedBy, currentApproval.ApproverId);
 
             if (!canApprove)

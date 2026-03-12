@@ -129,6 +129,74 @@ namespace TASA.Services.AuthUserModule
         }
 
         /// <summary>
+        /// ✅ 是否為全域管理者 (可審核所有分院的預約)
+        /// ADMIN 或 ADMINN 角色且 DepartmentId = null 視為全域管理者
+        /// </summary>
+        public bool IsGlobalAdmin(Guid userId)
+        {
+            var user = db.AuthUser
+                .AsNoTracking()
+                .Include(u => u.AuthRole)
+                .FirstOrDefault(u => u.Id == userId);
+
+            if (user == null)
+            {
+                Console.WriteLine($"🔐 IsGlobalAdmin - 找不到用戶: {userId}");
+                return false;
+            }
+
+            var roles = user.AuthRole.Select(r => r.Code).ToList();
+            var hasNoDepartment = user.DepartmentId == null || user.DepartmentId == Guid.Empty;
+            var hasAdminRole = user.AuthRole.Any(r => r.Code == "ADMIN" || r.Code == "ADMINN");
+
+            Console.WriteLine($"🔐 IsGlobalAdmin - userId: {userId}, DepartmentId: {user.DepartmentId}, hasNoDepartment: {hasNoDepartment}, Roles: [{string.Join(", ", roles)}]");
+
+            var result = hasNoDepartment && hasAdminRole;
+            Console.WriteLine($"🔐 IsGlobalAdmin - result: {result}");
+
+            return result;
+        }
+
+        /// <summary>
+        /// ✅ 是否為會議室管理者或審核鏈上的人（不包含成本中心主管）
+        /// 用於判斷是否可以看到會議室管理、設備管理
+        /// </summary>
+        public bool IsRoomManagerOrApprover(Guid userId)
+        {
+            // 檢查是否為任何會議室的管理者
+            var isRoomManager = db.SysRoom
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Any(r => r.ManagerId == userId
+                    && r.IsEnabled
+                    && r.DeleteAt == null);
+
+            if (isRoomManager) return true;
+
+            // 檢查是否在任何會議室的審核鏈上
+            var isApprover = db.SysRoomApprovalLevel
+                .AsNoTracking()
+                .Any(a => a.ApproverId == userId
+                       && a.DeleteAt == null
+                       && a.Room.IsEnabled
+                       && a.Room.DeleteAt == null);
+
+            if (isApprover) return true;
+
+            // 檢查是否為有效的代理人
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var isDelegate = db.RoomManagerDelegate
+                .AsNoTracking()
+                .Any(d => d.DelegateUserId == userId
+                       && d.IsEnabled
+                       && d.DeleteAt == null
+                       && d.StartDate <= today
+                       && d.EndDate >= today);
+
+            return isDelegate;
+        }
+
+        /// <summary>
         /// ✅ 是否為院內人員 (可查看所有預約)
         /// </summary>
         public bool IsInternalStaff(Guid userId)

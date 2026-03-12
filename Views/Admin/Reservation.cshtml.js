@@ -25,7 +25,7 @@ const reservation = new function () {
     this.query = reactive({
         keyword: '',
         reservationStatus: 1,    // ✅ 租借審核狀態 (預設:待審核)
-        paymentStatus: 2        // ✅ 付款審核狀態 (預設:待查帳)
+        paymentStatus: '2'       // ✅ 付款審核狀態 (預設:待查帳) - 使用字串避免 v-model 綁定問題
     });
 
     // ========= 列表資料 =========
@@ -112,8 +112,8 @@ const reservation = new function () {
 
         if (tab === 'approval') {
             this.query.reservationStatus = 1;
-            this.query.paymentStatus = null;
-            
+            this.query.paymentStatus = '';
+
             // ✅ 重置分頁並載入資料
             if (approvalPageRef) {
                 approvalPageRef.go(1);
@@ -121,8 +121,8 @@ const reservation = new function () {
             this.getApprovalList(!!approvalPageRef);
         } else if (tab === 'payment') {
             this.query.reservationStatus = null;
-            this.query.paymentStatus = 2;
-            
+            this.query.paymentStatus = '2';
+
             // ✅ 重置分頁並載入資料
             if (paymentPageRef) {
                 paymentPageRef.go(1);

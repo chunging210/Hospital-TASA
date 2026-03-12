@@ -60,7 +60,11 @@ public partial class TASAContext : DbContext
     }
 
     internal bool CurrentUserIsAdmin => _userContext?.IsAdmin ?? false;
-    internal bool CurrentUserIsGlobalAdmin => _userContext?.IsAdmin == true && _userContext?.DepartmentId == null;
+    internal bool CurrentUserIsAccountant => _userContext?.IsAccountant ?? false;
+    // ✅ 全域管理者：(ADMIN 或 ACCOUNTANT) 且沒有分院限制
+    internal bool CurrentUserIsGlobalAdmin => (_userContext?.IsAdmin == true || _userContext?.IsAccountant == true) && _userContext?.DepartmentId == null;
+    // ✅ 可查看資料：全域管理者 或 有分院限制的管理者/總務
+    internal bool CurrentUserCanViewReport => _userContext?.IsAdmin == true || _userContext?.IsAccountant == true;
     private Guid? CurrentUserDepartmentId => _userContext?.DepartmentId;
 
     internal bool CurrentUserIsNormal => _userContext?.IsNormal ?? true; // 預設為外部人員
