@@ -193,30 +193,56 @@
             </div>
         </div>
 
-        <!-- ✅ 多階層審核進度顯示 -->
-        <div class="mb-3" v-if="reservation.currentReview.totalApprovalLevels > 1">
-            <h6 class="mb-2">
-                <span class="material-icons me-1" style="font-size: 18px;">check_circle</span>
-                審核進度
-            </h6>
-            <div class="d-flex align-items-center gap-2">
-                <div class="progress flex-grow-1" style="height: 20px;">
-                    <div class="progress-bar bg-success" role="progressbar"
-                         :style="{ width: ((reservation.currentReview.currentApprovalLevel / reservation.currentReview.totalApprovalLevels) * 100) + '%' }">
+        <!-- ✅ 審核歷程（水平步驟進度條） -->
+        <template v-if="reservation.currentReview.approvalHistory?.length > 0">
+            <div class="mb-3">
+                <h6 class="d-flex align-items-center text-primary border-bottom pb-2 mb-0 approval-header"
+                    role="button" @@click="reservation.toggleApprovalHistory()">
+                    <span class="material-icons me-1" style="font-size: 18px;">fact_check</span>
+                    審核歷程
+                    <span class="ms-2 badge" :class="reservation.getProgressBadgeClass(reservation.currentReview.approvalHistory)">
+                        {{ reservation.getApprovalProgress(reservation.currentReview.approvalHistory) }}
+                    </span>
+                    <span class="material-icons ms-auto expand-icon" :class="{ 'rotated': reservation.approvalHistoryExpanded.value }">
+                        expand_more
+                    </span>
+                </h6>
+            </div>
+            <!-- 展開的水平步驟 -->
+            <div class="mb-3" v-show="reservation.approvalHistoryExpanded.value">
+                <div class="steps-scroll">
+                    <div class="steps">
+                        <div v-for="(history, index) in reservation.currentReview.approvalHistory" :key="index"
+                             class="step" :class="reservation.getStepClass(history)">
+                            <!-- 圓形節點 -->
+                            <div class="step-circle">
+                                <template v-if="history.Status === 'Approved'">✓</template>
+                                <template v-else-if="history.Status === 'Rejected'">✕</template>
+                                <template v-else>{{ history.Level }}</template>
+                            </div>
+                            <!-- 文字區 -->
+                            <div class="step-label">
+                                <div class="step-name">第 {{ history.Level }} 關</div>
+                                <div class="step-status">{{ history.StatusText }}</div>
+                                <span v-if="history.Reason?.includes('決行') && !history.Reason?.includes('跳過')"
+                                      class="step-tag tag-decision">決行</span>
+                                <span v-else-if="history.Reason?.includes('跳過')"
+                                      class="step-tag tag-skip">跳過</span>
+                                <template v-if="history.ApproverName">
+                                    <div class="step-reviewer">{{ history.ApproverName }}</div>
+                                    <div v-if="history.ApprovedByName && history.ApprovedByName !== history.ApproverName"
+                                         class="step-meta">（{{ history.ApprovedByName }} 代理）</div>
+                                </template>
+                                <div v-if="history.ApprovedAt" class="step-meta">{{ history.ApprovedAt }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- ✅ 已完成審核時顯示完成狀態，否則顯示當前進度 -->
-                <span v-if="reservation.currentReview.currentApprovalLevel >= reservation.currentReview.totalApprovalLevels" class="badge bg-success">
-                    {{ reservation.currentReview.totalApprovalLevels }}/{{ reservation.currentReview.totalApprovalLevels }} 關（已完成）
-                </span>
-                <span v-else class="badge bg-info">
-                    第 {{ reservation.currentReview.currentApprovalLevel + 1 }}/{{ reservation.currentReview.totalApprovalLevels }} 關
-                </span>
+                <div class="scroll-hint text-center text-muted small" v-if="reservation.currentReview.approvalHistory?.length > 4">
+                    ← 左右滑動查看更多 →
+                </div>
             </div>
-            <small class="text-muted mt-1 d-block" v-if="reservation.currentReview.currentApproverName && reservation.currentReview.currentApprovalLevel < reservation.currentReview.totalApprovalLevels">
-                目前審核人：{{ reservation.currentReview.currentApproverName }}
-            </small>
-        </div>
+        </template>
 
         <hr>
 

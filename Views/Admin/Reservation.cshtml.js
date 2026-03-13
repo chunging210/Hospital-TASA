@@ -53,8 +53,17 @@ const reservation = new function () {
     this.currentReview = reactive({
         currentApprovalLevel: 0,
         totalApprovalLevels: 1,
-        currentApproverName: null
+        currentApproverName: null,
+        approvalHistory: []  // ✅ 審核歷程
     });
+
+    // ✅ 審核歷程展開狀態（預設收合）
+    this.approvalHistoryExpanded = ref(false);
+
+    // ✅ 切換審核歷程展開狀態
+    this.toggleApprovalHistory = () => {
+        this.approvalHistoryExpanded.value = !this.approvalHistoryExpanded.value;
+    };
 
     // ========= 付款審核表單 =========
     this.paymentVm = reactive({
@@ -194,6 +203,18 @@ const reservation = new function () {
                     currentApproverName: x.CurrentApproverName,
                     // ✅ 預計到達人數
                     expectedAttendees: x.ExpectedAttendees,
+                    // ✅ 審核歷程
+                    approvalHistory: (x.ApprovalHistory || []).map(h => ({
+                        Level: h.Level,
+                        ApproverName: h.ApproverName,
+                        ApprovedByName: h.ApprovedByName,
+                        Status: h.Status,
+                        StatusText: h.StatusText,
+                        ApprovedAt: h.ApprovedAt,
+                        Reason: h.Reason,
+                        DiscountAmount: h.DiscountAmount,
+                        DiscountReason: h.DiscountReason
+                    })),
                     slots: (x.Slots || []).map(s => ({
                         id: s.Id,
                         slotDate: s.SlotDate,
@@ -301,8 +322,12 @@ const reservation = new function () {
             totalApprovalLevels: item.totalApprovalLevels || 1,
             currentApproverName: item.currentApproverName || null,
             expectedAttendees: item.expectedAttendees || null,  // ✅ 預計到達人數
-            rejectReason: item.rejectReason || null  // ✅ 拒絕原因
+            rejectReason: item.rejectReason || null,  // ✅ 拒絕原因
+            approvalHistory: item.approvalHistory || []  // ✅ 審核歷程
         });
+
+        // ✅ 重置審核歷程展開狀態（預設收合）
+        this.approvalHistoryExpanded.value = false;
 
         // 重設表單
         this.vm.result = 'approve';
@@ -325,6 +350,40 @@ const reservation = new function () {
         // 重設表單為預設狀態 (核准)
         this.paymentVm.result = 'approve';
         this.paymentVm.rejectReason = '';
+    };
+
+    // ========= ✅ 審核歷程輔助方法 =========
+
+    // 審核進度摘要（例如：2/3 關已通過）
+    this.getApprovalProgress = (history) => {
+        if (!history || history.length === 0) return '';
+        const total = history.length;
+        const approved = history.filter(h => h.Status === 'Approved').length;
+        const rejected = history.some(h => h.Status === 'Rejected');
+        if (rejected) return '已拒絕';
+        if (approved === total) return '全部通過';
+        return `${approved}/${total} 關已通過`;
+    };
+
+    // 進度徽章樣式
+    this.getProgressBadgeClass = (history) => {
+        if (!history || history.length === 0) return 'bg-secondary';
+        const rejected = history.some(h => h.Status === 'Rejected');
+        if (rejected) return 'bg-danger';
+        const allApproved = history.every(h => h.Status === 'Approved');
+        if (allApproved) return 'bg-success';
+        return 'bg-secondary';
+    };
+
+    // 步驟樣式（done/decision/skipped/pending/rejected）
+    this.getStepClass = (history) => {
+        if (history.Status === 'Rejected') return 'rejected';
+        if (history.Status === 'Approved') {
+            if (history.Reason?.includes('決行') && !history.Reason?.includes('跳過')) return 'decision';
+            if (history.Reason?.includes('跳過')) return 'skipped';
+            return 'done';
+        }
+        return 'pending';
     };
 
     // ========= 格式化時間顯示（從 slots 陣列計算） =========

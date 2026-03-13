@@ -111,6 +111,9 @@ namespace TASA.Services.ConferenceModule
             // ✅ 預計到達人數
             public int? ExpectedAttendees { get; set; }
 
+            // ✅ 審核歷程
+            public List<ApprovalHistoryVM> ApprovalHistory { get; set; } = new();
+
             public List<SlotDetailVM> Slots { get; set; } = new();
         }
 
@@ -519,6 +522,26 @@ namespace TASA.Services.ConferenceModule
 
                     // ✅ 預計到達人數
                     ExpectedAttendees = x.Conference.ExpectedAttendees,
+
+                    // ✅ 審核歷程
+                    ApprovalHistory = x.Conference.ApprovalHistory
+                        .OrderBy(h => h.Level)
+                        .Select(h => new ApprovalHistoryVM
+                        {
+                            Level = h.Level,
+                            ApproverName = h.Approver.Name ?? "-",
+                            ApprovedByName = h.ApprovedByUser != null ? h.ApprovedByUser.Name : null,
+                            Status = h.Status.ToString(),
+                            StatusText = h.Status == ApprovalStatus.Pending ? "待審核" :
+                                        h.Status == ApprovalStatus.Approved ?
+                                            (h.Reason != null && h.Reason.Contains("決行跳過") ? "決行跳過" :
+                                             h.Reason != null && h.Reason.Contains("決行") ? "已通過【決行】" : "已通過") :
+                                        h.Status == ApprovalStatus.Rejected ? "已拒絕" : "未知",
+                            ApprovedAt = h.ApprovedAt != null ? h.ApprovedAt.Value.ToString("yyyy/MM/dd HH:mm") : null,
+                            Reason = h.Reason,
+                            DiscountAmount = h.DiscountAmount,
+                            DiscountReason = h.DiscountReason
+                        }).ToList(),
 
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
