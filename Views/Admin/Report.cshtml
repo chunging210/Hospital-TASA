@@ -99,7 +99,7 @@
                                 <td v-if="report.query.paymentMethod === 'cost-sharing'" class="text-nowrap">{{
                                     item.BorrowingUnitName }}</td>
                                     <td class="text-start" style="word-break: break-all;">{{ item.ConferenceName }}</td>
-                                    <td class="text-nowrap">{{ item.DateRange }}</td>
+                                    <td class="text-center" style="white-space: pre-line;">{{ item.DateRange.replace(' ~ ', '\n~ ') }}</td>
                                     <td>{{ item.RoomName }}</td>
                                     <td class="text-nowrap">{{ item.PaymentMethodText }}</td>
                                     <td>{{ item.ExpectedAttendees || '-' }}</td>

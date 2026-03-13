@@ -569,7 +569,8 @@ namespace TASA.Services.AuthModule
             var successDeviceInfo = GetDeviceInfo();
             var successInfo = new
             {
-                UserName = user.Account,
+                UserName = user.Name,  // 使用中文名稱
+                Account = user.Account,
                 IsSuccess = true,
                 ClientIp = GetClientIp(),
                 DeviceInfo = successDeviceInfo.device,
@@ -590,7 +591,8 @@ namespace TASA.Services.AuthModule
                 var deviceInfo = GetDeviceInfo();
                 var failureInfo = new
                 {
-                    UserName = user.Account,
+                    UserName = user.Name,  // 使用中文名稱
+                    Account = user.Account,
                     IsSuccess = false,
                     FailureReason = failureReason,
                     ClientIp = GetClientIp(),
