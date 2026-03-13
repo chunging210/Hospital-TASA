@@ -41,7 +41,6 @@ namespace TASA.Services.ConferenceModule
             var preparationTime = DateTime.Now.AddMinutes(service.SettingServices.GetSettings().UCNS.BeforeStart);
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
-                    .Include(x => x.Ecs)
                     .WhereNotDeleted()
                     .Where(x => preparationTime >= x.StartTime && x.Status == 1)
                     .ToList();
@@ -51,17 +50,12 @@ namespace TASA.Services.ConferenceModule
                 Log(2, item.Name);
             }
             db.SaveChanges();
-            foreach (var item in conference)
-            {
-                service.JobService.DoEcs(item);
-            }
         }
 
         private void Status3()
         {
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
-                    .Include(x => x.ConferenceWebex)
                     .Include(x => x.Room)
                     .WhereNotDeleted()
                     .Where(x => DateTime.Now >= x.StartTime && (x.Status == 1 || x.Status == 2))
@@ -78,7 +72,6 @@ namespace TASA.Services.ConferenceModule
         {
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
-                    .Include(x => x.ConferenceWebex)
                     .Include(x => x.Room)
                     .WhereNotDeleted()
                     .Where(x => DateTime.Now >= (x.FinishTime ?? x.EndTime) && (x.Status == 1 || x.Status == 2 || x.Status == 3))

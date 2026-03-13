@@ -129,16 +129,9 @@ public partial class SysRoom
     [Column(TypeName = "decimal(10,2)")]
     public decimal ParkingTicketPrice { get; set; } = 100;
 
-    [InverseProperty("Room")]
-    public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
-
     [ForeignKey("RoomId")]
     [InverseProperty("Room")]
     public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
-
-    [ForeignKey("RoomId")]
-    [InverseProperty("Room")]
-    public virtual ICollection<ConferenceTemplate> ConferenceNavigation { get; set; } = new List<ConferenceTemplate>();
 
     [InverseProperty("Room")]
     public virtual ICollection<SysRoomPriceHourly> SysRoomPriceHourly { get; set; } = new List<SysRoomPriceHourly>();

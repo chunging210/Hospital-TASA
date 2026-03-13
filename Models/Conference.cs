@@ -325,15 +325,9 @@ public partial class Conference
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceUser> ConferenceUser { get; set; } = new List<ConferenceUser>();
 
-    [InverseProperty("Conferences")]
-    public virtual ConferenceWebex ConferenceWebex { get; set; }
-
     [ForeignKey("CreateBy")]
     [InverseProperty("Conference")]
     public virtual AuthUser CreateByNavigation { get; set; }
-
-    [InverseProperty("Conference")]
-    public virtual ICollection<LogWebex> LogWebex { get; set; } = new List<LogWebex>();
 
     [ForeignKey("Status")]
     [InverseProperty("Conference")]
@@ -345,17 +339,10 @@ public partial class Conference
 
     [ForeignKey("ConferenceId")]
     [InverseProperty("Conference")]
-    public virtual ICollection<Ecs> Ecs { get; set; } = new List<Ecs>();
-
-    [ForeignKey("ConferenceId")]
-    [InverseProperty("Conference")]
     public virtual ICollection<SysRoom> Room { get; set; } = new List<SysRoom>();
 
     // ✅ 如果有 Navigation Property,也可以加上:
     public virtual AuthUser? CancelledByNavigation { get; set; }
-
-    [InverseProperty("Conference")]
-    public virtual ICollection<ConferenceVisitor> ConferenceVisitors { get; set; } = new List<ConferenceVisitor>();
 
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceEquipment> ConferenceEquipments { get; set; } = new List<ConferenceEquipment>();

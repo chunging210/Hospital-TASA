@@ -19,9 +19,6 @@ namespace TASA.Models
             modelBuilder.Entity<Conference>().HasQueryFilter(e =>
                 CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 
-            modelBuilder.Entity<ConferenceTemplate>().HasQueryFilter(e =>
-                CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
-
             modelBuilder.Entity<Equipment>().HasQueryFilter(e =>
                 CurrentUserIsGlobalAdmin || e.DepartmentId == CurrentUserDepartmentId);
 

@@ -50,26 +50,11 @@ namespace TASA.Services.MailModule
 
         private static string BuildBody(Conference conference, bool isHost)
         {
-            string webexBody = BuildWebex(conference.ConferenceWebex, isHost);
             // ✅ 使用 .Value 因為上面已經檢查 StartTime/EndTime HasValue
             return $@"<p>會議名稱: {conference.Name}</p>
                 <p>會議時間: {TimeFormat(conference.StartTime!.Value)} - {TimeFormat(conference.EndTime!.Value)}</p>
                 <p>會議內容: {conference.Description}</p>
-                <p>會議地點: {string.Join(",", conference.Room.Select(x => x.Name))}</p>
-                {webexBody}{BuildWebex(conference.ConferenceWebex, isHost)}";
-        }
-
-        private static string BuildWebex(ConferenceWebex webex, bool isHost)
-        {
-            return webex != null ?
-                $@"<br/><br/>
-                <p>透過會議連結加入</p><p><a href='{webex.WebLink}'>{webex.WebLink}</a></p>
-                <br/>
-                <p>透過會議號碼加入</p><p>會議號碼：{webex.MeetingNumber}</p><p>會議密碼：{webex.Password}</p>
-                <br/>
-                <p>透過視訊系統或應用程式加入</p><p><a href='{webex.SipAddress}'>{webex.SipAddress}</a></p>
-                {(isHost ? $"<br/><p>主持人金鑰：{webex.HostKey}</p>" : string.Empty)}"
-                : string.Empty;
+                <p>會議地點: {string.Join(",", conference.Room.Select(x => x.Name))}</p>";
         }
 
         private static string TimeFormat(DateTime time)

@@ -81,42 +81,20 @@ namespace TASA.Services.ConferenceModule
             public Guid? DepartmentId { get; set; }
 
             // ===== 共用欄位 =====
-            public List<Guid> Ecs { get; set; } = [];
             public List<Guid> User { get; set; } = [];
             public List<Guid> Department { get; set; } = [];
             public Guid? Host { get; set; }
             public Guid? Recorder { get; set; }
-            public List<Guid> Guests { get; set; } = [];
-            public List<GuestManualVM> GuestsManual { get; set; } = [];
             public List<Guid>? AttendeeIds { get; set; }
             public string? ReservationNo { get; set; }
 
-            public List<AttachmentVM>? Attachments { get; set; } 
+            public List<AttachmentVM>? Attachments { get; set; }
 
             public record AttachmentVM
             {
                 public AttachmentType Type { get; set; }  // 1=議程表, 2=會議文件
                 public string FileName { get; set; } = string.Empty;
                 public string Base64Data { get; set; } = string.Empty;  // 或用 IFormFile
-            }
-
-            public record GuestManualVM
-            {
-                [RequiredI18n]
-                [StringLength(100)]
-                public string CName { get; set; } = string.Empty;
-
-                [RequiredI18n]
-                [StringLength(100)]
-                public string CompanyName { get; set; } = string.Empty;
-
-                [RequiredI18n]
-                [RegularExpression(@"^\d{10}$", ErrorMessage = "電話需為 10 碼數字")]
-                public string Phone { get; set; } = string.Empty;
-
-                [RequiredI18n]
-                [EmailAddress(ErrorMessage = "信箱格式不正確")]
-                public string Email { get; set; } = string.Empty;
             }
         }
 
@@ -222,19 +200,12 @@ namespace TASA.Services.ConferenceModule
         {
             public record RoomVM : IdNameVM
             {
-                public IEnumerable<IdNameVM> Ecs { get; set; } = [];
             }
             public record UserVM : IdNameVM
             {
                 public bool IsAttendees { get; set; }
                 public bool IsHost { get; set; }
                 public bool IsRecorder { get; set; }
-            }
-            public record VisitorVM : IdNameVM
-            {
-                public string Email { get; set; } = string.Empty;
-                public string CompanyName { get; set; } = string.Empty;
-                public string Phone { get; set; } = string.Empty;
             }
 
             public Guid Id { get; set; }
@@ -252,9 +223,7 @@ namespace TASA.Services.ConferenceModule
             public IEnumerable<RoomVM> Room { get; set; } = [];
             public IEnumerable<UserVM> User { get; set; } = [];
             public IEnumerable<IdNameVM> Department { get; set; } = [];
-            public IEnumerable<VisitorVM> Visitor { get; set; } = [];
             public string CreateBy { get; set; } = string.Empty;
-            public ConferenceWebex? Webex { get; set; }
             public bool CanEdit { get; set; }
         }
 
@@ -272,8 +241,7 @@ namespace TASA.Services.ConferenceModule
                     Room = x.Room.Select(x => new DetailVM.RoomVM()
                     {
                         Id = x.Id,
-                        Name = x.Name,
-                        Ecs = x.Ecs.Select(y => new IdNameVM() { Id = y.Id, Name = y.Name })
+                        Name = x.Name
                     }),
                     User = x.ConferenceUser.Select(x => new DetailVM.UserVM()
                     {
@@ -289,32 +257,9 @@ namespace TASA.Services.ConferenceModule
                         Name = x.Name
                     }),
                     CreateBy = x.CreateByNavigation.Name,
-                    CanEdit = x.StartTime.HasValue && x.StartTime > PreparationTime,
-                    Webex = x.ConferenceWebex
+                    CanEdit = x.StartTime.HasValue && x.StartTime > PreparationTime
                 })
                 .FirstOrDefault(x => x.Id == id);
-
-            if (detail == null)
-                return null;
-
-            var visitors = db.ConferenceVisitor
-                .Where(cv => cv.ConferenceId == id)
-                .Join(
-                    db.Visitor.WhereNotDeleted(),
-                    cv => cv.VisitorId,
-                    v => v.Id,
-                    (cv, v) => new DetailVM.VisitorVM
-                    {
-                        Id = v.Id,
-                        Name = v.CName,
-                        Email = v.Email ?? string.Empty,
-                        CompanyName = v.CompanyName ?? string.Empty,
-                        Phone = v.Phone ?? string.Empty,
-                    }
-                )
-                .ToList();
-
-            detail = detail with { Visitor = visitors };
 
             return detail;
         }
@@ -397,7 +342,6 @@ namespace TASA.Services.ConferenceModule
                 EndTime = EndTime,
                 RRule = vm.RRule,
                 Room = [.. db.SysRoom.Where(x => vm.Room.Contains(x.Id))],
-                Ecs = [.. db.Ecs.Where(x => vm.Ecs.Contains(x.Id))],
                 ConferenceUser = GetUsers(vm.User, vm.Host, vm.Recorder),
                 Department = [.. db.SysDepartment.Where(x => vm.Department.Contains(x.Id))],
                 CreateBy = userId!.Value,
@@ -405,28 +349,9 @@ namespace TASA.Services.ConferenceModule
             };
 
             data.Status = GetStatus(vm.StartNow, data);
-            // [DISABLED] Webex 功能暫時禁用
-            // data.ConferenceWebex = service.WebexMeetingService.Create(data);
 
             db.Conference.Add(data);
             db.SaveChanges();
-
-            // 處理訪客
-            if (userId.HasValue)
-            {
-                var allVisitorIds = ProcessVisitors(userId.Value, vm.GuestsManual, vm.Guests);
-
-                foreach (var visitorId in allVisitorIds)
-                {
-                    db.ConferenceVisitor.Add(new ConferenceVisitor
-                    {
-                        ConferenceId = conferenceId,
-                        VisitorId = visitorId,
-                    });
-                }
-
-                db.SaveChanges();
-            }
 
             service.ConferenceMail.New(data);
             _ = service.LogServices.LogAsync("會議新增", $"{data.Name}({data.Id})");
@@ -467,7 +392,6 @@ namespace TASA.Services.ConferenceModule
 
             var data = db.Conference
                 .Include(x => x.Room)
-                .Include(x => x.Ecs)
                 .Include(x => x.ConferenceUser)
                 .Include(x => x.Department)
                 .WhereNotDeleted()
@@ -483,36 +407,11 @@ namespace TASA.Services.ConferenceModule
             data.DurationSS = vm.DurationSS!.Value;
             data.EndTime = EndTime;
             data.Room = [.. db.SysRoom.Where(x => vm.Room.Contains(x.Id))];
-            data.Ecs = [.. db.Ecs.Where(x => vm.Ecs.Contains(x.Id))];
             data.ConferenceUser = GetUsers(vm.User, vm.Host, vm.Recorder);
             data.Department = [.. db.SysDepartment.Where(x => vm.Department.Contains(x.Id))];
             data.Status = GetStatus(vm.StartNow, data);
-            // [DISABLED] Webex 功能暫時禁用
-            // data.ConferenceWebex = service.WebexMeetingService.Create(data);
 
             db.SaveChanges();
-
-            var userId = service.UserClaimsService.Me()?.Id;
-            if (userId.HasValue)
-            {
-                var oldVisitors = db.ConferenceVisitor
-                    .Where(x => x.ConferenceId == vm.Id)
-                    .ToList();
-                db.ConferenceVisitor.RemoveRange(oldVisitors);
-
-                var allVisitorIds = ProcessVisitors(userId.Value, vm.GuestsManual, vm.Guests);
-
-                foreach (var visitorId in allVisitorIds)
-                {
-                    db.ConferenceVisitor.Add(new ConferenceVisitor
-                    {
-                        ConferenceId = vm.Id!.Value,
-                        VisitorId = visitorId,
-                    });
-                }
-
-                db.SaveChanges();
-            }
 
             service.ConferenceMail.New(data, "[會議修改通知]");
             _ = service.LogServices.LogAsync("會議編輯", $"{data.Name}({data.Id})");
@@ -564,12 +463,10 @@ namespace TASA.Services.ConferenceModule
             }
             if (startNow || DateTime.Now > conference.StartTime!.Value.ToUniversalTime())
             {
-                service.JobService.DoEcs(conference);
                 return 3;
             }
             if (DateTime.Now.AddMinutes(ConferenceSettings.BeforeStart) > conference.StartTime!.Value.ToUniversalTime())
             {
-                service.JobService.DoEcs(conference);
                 return 2;
             }
             return 1;
@@ -608,53 +505,6 @@ namespace TASA.Services.ConferenceModule
                 db.SaveChanges();
                 _ = service.LogServices.LogAsync("會議刪除", $"{data.Name}({data.Id})");
             }
-        }
-
-        private List<Guid> ProcessVisitors(
-            Guid createdBy,
-            List<GuestManualVM> guestsManual,
-            List<Guid> visitorIds)
-        {
-            var allVisitorIds = new List<Guid>(visitorIds);
-
-            foreach (var guest in guestsManual)
-            {
-                if (string.IsNullOrWhiteSpace(guest.CName) || string.IsNullOrWhiteSpace(guest.Email))
-                    continue;
-
-                var existingVisitor = db.Visitor
-                    .WhereNotDeleted()
-                    .FirstOrDefault(v => v.Email == guest.Email);
-
-                Guid visitorId;
-
-                if (existingVisitor != null)
-                {
-                    visitorId = existingVisitor.Id;
-                }
-                else
-                {
-                    visitorId = Guid.NewGuid();
-                    var newVisitor = new Visitor
-                    {
-                        Id = visitorId,
-                        CName = guest.CName,
-                        Email = guest.Email,
-                        CompanyName = guest.CompanyName,
-                        Phone = guest.Phone,
-                        CreatedAt = DateTime.Now,
-                        CreatedBy = createdBy,
-                    };
-                    db.Visitor.Add(newVisitor);
-                }
-
-                if (!allVisitorIds.Contains(visitorId))
-                {
-                    allVisitorIds.Add(visitorId);
-                }
-            }
-
-            return allVisitorIds;
         }
     }
 }

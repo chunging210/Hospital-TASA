@@ -81,21 +81,9 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<ConferenceStatus> ConferenceStatus { get; set; }
 
-    public virtual DbSet<ConferenceTemplate> ConferenceTemplate { get; set; }
-
-    public virtual DbSet<ConferenceTemplateUser> ConferenceTemplateUser { get; set; }
-
     public virtual DbSet<ConferenceEquipment> ConferenceEquipment { get; set; }
 
     public virtual DbSet<ConferenceUser> ConferenceUser { get; set; }
-
-    public virtual DbSet<ConferenceWebex> ConferenceWebex { get; set; }
-
-    public virtual DbSet<ConferenceVisitor> ConferenceVisitor { get; set; }
-
-    public virtual DbSet<Ecs> Ecs { get; set; }
-
-    public virtual DbSet<EcsEquipment> EcsEquipment { get; set; }
 
     public virtual DbSet<Equipment> Equipment { get; set; }
 
@@ -107,19 +95,13 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<LogSys> LogSys { get; set; }
 
-    public virtual DbSet<LogWebex> LogWebex { get; set; }
-
     public virtual DbSet<SysDepartment> SysDepartment { get; set; }
 
     public virtual DbSet<SysMenu> SysMenu { get; set; }
 
     public virtual DbSet<SysRoom> SysRoom { get; set; }
 
-    public virtual DbSet<Webex> Webex { get; set; }
-
     public virtual DbSet<SeatSettings> SeatSettings { get; set; }
-
-    public virtual DbSet<Visitor> Visitor { get; set; }
 
     public virtual DbSet<SysRoomPriceHourly> SysRoomPriceHourly { get; set; }
 
@@ -159,25 +141,16 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.AuthUserConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceStatusConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.ConferenceTemplateConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.ConferenceTemplateUserConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceUserConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.ConferenceWebexConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.EcsConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.EcsEquipmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.EquipmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.EquipmentTypeConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogBackgroundConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogMailConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogSysConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.LogWebexConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysDepartmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysMenuConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.WebexConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SeatSettingsConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.VisitorConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.ConferenceVisitorConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPriceHourlyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPricePeriodConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomImageConfiguration());

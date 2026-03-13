@@ -69,7 +69,6 @@
                                 <a href="/calendar" class="dropdown-item">會議室總覽</a>
                                 <a href="/conference" class="dropdown-item">會議總覽</a>
                                 <a href="/Conference/Create" class="dropdown-item">新增會議</a>
-                                @* <a href="/conferencetemplate" class="dropdown-item">會議範本</a> *@
                             </div>
                         </li>
                         <li class="nav-item dropdown">
@@ -161,25 +160,6 @@
                                         <a href="/admin/costcentermanager" class="dropdown-item">成本中心主管</a>
                                     }
                                 </div>
-                            </li>
-                        }
-                        @if (service.SettingServices.GetSettings().UCNS.Ecs)
-                        {
-
-                            <li class="nav-item">
-                                <a href="/admin/ecs" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">grid_view</span>
-                                    <span class="text">環控總覽</span>
-                                </a>
-                            </li>
-                        }
-                        @if (service.SettingServices.GetSettings().UCNS.Webex)
-                        {
-                            <li class="nav-item">
-                                <a href="/admin/webex" class="nav-link icon-text-container">
-                                    <span class="material-icons font-size-16">grid_view</span>
-                                    <span class="text">Webex設定</span>
-                                </a>
                             </li>
                         }
                     </ul>

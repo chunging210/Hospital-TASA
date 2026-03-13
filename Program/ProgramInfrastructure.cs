@@ -58,7 +58,7 @@ namespace TASA.Program
 
             // 加入排程
             builder.Services.AddHostedService<StatusChangeBackgroundService>();
-            builder.Services.AddHostedService<RefreshTokenBackgroundService>();
+            // builder.Services.AddHostedService<RefreshTokenBackgroundService>();
 
             // 加入 Session（用於驗證碼）
             builder.Services.AddDistributedMemoryCache();

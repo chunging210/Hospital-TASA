@@ -17,7 +17,6 @@ namespace TASA.Services
 
         public record RoomVM : IdNameVM
         {
-            public IEnumerable<IdNameVM> Ecs { get; set; } = [];
         }
 
         public record RoomListVM
@@ -160,8 +159,7 @@ namespace TASA.Services
                     x.Id,
                     x.Name,
                     x.Building,
-                    x.Floor,
-                    Ecs = x.Ecs.Where(e => e.IsEnabled && e.DeleteAt == null).Select(e => new IdNameVM() { Id = e.Id, Name = e.Name }).ToList()
+                    x.Floor
                 })
                 .ToList();
 
@@ -172,8 +170,7 @@ namespace TASA.Services
                     ? x.Name
                     : string.IsNullOrEmpty(x.Floor)
                         ? $"{x.Building} {x.Name}"
-                        : $"{x.Building} {x.Floor}樓 {x.Name}",
-                Ecs = x.Ecs
+                        : $"{x.Building} {x.Floor}樓 {x.Name}"
             });
         }
 
@@ -1220,20 +1217,5 @@ namespace TASA.Services
                 .WhereEnabled()
                 .Mapping<IdNameVM>();
         }
-
-        public record ECSVM : IdNameVM
-        {
-            public Guid RoomId { get; set; }
-        }
-        public IQueryable<ECSVM> ECS()
-        {
-            return db.Ecs
-                .AsNoTracking()
-                .WhereNotDeleted()
-                .WhereEnabled()
-                .Mapping<ECSVM>();
-        }
     }
-
-
 }

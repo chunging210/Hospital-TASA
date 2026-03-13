@@ -70,9 +70,4 @@ public partial class SysDepartment
     [InverseProperty("Department")]
     public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
 
-    [ForeignKey("DepartmentId")]
-    [InverseProperty("Department")]
-    public virtual ICollection<ConferenceTemplate> ConferenceNavigation { get; set; } = new List<ConferenceTemplate>();
-
-
 }

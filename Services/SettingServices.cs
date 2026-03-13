@@ -8,11 +8,8 @@ namespace TASA.Services
         {
             public class UCMSSettings
             {
-                public bool Webex { get; set; } = false;
-                public bool Ecs { get; set; } = false;
                 public int DelayStartTime { get; set; } = 30;
                 public int BeforeStart { get; set; } = 10;
-
             }
             [ConfigurationKeyName("UCMS")]
             public UCMSSettings UCNS { set; get; } = new UCMSSettings();

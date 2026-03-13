@@ -173,27 +173,6 @@ namespace TASA.Models.Configurations
                         j.HasIndex(new[] { "DepartmentId" }, "ConferencesDepartments_ibfk_2");
                     });
 
-            entity.HasMany(d => d.Ecs).WithMany(p => p.Conference)
-                .UsingEntity<Dictionary<string, Guid>>(
-                    "ConferenceEcs",
-                    r => r.HasOne<Ecs>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("EcsId")
-                        .HasConstraintName("ConferenceEcs_ibfk_2"),
-                    l => l.HasOne<Conference>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("ConferenceId")
-                        .HasConstraintName("ConferenceEcs_ibfk_1"),
-                    j =>
-                    {
-                        j.HasKey("ConferenceId", "EcsId")
-                            .HasName("PRIMARY")
-                            .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-                        j.HasIndex(new[] { "EcsId" }, "ConferenceEcs_ibfk_2");
-                        j.IndexerProperty<Guid>("ConferenceId").HasComment("會議ID");
-                        j.IndexerProperty<Guid>("EcsId").HasComment("情境ID");
-                    });
-
             entity.HasMany(d => d.Room).WithMany(p => p.Conference)
                 .UsingEntity<Dictionary<string, object>>(
                     "ConferenceRoom",

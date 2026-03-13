@@ -107,17 +107,11 @@ public partial class AuthUser
     public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
 
     [InverseProperty("User")]
-    public virtual ICollection<ConferenceTemplateUser> ConferenceTemplateUser { get; set; } = new List<ConferenceTemplateUser>();
-
-    [InverseProperty("User")]
     public virtual ICollection<ConferenceUser> ConferenceUser { get; set; } = new List<ConferenceUser>();
 
     // ✅ 加入這行
     [InverseProperty("CreateByNavigation")]
     public virtual ICollection<SeatSettings> SeatSetting { get; set; } = new List<SeatSettings>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<Visitor> VisitorCreatedBy { get; set; } = new List<Visitor>();
 
 
     [ForeignKey("DepartmentId")]

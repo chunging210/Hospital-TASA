@@ -4,7 +4,6 @@ using System.Text.Json;
 using TASA.Services;
 using TASA.Services.AuthUserModule;
 using TASA.Services.DepartmentModule;
-using TASA.Services.EcsModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.RoomModule;
 using TASA.Services.CostCenterModule;
@@ -156,48 +155,6 @@ namespace TASA.Controllers.API
         public IActionResult EquipmentDelete(Guid id)
         {
             service.EquipmentService.Delete(id);
-            return Ok();
-        }
-
-        /* --- */
-
-        [HttpGet("ecslist")]
-        public IActionResult EcsList([FromQuery] BaseQueryVM query)
-        {
-            return Ok(service.EcsService.List(query));
-        }
-
-        [HttpGet("ecsdetail")]
-        public IActionResult EcsDetail(Guid id)
-        {
-            return Ok(service.EcsService.Detail(id));
-        }
-
-        [HttpPost("ecsinsert")]
-        public IActionResult EcsInsert(EcsService.DetailVM vm)
-        {
-            service.EcsService.Insert(vm);
-            return Ok();
-        }
-
-        [HttpPost("ecsupdate")]
-        public IActionResult EcsUpdate(EcsService.DetailVM vm)
-        {
-            service.EcsService.Update(vm);
-            return Ok();
-        }
-
-        [HttpDelete("ecsdelete")]
-        public IActionResult EcsDelete(Guid id)
-        {
-            service.EcsService.Delete(id);
-            return Ok();
-        }
-
-        [HttpGet("ecstest")]
-        public IActionResult Test(Guid id)
-        {
-            service.EcsService.Send(id, isTest: true);
             return Ok();
         }
 

@@ -1,16 +1,11 @@
 ﻿using TASA.Services.AuthModule;
 using TASA.Services.AuthUserModule;
 using TASA.Services.ConferenceModule;
-using TASA.Services.ConferenceTemplateMoule;
 using TASA.Services.DepartmentModule;
-using TASA.Services.EcsModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.MailModule;
 using TASA.Services.RoomModule;
-// [DISABLED] using TASA.Services.SeatSettingModule;
-// [DISABLED] using TASA.Services.VisitorModule;
 using TASA.Services.DelegateModule;
-using TASA.Services.WebexModule;
 using TASA.Services.CaptchaModule;
 using TASA.Services.HolidayModule;
 using TASA.Services.ReportModule;
@@ -46,17 +41,10 @@ namespace TASA.Services
         Lazy<ReservationService> reservationService,
         Lazy<JobService> jobService,
         Lazy<ConferenceMail> conferenceMail,
-        Lazy<ConferenceTemplateService> conferenceTemplateService,
         Lazy<CalendarService> calendarService,
 
         Lazy<EquipmentService> equipmentService,
-        Lazy<EcsService> ecsService,
-        Lazy<TcpCommandService> tcpCommandService,
 
-        Lazy<WebexService> webexService,
-        Lazy<WebexMeetingService> webexMeetingService,
-        // [DISABLED] Lazy<SeatSettingService> seatSettingService,
-        // [DISABLED] Lazy<VisitorService> visitorService,
         Lazy<SysConfigService> sysConfigService,
         Lazy<ReservationAutoManagementService> reservationAutoManagementService,
         Lazy<RoomManagerDelegateService> roomManagerDelegateService,
@@ -93,19 +81,10 @@ namespace TASA.Services
         public ReservationService ReservationService => reservationService.Value;
         public JobService JobService => jobService.Value;
         public ConferenceMail ConferenceMail => conferenceMail.Value;
-        public ConferenceTemplateService ConferenceTemplateService => conferenceTemplateService.Value;
         public CalendarService CalendarService => calendarService.Value;
 
         public EquipmentService EquipmentService => equipmentService.Value;
-        public EcsService EcsService => ecsService.Value;
-        public TcpCommandService TcpCommandService => tcpCommandService.Value;
 
-        public WebexService WebexService => webexService.Value;
-        public WebexMeetingService WebexMeetingService => webexMeetingService.Value;
-
-        // [DISABLED] public SeatSettingService SeatSettingService => seatSettingService.Value;
-
-        // [DISABLED] public VisitorService VisitorService => visitorService.Value;
         public SysConfigService SysConfigService => sysConfigService.Value;
 
         public ReservationAutoManagementService ReservationAutoManagementService => reservationAutoManagementService.Value;

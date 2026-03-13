@@ -24,22 +24,7 @@ namespace TASA.Controllers.Mvc
             return View();
         }
 
-        public IActionResult ECS()
-        {
-            return View();
-        }
-
-        public IActionResult Webex()
-        {
-            return View();
-        }
-
         public IActionResult Seatsetting()
-        {
-            return View();
-        }
-
-        public IActionResult Visitor()
         {
             return View();
         }
