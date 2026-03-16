@@ -128,12 +128,9 @@ namespace TASA.Services.DelegateModule
 
             // 發送委派通知信給代理人
             var manager = db.AuthUser.AsNoTracking().FirstOrDefault(u => u.Id == userId.Value);
-            var roomNames = db.SysRoom
-                .AsNoTracking()
-                .IgnoreQueryFilters()
-                .Where(r => r.ManagerId == userId.Value && r.IsEnabled && r.DeleteAt == null)
-                .Select(r => $"{r.Building} {r.Floor} {r.Name}")
-                .ToList();
+
+            // 取得會議室名稱（包含直接管理的 + 審核流程中負責的）
+            var roomNames = GetManagedRoomNames(userId.Value);
 
             service.PasswordMail.DelegateAssigned(
                 delegateUser.Email,
@@ -203,7 +200,8 @@ namespace TASA.Services.DelegateModule
 
             if (!managerIds.Any()) return new List<Guid>();
 
-            return db.SysRoom
+            // 直接管理的會議室
+            var directRoomIds = db.SysRoom
                 .AsNoTracking()
                 .IgnoreQueryFilters()
                 .Where(r => managerIds.Contains(r.ManagerId!.Value)
@@ -211,6 +209,18 @@ namespace TASA.Services.DelegateModule
                          && r.DeleteAt == null)
                 .Select(r => r.Id)
                 .ToList();
+
+            // 審核流程中負責的會議室
+            var approvalRoomIds = db.SysRoomApprovalLevel
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(a => managerIds.Contains(a.ApproverId)
+                         && a.DeleteAt == null)
+                .Select(a => a.RoomId)
+                .Distinct()
+                .ToList();
+
+            return directRoomIds.Union(approvalRoomIds).Distinct().ToList();
         }
 
         /// <summary>
@@ -253,15 +263,8 @@ namespace TASA.Services.DelegateModule
 
             if (delegation == null) return null;
 
-            // 取得該管理者管理的會議室名稱
-            var roomNames = db.SysRoom
-                .AsNoTracking()
-                .IgnoreQueryFilters()
-                .Where(r => r.ManagerId == delegation.ManagerId
-                         && r.IsEnabled
-                         && r.DeleteAt == null)
-                .Select(r => $"{r.Building} {r.Floor} {r.Name}")
-                .ToList();
+            // 取得該管理者管理的會議室名稱（包含直接管理的 + 審核流程中負責的）
+            var roomNames = GetManagedRoomNames(delegation.ManagerId);
 
             return new DelegateInfoVM
             {
@@ -308,6 +311,38 @@ namespace TASA.Services.DelegateModule
             public string ManagerName { get; set; } = string.Empty;
             public DateOnly StartDate { get; set; }
             public DateOnly EndDate { get; set; }
+        }
+
+        /// <summary>
+        /// 取得某使用者管理的所有會議室名稱（包含直接管理的 + 審核流程中負責的）
+        /// </summary>
+        private List<string> GetManagedRoomNames(Guid userId)
+        {
+            // 直接管理的會議室
+            var directRoomNames = db.SysRoom
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(r => r.ManagerId == userId && r.IsEnabled && r.DeleteAt == null)
+                .Select(r => $"{r.Building} {r.Floor} {r.Name}")
+                .ToList();
+
+            // 審核流程中負責的會議室
+            var approvalRoomIds = db.SysRoomApprovalLevel
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(a => a.ApproverId == userId && a.DeleteAt == null)
+                .Select(a => a.RoomId)
+                .Distinct()
+                .ToList();
+
+            var approvalRoomNames = db.SysRoom
+                .AsNoTracking()
+                .IgnoreQueryFilters()
+                .Where(r => approvalRoomIds.Contains(r.Id) && r.IsEnabled && r.DeleteAt == null)
+                .Select(r => $"{r.Building} {r.Floor} {r.Name}")
+                .ToList();
+
+            return directRoomNames.Union(approvalRoomNames).Distinct().ToList();
         }
     }
 }

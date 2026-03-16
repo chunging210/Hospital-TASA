@@ -355,7 +355,6 @@ namespace TASA.Services.RoomModule
                 .AsNoTracking()
                 .Include(x => x.Images)
                 .Include(x => x.Department)
-                .Include(x => x.SysRoomPriceHourly)
                 .Include(x => x.SysRoomPricePeriod)
                 .Include(x => x.Equipment)
                 .Include(x => x.Manager)  // ✅ 已有
@@ -1093,27 +1092,6 @@ namespace TASA.Services.RoomModule
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
             // if (pricingType == PricingType.Hourly)
-            // {
-            //     foreach (var pricing in enabledPricings)
-            //     {
-            //         TimeSpan.TryParse(pricing.StartTime, out var startTime);
-            //         TimeSpan.TryParse(pricing.EndTime, out var endTime);
-
-            //         var hourlyPrice = new SysRoomPriceHourly
-            //         {
-            //             Id = Guid.NewGuid(),
-            //             RoomId = roomId,
-            //             StartTime = startTime,
-            //             EndTime = endTime,
-            //             Price = pricing.Price,
-            //             IsEnabled = pricing.Enabled,
-            //             CreateAt = DateTime.Now,
-            //             CreateBy = userid!.Value
-            //         };
-            //         db.SysRoomPriceHourly.Add(hourlyPrice);
-            //     }
-            // }
-            // else 
             if (pricingType == PricingType.Period)
             {
                 foreach (var pricing in enabledPricings)
@@ -1144,17 +1122,6 @@ namespace TASA.Services.RoomModule
 
         private void DeletePricingDetails(Guid roomId, PricingType pricingType)
         {
-            // if (pricingType == PricingType.Hourly)
-            // {
-            //     var hourlyPrices = db.SysRoomPriceHourly
-            //         .Where(x => x.RoomId == roomId && x.DeleteAt == null)
-            //         .ToList();
-            //     foreach (var price in hourlyPrices)
-            //     {
-            //         price.DeleteAt = DateTime.Now;
-            //     }
-            // }
-            // else
             if (pricingType == PricingType.Period)
             {
                 var periodPrices = db.SysRoomPricePeriod

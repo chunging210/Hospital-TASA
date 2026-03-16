@@ -3,10 +3,20 @@
 @using Microsoft.EntityFrameworkCore
 @{
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
-    var isDirectRoomManager = user?.Id != null && db.SysRoom
-    .AsNoTracking()
-    .IgnoreQueryFilters()
-    .Any(r => r.ManagerId == user.Id.Value && r.IsEnabled && r.DeleteAt == null);
+    // 檢查是否為會議室管理者或審核流程中的審核人
+    var isApprover = user?.Id != null && (
+        // 會議室管理者
+        db.SysRoom
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Any(r => r.ManagerId == user.Id.Value && r.IsEnabled && r.DeleteAt == null)
+        ||
+        // 審核流程中的審核人
+        db.SysRoomApprovalLevel
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Any(a => a.ApproverId == user.Id.Value && a.DeleteAt == null)
+    );
 }
 <input type="hidden" id="userDepartmentId" value="@user?.DepartmentId" />
 <input type="hidden" id="userId" value="@user?.Id" />
@@ -82,7 +92,7 @@
                                 </div>
                             </div>
                         </li>
-                        @if (isDirectRoomManager)
+                        @if (isApprover)
                         {
                             <li class="checkout-item">
                                 <div class="avatar checkout-icon p-1">

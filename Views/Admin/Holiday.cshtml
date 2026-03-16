@@ -14,9 +14,9 @@
                                 class="form-select d-inline-block me-2" style="width: auto;">
                             <option v-for="year in holiday.yearOptions" :value="year">{{ year }} 年</option>
                         </select>
-                        <!-- 同步政府假日按鈕 -->
+                        <!-- 同步政府假日按鈕 (暫時隱藏) -->
                         <button class="btn btn-success me-2" @@click="holiday.syncHolidays"
-                                :disabled="holiday.state.syncing">
+                                :disabled="holiday.state.syncing" style="display: none;">
                             <span v-if="holiday.state.syncing" class="spinner-border spinner-border-sm me-1"></span>
                             <span class="material-icons me-1" v-else>sync</span>
                             同步政府假日

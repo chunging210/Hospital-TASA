@@ -103,8 +103,6 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<SeatSettings> SeatSettings { get; set; }
 
-    public virtual DbSet<SysRoomPriceHourly> SysRoomPriceHourly { get; set; }
-
     public virtual DbSet<SysRoomPricePeriod> SysRoomPricePeriod { get; set; }
 
     public virtual DbSet<SysRoomImage> SysRoomImage { get; set; }
@@ -151,7 +149,6 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.SysMenuConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SeatSettingsConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.SysRoomPriceHourlyConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPricePeriodConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomImageConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceRoomSlotConfiguration());

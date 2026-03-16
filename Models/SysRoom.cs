@@ -134,9 +134,6 @@ public partial class SysRoom
     public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
 
     [InverseProperty("Room")]
-    public virtual ICollection<SysRoomPriceHourly> SysRoomPriceHourly { get; set; } = new List<SysRoomPriceHourly>();
-
-    [InverseProperty("Room")]
     public virtual ICollection<SysRoomPricePeriod> SysRoomPricePeriod { get; set; } = new List<SysRoomPricePeriod>();
 
     public virtual ICollection<SysRoomImage> Images { get; set; } = new List<SysRoomImage>();
