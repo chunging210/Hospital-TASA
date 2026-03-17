@@ -72,9 +72,15 @@ public partial class AuthUser
     public string Card { get; set; }
 
     /// <summary>
-    /// 單位
+    /// 分院
     /// </summary>
     public Guid? DepartmentId { get; set; }
+
+    /// <summary>
+    /// 部門（純文字）
+    /// </summary>
+    [StringLength(100)]
+    public string UnitName { get; set; }
 
     /// <summary>
     /// 啟用

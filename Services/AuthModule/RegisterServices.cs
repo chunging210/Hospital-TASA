@@ -104,6 +104,12 @@ namespace TASA.Services.AuthModule
             public Guid? DepartmentId { get; set; }
 
             /// <summary>
+            /// 部門（純文字）
+            /// </summary>
+            [Required]
+            public string UnitName { get; set; } = string.Empty;
+
+            /// <summary>
             /// 驗證碼
             /// </summary>
             [Required]
@@ -285,6 +291,7 @@ namespace TASA.Services.AuthModule
                 PasswordHash = hashVm.Hash,
                 PasswordSalt = hashVm.Salt,
                 DepartmentId = department.Id,
+                UnitName = vm.UnitName?.Trim(),  // 部門
                 IsEnabled = false,
                 CreateAt = DateTime.Now,
             };

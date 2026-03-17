@@ -29,7 +29,7 @@
                                         <div class="form-floating form-floating-custom mb-4">
                                             <input v-model="vm.Account" type="text" class="form-control"
                                                    placeholder="Account">
-                                            <label>電子信箱</label>
+                                            <label>帳號/電子信箱</label>
                                             <div class="form-floating-icon">
                                                 <span class="material-icons">account_circle</span>
                                             </div>
@@ -178,7 +178,7 @@
                         <div class="form-floating form-floating-custom mb-3">
                             <input type="text" class="form-control" id="guestName" placeholder="使用者名稱"
                                    v-model="guestForm.name" required>
-                            <label for="guestName">使用者名稱</label>
+                            <label for="guestName">姓名</label>
                             <div class="form-floating-icon">
                                 <span class="material-icons">person</span>
                             </div>
@@ -233,6 +233,16 @@
                             <span class="material-icons" style="font-size: 16px; vertical-align: middle;">info</span>
                             未選擇分院將註冊為一般會員；<br>
                             若您為院內職員，請選擇所屬分院。
+                        </div>
+
+                        <!-- 部門 -->
+                        <div class="form-floating form-floating-custom mb-3">
+                            <input type="text" class="form-control" id="guestUnitName" placeholder="部門"
+                                   v-model="guestForm.unitName" required>
+                            <label for="guestUnitName">部門/其他團體</label>
+                            <div class="form-floating-icon">
+                                <span class="material-icons">business</span>
+                            </div>
                         </div>
 
                         <!-- 驗證碼 -->

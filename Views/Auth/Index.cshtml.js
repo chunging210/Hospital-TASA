@@ -15,6 +15,7 @@ class RegisterVM {
     hospital = ''; // 空字串 = 一般會員
     // agreeTerms = false;
     departmentId = null;
+    unitName = '';  // 部門
     captcha = '';
 }
 
@@ -164,12 +165,19 @@ window.$config = {
                 return;
             }
 
+            // 部門必填檢查
+            if (!this.guestForm.unitName || this.guestForm.unitName.trim() === '') {
+                addAlert('請輸入部門', { type: 'warning' });
+                return;
+            }
+
             const payload = {
                 Name: this.guestForm.name,
                 Email: this.guestForm.email,
                 Password: this.guestForm.password,
                 ConfirmPassword: this.guestForm.confirmPassword,
                 DepartmentId: this.guestForm.departmentId,
+                UnitName: this.guestForm.unitName.trim(),
                 Captcha: this.guestForm.captcha
             };
 

@@ -394,7 +394,7 @@ namespace TASA.Services.AuthModule
         }
 
         // ===================== 自動建立 AD 使用者 =====================
-        private AuthUser CreateUserFromAD(string account, string password, string cn, string mail)
+        private AuthUser CreateUserFromAD(string account, string password, string cn, string dept, string mail)
         {
             var newUserId = Guid.NewGuid();
             var clientIp = GetClientIp();
@@ -444,6 +444,7 @@ namespace TASA.Services.AuthModule
                     PasswordSalt = hashResult.Salt,
                     Email = string.IsNullOrEmpty(mail) ? null : mail,
                     DepartmentId = DEFAULT_DEPARTMENT_ID,
+                    UnitName = string.IsNullOrEmpty(dept) ? null : dept,  // AD 的部門
                     IsEnabled = true,
                     IsApproved = true,
                     CreateAt = DateTime.Now,
@@ -499,15 +500,15 @@ namespace TASA.Services.AuthModule
         }
 
         // ===================== 驗證使用者 =====================
-        public AuthUser? IsValidUser(string account, string password)
+        public AuthUser? IsValidUser(string input, string password)
         {
-            // 1. 先查 DB
+            // 1. 先查 DB（用 Account 或 Email 都能找到）
             var user = db.AuthUser
                 .Include(x => x.AuthRole)
                 .Include(x => x.Department)
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .FirstOrDefault(x => x.Account == account);
+                .FirstOrDefault(x => x.Account == input || x.Email == input);
 
             // 2. DB 有找到 → 直接本地驗證
             if (user != null)
@@ -520,26 +521,26 @@ namespace TASA.Services.AuthModule
             }
 
             // ========== 本地帳號不存在，嘗試 AD 驗證 ==========
-            WriteAdLog("AD_AUTH_ATTEMPT", "本地帳號不存在，準備嘗試 AD 驗證", account);
+            WriteAdLog("AD_AUTH_ATTEMPT", "本地帳號不存在，準備嘗試 AD 驗證", input);
             _ = service.LogServices.LogAsync("ad_auth_attempt", JsonConvert.SerializeObject(new
             {
-                Account = account,
+                Account = input,
                 Message = "本地帳號不存在，嘗試 AD 驗證",
                 ClientIp = GetClientIp(),
                 Timestamp = DateTime.Now
             }));
 
-            // 3. DB 沒找到 → 去 AD 驗證
-            var adSuccess = LdapLogin(account, password, out string cn, out string dept, out string mail);
+            // 3. DB 沒找到 → 去 AD 驗證（用輸入的值當作 AD 帳號）
+            var adSuccess = LdapLogin(input, password, out string cn, out string dept, out string mail);
             if (!adSuccess)
             {
-                WriteAdLog("AD_AUTH_RESULT", "AD 驗證失敗，登入流程結束", account);
+                WriteAdLog("AD_AUTH_RESULT", "AD 驗證失敗，登入流程結束", input);
                 return null;
             }
 
             // 4. AD 驗證成功 → 自動建立並回傳
-            WriteAdLog("AD_AUTH_RESULT", "AD 驗證成功，準備建立本地帳號", account);
-            return CreateUserFromAD(account, password, cn, mail);
+            WriteAdLog("AD_AUTH_RESULT", "AD 驗證成功，準備建立本地帳號", input);
+            return CreateUserFromAD(input, password, cn, dept, mail);
         }
 
         // ===================== 登入 =====================
