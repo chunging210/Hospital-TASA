@@ -12,6 +12,7 @@ namespace TASA.Services.AuthUserModule
         {
             public Guid Id { get; set; }
             public string DepartmentName { get; set; } = string.Empty;
+            public string? UnitName { get; set; }  // 部門
             public string Name { get; set; } = string.Empty;
             public string Account { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
@@ -43,6 +44,7 @@ namespace TASA.Services.AuthUserModule
             return q.Mapping(x => new ListVM()
                 {
                     DepartmentName = x.Department.Name,
+                    UnitName = x.UnitName,
                     IsNormal = x.AuthRole.Any(r => r.Code == AuthRoleServices.Normal),
                     IsAdmin = x.AuthRole.Any(r => r.Code == AuthRoleServices.Admin),
                     IsStaff = x.AuthRole.Any(r => r.Code == AuthRoleServices.Staff),
@@ -58,6 +60,7 @@ namespace TASA.Services.AuthUserModule
             public string Account { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public Guid? DepartmentId { get; set; }
+            public string? UnitName { get; set; }  // 部門
             public IEnumerable<Guid> Role { get; set; } = [];
             public bool IsEnabled { get; set; }
         }
@@ -68,6 +71,7 @@ namespace TASA.Services.AuthUserModule
                 .WhereNotDeleted()
                 .Mapping(x => new DetailVM()
                 {
+                    UnitName = x.UnitName,
                     Role = x.AuthRole.Where(y => y.IsEnabled && y.DeleteAt == null).Select(y => y.Id)
                 })
                 .FirstOrDefault(x => x.Id == id);
@@ -156,6 +160,7 @@ namespace TASA.Services.AuthUserModule
                 data.Name = vm.Name;
                 data.Email = vm.Email;
                 data.DepartmentId = vm.DepartmentId;
+                data.UnitName = vm.UnitName;  // 部門
                 data.IsEnabled = vm.IsEnabled;
                 data.AuthRole = [.. db.AuthRole.WhereNotDeleted().Where(x => vm.Role.Contains(x.Id))];
 

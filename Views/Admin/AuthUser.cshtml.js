@@ -8,6 +8,7 @@ class VM {
     Account = '';
     Email = '';
     DepartmentId = null;
+    UnitName = '';  // 部門
     Role = [];
     IsEnabled = true;
 }
@@ -40,6 +41,57 @@ const role = new function () {
     }
 }
 
+const costCenter = new function () {
+    this.list = reactive([]);
+    this.search = ref('');
+    this.filtered = ref([]);
+    this.showDropdown = ref(false);
+
+    this.getList = () => {
+        global.api.select.costcenters()
+            .then((response) => {
+                copy(this.list, response.data);
+                this.filtered.value = response.data;
+            });
+    }
+
+    this.filter = () => {
+        const keyword = this.search.value.toLowerCase().trim();
+        if (!keyword) {
+            this.filtered.value = this.list;
+            return;
+        }
+        this.filtered.value = this.list.filter(item => {
+            const codeMatch = item.Code?.toLowerCase().includes(keyword);
+            const nameMatch = item.Name?.toLowerCase().includes(keyword);
+            return codeMatch || nameMatch;
+        });
+    }
+
+    this.select = (item) => {
+        authuser.vm.UnitName = item.Name;
+        this.search.value = item.Name;
+        this.showDropdown.value = false;
+    }
+
+    this.onFocus = () => {
+        this.showDropdown.value = true;
+        this.filtered.value = this.list;
+    }
+
+    this.onBlur = () => {
+        // 延遲關閉，讓 click 事件可以觸發
+        setTimeout(() => {
+            this.showDropdown.value = false;
+        }, 200);
+    }
+
+    // 當編輯時，設定搜尋框的值
+    this.setSearchFromVM = () => {
+        this.search.value = authuser.vm.UnitName || '';
+    }
+}
+
 const authuser = new function () {
     this.query = reactive({ keyword: '' });
     this.list = reactive([]);
@@ -69,6 +121,7 @@ const authuser = new function () {
                     copy(this.vm, response.data);
                     console.log('vm.DepartmentId:', this.vm.DepartmentId);
                     console.log('department.tree:', department.tree);
+                    costCenter.setSearchFromVM();  // 設定部門搜尋框的值
                     this.showModal();
                 })
                 .catch(error => {
@@ -76,6 +129,7 @@ const authuser = new function () {
                 });
         } else {
             copy(this.vm, new VM());
+            costCenter.search.value = '';  // 清空搜尋框
         }
     }
     this.save = () => {
@@ -125,6 +179,7 @@ window.$config = {
         this.tabs = tabs;
         this.department = department;
         this.role = role;
+        this.costCenter = costCenter;
         this.authuser = authuser;
         this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
         this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
@@ -136,6 +191,7 @@ window.$config = {
         onMounted(() => {
             department.gettree();
             role.getList();
+            costCenter.getList();
             authuser.getList();
         });
     }
