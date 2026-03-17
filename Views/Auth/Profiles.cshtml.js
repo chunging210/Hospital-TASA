@@ -95,9 +95,11 @@ const delegateSection = new function () {
             })
             .catch(() => { });
 
+        const unitName = document.getElementById('userUnitName')?.value || '';
         const departmentId = document.getElementById('userDepartmentId')?.value || '';
         const currentUserId = document.getElementById('userId')?.value || '';
-        global.api.select.internaluser({ body: { departmentId } })
+        // 優先使用 unitName（部門），如果沒有則使用 departmentId（分院）
+        global.api.select.internaluser({ body: { unitName, departmentId } })
             .then(response => {
                 const filtered = response.data.filter(u => u.Id !== currentUserId);
                 delegateSection.users.splice(0, delegateSection.users.length, ...filtered);

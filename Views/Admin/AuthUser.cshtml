@@ -139,12 +139,11 @@
                     <div class="row mb-4">
                         <label class="col-sm-3 col-form-label">部門</label>
                         <div class="col-sm-9">
-                            <div class="position-relative">
+                            <div class="position-relative unit-dropdown-container">
                                 <input type="text" class="form-control"
                                        v-model="costCenter.search.value"
                                        @@input="costCenter.filter()"
                                        @@focus="costCenter.onFocus()"
-                                       @@blur="costCenter.onBlur()"
                                        placeholder="輸入部門名稱搜尋..." autocomplete="off">
 
                                 <!-- 下拉選項列表 -->
@@ -152,9 +151,9 @@
                                      class="position-absolute w-100 bg-white border rounded shadow-sm"
                                      style="max-height: 200px; overflow-y: auto; z-index: 1050;">
                                     <div v-for="item in costCenter.filtered.value" :key="item.Code"
-                                         class="px-3 py-2 cursor-pointer"
+                                         class="px-3 py-2"
                                          style="cursor: pointer;"
-                                         @@mousedown="costCenter.select(item)"
+                                         @@click="costCenter.select(item)"
                                          @@mouseover="$event.target.style.backgroundColor='#f8f9fa'"
                                          @@mouseout="$event.target.style.backgroundColor=''">
                                         {{ item.Name }}

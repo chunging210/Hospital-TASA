@@ -34,5 +34,22 @@ namespace TASA.Controllers.API
             service.PasswordServices.ChangePW(vm);
             return Ok();
         }
+
+        // /// <summary>
+        // /// 測試用：直接重置密碼（不檢查密碼規則）
+        // /// 使用方式：POST /api/password/devresetpw { "account": "xxx", "password": "1234" }
+        // /// </summary>
+        // [HttpPost("devresetpw")]
+        // public IActionResult DevResetPassword([FromBody] DevResetPwVM vm)
+        // {
+        //     service.PasswordServices.DevResetPassword(vm.Account, vm.Password);
+        //     return Ok("密碼已重置");
+        // }
+
+        // public record DevResetPwVM
+        // {
+        //     public string Account { get; set; } = string.Empty;
+        //     public string Password { get; set; } = string.Empty;
+        // }
     }
 }

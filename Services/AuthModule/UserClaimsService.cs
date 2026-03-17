@@ -32,6 +32,7 @@ namespace TASA.Services.AuthModule
         new Claim("authrole", JsonSerializer.Serialize(user.AuthRole.Where(y => y.IsEnabled && y.DeleteAt == null).Select(x=>x.Code))),
         new Claim("departmentid", user.DepartmentId?.ToString()??""),
         new Claim("departmentname", user.Department?.Name??""),
+        new Claim("unitname", user.UnitName??""),  // 部門
         new Claim("isroommanager", isRoomManager.ToString())  // ✅ 新增這行
     ];
 }
@@ -43,6 +44,7 @@ namespace TASA.Services.AuthModule
             public List<string> Role { get; set; } = [];
             public Guid? DepartmentId { get; set; }
             public string? DepartmentName { get; set; }
+            public string? UnitName { get; set; }  // 部門
             public bool IsAdmin { get; set; }
             public bool IsDirector { get; set; }
             public bool IsAccountant { get; set; }
@@ -79,13 +81,14 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
     var departmentIdClaim = claims.FirstOrDefault(x => x.Type == "departmentid")?.Value;
     Guid? departmentId = Guid.TryParse(departmentIdClaim, out var parsedDeptId) ? parsedDeptId : null;
     var departmentName = claims.FirstOrDefault(x => x.Type == "departmentname")?.Value;
-    
+    var unitName = claims.FirstOrDefault(x => x.Type == "unitname")?.Value;  // 部門
+
     // ✅ 從 Claim 中取得 IsRoomManager
     var isRoomManagerClaim = claims.FirstOrDefault(x => x.Type == "isroommanager")?.Value;
-    var isRoomManager = !string.IsNullOrEmpty(isRoomManagerClaim) && 
-                        bool.TryParse(isRoomManagerClaim, out var result) && 
+    var isRoomManager = !string.IsNullOrEmpty(isRoomManagerClaim) &&
+                        bool.TryParse(isRoomManagerClaim, out var result) &&
                         result;
-    
+
     var isAdmin = role.Any(x => x == AuthRoleServices.Admin);
 
     return new MeVM()
@@ -95,6 +98,7 @@ public static MeVM? ToAuthUser(IEnumerable<Claim>? claims)
         Role = role,
         DepartmentId = departmentId,
         DepartmentName = departmentName,
+        UnitName = string.IsNullOrEmpty(unitName) ? null : unitName,  // 部門
         IsAdmin = isAdmin,
         IsDirector = role.Any(x => x == AuthRoleServices.Director),
         IsAccountant = role.Any(x => x == AuthRoleServices.Accountant),

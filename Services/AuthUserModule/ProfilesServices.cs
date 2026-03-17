@@ -80,6 +80,12 @@ namespace TASA.Services.AuthUserModule
 
         public void Update(DetailVM vm)
         {
+            // 檢查 Email 是否被其他帳號使用
+            if (!string.IsNullOrWhiteSpace(vm.Email) && db.AuthUser.WhereNotDeleted().Any(x => x.Email == vm.Email && x.Id != vm.Id))
+            {
+                throw new HttpException("此 Email 已被其他帳號使用");
+            }
+
             var user = db.AuthUser
                 .WhereNotDeleted()
                 .FirstOrDefault(x => x.Id == vm.Id);

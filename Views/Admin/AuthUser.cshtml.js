@@ -79,16 +79,24 @@ const costCenter = new function () {
         this.filtered.value = this.list;
     }
 
-    this.onBlur = () => {
-        // 延遲關閉，讓 click 事件可以觸發
-        setTimeout(() => {
-            this.showDropdown.value = false;
-        }, 200);
+    // 點擊外部區域關閉下拉選單
+    this.closeDropdown = () => {
+        this.showDropdown.value = false;
     }
 
     // 當編輯時，設定搜尋框的值
     this.setSearchFromVM = () => {
         this.search.value = authuser.vm.UnitName || '';
+    }
+
+    // 初始化：點擊外部區域關閉下拉選單
+    this.initClickOutside = () => {
+        document.addEventListener('click', (e) => {
+            const container = document.querySelector('.unit-dropdown-container');
+            if (container && !container.contains(e.target)) {
+                this.showDropdown.value = false;
+            }
+        });
     }
 }
 
@@ -192,6 +200,7 @@ window.$config = {
             department.gettree();
             role.getList();
             costCenter.getList();
+            costCenter.initClickOutside();
             authuser.getList();
         });
     }

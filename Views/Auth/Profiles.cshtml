@@ -3,6 +3,10 @@
 @using Microsoft.EntityFrameworkCore
 @{
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
+    // 從資料庫取得使用者的 UnitName（避免需要重新登入）
+    var userUnitName = user?.Id != null
+        ? db.AuthUser.AsNoTracking().IgnoreQueryFilters().Where(u => u.Id == user.Id.Value).Select(u => u.UnitName).FirstOrDefault()
+        : null;
     // 檢查是否為會議室管理者或審核流程中的審核人
     var isApprover = user?.Id != null && (
         // 會議室管理者
@@ -19,6 +23,7 @@
     );
 }
 <input type="hidden" id="userDepartmentId" value="@user?.DepartmentId" />
+<input type="hidden" id="userUnitName" value="@userUnitName" />
 <input type="hidden" id="userId" value="@user?.Id" />
 <div class="page-content" v-cloak>
     <div class="container-fluid">

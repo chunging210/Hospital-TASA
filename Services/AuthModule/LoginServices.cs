@@ -513,6 +513,13 @@ namespace TASA.Services.AuthModule
             // 2. DB 有找到 → 直接本地驗證
             if (user != null)
             {
+                // 檢查密碼 Hash 是否存在
+                if (string.IsNullOrEmpty(user.PasswordHash) || string.IsNullOrEmpty(user.PasswordSalt))
+                {
+                    Console.WriteLine($"[Login] 用戶 {user.Account} 的 PasswordHash 或 PasswordSalt 為空");
+                    return null;
+                }
+
                 if (!HashString.Verify(password, user.PasswordHash, user.PasswordSalt))
                     return null;
 

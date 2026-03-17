@@ -378,7 +378,7 @@ namespace TASA.Services
         }
 
 
-        public IQueryable<InternalUserVM> InternalUser(Guid? departmentId = null)
+        public IQueryable<InternalUserVM> InternalUser(Guid? departmentId = null, string? unitName = null)
         {
             if (departmentId == Guid.Empty)
             {
@@ -394,7 +394,7 @@ namespace TASA.Services
                 Console.WriteLine($"🔒 [InternalUser] 分院管理者,強制使用分院: {departmentId}");
             }
 
-            Console.WriteLine($"📥 [InternalUser] departmentId: {departmentId}");
+            Console.WriteLine($"📥 [InternalUser] departmentId: {departmentId}, unitName: {unitName}");
 
             var query = db.AuthUser
                 .AsNoTracking()
@@ -403,8 +403,14 @@ namespace TASA.Services
                 // 只顯示有院內角色（非 NORMAL）的員工，排除院外人士
                 .Where(x => x.AuthRole.Any(r => r.Code != "NORMAL" && r.IsEnabled && r.DeleteAt == null));
 
-            // 分院篩選
-            if (departmentId.HasValue && departmentId.Value != Guid.Empty)
+            // 部門篩選（優先使用 unitName）
+            if (!string.IsNullOrWhiteSpace(unitName))
+            {
+                query = query.Where(x => x.UnitName == unitName);
+                Console.WriteLine($"🔍 [InternalUser] 使用部門篩選: {unitName}");
+            }
+            // 分院篩選（如果沒有 unitName，則使用 departmentId）
+            else if (departmentId.HasValue && departmentId.Value != Guid.Empty)
             {
                 query = query.Where(x => x.DepartmentId == departmentId.Value);
             }

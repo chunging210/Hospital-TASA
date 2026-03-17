@@ -86,10 +86,10 @@ namespace TASA.Services.AuthModule
             var user = db.AuthUser
                 .AsNoTracking()
                 .WhereNotDeleted()
-                .FirstOrDefault(x => x.Account == vm.Account);
+                .FirstOrDefault(x => x.Account == vm.Account || x.Email == vm.Account);
             if (user == null)
             {
-                throw new HttpException("此信箱尚未註冊");
+                throw new HttpException("此帳號或信箱尚未註冊");
             }
             service.LoginServices.IsEnabled(user);
             if (user != null)
@@ -209,5 +209,23 @@ namespace TASA.Services.AuthModule
                 service.PasswordMail.PasswordChange(user.Email);
             }
         }
+
+        // /// <summary>
+        // /// 測試用：直接重置密碼（不檢查密碼規則，不寄信）
+        // /// </summary>
+        // public void DevResetPassword(string account, string password)
+        // {
+        //     var user = db.AuthUser
+        //         .WhereNotDeleted()
+        //         .FirstOrDefault(x => x.Account == account || x.Email == account);
+        //     if (user == null)
+        //     {
+        //         throw new HttpException("找不到此帳號");
+        //     }
+        //     var hashPassword = HashString.Hash(password);
+        //     user.PasswordHash = hashPassword.Hash;
+        //     user.PasswordSalt = hashPassword.Salt;
+        //     db.SaveChanges();
+        // }
     }
 }

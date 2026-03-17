@@ -84,6 +84,10 @@ namespace TASA.Services.AuthUserModule
             {
                 throw new HttpException("帳號已存在");
             }
+            if (!string.IsNullOrWhiteSpace(vm.Email) && db.AuthUser.WhereNotDeleted().Any(x => x.Email == vm.Email))
+            {
+                throw new HttpException("此 Email 已被其他帳號使用");
+            }
             if (!vm.Role.Any())
             {
                 throw new HttpException("請選擇角色");
@@ -130,6 +134,11 @@ namespace TASA.Services.AuthUserModule
             if (!vm.Role.Any())
             {
                 throw new HttpException("請選擇角色");
+            }
+            // 檢查 Email 是否被其他帳號使用
+            if (!string.IsNullOrWhiteSpace(vm.Email) && db.AuthUser.WhereNotDeleted().Any(x => x.Email == vm.Email && x.Id != vm.Id))
+            {
+                throw new HttpException("此 Email 已被其他帳號使用");
             }
             var data = db.AuthUser
                 .Include(x => x.AuthRole)
