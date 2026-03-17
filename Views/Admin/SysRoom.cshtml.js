@@ -256,27 +256,22 @@ const approvalChain = new function () {
 
     // 開始新增關卡
     this.addLevel = () => {
-        // 檢查是否已選擇分院（新增模式且是管理員時需要先選分院）
-        if (!room.vm.Id && !room.vm.DepartmentId) {
+        // 檢查是否已選擇分院
+        if (!room.vm.DepartmentId) {
             addAlert('請先選擇分院', { type: 'warning' });
             return;
         }
 
         // 檢查員工列表是否已載入
-        if (!room.vm.Id && manager.list.length === 0) {
+        if (manager.list.length === 0) {
             addAlert('員工列表尚未載入，請稍後再試', { type: 'warning' });
             return;
         }
 
         this.isAddingLevel.value = true;
         this.searchKeyword.value = '';
-        // 重新載入可選審核人（排除已選的）
-        if (room.vm.Id) {
-            this.loadAvailableApprovers(room.vm.Id);
-        } else {
-            // 新增模式：使用 manager.list
-            this.refreshFromManagerList();
-        }
+        // 使用 manager.list（已根據選擇的分院載入正確的員工）
+        this.refreshFromManagerList();
     };
 
     // 取消新增
@@ -1094,7 +1089,7 @@ window.$config = {
                 room.getList(1);
             });
 
-            // ✅ 監聽分院變更（新增/編輯共用）
+            // ✅ 監聯分院變更（新增/編輯共用）
             watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {
                 if (!newDeptId || newDeptId === oldDeptId) return;
 
@@ -1103,10 +1098,16 @@ window.$config = {
                 manager.getList(newDeptId);
 
                 // ✅ 分院變更時，清空審核關卡（因為審核人來自該分院）
-                if (oldDeptId && approvalChain.levels.length > 0) {
-                    console.log('⚠️ 分院變更，清空已選的審核關卡');
-                    approvalChain.clear();
-                    addAlert('分院已變更，審核關卡已重置', { type: 'warning' });
+                if (oldDeptId) {
+                    if (approvalChain.levels.length > 0) {
+                        console.log('⚠️ 分院變更，清空已選的審核關卡');
+                        approvalChain.clear();
+                        addAlert('分院已變更，審核關卡已重置', { type: 'warning' });
+                    } else if (approvalChain.isAddingLevel.value) {
+                        // 如果正在新增關卡但還沒選人，也要關閉面板並清空
+                        console.log('⚠️ 分院變更，關閉新增關卡面板');
+                        approvalChain.cancelAdd();
+                    }
                 }
             });
         });

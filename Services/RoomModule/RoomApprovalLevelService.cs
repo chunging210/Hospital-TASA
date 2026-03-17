@@ -132,7 +132,9 @@ namespace TASA.Services.RoomModule
 
             var query = db.AuthUser
                 .AsNoTracking()
-                .Where(u => u.IsEnabled && u.DeleteAt == null);
+                .Where(u => u.IsEnabled && u.DeleteAt == null)
+                // 只顯示有院內角色（非 NORMAL）的員工，排除院外人士
+                .Where(u => u.AuthRole.Any(r => r.Code != "NORMAL" && r.IsEnabled && r.DeleteAt == null));
 
             // 如果會議室有分院，只顯示該分院的人
             if (room.DepartmentId.HasValue)

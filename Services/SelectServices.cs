@@ -400,7 +400,8 @@ namespace TASA.Services
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
-                .Where(x => x.AuthRole.Any() && !x.AuthRole.All(r => r.Code == "NORMAL"));
+                // 只顯示有院內角色（非 NORMAL）的員工，排除院外人士
+                .Where(x => x.AuthRole.Any(r => r.Code != "NORMAL" && r.IsEnabled && r.DeleteAt == null));
 
             // 分院篩選
             if (departmentId.HasValue && departmentId.Value != Guid.Empty)
