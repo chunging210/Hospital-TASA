@@ -30,7 +30,7 @@ namespace TASA.Services.RoomModule
             public int EquipmentCount { get; set; }
             public List<RoomTodayScheduleVM>? TodaySchedule { get; set; }
             public BookingSettings BookingSettings { get; set; }
-
+            public int Sequence { get; set; }  // 排序順序
         }
 
 
@@ -61,6 +61,9 @@ namespace TASA.Services.RoomModule
         public IQueryable<ListVM> List(BaseQueryVM query)
         {
             Console.WriteLine("========== RoomService.List Debug ==========");
+
+            // ✅ 自動檢測：如果所有 Sequence 都是 0，自動初始化
+            AutoInitializeSequenceIfNeeded();
 
             var q = db.SysRoom
                 .AsNoTracking()
@@ -111,28 +114,35 @@ namespace TASA.Services.RoomModule
             // ✅ 取得今天日期
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            // ✅ 先取得會議室基本資料
-            var roomList = q.Select(x => new
-            {
-                x.No,
-                x.Id,
-                x.Name,
-                x.Building,
-                x.Floor,
-                x.Capacity,
-                x.Area,
-                x.Status,
-                x.IsEnabled,
-                x.CreateAt,
-                x.DepartmentId,
-                x.BookingSettings,
-                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                Images = x.Images
-                    .Where(img => !string.IsNullOrEmpty(img.ImagePath))
-                    .OrderBy(img => img.SortOrder)
-                    .Select(img => img.ImagePath)
-                    .ToList()
-            }).ToList();
+            // ✅ 先取得會議室基本資料（按分院分組，再按 Sequence 排序）
+            var roomList = q
+                .OrderBy(x => x.DepartmentId)
+                .ThenBy(x => x.Sequence)
+                .ThenBy(x => x.Building)
+                .ThenBy(x => x.Floor)
+                .ThenBy(x => x.Name)
+                .Select(x => new
+                {
+                    x.No,
+                    x.Id,
+                    x.Name,
+                    x.Building,
+                    x.Floor,
+                    x.Capacity,
+                    x.Area,
+                    x.Status,
+                    x.IsEnabled,
+                    x.CreateAt,
+                    x.DepartmentId,
+                    x.BookingSettings,
+                    x.Sequence,  // 加入 Sequence
+                    EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                    Images = x.Images
+                        .Where(img => !string.IsNullOrEmpty(img.ImagePath))
+                        .OrderBy(img => img.SortOrder)
+                        .Select(img => img.ImagePath)
+                        .ToList()
+                }).ToList();
 
             // ✅ 批次查詢所有會議室的今日時程
             var roomIds = roomList.Select(r => r.Id).ToList();
@@ -182,6 +192,7 @@ namespace TASA.Services.RoomModule
                 DepartmentId = room.DepartmentId,
                 EquipmentCount = room.EquipmentCount,
                 Images = room.Images,
+                Sequence = room.Sequence,  // 排序順序
                 TodaySchedule = todaySchedules.ContainsKey(room.Id)
                     ? todaySchedules[room.Id]
                     : new List<RoomTodayScheduleVM>()
@@ -722,6 +733,12 @@ namespace TASA.Services.RoomModule
                 throw new HttpException("此樓層已存在相同名稱的會議室");
             }
 
+            // ===== 4.5 計算新的 Sequence（放在最後）=====
+            var maxSequence = db.SysRoom
+                .WhereNotDeleted()
+                .Select(x => (int?)x.Sequence)
+                .Max() ?? 0;
+
             // ===== 5. 建立會議室 =====
             var newSysRoom = new SysRoom()
             {
@@ -741,6 +758,7 @@ namespace TASA.Services.RoomModule
                 AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName),  // ✅ 聲明書
                 EnableParkingTicket = vm.EnableParkingTicket,  // ✅ 停車券
                 ParkingTicketPrice = vm.ParkingTicketPrice,
+                Sequence = maxSequence + 1,  // ✅ 新會議室放最後
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
             };
@@ -1134,6 +1152,157 @@ namespace TASA.Services.RoomModule
             }
 
             db.SaveChanges();
+        }
+
+        public record MoveResultVM
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// 會議室上移（Sequence 減小）
+        /// </summary>
+        public MoveResultVM MoveUp(Guid id)
+        {
+            var currentUser = service.UserClaimsService.Me();
+
+            // 取得目前會議室
+            var room = db.SysRoom
+                .WhereNotDeleted()
+                .FirstOrDefault(x => x.Id == id)
+                ?? throw new HttpException("會議室不存在");
+
+            // 權限檢查（分院管理員只能調整自己分院的會議室）
+            if (currentUser != null && currentUser.IsDepartmentAdmin)
+            {
+                if (room.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限調整此會議室的順序");
+                }
+            }
+
+            // ✅ 只在同一個分院內找上一個（配合 ORDER BY DepartmentId, Sequence）
+            var query = db.SysRoom.WhereNotDeleted()
+                .Where(x => x.DepartmentId == room.DepartmentId);
+
+            var previousRoom = query
+                .Where(x => x.Sequence < room.Sequence)
+                .OrderByDescending(x => x.Sequence)
+                .FirstOrDefault();
+
+            if (previousRoom == null)
+            {
+                return new MoveResultVM { Success = false, Message = "已經是第一個了" };
+            }
+
+            // 交換 Sequence
+            var tempSequence = room.Sequence;
+            room.Sequence = previousRoom.Sequence;
+            previousRoom.Sequence = tempSequence;
+
+            db.SaveChanges();
+
+            _ = service.LogServices.LogAsync("會議室排序", $"上移 {room.Name}");
+            return new MoveResultVM { Success = true, Message = $"已與「{previousRoom.Name}」交換位置" };
+        }
+
+        /// <summary>
+        /// 會議室下移（Sequence 增大）
+        /// </summary>
+        public MoveResultVM MoveDown(Guid id)
+        {
+            var currentUser = service.UserClaimsService.Me();
+
+            // 取得目前會議室
+            var room = db.SysRoom
+                .WhereNotDeleted()
+                .FirstOrDefault(x => x.Id == id)
+                ?? throw new HttpException("會議室不存在");
+
+            // 權限檢查（分院管理員只能調整自己分院的會議室）
+            if (currentUser != null && currentUser.IsDepartmentAdmin)
+            {
+                if (room.DepartmentId != currentUser.DepartmentId)
+                {
+                    throw new HttpException("您沒有權限調整此會議室的順序");
+                }
+            }
+
+            // ✅ 只在同一個分院內找下一個（配合 ORDER BY DepartmentId, Sequence）
+            var query = db.SysRoom.WhereNotDeleted()
+                .Where(x => x.DepartmentId == room.DepartmentId);
+
+            var nextRoom = query
+                .Where(x => x.Sequence > room.Sequence)
+                .OrderBy(x => x.Sequence)
+                .FirstOrDefault();
+
+            if (nextRoom == null)
+            {
+                return new MoveResultVM { Success = false, Message = "已經是最後一個了" };
+            }
+
+            // 交換 Sequence
+            var tempSequence = room.Sequence;
+            room.Sequence = nextRoom.Sequence;
+            nextRoom.Sequence = tempSequence;
+
+            db.SaveChanges();
+
+            _ = service.LogServices.LogAsync("會議室排序", $"下移 {room.Name}");
+            return new MoveResultVM { Success = true, Message = $"已與「{nextRoom.Name}」交換位置" };
+        }
+
+        /// <summary>
+        /// 自動檢測並初始化 Sequence（如果全部都是 0）
+        /// </summary>
+        private void AutoInitializeSequenceIfNeeded()
+        {
+            var rooms = db.SysRoom.WhereNotDeleted().ToList();
+
+            // 如果沒有會議室，或已經有非 0 的 Sequence，就不需要初始化
+            if (rooms.Count == 0 || rooms.Any(r => r.Sequence != 0))
+            {
+                return;
+            }
+
+            // 全部都是 0，需要初始化
+            var sortedRooms = rooms
+                .OrderBy(x => x.Building)
+                .ThenBy(x => x.Floor)
+                .ThenBy(x => x.Name)
+                .ToList();
+
+            for (int i = 0; i < sortedRooms.Count; i++)
+            {
+                sortedRooms[i].Sequence = i + 1;
+            }
+
+            db.SaveChanges();
+            Console.WriteLine($"✅ 自動初始化會議室順序，共 {sortedRooms.Count} 間");
+        }
+
+        /// <summary>
+        /// 初始化所有會議室的 Sequence（手動重新排序用）
+        /// </summary>
+        public void InitializeSequence()
+        {
+            var rooms = db.SysRoom
+                .WhereNotDeleted()
+                .OrderBy(x => x.Building)
+                .ThenBy(x => x.Floor)
+                .ThenBy(x => x.Name)
+                .ToList();
+
+            for (int i = 0; i < rooms.Count; i++)
+            {
+                rooms[i].Sequence = i + 1;
+            }
+
+            db.SaveChanges();
+
+            _ = service.LogServices.LogAsync("會議室排序", $"初始化所有會議室順序，共 {rooms.Count} 間");
         }
     }
 }

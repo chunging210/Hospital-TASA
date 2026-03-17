@@ -86,6 +86,16 @@
                         <label class="form-check-label" for="editStatusCheck">維修中</label>
                     </div>
                 </div>
+
+                <!-- 排序順序 (僅編輯模式) -->
+                <div v-if="room.vm.Id" class="mt-3">
+                    <label class="form-label form-label-custom">排序順序</label>
+                    <input v-model.number="room.vm.Sequence" type="number" class="form-control"
+                           placeholder="數字越小越前面" min="1" step="1">
+                    <div class="form-text text-muted">
+                        數字越小排越前面，可直接輸入數字調整順序
+                    </div>
+                </div>
             </div>
 
             <!-- 收費設定區塊 -->

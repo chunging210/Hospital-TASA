@@ -41,9 +41,23 @@
                 <div v-else class="room-grid">
                     <div v-for="roomItem in room.list" :key="roomItem.Id" class="room-card">
                         <!-- 卡片頭 -->
-                        <div class="room-card-header">
-                            <div class="room-name">{{ roomItem.Name }}</div>
-                            <div class="room-info">{{ roomItem.Building }} {{ roomItem.Floor }}樓 </div>
+                        <div class="room-card-header d-flex">
+                            <div class="flex-grow-1 text-center">
+                                <div class="room-name">{{ roomItem.Name }}</div>
+                                <div class="room-info">{{ roomItem.Building }} {{ roomItem.Floor }}樓 </div>
+                            </div>
+                            <div class="sequence-buttons d-flex flex-column justify-content-center">
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-1 mb-1"
+                                        @@click.stop="room.moveUp(roomItem.Id)"
+                                        title="上移">
+                                    <span style="font-family: 'Material Icons'; font-size: 14px;">arrow_upward</span>
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                        @@click.stop="room.moveDown(roomItem.Id)"
+                                        title="下移">
+                                    <span style="font-family: 'Material Icons'; font-size: 14px;">arrow_downward</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- 卡片身 -->

@@ -118,6 +118,29 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
+        public record RoomMoveVM { public Guid Id { get; set; } }
+
+        [HttpPost("roommoveup")]
+        public IActionResult RoomMoveUp([FromBody] RoomMoveVM vm)
+        {
+            var result = service.RoomService.MoveUp(vm.Id);
+            return Ok(result);
+        }
+
+        [HttpPost("roommovedown")]
+        public IActionResult RoomMoveDown([FromBody] RoomMoveVM vm)
+        {
+            var result = service.RoomService.MoveDown(vm.Id);
+            return Ok(result);
+        }
+
+        [HttpPost("roominitsequence")]
+        public IActionResult RoomInitSequence()
+        {
+            service.RoomService.InitializeSequence();
+            return Ok();
+        }
+
         /* --- */
 
         [HttpGet("equipmentlist")]

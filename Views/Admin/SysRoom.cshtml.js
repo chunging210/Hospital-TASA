@@ -26,6 +26,7 @@ class VM {
     AgreementPath = null;
     EnableParkingTicket = false;  // ✅ 停車券功能
     ParkingTicketPrice = 100;     // ✅ 停車券單價
+    Sequence = 0;                 // ✅ 排序順序
 }
 
 // ✅ Enum 定義（與後端對應）
@@ -578,6 +579,7 @@ const room = new function () {
                     this.vm.AgreementPath = response.data.AgreementPath;  // ✅ 聲明書路徑
                     this.vm.EnableParkingTicket = response.data.EnableParkingTicket || false;  // ✅ 停車券
                     this.vm.ParkingTicketPrice = response.data.ParkingTicketPrice || 100;
+                    this.vm.Sequence = response.data.Sequence || 0;  // ✅ 排序順序
 
                     // ✅ 編輯時清空新上傳的聲明書
                     this.form.agreementBase64 = null;
@@ -716,7 +718,8 @@ const room = new function () {
             AgreementBase64: this.form.agreementBase64,      // ✅ 聲明書
             AgreementFileName: this.form.agreementFileName,  // ✅ 聲明書檔名
             EnableParkingTicket: this.vm.EnableParkingTicket,  // ✅ 停車券
-            ParkingTicketPrice: this.vm.ParkingTicketPrice || 100
+            ParkingTicketPrice: this.vm.ParkingTicketPrice || 100,
+            Sequence: this.vm.Sequence || 0  // ✅ 排序順序
         };
 
         console.log('🔍 [SAVE normalized]', body);
@@ -749,6 +752,45 @@ const room = new function () {
                 .catch(error => {
                     addAlert(getMessage(error), { type: 'danger', click: error.download });
                 });
+        }
+    }
+
+    // ✅ 上移會議室
+    this.moveUp = async (Id) => {
+        try {
+            const res = await global.api.admin.roommoveup({ body: { Id } });
+            if (res.data?.Success) {
+                this.getList();
+            }
+        } catch (error) {
+            console.error('上移失敗:', error);
+            addAlert(getMessage(error) || error?.message || '上移失敗', { type: 'danger' });
+        }
+    }
+
+    // ✅ 下移會議室
+    this.moveDown = async (Id) => {
+        try {
+            const res = await global.api.admin.roommovedown({ body: { Id } });
+            if (res.data?.Success) {
+                this.getList();
+            }
+        } catch (error) {
+            console.error('下移失敗:', error);
+            addAlert(getMessage(error) || error?.message || '下移失敗', { type: 'danger' });
+        }
+    }
+
+    // ✅ 初始化排序（給既有資料用）
+    this.initSequence = async () => {
+        if (!confirm('確定要初始化所有會議室的排序順序嗎？')) return;
+        try {
+            await global.api.admin.roominitsequence();
+            addAlert('初始化排序成功');
+            this.getList();
+        } catch (error) {
+            console.error('初始化失敗:', error);
+            addAlert(getMessage(error) || error?.message || '初始化失敗', { type: 'danger' });
         }
     }
 

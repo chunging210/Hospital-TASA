@@ -155,6 +155,8 @@ namespace TASA.Services
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
+                .OrderBy(x => x.DepartmentId)  // ✅ 先按分院分組
+                .ThenBy(x => x.Sequence)       // ✅ 再按 Sequence 排序
                 .Select(x => new
                 {
                     x.Id,
@@ -278,7 +280,8 @@ namespace TASA.Services
                 );
 
             var result = roomQuery
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.DepartmentId)  // ✅ 先按分院分組
+                .ThenBy(x => x.Sequence)       // ✅ 再按 Sequence 排序
                 .Select(x => new RoomSelectVM
                 {
                     Id = x.Id,
@@ -344,22 +347,25 @@ namespace TASA.Services
                 q = q.Where(x => x.Name.Contains(query.Keyword));
             }
 
-            return q.Select(x => new RoomListVM
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Building = x.Building,
-                Floor = x.Floor,
-                DepartmentId = x.DepartmentId,
-                Capacity = x.Capacity,
-                Area = x.Area,
-                Status = x.Status,
-                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                Images = x.Images
-                    .Where(i => i.ImagePath != "")
-                    .OrderBy(i => i.SortOrder)
-                    .Select(i => i.ImagePath)
-            });
+            return q
+                .OrderBy(x => x.DepartmentId)  // ✅ 先按分院分組
+                .ThenBy(x => x.Sequence)       // ✅ 再按 Sequence 排序
+                .Select(x => new RoomListVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Building = x.Building,
+                    Floor = x.Floor,
+                    DepartmentId = x.DepartmentId,
+                    Capacity = x.Capacity,
+                    Area = x.Area,
+                    Status = x.Status,
+                    EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                    Images = x.Images
+                        .Where(i => i.ImagePath != "")
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => i.ImagePath)
+                });
         }
         public IQueryable<IdNameVM> Role()
         {
@@ -873,22 +879,25 @@ namespace TASA.Services
             Console.WriteLine("=======================================\n");
 
             // 5️⃣ 回傳結果 (格式與 RoomList 相同)
-            return roomQuery.Select(x => new RoomListVM
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Building = x.Building,
-                Floor = x.Floor,
-                DepartmentId = x.DepartmentId,
-                Capacity = x.Capacity,
-                Area = x.Area,
-                Status = x.Status,
-                EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
-                Images = x.Images
-                    .Where(i => i.ImagePath != "")
-                    .OrderBy(i => i.SortOrder)
-                    .Select(i => i.ImagePath)
-            });
+            return roomQuery
+                .OrderBy(x => x.DepartmentId)  // ✅ 先按分院分組
+                .ThenBy(x => x.Sequence)       // ✅ 再按 Sequence 排序
+                .Select(x => new RoomListVM
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Building = x.Building,
+                    Floor = x.Floor,
+                    DepartmentId = x.DepartmentId,
+                    Capacity = x.Capacity,
+                    Area = x.Area,
+                    Status = x.Status,
+                    EquipmentCount = x.Equipment.Count(e => e.DeleteAt == null),
+                    Images = x.Images
+                        .Where(i => i.ImagePath != "")
+                        .OrderBy(i => i.SortOrder)
+                        .Select(i => i.ImagePath)
+                });
         }
 
         /// </summary>

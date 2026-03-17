@@ -129,6 +129,11 @@ public partial class SysRoom
     [Column(TypeName = "decimal(10,2)")]
     public decimal ParkingTicketPrice { get; set; } = 100;
 
+    /// <summary>
+    /// 排序順序（數字越小越前面）
+    /// </summary>
+    public int Sequence { get; set; } = 0;
+
     [ForeignKey("RoomId")]
     [InverseProperty("Room")]
     public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
