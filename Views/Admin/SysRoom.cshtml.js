@@ -239,7 +239,8 @@ const approvalChain = new function () {
         copy(this.availableApprovers, filtered.map(u => ({
             Id: u.Id,
             Name: u.Name,
-            Email: u.Email
+            Email: u.Email,
+            UnitName: u.UnitName  // 部門
         })));
         console.log(`✅ 從員工列表刷新可選審核人: ${this.availableApprovers.length} 人`);
     };
@@ -250,7 +251,8 @@ const approvalChain = new function () {
         const keyword = this.searchKeyword.value.toLowerCase();
         return this.availableApprovers.filter(u =>
             u.Name?.toLowerCase().includes(keyword) ||
-            u.Email?.toLowerCase().includes(keyword)
+            u.Email?.toLowerCase().includes(keyword) ||
+            u.UnitName?.toLowerCase().includes(keyword)  // 部門搜尋
         );
     });
 
@@ -293,7 +295,8 @@ const approvalChain = new function () {
             Level: this.levels.length + 1,
             ApproverId: user.Id,
             ApproverName: user.Name,
-            ApproverEmail: user.Email
+            ApproverEmail: user.Email,
+            ApproverUnitName: user.UnitName  // 部門
         });
 
         this.isAddingLevel.value = false;
@@ -316,7 +319,8 @@ const approvalChain = new function () {
             this.availableApprovers.push({
                 Id: removed.ApproverId,
                 Name: removed.ApproverName,
-                Email: removed.ApproverEmail
+                Email: removed.ApproverEmail,
+                UnitName: removed.ApproverUnitName
             });
         }
         console.log(`✅ 移除審核關卡: index=${index}`);

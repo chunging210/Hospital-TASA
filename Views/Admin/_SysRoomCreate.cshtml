@@ -297,7 +297,9 @@
                             <span class="badge bg-secondary">第 {{ index + 1 }} 關</span>
                             <div>
                                 <strong>{{ level.ApproverName }}</strong>
-                                <small class="text-muted d-block">{{ level.ApproverEmail }}</small>
+                                <small class="text-muted d-block">
+                                    <span v-if="level.ApproverUnitName">{{ level.ApproverUnitName }} · </span>{{ level.ApproverEmail }}
+                                </small>
                             </div>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger"
@@ -328,10 +330,11 @@
                         <div v-for="user in approvalChain.filteredApprovers.value" :key="user.Id"
                              class="approver-item p-2 border-bottom hover-bg-light" style="cursor: pointer;"
                              @@click="approvalChain.selectApprover(user)">
-                            <div class="d-flex align-items-center gap-2">
+                            <div>
                                 <strong>{{ user.Name }}</strong>
-                                <small class="text-muted">{{ user.Email }}</small>
+                                <small class="text-muted ms-2" v-if="user.UnitName">{{ user.UnitName }}</small>
                             </div>
+                            <small class="text-muted d-block">{{ user.Email }}</small>
                         </div>
 
                         <div v-if="approvalChain.filteredApprovers.value.length === 0" class="p-3 text-center text-muted">

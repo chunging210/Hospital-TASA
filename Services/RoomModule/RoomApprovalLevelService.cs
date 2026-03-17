@@ -15,6 +15,7 @@ namespace TASA.Services.RoomModule
             public Guid ApproverId { get; set; }
             public string? ApproverName { get; set; }
             public string? ApproverEmail { get; set; }
+            public string? ApproverUnitName { get; set; }  // 部門
         }
 
         public record SaveApprovalLevelsVM
@@ -33,6 +34,7 @@ namespace TASA.Services.RoomModule
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string? Email { get; set; }
+            public string? UnitName { get; set; }  // 部門
         }
 
         #endregion
@@ -52,7 +54,8 @@ namespace TASA.Services.RoomModule
                     Level = x.Level,
                     ApproverId = x.ApproverId,
                     ApproverName = x.Approver.Name,
-                    ApproverEmail = x.Approver.Email
+                    ApproverEmail = x.Approver.Email,
+                    ApproverUnitName = x.Approver.UnitName  // 部門
                 })
                 .ToList();
         }
@@ -154,7 +157,8 @@ namespace TASA.Services.RoomModule
                 {
                     Id = u.Id,
                     Name = u.Name,
-                    Email = u.Email
+                    Email = u.Email,
+                    UnitName = u.UnitName  // 部門
                 })
                 .ToList();
         }

@@ -130,7 +130,8 @@ namespace TASA.Services
             public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string? Email { get; set; }
-            public string? DepartmentName { get; set; }
+            public string? DepartmentName { get; set; }  // 分院
+            public string? UnitName { get; set; }  // 部門
             public List<string> Roles { get; set; } = new();  // ✅ 角色列表
             public string RoleDisplay { get; set; } = string.Empty;  // ✅ 角色顯示文字
         }
@@ -423,6 +424,7 @@ namespace TASA.Services
                     x.Name,
                     x.Email,
                     x.No,
+                    x.UnitName,  // 部門
                     DepartmentName = x.Department != null ? x.Department.Name : null,
                     DepartmentSequence = x.Department != null ? (int)x.Department.Sequence : 9999,  // ✅ 強制轉型
                     Roles = x.AuthRole
@@ -439,6 +441,7 @@ namespace TASA.Services
                     Name = x.Name,
                     Email = x.Email,
                     DepartmentName = x.DepartmentName,
+                    UnitName = x.UnitName,  // 部門
                     Roles = x.Roles,
                     RoleDisplay = GetRoleDisplayText(x.Roles)  // ✅ 轉換成中文
                 })
