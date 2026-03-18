@@ -200,6 +200,17 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.CancelledBy)
                 .HasComment("取消者");
 
+            // ✅ 聯絡電話和電子郵件欄位
+            entity.Property(e => e.ContactPhone)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasComment("聯絡電話");
+
+            entity.Property(e => e.ContactEmail)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasComment("電子郵件");
+
             // ✅ 如果有 Navigation Property,也要加上關係設定
             entity.HasOne(d => d.CancelledByNavigation)
                 .WithMany()

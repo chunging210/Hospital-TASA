@@ -27,9 +27,20 @@ namespace TASA.Services.ConferenceModule
             public byte? UsageType { get; set; }
 
             public string? Description { get; set; }
+
+            [RequiredI18n(ErrorMessage = "承辦單位是必要項")]
             public string? OrganizerUnit { get; set; }  // 承辦單位
+
+            [RequiredI18n(ErrorMessage = "會議主席是必要項")]
             public string? Chairman { get; set; }       // 會議主席
+
             public int? ExpectedAttendees { get; set; } // ✅ 預計到達人數
+
+            [RequiredI18n(ErrorMessage = "聯絡電話是必要項")]
+            public string? ContactPhone { get; set; }   // 聯絡電話
+
+            [RequiredI18n(ErrorMessage = "電子郵件是必要項")]
+            public string? ContactEmail { get; set; }   // 電子郵件
 
             // ===== 舊系統(即時會議/傳統會議)專用 =====
             public DateTime? StartTime { get; set; }

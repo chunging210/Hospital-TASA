@@ -224,6 +224,8 @@ window.$config = {
             organizerUnit: '',
             chairman: '',
             expectedAttendees: null,  // ✅ 預計到達人數
+            contactPhone: '',  // 聯絡電話 (必填)
+            contactEmail: '',  // 電子郵件 (必填)
             startDate: '',  // 開始日期
             endDate: '',    // 結束日期（單日時與 startDate 相同）
             meetingType: 'physical',
@@ -594,6 +596,44 @@ window.$config = {
             // 驗證
             if (!this.form.name.trim()) {
                 addAlert('請填寫會議名稱', { type: 'warning' });
+                return;
+            }
+
+            // 驗證承辦單位（必填）
+            if (!this.form.organizerUnit.trim()) {
+                addAlert('請填寫承辦單位', { type: 'warning' });
+                return;
+            }
+
+            // 驗證會議主席（必填）
+            if (!this.form.chairman.trim()) {
+                addAlert('請填寫會議主席', { type: 'warning' });
+                return;
+            }
+
+            // 驗證聯絡電話（必填，只能數字）
+            if (!this.form.contactPhone.trim()) {
+                addAlert('請填寫聯絡電話', { type: 'warning' });
+                return;
+            }
+
+            // 驗證聯絡電話格式（只能數字）
+            const phoneRegex = /^[0-9]+$/;
+            if (!phoneRegex.test(this.form.contactPhone.trim())) {
+                addAlert('聯絡電話只能輸入數字', { type: 'warning' });
+                return;
+            }
+
+            // 驗證電子郵件（必填）
+            if (!this.form.contactEmail.trim()) {
+                addAlert('請填寫電子郵件', { type: 'warning' });
+                return;
+            }
+
+            // 驗證電子郵件格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(this.form.contactEmail.trim())) {
+                addAlert('請填寫有效的電子郵件格式', { type: 'warning' });
                 return;
             }
 
@@ -1441,6 +1481,8 @@ window.$config = {
                 this.form.expectedAttendees = data.ExpectedAttendees || null;  // ✅ 預計到達人數
                 this.form.organizerUnit = data.OrganizerUnit || '';
                 this.form.chairman = data.Chairman || '';
+                this.form.contactPhone = data.ContactPhone || '';  // 聯絡電話
+                this.form.contactEmail = data.ContactEmail || '';  // 電子郵件
                 // 設定日期（支援跨日）
                 this.form.startDate = data.StartDate || data.ReservationDate || '';
                 this.form.endDate = data.EndDate || data.ReservationDate || '';
@@ -1613,6 +1655,8 @@ window.$config = {
                 expectedAttendees: this.form.expectedAttendees || null,  // ✅ 預計到達人數
                 organizerUnit: this.form.organizerUnit,
                 chairman: this.form.chairman,
+                contactPhone: this.form.contactPhone,  // 聯絡電話 (必填)
+                contactEmail: this.form.contactEmail,  // 電子郵件 (必填)
                 usageType: 1,
                 durationHH: this.calculateDuration().hours,
                 durationSS: this.calculateDuration().minutes,

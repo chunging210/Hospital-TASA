@@ -318,6 +318,20 @@ public partial class Conference
     [StringLength(100)]
     public string Chairman { get; set; }
 
+    /// <summary>
+    /// 聯絡電話
+    /// </summary>
+    [Required]
+    [StringLength(50)]
+    public string ContactPhone { get; set; }
+
+    /// <summary>
+    /// 電子郵件
+    /// </summary>
+    [Required]
+    [StringLength(100)]
+    public string ContactEmail { get; set; }
+
     /* ===============================
      * Navigation Properties
      * =============================== */

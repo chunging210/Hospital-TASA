@@ -26,6 +26,8 @@ namespace TASA.Services.ConferenceModule
             public int? ExpectedAttendees { get; set; }  // ✅ 預計到達人數
             public string OrganizerUnit { get; set; }
             public string Chairman { get; set; }
+            public string ContactPhone { get; set; }  // 聯絡電話
+            public string ContactEmail { get; set; }  // 電子郵件
             public string ReservationDate { get; set; }
             public Guid DepartmentId { get; set; }
             public string Building { get; set; }
@@ -77,6 +79,8 @@ namespace TASA.Services.ConferenceModule
             public string ConferenceName { get; set; }
             public string OrganizerUnit { get; set; }
             public string Chairman { get; set; }
+            public string ContactPhone { get; set; }  // 聯絡電話
+            public string ContactEmail { get; set; }  // 電子郵件
             public string Date { get; set; }
             public string Time { get; set; }
             public string RoomName { get; set; }
@@ -134,6 +138,8 @@ namespace TASA.Services.ConferenceModule
             public Guid Id { get; set; }
             public string BookingNo { get; set; }
             public string ApplicantName { get; set; }
+            public string ContactPhone { get; set; }  // 聯絡電話
+            public string ContactEmail { get; set; }  // 電子郵件
             public string ConferenceName { get; set; }
             public string? Description { get; set; }  // 會議內容
             public int? ExpectedAttendees { get; set; }  // ✅ 預計到達人數
@@ -277,6 +283,8 @@ namespace TASA.Services.ConferenceModule
                     ConferenceName = x.Conference.Name,
                     OrganizerUnit = x.Conference.OrganizerUnit,
                     Chairman = x.Conference.Chairman,
+                    ContactPhone = x.Conference.ContactPhone,  // 聯絡電話
+                    ContactEmail = x.Conference.ContactEmail,  // 電子郵件
 
                     // ✅ 列表：只顯示日期範圍
                     Date = x.Conference.ConferenceRoomSlots.Any()
@@ -475,6 +483,8 @@ namespace TASA.Services.ConferenceModule
                     ConferenceName = x.Conference.Name,
                     OrganizerUnit = x.Conference.OrganizerUnit,
                     Chairman = x.Conference.Chairman,
+                    ContactPhone = x.Conference.ContactPhone,  // 聯絡電話
+                    ContactEmail = x.Conference.ContactEmail,  // 電子郵件
                     Date = x.Conference.ConferenceRoomSlots.Any()
                             ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
                                 ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
@@ -619,6 +629,8 @@ namespace TASA.Services.ConferenceModule
                     ConferenceName = x.Conference.Name,
                     OrganizerUnit = x.Conference.OrganizerUnit,
                     Chairman = x.Conference.Chairman,
+                    ContactPhone = x.Conference.ContactPhone,  // 聯絡電話
+                    ContactEmail = x.Conference.ContactEmail,  // 電子郵件
 
                     // ✅ 列表：只顯示日期範圍
                     Date = x.Conference.ConferenceRoomSlots.Any()
@@ -1360,6 +1372,8 @@ namespace TASA.Services.ConferenceModule
                 ExpectedAttendees = conference.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = conference.OrganizerUnit,
                 Chairman = conference.Chairman,
+                ContactPhone = conference.ContactPhone,  // 聯絡電話
+                ContactEmail = conference.ContactEmail,  // 電子郵件
                 ReservationDate = conference.ConferenceRoomSlots.Any()
                     ? conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy-MM-dd")
                     : DateTime.Now.ToString("yyyy-MM-dd"),
@@ -1450,6 +1464,8 @@ namespace TASA.Services.ConferenceModule
                 Id = conference.Id,
                 BookingNo = conference.Id.ToString().Substring(0, 8),
                 ApplicantName = conference.CreateByNavigation?.Name ?? "-",
+                ContactPhone = conference.ContactPhone,  // 聯絡電話
+                ContactEmail = conference.ContactEmail,  // 電子郵件
                 ConferenceName = conference.Name,
                 Description = conference.Description,
                 ExpectedAttendees = conference.ExpectedAttendees,  // ✅ 預計到達人數
@@ -1534,6 +1550,22 @@ namespace TASA.Services.ConferenceModule
         {
             if (string.IsNullOrWhiteSpace(vm.Name))
                 throw new HttpException("會議名稱不能為空");
+
+            if (string.IsNullOrWhiteSpace(vm.OrganizerUnit))
+                throw new HttpException("承辦單位不能為空");
+
+            if (string.IsNullOrWhiteSpace(vm.Chairman))
+                throw new HttpException("會議主席不能為空");
+
+            if (string.IsNullOrWhiteSpace(vm.ContactPhone))
+                throw new HttpException("聯絡電話不能為空");
+
+            // 驗證聯絡電話格式（只能數字）
+            if (!System.Text.RegularExpressions.Regex.IsMatch(vm.ContactPhone.Trim(), @"^[0-9]+$"))
+                throw new HttpException("聯絡電話只能輸入數字");
+
+            if (string.IsNullOrWhiteSpace(vm.ContactEmail))
+                throw new HttpException("電子郵件不能為空");
 
             if (!vm.RoomId.HasValue)
                 throw new HttpException("必須選擇會議室");
@@ -1801,6 +1833,8 @@ namespace TASA.Services.ConferenceModule
                 ExpectedAttendees = vm.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = vm.OrganizerUnit,
                 Chairman = vm.Chairman,
+                ContactPhone = vm.ContactPhone,  // 聯絡電話
+                ContactEmail = vm.ContactEmail,  // 電子郵件
                 StartTime = null,
                 EndTime = null,
                 DurationHH = vm.DurationHH ?? 0,
@@ -1865,6 +1899,8 @@ namespace TASA.Services.ConferenceModule
             conference.ExpectedAttendees = vm.ExpectedAttendees;  // ✅ 預計到達人數
             conference.OrganizerUnit = vm.OrganizerUnit;
             conference.Chairman = vm.Chairman;
+            conference.ContactPhone = vm.ContactPhone;  // 聯絡電話
+            conference.ContactEmail = vm.ContactEmail;  // 電子郵件
             conference.DepartmentId = room.DepartmentId;  // ✅ 更新分院ID
             conference.PaymentMethod = vm.PaymentMethod;
             conference.DepartmentCode = vm.DepartmentCode;

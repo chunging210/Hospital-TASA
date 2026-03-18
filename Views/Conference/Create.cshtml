@@ -57,7 +57,7 @@
                                             <div class="form-floating mb-3">
                                                 <input type="text" class="form-control" id="meetingName"
                                                        placeholder="請填寫會議名稱" v-model="form.name" required>
-                                                <label for="meetingName" class="ms-2">會議名稱</label>
+                                                <label for="meetingName" class="ms-2">會議名稱 <span class="text-danger">*</span></label>
                                             </div>
 
                                             <!-- 會議內容 -->
@@ -73,14 +73,14 @@
                                                     <div class="form-floating mb-3">
                                                         <input type="text" class="form-control" id="organizerUnit"
                                                                placeholder="請填寫承辦單位" v-model="form.organizerUnit">
-                                                        <label for="organizerUnit" class="ms-2">承辦單位</label>
+                                                        <label for="organizerUnit" class="ms-2">承辦單位 <span class="text-danger">*</span></label>
                                                     </div>
                                                 </div>
                                                 <div class="col-xl-4">
                                                     <div class="form-floating mb-3">
                                                         <input type="text" class="form-control" id="chairman"
                                                                placeholder="請填寫會議主席" v-model="form.chairman">
-                                                        <label for="chairman" class="ms-2">會議主席</label>
+                                                        <label for="chairman" class="ms-2">會議主席 <span class="text-danger">*</span></label>
                                                     </div>
                                                 </div>
                                                 <div class="col-xl-4">
@@ -92,18 +92,38 @@
                                                 </div>
                                             </div>
 
+                                            <!-- 聯絡電話 & 電子郵件 (必填) -->
+                                            <div class="row">
+                                                <div class="col-xl-6">
+                                                    <div class="form-floating mb-3">
+                                                        <input type="tel" class="form-control" id="contactPhone"
+                                                               placeholder="請填寫聯絡電話" v-model="form.contactPhone"
+                                                               @@input="form.contactPhone = $event.target.value.replace(/[^0-9]/g, '')"
+                                                               pattern="[0-9]*" inputmode="numeric" required>
+                                                        <label for="contactPhone" class="ms-2">聯絡電話 <span class="text-danger">*</span></label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-xl-6">
+                                                    <div class="form-floating mb-3">
+                                                        <input type="email" class="form-control" id="contactEmail"
+                                                               placeholder="請填寫電子郵件" v-model="form.contactEmail" required>
+                                                        <label for="contactEmail" class="ms-2">電子郵件 <span class="text-danger">*</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <!-- 會議日期（統一使用開始/結束日期） -->
                                             <div class="row">
                                                 <div class="col-xl-12">
                                                     <div class="row g-3 align-items-end">
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <label class="col-form-label">開始日期</label>
+                                                            <label class="col-form-label">開始日期 <span class="text-danger">*</span></label>
                                                             <input class="form-control" type="date" v-model="form.startDate"
                                                                    :min="minBookingDate"
                                                                    @@change="!form.endDate && (form.endDate = form.startDate)">
                                                         </div>
                                                         <div class="col-sm-12 col-xl-3">
-                                                            <label class="col-form-label">結束日期</label>
+                                                            <label class="col-form-label">結束日期 <span class="text-danger">*</span></label>
                                                             <input class="form-control" type="date" v-model="form.endDate"
                                                                    :min="form.startDate || minBookingDate">
                                                         </div>
@@ -835,6 +855,16 @@
                         <div style="display: flex; padding: 8px 0;" v-if="form.expectedAttendees">
                             <div style="min-width: 110px; color: #666;">預計人數:</div>
                             <div style="flex: 1;">{{ form.expectedAttendees }} 人</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">聯絡電話:</div>
+                            <div style="flex: 1;">{{ form.contactPhone }}</div>
+                        </div>
+
+                        <div style="display: flex; padding: 8px 0;">
+                            <div style="min-width: 110px; color: #666;">電子郵件:</div>
+                            <div style="flex: 1;">{{ form.contactEmail }}</div>
                         </div>
 
                         <div style="display: flex; padding: 8px 0;" v-if="form.content">

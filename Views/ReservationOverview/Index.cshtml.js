@@ -240,6 +240,8 @@ window.$config = {
                         id: item.Id,
                         reservationNo: item.BookingNo,
                         reserverName: item.ApplicantName,
+                        contactPhone: item.ContactPhone,  // 聯絡電話
+                        contactEmail: item.ContactEmail,  // 電子郵件
                         conferenceName: item.ConferenceName,
                         organizerUnit: item.OrganizerUnit,
                         chairman: item.Chairman,
@@ -321,6 +323,8 @@ window.$config = {
                         id: item.Id,
                         reservationNo: item.BookingNo,
                         reserverName: item.ApplicantName,
+                        contactPhone: item.ContactPhone,  // 聯絡電話
+                        contactEmail: item.ContactEmail,  // 電子郵件
                         reservationDate: item.Date,
                         conferenceName: item.ConferenceName,
                         organizerUnit: item.OrganizerUnit,
@@ -483,6 +487,8 @@ window.$config = {
                     id: detail.Id,
                     reservationNo: detail.BookingNo,
                     reserverName: detail.ApplicantName,
+                    contactPhone: detail.ContactPhone,  // 聯絡電話
+                    contactEmail: detail.ContactEmail,  // 電子郵件
                     conferenceName: detail.ConferenceName,
                     description: detail.Description || '',  // 會議內容
                     expectedAttendees: detail.ExpectedAttendees || null,  // ✅ 預計人數
