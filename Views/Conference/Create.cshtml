@@ -125,7 +125,8 @@
                                                         <div class="col-sm-12 col-xl-3">
                                                             <label class="col-form-label">結束日期 <span class="text-danger">*</span></label>
                                                             <input class="form-control" type="date" v-model="form.endDate"
-                                                                   :min="form.startDate || minBookingDate">
+                                                                   :min="form.startDate || minBookingDate"
+                                                                   :max="maxEndDate">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -261,9 +262,9 @@
                                                                     <span v-if="isMiddleDay(dateStr)" class="badge bg-info ms-1" title="中間天自動全選">
                                                                         全天
                                                                     </span> *@
-                                                                    <span v-if="middleDayErrors[dateStr]" class="badge bg-danger ms-1">
+                                                                    @* <span v-if="middleDayErrors[dateStr]" class="badge bg-danger ms-1">
                                                                         <i class="bx bx-error-circle"></i>
-                                                                    @* </span>
+                                                                    </span>
                                                                     <span v-else-if="getSelectedCountForDate(dateStr) > 0" class="badge bg-primary ms-1">
                                                                         {{ getSelectedCountForDate(dateStr) }}
                                                                     </span> *@

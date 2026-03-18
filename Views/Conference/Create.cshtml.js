@@ -106,6 +106,17 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
+        // 最大結束日期 computed（開始日期 + 6 天，共 7 天）
+        this.maxEndDate = computed(() => {
+            if (!this.form.startDate) return '';
+            const start = new Date(this.form.startDate + 'T00:00:00');
+            start.setDate(start.getDate() + 6);
+            const year = start.getFullYear();
+            const month = String(start.getMonth() + 1).padStart(2, '0');
+            const day = String(start.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        });
+
         // 判斷選擇的日期是否為假日 - 單日用
         this.isHoliday = computed(() => {
             if (!this.form.startDate) return false;
@@ -671,6 +682,12 @@ window.$config = {
 
             // ✅ 跨日模式額外驗證（開始日期 ≠ 結束日期）
             if (this.isMultiDay.value) {
+                // 檢查跨日預約最多 7 天
+                const totalDays = this.dateRange.value.length;
+                if (totalDays > 7) {
+                    addAlert('跨日預約最多只能選擇 7 天', { type: 'warning' });
+                    return;
+                }
                 // 首日驗證：必須選到最後一個時段
                 const firstDate = this.dateRange.value[0];
                 const firstDateSlots = this.slotsByDate[firstDate] || [];
@@ -1893,6 +1910,23 @@ window.$config = {
                 () => [this.form.startDate, this.form.endDate],
                 async ([newStart, newEnd], [oldStart, oldEnd]) => {
                     if (!this.form.roomId || !newStart) return;
+
+                    // ✅ 跨日預約最多 7 天：如果結束日期超過限制，自動調整
+                    if (newStart && newEnd) {
+                        const start = new Date(newStart + 'T00:00:00');
+                        const end = new Date(newEnd + 'T00:00:00');
+                        const diffDays = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                        if (diffDays > 6) {
+                            const maxEnd = new Date(start);
+                            maxEnd.setDate(maxEnd.getDate() + 6);
+                            const year = maxEnd.getFullYear();
+                            const month = String(maxEnd.getMonth() + 1).padStart(2, '0');
+                            const day = String(maxEnd.getDate()).padStart(2, '0');
+                            this.form.endDate = `${year}-${month}-${day}`;
+                            addAlert('跨日預約最多只能選擇 7 天，已自動調整結束日期', { type: 'info' });
+                            return; // 會觸發新的 watch，所以這裡直接 return
+                        }
+                    }
 
                     // 清空舊資料
                     Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);

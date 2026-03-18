@@ -1597,6 +1597,11 @@ namespace TASA.Services.ConferenceModule
 
                 if (vm.EndDate!.Value.Date < vm.StartDate.Value.Date)
                     throw new HttpException("結束日期不能早於開始日期");
+
+                // ✅ 跨日預約最多 7 天
+                var totalDays = (vm.EndDate!.Value.Date - vm.StartDate!.Value.Date).Days + 1;
+                if (totalDays > 7)
+                    throw new HttpException("跨日預約最多只能選擇 7 天");
             }
             else
             {
