@@ -20,8 +20,16 @@ window.$config = {
         this.rangeData          = ref(null);    // 週視圖資料
         this.expandedBuildings  = reactive({});
 
+        // 格式化日期為 yyyy-MM-dd（本地時間）
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         const today = new Date();
-        this.selectedDate.value = today.toISOString().split('T')[0];
+        this.selectedDate.value = formatDate(today);
 
         // ── 工具 ──
         this.pad = h => String(h).padStart(2, '0');
@@ -41,7 +49,7 @@ window.$config = {
         };
 
         this.isToday = dateStr => {
-            return dateStr === today.toISOString().split('T')[0];
+            return dateStr === formatDate(today);
         };
 
         this.isWeekend = dateStr => {
@@ -58,8 +66,8 @@ window.$config = {
             const sun = new Date(mon);
             sun.setDate(mon.getDate() + 6);
             return {
-                start: mon.toISOString().split('T')[0],
-                end:   sun.toISOString().split('T')[0]
+                start: formatDate(mon),
+                end:   formatDate(sun)
             };
         };
 
@@ -77,15 +85,24 @@ window.$config = {
         };
 
         // ── 日/週導航 ──
+        this.navigating = ref(false);
         this.navigate = async direction => {
-            const base = new Date(self.selectedDate.value + 'T00:00:00');
-            if (self.viewMode.value === 'week') {
-                base.setDate(base.getDate() + direction * 7);
-            } else {
-                base.setDate(base.getDate() + direction);
+            // 防止重複點擊
+            if (self.navigating.value || self.loading.value) return;
+            self.navigating.value = true;
+
+            try {
+                const base = new Date(self.selectedDate.value + 'T00:00:00');
+                if (self.viewMode.value === 'week') {
+                    base.setDate(base.getDate() + direction * 7);
+                } else {
+                    base.setDate(base.getDate() + direction);
+                }
+                self.selectedDate.value = formatDate(base);
+                await self.loadAvailability();
+            } finally {
+                self.navigating.value = false;
             }
-            self.selectedDate.value = base.toISOString().split('T')[0];
-            await self.loadAvailability();
         };
 
         // ── 目前顯示的標題 ──

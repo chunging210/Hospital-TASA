@@ -151,9 +151,14 @@
         transition: all 0.2s;
     }
 
-    .nav-btn:hover {
+    .nav-btn:hover:not(:disabled) {
         border-color: var(--primary);
         background: var(--primary-light);
+    }
+
+    .nav-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     .nav-btn .material-icons { font-size: 28px; }
@@ -521,11 +526,11 @@
                     <button :class="{ active: viewMode === 'week' }" @@click="switchView('week')">週</button>
                 </div>
                 <!-- 前後導航 -->
-                <button class="nav-btn" @@click="navigate(-1)">
+                <button class="nav-btn" @@click="navigate(-1)" :disabled="loading || navigating">
                     <span class="material-icons">chevron_left</span>
                 </button>
                 <span class="nav-title">{{ viewTitle }}</span>
-                <button class="nav-btn" @@click="navigate(1)">
+                <button class="nav-btn" @@click="navigate(1)" :disabled="loading || navigating">
                     <span class="material-icons">chevron_right</span>
                 </button>
             </div>
