@@ -549,35 +549,16 @@ window.$config = {
             return Math.ceil((reservationDate - today) / (1000 * 60 * 60 * 24));
         };
 
-        // 可以編輯
-        this.canEdit = (item) => {
+        // 使用者可以取消（只有待審核狀態）
+        this.canCancel = (item) => {
+            if (!item) return false;
             return item.approvalStatus === '待審核';
         };
 
-        // 可以取消
-        this.canCancel = (item) => {
-            // 待審核 → 可以取消
-            if (item.approvalStatus === '待審核') return true;
-
-            // 待繳費 → 可以取消
-            if (item.approvalStatus === '待繳費') return true;
-
-            // 待重新上傳 → 可以取消
-            if (item.paymentStatus === '待重新上傳') return true;
-
-            // 待查帳 或 已收款 (預約成功) → 需檢查時間
-            if (item.paymentStatus === '待查帳' || item.approvalStatus === '預約成功') {
-                const daysUntil = this.getDaysUntilReservation(item.reservationDate);
-                return daysUntil >= this.minAdvanceDays.value;  // ✅ 從設定檔讀取
-            }
-
-            return false;
-        };
-
-        // 可以刪除
-        this.canDelete = (item) => {
-            // 只有「待審核」和「審核拒絕」可以刪除
-            return ['待審核', '審核拒絕'].includes(item.approvalStatus);
+        // 管理者可以編輯（只有待審核狀態）
+        this.canAdminEdit = (item) => {
+            if (!item) return false;
+            return item.approvalStatus === '待審核';
         };
 
         // ✅ 判斷是否顯示操作按鈕區

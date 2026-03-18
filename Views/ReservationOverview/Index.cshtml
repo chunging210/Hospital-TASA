@@ -203,9 +203,14 @@
                 預約詳情 <small class="text-muted ms-2">#{{ selectedItem?.reservationNo }}</small>
             </h4>
             <!-- ✅ 管理員操作按鈕區（所有預約） -->
-            <div v-if="activeTab === 'all' && canAdminCancel(selectedItem)" class="">
+            <div v-if="activeTab === 'all' && (canAdminEdit(selectedItem) || canAdminCancel(selectedItem))" class="">
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn btn-outline-danger"
+                    <!-- 編輯按鈕（待審核狀態） -->
+                    <button type="button" class="btn btn-outline-primary" v-if="canAdminEdit(selectedItem)"
+                        @@click="editReservation(selectedItem)">
+                        <i class="mdi mdi-pencil me-1"></i> 編輯預約
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" v-if="canAdminCancel(selectedItem)"
                         @@click="confirmAdminCancel(selectedItem)">
                         <i class="mdi mdi-close-circle me-1"></i> 取消預約
                     </button>
@@ -213,25 +218,21 @@
             </div>
 
             <!-- ✅ 個人操作按鈕區（個人預約） -->
-            <div v-if="activeTab === 'personal' && shouldShowActionButtons(selectedItem)" class="">
+            <div v-if="activeTab === 'personal' && canCancel(selectedItem)" class="">
 
                 <!-- 按鈕區 -->
                 <div class="d-flex flex-wrap gap-2">
-                    <!-- 編輯按鈕 -->
-                    <button type="button" class="btn btn-outline-primary" v-if="canEdit(selectedItem)"
-                        @@click="editReservation(selectedItem)">
-                        <i class="mdi mdi-pencil me-1"></i> 編輯預約
-                    </button>
                     <!-- 取消預約按鈕 -->
                     <button type="button" class="btn btn-outline-danger" v-if="canCancel(selectedItem)"
                         @@click="confirmCancel(selectedItem)">
                         <i class="mdi mdi-close-circle me-1"></i> 取消預約
                     </button>
-                    <!-- 刪除按鈕 -->
+                    <!-- 刪除按鈕（已停用）
                     <button type="button" class="btn btn-outline-secondary" v-if="canDelete(selectedItem)"
                         @@click="confirmDelete(selectedItem)">
                         <i class="mdi mdi-delete me-1"></i> 刪除預約
                     </button>
+                    -->
                 </div>
             </div>
         </div>
