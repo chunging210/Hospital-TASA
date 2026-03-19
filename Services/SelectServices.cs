@@ -17,6 +17,7 @@ namespace TASA.Services
 
         public record RoomVM : IdNameVM
         {
+            public string? Building { get; set; }
         }
 
         public record RoomListVM
@@ -180,7 +181,8 @@ namespace TASA.Services
                     ? x.Name
                     : string.IsNullOrEmpty(x.Floor)
                         ? $"{x.Building} {x.Name}"
-                        : $"{x.Building} {x.Floor}樓 {x.Name}"
+                        : $"{x.Building} {x.Floor}樓 {x.Name}",
+                Building = x.Building
             });
         }
 

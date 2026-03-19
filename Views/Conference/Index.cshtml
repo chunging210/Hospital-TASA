@@ -34,7 +34,7 @@
                         <select v-model="conference.query.RoomId" @@change="conference.onRoomChange"
                                 class="form-select form-select-sm">
                             <option value="">全部會議室</option>
-                            <option v-for="{Id,Name} in room.list" :value="Id">{{Name}}</option>
+                            <option v-for="{Id,Name} in conference.filteredRoomList.value" :value="Id">{{Name}}</option>
                         </select>
                     </div>
                     <!-- 搜尋：只有未選會議室時顯示 -->

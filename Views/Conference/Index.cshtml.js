@@ -137,8 +137,17 @@ export const conference = new function () {
         }
     };
 
+    // ========== 過濾後的會議室列表（根據大樓篩選） ==========
+    this.filteredRoomList = computed(() => {
+        if (!this.query.Building) {
+            return room.list;
+        }
+        return room.list.filter(r => r.Building === this.query.Building);
+    });
+
     // ========== 大樓/會議室選擇 ==========
     this.onBuildingChange = () => {
+        // 選大樓時，清空會議室選擇
         this.query.RoomId = '';
         this.viewMode.value = 'list';
         conferencepageRef?.go(1);
@@ -147,7 +156,12 @@ export const conference = new function () {
 
     this.onRoomChange = () => {
         if (this.query.RoomId) {
-            // 選了會議室，載入日曆資料
+            // 選了會議室，自動設置對應的大樓
+            const selectedRoom = room.list.find(r => r.Id === this.query.RoomId);
+            if (selectedRoom && selectedRoom.Building) {
+                this.query.Building = selectedRoom.Building;
+            }
+            // 載入日曆資料
             if (this.viewMode.value !== 'list') {
                 this.loadCalendarData();
             }
