@@ -171,6 +171,9 @@ namespace TASA.Services.ConferenceModule
                 .WhereIf(query.RoomId.HasValue, x =>
                     x.Room.Any(y => y.Id == query.RoomId) ||
                     x.ConferenceRoomSlots.Any(s => s.RoomId == query.RoomId))
+                .WhereIf(!string.IsNullOrWhiteSpace(query.Building), x =>
+                    x.Room.Any(y => y.Building == query.Building) ||
+                    x.ConferenceRoomSlots.Any(s => s.Room.Building == query.Building))
                 .WhereIf(query.UserId.HasValue, x => x.CreateBy == query.UserId)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
                 .OrderByDescending(x => x.StartTime ?? x.CreateAt)

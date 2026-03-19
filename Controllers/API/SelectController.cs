@@ -135,5 +135,35 @@ namespace TASA.Controllers.API
             var result = service.SelectServices.SmartSearch(query).ToList();
             return Ok(result);
         }
+
+        /// <summary>
+        /// 日曆視圖 - 日視圖
+        /// </summary>
+        [HttpPost("calendar/day")]
+        public IActionResult CalendarDayView([FromBody] SelectServices.CalendarQueryVM query)
+        {
+            query.ViewType = "day";
+            return Ok(service.SelectServices.GetDayView(query));
+        }
+
+        /// <summary>
+        /// 日曆視圖 - 週視圖
+        /// </summary>
+        [HttpPost("calendar/week")]
+        public IActionResult CalendarWeekView([FromBody] SelectServices.CalendarQueryVM query)
+        {
+            query.ViewType = "week";
+            return Ok(service.SelectServices.GetWeekView(query));
+        }
+
+        /// <summary>
+        /// 日曆視圖 - 月視圖
+        /// </summary>
+        [HttpPost("calendar/month")]
+        public IActionResult CalendarMonthView([FromBody] SelectServices.CalendarQueryVM query)
+        {
+            query.ViewType = "month";
+            return Ok(service.SelectServices.GetMonthView(query));
+        }
     }
 }

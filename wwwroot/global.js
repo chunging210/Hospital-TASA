@@ -48,7 +48,10 @@ const global = new function () {
                 roombyschedule: POST,
                 costcenters: GET,
                 smartsearch: POST,
-                internaluser: GET
+                internaluser: GET,
+                calendarday: { method: POST, path: 'calendar/day' },
+                calendarweek: { method: POST, path: 'calendar/week' },
+                calendarmonth: { method: POST, path: 'calendar/month' }
             }),
         },
         conference: apiMethods('/api/conference', {

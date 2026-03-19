@@ -1,6 +1,6 @@
-﻿// Conference
+// Conference
 import global from '/global.js';
-const { ref, reactive, onMounted, watch } = Vue;
+const { ref, reactive, onMounted, watch, computed } = Vue;
 
 let conferencepageRef = null;
 
@@ -24,245 +24,18 @@ export const room = new function () {
     }
 }
 
-export const department = new function () {
+export const building = new function () {
     this.list = reactive([]);
     this.getList = () => {
-        global.api.select.department()
+        global.api.select.buildingsbydepartment({ body: {} })
             .then((response) => {
-                copy(this.list, response.data);
-            });
-    }
-    this.tree = reactive([]);
-    this.getTree = () => {
-        global.api.select.departmenttree()
-            .then((response) => {
-                copy(this.tree, response.data);
-            });
-    }
-}
-
-
-export const visitor = new function () {
-    this.query = reactive({ Keyword: '', CarType: '' });
-    this.list = reactive([]);
-    this.page = {};
-    this.modal = {};
-    this.vm = reactive({});
-    this.loading = ref(false);
-    this.submitting = ref(false);
-    this.manual = reactive([]);
-    this.new = reactive({ CName: '', Email: '', CompanyName: '', Phone: '' });
-
-    // ✅ 簡化 getList，就像 createby 那樣
-    this.getList = (page) => {
-        const queryParams = {};
-        if (this.query.Keyword?.trim()) {
-            queryParams.keyword = this.query.Keyword.trim();
-        }
-        if (this.query.CarType) {
-            queryParams.carType = this.query.CarType;
-        }
-
-        // ✅ 只在需要時才加 List 和 Contains
-        if (this.query.Contains === true) {
-            // 「已選擇」時，傳送已選的訪客 ID
-            queryParams.List = conference.vm.Guests;
-            queryParams.Contains = true;
-        }
-
-        this.loading.value = true;
-
-        if (page) {
-            this.page.data.page = page;
-        } else if (!this.page.data.page) {
-            this.page.data.page = 1;
-        }
-
-        global.api.visitor.list(this.page.setHeaders({ body: queryParams }))
-            .then(this.page.setTotal)
-            .then((response) => {
-                copy(this.list, response.data);
-            })
-            .catch(err => {
-                addAlert({ message: `${err.status ?? ''} ${err.message ?? err}`, type: 'danger' });
-            })
-            .finally(() => {
-                this.loading.value = false;
-            });
-    };
-
-    this.addManual = () => {
-        if (!this.new.CName?.trim()) {
-            addAlert({ message: '請輸入姓名', type: 'warning' });
-            return;
-        }
-        if (!this.new.Email?.trim()) {
-            addAlert({ message: '請輸入 Email', type: 'warning' });
-            return;
-        }
-        if (!this.new.CompanyName?.trim()) {
-            addAlert({ message: '請輸入公司名稱', type: 'warning' });
-            return;
-        }
-        if (!this.new.Phone?.trim()) {
-            addAlert({ message: '請輸入電話', type: 'warning' });
-            return;
-        }
-
-        if (!/^\d{10}$/.test(this.new.Phone)) {
-            addAlert({ message: '電話需為 10 碼數字', type: 'warning' });
-            return;
-        }
-        if (!/@/.test(this.new.Email)) {
-            addAlert({ message: 'Email 格式不正確', type: 'warning' });
-            return;
-        }
-
-        const guest = {
-            CName: this.new.CName.trim(),
-            Email: this.new.Email.trim(),
-            CompanyName: this.new.CompanyName.trim(),
-            Phone: this.new.Phone.trim()
-        };
-        this.manual.push(guest);
-        conference.vm.GuestsManual.push(guest);
-
-        Object.assign(this.new, {
-            CName: '',
-            Email: '',
-            CompanyName: '',
-            Phone: ''
-        });
-
-        this.getList(1);
-        addAlert({ message: '新增成功', type: 'success' });
-    };
-
-    this.removeManual = (idx) => {
-        const g = this.manual[idx];
-        this.manual.splice(idx, 1);
-        conference.vm.GuestsManual = conference.vm.GuestsManual.filter(x => x.Email !== g.Email);
-    };
-}
-
-class VM {
-    Id = null;
-    Name = '';
-    UsageType = '1';
-    MCU = mcu.first();
-    Recording = true;
-    StartTime = new Date().format('yyyy-mm-dd HH:MM');
-    StartNow = false;
-    DurationHH = 1;
-    DurationSS = 0;
-    //RepeatType = '-';
-    //RepeatOn = [];
-    //rOption = 'count';
-    Room = [];
-    Ecs = [];
-    User = [];
-    Department = [];
-    Host = null;
-    Recorder = null;
-    Guests = [];  // ✅ 選中的訪客 IDs
-    GuestsManual = [];  // ✅ 臨時訪客
-}
-
-const toVM = (entity) => {
-    if (entity.StartTime) {
-        entity.StartTime = new Date(entity.StartTime).format('yyyy-mm-dd HH:MM');
-    }
-    if (entity.Room) {
-        entity.Room = entity.Room.map(x => x.Id);
-    }
-    if (entity.User) {
-        let host = entity.User.filter(x => x.IsHost);
-        entity.Host = host != null && host.length > 0 ? host[0].Id : null;
-        let recorder = entity.User.filter(x => x.IsRecorder);
-        entity.Recorder = recorder != null && recorder.length > 0 ? recorder[0].Id : null;
-        entity.User = entity.User.filter(x => x.IsAttendees).map(x => x.Id);
-    }
-    if (entity.Department) {
-        entity.Department = entity.Department.map(x => x.Id);
-    }
-    if (entity.Visitor) {
-        entity.Guests = entity.Visitor.map(x => x.Id);
-    }
-
-    if (!entity.GuestsManual) {
-        entity.GuestsManual = [];
-    }
-
-    return entity;
-}
-
-export const template = new function () {
-    this.list = reactive({});
-    this.getList = () => {
-        global.api.conferencetemplate.list()
-            .then((response) => {
-                copy(this.list, response.data);
-            });
-    }
-    this.select = ref('');
-    this.clone = (id) => {
-        global.api.conferencetemplate.detail({ body: { id: this.select.value } })
-            .then((response) => {
-                let starttime = conference.vm.StartTime;
-                copy(conference.vm, toVM(response.data));
-                conference.vm.Id = null;
-                conference.vm.CreateBy = me.vm.Name;
-                conference.vm.StartTime = starttime;
-                this.select.value = '';
-                addAlert('已套用範本');
-            });
-    }
-    this.save = () => {
-        let body = { ...conference.vm }
-        let edit = body.Id ? global.api.conferencetemplate.update : global.api.conferencetemplate.insert;
-        return edit({ body })
-            .then((response) => {
-                addAlert('操作成功');
-                this.getList();
-                conference.offcanvas.hide();
-            })
-            .catch(error => {
-                addAlert(getMessage(error), { type: 'danger', click: error.download });
-            });
-    }
-}
-
-export const mcu = new function () {
-    this.list = reactive([]);
-    global.setting
-        .then((response) => {
-            if (response.data.UCNS.Webex) {
-                this.list.push(7);
-            }
-        })
-    this.first = () => {
-        return this.list.length > 0 ? this.list[0] : '';
-    }
-}
-
-export const schedule = new function () {
-    this.query = reactive({ DepartmentId: null, Contains: null, Keyword: '' });
-    this.list = reactive([]);
-    this.page = {}
-    this.getList = (page) => {
-        if (conference.vm.StartNow || conference.vm.StartTime) {
-            this.query.ScheduleDate = conference.vm.StartNow ? new Date() : new Date(conference.vm.StartTime);
-            this.query.List = [...conference.vm.User, conference.vm.Host, conference.vm.Recorder].filter(x => x != null);
-            this.page.data.page = page || this.page.data.page;
-            global.api.select.userschedule(this.page.setHeaders({ body: this.query }))
-                .then(this.page.setTotal)
-                .then((response) => {
+                if (response && response.data) {
                     copy(this.list, response.data);
-                });
-        }
-    }
-    this.format = (item) => {
-        return item.map(x => `${new Date(x.StartTime).format('HH:MM')}~${new Date(x.EndTime).format('HH:MM')}`).join(',');
+                }
+            })
+            .catch((err) => {
+                console.error('載入大樓列表失敗:', err);
+            });
     }
 }
 
@@ -270,15 +43,252 @@ export const conference = new function () {
 
     this.query = reactive({
         Start: new Date().format(),
-        End: new Date().addDays(7).format(),
+        End: new Date().addDays(30).format(),
         RoomId: '',
+        Building: '',
         keyword: ''
     });
 
     this.list = reactive([]);
     this.loading = ref(false);
 
-    // ✅ 統一的新 getList
+    // ========== 視圖控制 ==========
+    this.viewMode = ref('list'); // list, day, week, month
+    this.calendarLoading = ref(false);
+    this.selectedDate = ref(new Date());
+    this.selectedMonth = ref(new Date());
+
+    // ========== 單一會議室的時段資料 ==========
+    this.roomSlots = reactive([]);      // 日視圖：當天的時段
+    this.weekSlots = reactive([]);      // 週視圖：時段 x 7天
+
+    // ========== 月視圖資料 ==========
+    this.monthViewData = reactive({
+        Year: 0,
+        Month: 0,
+        Weeks: []
+    });
+
+    // 格式化日期
+    const formatDate = (date) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // 日期標題
+    this.dateTitle = computed(() => {
+        const d = new Date(this.selectedDate.value);
+        const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+        if (this.viewMode.value === 'day') {
+            return `${formatDate(d)} (週${weekDays[d.getDay()]})`;
+        } else if (this.viewMode.value === 'week') {
+            // 計算週一
+            const day = d.getDay();
+            const diff = day === 0 ? -6 : 1 - day;
+            const weekStart = new Date(d);
+            weekStart.setDate(d.getDate() + diff);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            return `${formatDate(weekStart)} ~ ${formatDate(weekEnd)}`;
+        } else if (this.viewMode.value === 'month') {
+            return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`;
+        }
+        return '';
+    });
+
+    // 週日期陣列
+    this.weekDays = computed(() => {
+        const d = new Date(this.selectedDate.value);
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() + diff);
+
+        const days = [];
+        const weekDayNames = ['一', '二', '三', '四', '五', '六', '日'];
+        const today = formatDate(new Date());
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + i);
+            const dateStr = formatDate(date);
+            days.push({
+                date: dateStr,
+                label: `週${weekDayNames[i]}`,
+                dateShort: `${date.getMonth() + 1}/${date.getDate()}`,
+                isToday: dateStr === today,
+                isWeekend: i >= 5
+            });
+        }
+        return days;
+    });
+
+    // ========== 視圖切換 ==========
+    this.setViewMode = (mode) => {
+        this.viewMode.value = mode;
+        if (mode === 'list') {
+            this.getList(true);
+        } else if (this.query.RoomId) {
+            this.loadCalendarData();
+        }
+    };
+
+    // ========== 大樓/會議室選擇 ==========
+    this.onBuildingChange = () => {
+        this.query.RoomId = '';
+        this.viewMode.value = 'list';
+        conferencepageRef?.go(1);
+        this.getList(true);
+    };
+
+    this.onRoomChange = () => {
+        if (this.query.RoomId) {
+            // 選了會議室，載入日曆資料
+            if (this.viewMode.value !== 'list') {
+                this.loadCalendarData();
+            }
+        } else {
+            // 清除會議室選擇，回到列表
+            this.viewMode.value = 'list';
+        }
+        conferencepageRef?.go(1);
+        this.getList(true);
+    };
+
+    // ========== 日期導航 ==========
+    this.navigate = (direction) => {
+        const d = new Date(this.selectedDate.value);
+        if (this.viewMode.value === 'day') {
+            d.setDate(d.getDate() + direction);
+        } else if (this.viewMode.value === 'week') {
+            d.setDate(d.getDate() + direction * 7);
+        } else if (this.viewMode.value === 'month') {
+            d.setMonth(d.getMonth() + direction);
+        }
+        this.selectedDate.value = d;
+        this.selectedMonth.value = d;
+        this.loadCalendarData();
+    };
+
+    this.goToToday = () => {
+        this.selectedDate.value = new Date();
+        this.selectedMonth.value = new Date();
+        this.loadCalendarData();
+    };
+
+    this.goToDate = (dateStr) => {
+        this.selectedDate.value = new Date(dateStr);
+        this.viewMode.value = 'day';
+        this.loadCalendarData();
+    };
+
+    // 日期選擇器用
+    this.formatSelectedDate = () => {
+        return formatDate(this.selectedDate.value);
+    };
+
+    this.onDatePickerChange = (event) => {
+        const dateStr = event.target.value;
+        if (dateStr) {
+            this.selectedDate.value = new Date(dateStr);
+            this.selectedMonth.value = new Date(dateStr);
+            this.loadCalendarData();
+        }
+    };
+
+    // ========== 載入日曆資料 ==========
+    this.loadCalendarData = async () => {
+        if (!this.query.RoomId) return;
+
+        this.calendarLoading.value = true;
+        try {
+            if (this.viewMode.value === 'day') {
+                await this.loadDayView();
+            } else if (this.viewMode.value === 'week') {
+                await this.loadWeekView();
+            } else if (this.viewMode.value === 'month') {
+                await this.loadMonthView();
+            }
+        } catch (err) {
+            console.error('載入日曆失敗:', err);
+            addAlert('載入失敗', { type: 'danger' });
+        } finally {
+            this.calendarLoading.value = false;
+        }
+    };
+
+    // 日視圖：取得該會議室當天的時段
+    this.loadDayView = async () => {
+        const dateStr = formatDate(this.selectedDate.value);
+        const response = await global.api.select.roomslots({
+            body: {
+                RoomId: this.query.RoomId,
+                Date: dateStr
+            }
+        });
+        console.log('roomSlots:', response.data);
+        copy(this.roomSlots, response.data || []);
+    };
+
+    // 週視圖：取得該會議室一週的時段
+    this.loadWeekView = async () => {
+        const days = this.weekDays.value;
+        const roomId = this.query.RoomId;
+
+        // 取得每天的資料
+        const weekData = [];
+        for (let i = 0; i < 7; i++) {
+            const resp = await global.api.select.roomslots({
+                body: { RoomId: roomId, Date: days[i].date }
+            });
+            weekData.push(resp.data || []);
+        }
+
+        // 用第一天的時段作為模板
+        const slotTemplates = weekData[0] || [];
+
+        // 組裝週視圖資料
+        const result = [];
+        for (let s = 0; s < slotTemplates.length; s++) {
+            const slot = slotTemplates[s];
+            const dayList = [];
+            for (let d = 0; d < 7; d++) {
+                const daySlots = weekData[d] || [];
+                const matched = daySlots.find(x => x.Key === slot.Key);
+                dayList.push({
+                    Occupied: matched ? matched.Occupied : false,
+                    ConferenceName: matched ? matched.ConferenceName || '' : ''
+                });
+            }
+            result.push({
+                TimeLabel: slot.TimeLabel || '',
+                DayList: dayList
+            });
+        }
+
+        // 清空並重新填入
+        this.weekSlots.length = 0;
+        result.forEach(r => this.weekSlots.push(r));
+    };
+
+    // 月視圖：取得該會議室一個月的預約統計
+    this.loadMonthView = async () => {
+        const response = await global.api.select.calendarmonth({
+            body: {
+                Date: formatDate(this.selectedMonth.value),
+                RoomId: this.query.RoomId
+            }
+        });
+        if (response.data) {
+            Object.assign(this.monthViewData, response.data);
+        }
+    };
+
+    // ========== 列表資料 ==========
     this.getList = async (pagination) => {
         try {
             this.loading.value = true;
@@ -286,9 +296,7 @@ export const conference = new function () {
             const options = { body: this.query };
 
             const request = pagination && conferencepageRef
-                ? global.api.conference.list(
-                    conferencepageRef.setHeaders(options)
-                )
+                ? global.api.conference.list(conferencepageRef.setHeaders(options))
                 : global.api.conference.list(options);
 
             const response = await request;
@@ -306,7 +314,6 @@ export const conference = new function () {
         }
     };
 
-    // ✅ 所有 filter 都走這裡
     this.onFilterChange = () => {
         conferencepageRef?.go(1);
         this.getList(true);
@@ -318,16 +325,9 @@ window.$config = {
     setup: () => new function () {
         this.me = me;
         this.room = room;
-        this.department = department;
+        this.building = building;
         this.conference = conference;
         this.conferencepage = ref(null);
-        this.conferenceoffcanvas = ref(null);
-        this.template = template;
-        this.mcu = mcu;
-        this.schedule = schedule;
-        this.schedulepage = ref(null);
-        this.visitor = visitor;
-        this.visitorpage = ref(null);
 
         watch(() => conference.query.keyword, () => {
             conference.onFilterChange();
@@ -344,17 +344,10 @@ window.$config = {
         onMounted(() => {
             me.getVM();
             room.getList();
+            building.getList();
 
-
-            // ✅ 接 page ref
             conferencepageRef = this.conferencepage.value;
-
-            // ✅ 第一次一定用 pagination
             conference.getList(true);
-            schedule.page = this.schedulepage.value;
-            visitor.page = this.visitorpage.value;
-
-            visitor.getList();
         });
     }
 }

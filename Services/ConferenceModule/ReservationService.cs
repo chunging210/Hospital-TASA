@@ -1693,7 +1693,7 @@ namespace TASA.Services.ConferenceModule
 
                     // 取得會議室的所有時段定義
                     var roomSlotDefs = db.SysRoomPricePeriod
-                        .Where(p => p.RoomId == roomId && p.IsEnabled)
+                        .Where(p => p.RoomId == roomId && p.IsEnabled && p.DeleteAt == null)
                         .OrderBy(p => p.StartTime)
                         .ToList();
 
@@ -1928,7 +1928,7 @@ namespace TASA.Services.ConferenceModule
         {
             // ✅ 查詢該會議室的所有時段價格設定
             var roomSlotPrices = db.SysRoomPricePeriod
-                .Where(rs => rs.RoomId == roomId && rs.IsEnabled)
+                .Where(rs => rs.RoomId == roomId && rs.IsEnabled && rs.DeleteAt == null)
                 .ToList();
 
             foreach (var (slotDate, requestedSlots) in slotsByDate)

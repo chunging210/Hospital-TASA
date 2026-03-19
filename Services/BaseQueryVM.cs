@@ -20,6 +20,11 @@
         public Guid? RoomId { get; set; }
 
         /// <summary>
+        /// 大樓
+        /// </summary>
+        public string? Building { get; set; }
+
+        /// <summary>
         /// 承辦單位
         /// </summary>
         public Guid? DepartmentId { get; set; }

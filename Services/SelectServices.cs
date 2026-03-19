@@ -84,12 +84,19 @@ namespace TASA.Services
             public Guid Id { get; set; }
             public string Key { get; init; } = string.Empty;
             public string? Name { get; init; }          // Period 用
+            public string TimeLabel { get; init; } = string.Empty;
             public TimeOnly StartTime { get; init; }
             public TimeOnly EndTime { get; init; }
             public decimal Price { get; init; }
             public decimal? HolidayPrice { get; init; }
             public decimal? SetupPrice { get; init; }
             public bool Occupied { get; init; }
+            public Guid? ConferenceId { get; init; }
+            public string? ConferenceName { get; init; }
+            public string? OrganizerUnit { get; init; }
+            public string? CreatorUnitName { get; init; }  // 預約人部門
+            public int? ExpectedAttendees { get; init; }
+            public string? ContactPhone { get; init; }
         }
 
         public record FloorsByBuildingQueryVM
@@ -210,14 +217,22 @@ namespace TASA.Services
             // 2️⃣ 已佔用時段 - ✅ 加上狀態過濾
             var occupiedSlots = db.ConferenceRoomSlot
                 .AsNoTracking()
+                .Include(x => x.Conference)
+                    .ThenInclude(c => c.CreateByNavigation)
                 .Where(x =>
                     x.RoomId == query.RoomId &&
                     x.SlotDate == query.Date &&
-                    (x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)  // ✅ 只查鎖定中和已預約
+                    (x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
                 )
                 .Select(x => new
                 {
                     ConferenceId = x.ConferenceId,
+                    ConferenceName = x.Conference != null ? x.Conference.Name : null,
+                    OrganizerUnit = x.Conference != null ? x.Conference.OrganizerUnit : null,
+                    CreatorUnitName = x.Conference != null && x.Conference.CreateByNavigation != null
+                        ? x.Conference.CreateByNavigation.UnitName : null,
+                    ExpectedAttendees = x.Conference != null ? x.Conference.ExpectedAttendees : null,
+                    ContactPhone = x.Conference != null ? x.Conference.ContactPhone : null,
                     StartTime = x.StartTime.ToTimeSpan(),
                     EndTime = x.EndTime.ToTimeSpan()
                 })
@@ -232,24 +247,34 @@ namespace TASA.Services
                     .ToList();
             }
 
-            // 3️⃣ 檢查是否被佔用
+            // 3️⃣ 檢查是否被佔用，並取得會議資訊
             var result = baseSlots
                 .OrderBy(x => x.Start)
-                .Select(s => new
+                .Select(s =>
                 {
-                    s.Id,
-                    s.Name,
-                    s.Start,
-                    s.End,
-                    s.Price,
-                    s.HolidayPrice,
-                    s.SetupPrice,
-                    Occupied = occupiedSlots.Any(o =>
+                    var occupied = occupiedSlots.FirstOrDefault(o =>
                     {
                         var oStart = o.StartTime;
                         var oEnd = o.EndTime;
                         return !(oEnd <= s.Start || oStart >= s.End);
-                    })
+                    });
+                    return new
+                    {
+                        s.Id,
+                        s.Name,
+                        s.Start,
+                        s.End,
+                        s.Price,
+                        s.HolidayPrice,
+                        s.SetupPrice,
+                        Occupied = occupied != null,
+                        ConferenceId = occupied?.ConferenceId,
+                        ConferenceName = occupied?.ConferenceName,
+                        OrganizerUnit = occupied?.OrganizerUnit,
+                        CreatorUnitName = occupied?.CreatorUnitName,
+                        ExpectedAttendees = occupied?.ExpectedAttendees,
+                        ContactPhone = occupied?.ContactPhone
+                    };
                 })
                 .ToList();
 
@@ -259,12 +284,19 @@ namespace TASA.Services
                 Id = s.Id,
                 Key = $"{s.Start:hh\\:mm\\:ss}-{s.End:hh\\:mm\\:ss}",
                 Name = s.Name,
+                TimeLabel = $"{s.Start:hh\\:mm}-{s.End:hh\\:mm}",
                 StartTime = TimeOnly.FromTimeSpan(s.Start),
                 EndTime = TimeOnly.FromTimeSpan(s.End),
                 Price = s.Price,
                 HolidayPrice = s.HolidayPrice,
                 SetupPrice = s.SetupPrice,
-                Occupied = s.Occupied
+                Occupied = s.Occupied,
+                ConferenceId = s.ConferenceId,
+                ConferenceName = s.ConferenceName,
+                OrganizerUnit = s.OrganizerUnit,
+                CreatorUnitName = s.CreatorUnitName,
+                ExpectedAttendees = s.ExpectedAttendees,
+                ContactPhone = s.ContactPhone
             }).ToList();
         }
         public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
@@ -1236,5 +1268,413 @@ namespace TASA.Services
                 .WhereEnabled()
                 .Mapping<IdNameVM>();
         }
+
+        #region 日曆視圖 API
+
+        public record CalendarQueryVM
+        {
+            public string ViewType { get; set; } = "day";
+            public DateOnly Date { get; set; }
+            public string? Building { get; set; }
+            public Guid? RoomId { get; set; }
+        }
+
+        // ========== 日視圖（時間軸樣式）==========
+        public record DayViewBookingVM
+        {
+            public Guid? ConferenceId { get; set; }
+            public string? ConferenceName { get; set; }
+            public string? OrganizerUnit { get; set; }
+            public int StartMinute { get; set; }
+            public int EndMinute { get; set; }
+            public int DurationMinutes { get; set; }
+            public string TimeLabel { get; set; } = string.Empty;
+        }
+
+        public record DayViewRoomVM
+        {
+            public Guid RoomId { get; set; }
+            public string RoomName { get; set; } = string.Empty;
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public string DisplayName { get; set; } = string.Empty;
+            public List<DayViewBookingVM> Bookings { get; set; } = new();
+        }
+
+        public record DayViewResultVM
+        {
+            public DateOnly Date { get; set; }
+            public string DateDisplay { get; set; } = string.Empty;
+            public int StartHour { get; set; } = 7;
+            public int EndHour { get; set; } = 22;
+            public int TotalMinutes { get; set; }
+            public List<int> HourMarkers { get; set; } = new();
+            public List<DayViewRoomVM> Rooms { get; set; } = new();
+        }
+
+        // ========== 週視圖（熱力圖樣式）==========
+        public record WeekViewDayCellVM
+        {
+            public DateOnly Date { get; set; }
+            public int TotalSlots { get; set; }
+            public int OccupiedSlots { get; set; }
+            public string Status { get; set; } = "empty";
+            public bool IsToday { get; set; }
+            public bool IsWeekend { get; set; }
+        }
+
+        public record WeekViewRoomVM
+        {
+            public Guid RoomId { get; set; }
+            public string RoomName { get; set; } = string.Empty;
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public List<WeekViewDayCellVM> Days { get; set; } = new();
+        }
+
+        public record WeekViewDayHeaderVM
+        {
+            public DateOnly Date { get; set; }
+            public string DayLabel { get; set; } = string.Empty;
+            public string DateLabel { get; set; } = string.Empty;
+            public bool IsToday { get; set; }
+            public bool IsWeekend { get; set; }
+        }
+
+        public record WeekViewResultVM
+        {
+            public DateOnly WeekStart { get; set; }
+            public DateOnly WeekEnd { get; set; }
+            public List<WeekViewDayHeaderVM> DayHeaders { get; set; } = new();
+            public List<WeekViewRoomVM> Rooms { get; set; } = new();
+        }
+
+        // ========== 月視圖 ==========
+        public record MonthViewConferenceVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string? OrganizerUnit { get; set; }
+        }
+
+        public record MonthViewDayVM
+        {
+            public DateOnly Date { get; set; }
+            public int Day { get; set; }
+            public bool IsToday { get; set; }
+            public bool IsCurrentMonth { get; set; }
+            public bool IsWeekend { get; set; }
+            public List<MonthViewConferenceVM> Conferences { get; set; } = new();
+        }
+
+        public record MonthViewResultVM
+        {
+            public int Year { get; set; }
+            public int Month { get; set; }
+            public List<List<MonthViewDayVM>> Weeks { get; set; } = new();
+        }
+
+        /// <summary>
+        /// 日視圖：時間軸樣式（類似 Google Calendar）
+        /// </summary>
+        public DayViewResultVM GetDayView(CalendarQueryVM query)
+        {
+            var weekDayNames = new[] { "日", "一", "二", "三", "四", "五", "六" };
+            var dateTime = query.Date.ToDateTime(TimeOnly.MinValue);
+
+            // 取得會議室
+            var roomsQuery = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != RoomStatus.Maintenance);
+
+            if (!string.IsNullOrWhiteSpace(query.Building))
+                roomsQuery = roomsQuery.Where(x => x.Building == query.Building);
+
+            if (query.RoomId.HasValue)
+                roomsQuery = roomsQuery.Where(x => x.Id == query.RoomId);
+
+            var rooms = roomsQuery
+                .OrderBy(x => x.Building)
+                .ThenBy(x => x.Sequence)
+                .Select(x => new { x.Id, x.Name, x.Building, x.Floor })
+                .ToList();
+
+            // 取得當天所有預約
+            var bookings = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Include(x => x.Conference)
+                .Where(x => x.SlotDate == query.Date)
+                .Where(x => x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
+                .Where(x => rooms.Select(r => r.Id).Contains(x.RoomId))
+                .Select(x => new
+                {
+                    x.RoomId,
+                    x.StartTime,
+                    x.EndTime,
+                    x.ConferenceId,
+                    ConferenceName = x.Conference != null ? x.Conference.Name : null,
+                    OrganizerUnit = x.Conference != null ? x.Conference.OrganizerUnit : null
+                })
+                .ToList();
+
+            // 計算時間軸範圍（根據實際預約動態調整）
+            int startHour = 7, endHour = 22;
+            if (bookings.Any())
+            {
+                var minHour = bookings.Min(b => b.StartTime.Hour);
+                var maxHour = bookings.Max(b => b.EndTime.Hour + (b.EndTime.Minute > 0 ? 1 : 0));
+                startHour = Math.Min(startHour, minHour);
+                endHour = Math.Max(endHour, maxHour);
+            }
+
+            var result = new DayViewResultVM
+            {
+                Date = query.Date,
+                DateDisplay = $"{query.Date:yyyy/MM/dd} 週{weekDayNames[(int)dateTime.DayOfWeek]}",
+                StartHour = startHour,
+                EndHour = endHour,
+                TotalMinutes = (endHour - startHour) * 60
+            };
+
+            // 生成小時標記
+            for (int h = startHour; h <= endHour; h++)
+            {
+                result.HourMarkers.Add(h);
+            }
+
+            // 組裝每個會議室的預約資料
+            foreach (var room in rooms)
+            {
+                var displayName = room.Name;
+                if (!string.IsNullOrEmpty(room.Building))
+                {
+                    displayName = $"{room.Building} {(room.Floor != null ? room.Floor + "F " : "")}{room.Name}";
+                }
+
+                var roomVM = new DayViewRoomVM
+                {
+                    RoomId = room.Id,
+                    RoomName = room.Name,
+                    Building = room.Building,
+                    Floor = room.Floor,
+                    DisplayName = displayName
+                };
+
+                // 取得該會議室的預約，合併同一會議的多個時段
+                var roomBookings = bookings
+                    .Where(b => b.RoomId == room.Id)
+                    .GroupBy(b => b.ConferenceId)
+                    .Select(g =>
+                    {
+                        var first = g.OrderBy(x => x.StartTime).First();
+                        var last = g.OrderBy(x => x.EndTime).Last();
+                        return new DayViewBookingVM
+                        {
+                            ConferenceId = g.Key,
+                            ConferenceName = first.ConferenceName,
+                            OrganizerUnit = first.OrganizerUnit,
+                            StartMinute = first.StartTime.Hour * 60 + first.StartTime.Minute - startHour * 60,
+                            EndMinute = last.EndTime.Hour * 60 + last.EndTime.Minute - startHour * 60,
+                            DurationMinutes = (last.EndTime.Hour * 60 + last.EndTime.Minute) - (first.StartTime.Hour * 60 + first.StartTime.Minute),
+                            TimeLabel = $"{first.StartTime:HH:mm}-{last.EndTime:HH:mm}"
+                        };
+                    })
+                    .OrderBy(b => b.StartMinute)
+                    .ToList();
+
+                roomVM.Bookings = roomBookings;
+                result.Rooms.Add(roomVM);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 週視圖：熱力圖樣式顯示每間會議室的忙碌程度
+        /// </summary>
+        public WeekViewResultVM GetWeekView(CalendarQueryVM query)
+        {
+            var date = query.Date.ToDateTime(TimeOnly.MinValue);
+            var dayOfWeek = (int)date.DayOfWeek;
+            var diff = dayOfWeek == 0 ? -6 : 1 - dayOfWeek;
+            var weekStart = DateOnly.FromDateTime(date.AddDays(diff));
+            var weekEnd = weekStart.AddDays(6);
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var weekDayNames = new[] { "日", "一", "二", "三", "四", "五", "六" };
+
+            var result = new WeekViewResultVM
+            {
+                WeekStart = weekStart,
+                WeekEnd = weekEnd
+            };
+
+            // 生成星期標題
+            for (int i = 0; i < 7; i++)
+            {
+                var d = weekStart.AddDays(i);
+                result.DayHeaders.Add(new WeekViewDayHeaderVM
+                {
+                    Date = d,
+                    DayLabel = $"週{weekDayNames[(int)d.DayOfWeek]}",
+                    DateLabel = $"{d:MM/dd}",
+                    IsToday = d == today,
+                    IsWeekend = d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday
+                });
+            }
+
+            // 取得會議室
+            var roomsQuery = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != RoomStatus.Maintenance);
+
+            if (!string.IsNullOrWhiteSpace(query.Building))
+                roomsQuery = roomsQuery.Where(x => x.Building == query.Building);
+
+            if (query.RoomId.HasValue)
+                roomsQuery = roomsQuery.Where(x => x.Id == query.RoomId);
+
+            var rooms = roomsQuery
+                .OrderBy(x => x.Building)
+                .ThenBy(x => x.Sequence)
+                .Select(x => new { x.Id, x.Name, x.Building, x.Floor })
+                .ToList();
+
+            // 取得每個會議室的時段數量
+            var roomPeriodCounts = db.SysRoomPricePeriod
+                .AsNoTracking()
+                .Where(x => x.IsEnabled && x.DeleteAt == null)
+                .Where(x => rooms.Select(r => r.Id).Contains(x.RoomId))
+                .GroupBy(x => x.RoomId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // 取得這週的預約
+            var occupiedSlots = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Where(x => x.SlotDate >= weekStart && x.SlotDate <= weekEnd)
+                .Where(x => x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
+                .Where(x => rooms.Select(r => r.Id).Contains(x.RoomId))
+                .GroupBy(x => new { x.RoomId, x.SlotDate })
+                .Select(g => new { g.Key.RoomId, g.Key.SlotDate, Count = g.Select(x => x.ConferenceId).Distinct().Count() })
+                .ToList();
+
+            foreach (var room in rooms)
+            {
+                var totalSlots = roomPeriodCounts.GetValueOrDefault(room.Id, 0);
+
+                var roomVM = new WeekViewRoomVM
+                {
+                    RoomId = room.Id,
+                    RoomName = room.Name,
+                    Building = room.Building,
+                    Floor = room.Floor
+                };
+
+                for (int i = 0; i < 7; i++)
+                {
+                    var currentDate = weekStart.AddDays(i);
+                    var occupied = occupiedSlots.FirstOrDefault(o => o.RoomId == room.Id && o.SlotDate == currentDate);
+                    var occupiedCount = occupied?.Count ?? 0;
+
+                    string status;
+                    if (totalSlots == 0) status = "empty";
+                    else if (occupiedCount == 0) status = "available";
+                    else if (occupiedCount >= totalSlots) status = "full";
+                    else status = "partial";
+
+                    roomVM.Days.Add(new WeekViewDayCellVM
+                    {
+                        Date = currentDate,
+                        TotalSlots = totalSlots,
+                        OccupiedSlots = occupiedCount,
+                        Status = status,
+                        IsToday = currentDate == today,
+                        IsWeekend = currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday
+                    });
+                }
+
+                result.Rooms.Add(roomVM);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 月視圖：日曆格式顯示每天的會議列表
+        /// </summary>
+        public MonthViewResultVM GetMonthView(CalendarQueryVM query)
+        {
+            var year = query.Date.Year;
+            var month = query.Date.Month;
+            var firstDayOfMonth = new DateOnly(year, month, 1);
+            var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            var startDayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+            var calendarStart = firstDayOfMonth.AddDays(startDayOfWeek == 0 ? -6 : 1 - startDayOfWeek);
+
+            var endDayOfWeek = (int)lastDayOfMonth.DayOfWeek;
+            var calendarEnd = lastDayOfMonth.AddDays(endDayOfWeek == 0 ? 0 : 7 - endDayOfWeek);
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            var result = new MonthViewResultVM { Year = year, Month = month };
+
+            // 取得會議室 ID
+            var roomIds = db.SysRoom
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.Status != RoomStatus.Maintenance)
+                .WhereIf(!string.IsNullOrWhiteSpace(query.Building), x => x.Building == query.Building)
+                .WhereIf(query.RoomId.HasValue, x => x.Id == query.RoomId)
+                .Select(x => x.Id)
+                .ToList();
+
+            // 取得每天的會議列表
+            var conferencesByDate = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Include(x => x.Conference)
+                .Where(x => x.SlotDate >= calendarStart && x.SlotDate <= calendarEnd)
+                .Where(x => x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
+                .Where(x => roomIds.Contains(x.RoomId))
+                .Where(x => x.Conference != null && x.ConferenceId.HasValue)
+                .GroupBy(x => x.SlotDate)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => new MonthViewConferenceVM
+                    {
+                        Id = x.ConferenceId!.Value,
+                        Name = x.Conference!.Name,
+                        OrganizerUnit = x.Conference.OrganizerUnit
+                    }).DistinctBy(c => c.Id).ToList()
+                );
+
+            var currentDate = calendarStart;
+            while (currentDate <= calendarEnd)
+            {
+                var week = new List<MonthViewDayVM>();
+                for (int i = 0; i < 7; i++)
+                {
+                    week.Add(new MonthViewDayVM
+                    {
+                        Date = currentDate,
+                        Day = currentDate.Day,
+                        IsToday = currentDate == today,
+                        IsCurrentMonth = currentDate.Month == month,
+                        IsWeekend = currentDate.DayOfWeek == DayOfWeek.Saturday || currentDate.DayOfWeek == DayOfWeek.Sunday,
+                        Conferences = conferencesByDate.GetValueOrDefault(currentDate, new List<MonthViewConferenceVM>())
+                    });
+                    currentDate = currentDate.AddDays(1);
+                }
+                result.Weeks.Add(week);
+            }
+
+            return result;
+        }
+
+        #endregion
     }
 }

@@ -1,0 +1,21 @@
+td.slot-occupied {
+    background-color: #cfe2ff !important;
+}
+
+td.slot-empty {
+    background-color: #fff !important;
+}
+
+tr.slot-occupied>td {
+    background-color: #cfe2ff !important;
+}
+
+tr.slot-occupied:hover>td {
+    background-color: #b6d4fe !important;
+}
+
+td.slot-occupied,
+td.slot-empty {
+    text-align: center;
+    vertical-align: middle !important;
+}
