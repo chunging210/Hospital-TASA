@@ -1589,11 +1589,18 @@ namespace TASA.Services.ConferenceModule
             var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays(departmentId);
             var minDate = DateTime.Today.AddDays(minAdvanceDays);
 
+            // ✅ 最大預約日期：當前年份 + 1 年的年底
+            var maxDate = new DateTime(DateTime.Today.Year + 1, 12, 31);
+
             if (isMultiDay)
             {
                 // 跨日模式：檢查開始日期
                 if (vm.StartDate!.Value.Date < minDate)
                     throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+
+                // 檢查結束日期不能超過最大日期
+                if (vm.EndDate!.Value.Date > maxDate)
+                    throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
 
                 if (vm.EndDate!.Value.Date < vm.StartDate.Value.Date)
                     throw new HttpException("結束日期不能早於開始日期");
@@ -1608,6 +1615,10 @@ namespace TASA.Services.ConferenceModule
                 // 單日模式：檢查預約日期
                 if (vm.ReservationDate!.Value.Date < minDate)
                     throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+
+                // 檢查預約日期不能超過最大日期
+                if (vm.ReservationDate!.Value.Date > maxDate)
+                    throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
             }
         }
 

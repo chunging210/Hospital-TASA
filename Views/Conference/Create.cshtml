@@ -120,6 +120,7 @@
                                                             <label class="col-form-label">開始日期 <span class="text-danger">*</span></label>
                                                             <input class="form-control" type="date" v-model="form.startDate"
                                                                    :min="minBookingDate"
+                                                                   :max="maxBookingDate"
                                                                    @@change="!form.endDate && (form.endDate = form.startDate)">
                                                         </div>
                                                         <div class="col-sm-12 col-xl-3">

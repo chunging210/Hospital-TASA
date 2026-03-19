@@ -106,15 +106,23 @@ window.$config = {
             return today.toISOString().split('T')[0];
         });
 
-        // 最大結束日期 computed（開始日期 + 6 天，共 7 天）
+        // 最大預約日期 computed（當前年份 + 1 年的年底）
+        this.maxBookingDate = computed(() => {
+            const currentYear = new Date().getFullYear();
+            return `${currentYear + 1}-12-31`;
+        });
+
+        // 最大結束日期 computed（開始日期 + 6 天，共 7 天，且不超過最大預約日期）
         this.maxEndDate = computed(() => {
-            if (!this.form.startDate) return '';
+            if (!this.form.startDate) return this.maxBookingDate.value;
             const start = new Date(this.form.startDate + 'T00:00:00');
             start.setDate(start.getDate() + 6);
-            const year = start.getFullYear();
-            const month = String(start.getMonth() + 1).padStart(2, '0');
-            const day = String(start.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+
+            // 取得 7 天後的日期
+            const sevenDaysLater = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+
+            // 取 7 天限制和最大預約日期的較小值
+            return sevenDaysLater < this.maxBookingDate.value ? sevenDaysLater : this.maxBookingDate.value;
         });
 
         // 判斷選擇的日期是否為假日 - 單日用
