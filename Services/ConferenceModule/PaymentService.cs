@@ -27,6 +27,7 @@ namespace TASA.Services.ConferenceModule
             public DateTime? TransferAt { get; set; }
             public string? Note { get; set; }
             public IFormFile? DiscountProofFile { get; set; }  // 優惠證明
+            public IFormFile? ScreenshotFile { get; set; }     // 匯款截圖
         }
 
         public class ApprovePaymentVM
@@ -190,6 +191,25 @@ namespace TASA.Services.ConferenceModule
                 discountProofName = vm.DiscountProofFile.FileName;
             }
 
+            // 處理匯款截圖（如果有的話）
+            string? screenshotPath = null;
+            string? screenshotName = null;
+            if (vm.ScreenshotFile != null && vm.ScreenshotFile.Length > 0)
+            {
+                var screenshotId = Guid.NewGuid();
+                var screenshotExt = Path.GetExtension(vm.ScreenshotFile.FileName);
+                var screenshotFileName = $"transfer_{screenshotId}{screenshotExt}";
+                var screenshotFilePath = Path.Combine(_uploadPath, screenshotFileName);
+
+                using (var stream = new FileStream(screenshotFilePath, FileMode.Create))
+                {
+                    await vm.ScreenshotFile.CopyToAsync(stream);
+                }
+
+                screenshotPath = $"/uploads/payment-proofs/{screenshotFileName}";
+                screenshotName = vm.ScreenshotFile.FileName;
+            }
+
             var proofIds = new List<Guid>();
 
             foreach (var reservationNo in vm.ReservationIds)
@@ -209,8 +229,8 @@ namespace TASA.Services.ConferenceModule
                 {
                     Id = proofId,
                     ConferenceId = conference.Id,
-                    FilePath = "-",  // 匯款不需要檔案
-                    FileName = "匯款資訊",
+                    FilePath = screenshotPath ?? "-",  // 匯款截圖路徑
+                    FileName = screenshotName ?? "匯款資訊",
                     PaymentType = "匯款",
                     LastFiveDigits = vm.Last5,
                     TransferAmount = vm.Amount,

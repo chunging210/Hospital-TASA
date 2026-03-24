@@ -21,8 +21,9 @@ namespace TASA.Models.Enums
 
     public enum AttachmentType : byte
     {
-        Agenda = 1,      // 議程表
-        Document = 2,    // 會議文件
+        Agenda = 1,         // 議程表
+        Document = 2,       // 會議文件
+        DiscountProof = 3,  // 優惠證明
     }
 
 

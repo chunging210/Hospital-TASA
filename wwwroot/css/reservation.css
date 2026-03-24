@@ -532,3 +532,39 @@
 
 .dept-item:last-child { border-bottom: none; }
 .dept-item:hover { background-color: #f8f9fa; }
+
+/* ===== 圖片放大 Modal 樣式 ===== */
+#imagePreviewModal .modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0 auto;
+    max-width: 95vw;
+}
+
+#imagePreviewModal .modal-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#imagePreviewModal .modal-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#imagePreviewModal img {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    display: block;
+    margin: auto;
+}

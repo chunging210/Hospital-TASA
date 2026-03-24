@@ -819,6 +819,55 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                <!-- 優惠證明上傳（現金或匯款時顯示） -->
+<div v-if="form.paymentMethod === 'cash' || form.paymentMethod === 'transfer'"
+     class="mt-3">
+    <div class="upload-area"
+         :class="{ 'has-file': discountProofFile }"
+         @@click="$refs.discountProofInput?.click()"
+         @@dragover.prevent
+         @@drop.prevent="handleDiscountProofDrop">
+        <input type="file" ref="discountProofInput" hidden
+               accept=".jpg,.jpeg,.png,.webp"
+               @@change="handleDiscountProofChange">
+
+        <!-- 未上傳 -->
+        <div v-if="!discountProofFile" class="upload-placeholder">
+            <div class="upload-icon-wrap">
+                <i class="bx bx-image-add"></i>
+            </div>
+            <p class="upload-main-text">優惠證明上傳 <span class="text-muted small fw-normal">（選填）</span></p>
+            <p class="upload-sub-text">點擊或拖曳圖片至此上傳</p>
+            <div class="upload-fmt-row">
+                <span class="fmt-pill">JPG</span>
+                <span class="fmt-pill">JPEG</span>
+                <span class="fmt-pill">PNG</span>
+                <span class="fmt-pill">WEBP</span>
+            </div>
+        </div>
+
+        <!-- 已上傳 -->
+        <div v-else class="file-preview d-flex align-items-center justify-content-between px-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bx bx-image text-success" style="font-size:20px"></i>
+                <div>
+                    <strong>{{ discountProofFile.name }}</strong>
+                    <small class="text-muted ms-2">{{ formatFileSize(discountProofFile.size) }}</small>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    @@click.stop="removeDiscountProof">
+                ✕
+            </button>
+        </div>
+    </div>
+
+    <div class="form-text mt-2">
+        <i class="bx bx-info-circle me-1"></i>
+        如有身心障礙證明、員工證等優惠資格，請上傳相關證明文件供審核
+    </div>
+</div>
                                             </div>
                                         </div>
                                         <hr>

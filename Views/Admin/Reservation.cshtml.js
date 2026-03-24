@@ -298,6 +298,9 @@ const reservation = new function () {
                     currentApproverName: x.CurrentApproverName,
                     // ✅ 預計到達人數
                     expectedAttendees: x.ExpectedAttendees,
+                    // ✅ 優惠證明
+                    discountProofPath: x.DiscountProofPath,
+                    discountProofName: x.DiscountProofName,
                     // ✅ 審核歷程
                     approvalHistory: (x.ApprovalHistory || []).map(h => ({
                         Level: h.Level,
@@ -889,10 +892,23 @@ window.$config = {
             }
         });
 
-        // ✅ 查看大圖
+        // ✅ 查看大圖 (使用 Modal)
+        const fullImageUrl = ref('');
+        let imagePreviewModal = null;
+
         const viewFullImage = (imagePath) => {
             if (imagePath && imagePath !== '-') {
-                window.open(imagePath, '_blank');
+                fullImageUrl.value = imagePath;
+                if (!imagePreviewModal) {
+                    imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+                }
+                imagePreviewModal.show();
+            }
+        };
+
+        const closeImagePreview = () => {
+            if (imagePreviewModal) {
+                imagePreviewModal.hide();
             }
         };
 
@@ -906,7 +922,9 @@ window.$config = {
             isTransferPayment,
             getApprovalStatusClass,
             getPaymentStatusClass,
-            viewFullImage
+            viewFullImage,
+            fullImageUrl,
+            closeImagePreview
         };
     }
 };

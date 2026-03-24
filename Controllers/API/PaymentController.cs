@@ -46,7 +46,8 @@ namespace TASA.Controllers.API
             [FromForm] int amount,
             [FromForm] DateTime? transferAt,
             [FromForm] string? note,
-            [FromForm] IFormFile? discountProofFile)
+            [FromForm] IFormFile? discountProofFile,
+            [FromForm] IFormFile? screenshotFile)
         {
             var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(reservationIds)
                 ?? new List<string>();
@@ -58,7 +59,8 @@ namespace TASA.Controllers.API
                 Amount = amount,
                 TransferAt = transferAt,
                 Note = note,
-                DiscountProofFile = discountProofFile
+                DiscountProofFile = discountProofFile,
+                ScreenshotFile = screenshotFile
             };
 
             var proofIds = await service.PaymentService.SubmitTransferInfo(vm);

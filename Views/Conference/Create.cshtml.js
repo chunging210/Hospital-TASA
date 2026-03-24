@@ -303,7 +303,7 @@ window.$config = {
 
             const dates = [];
             const type = this.form.recurrenceType;
-            const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+            const fmt = d => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
 
             if (type === 'daily') {
                 let cur = new Date(start);
@@ -348,6 +348,51 @@ window.$config = {
         this.documentFiles = ref([]);
         this.agendaInput = ref(null);
         this.documentInput = ref(null);
+
+        // ✅ 優惠證明
+        this.discountProofFile = ref(null);
+
+        this.handleDiscountProofChange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    addAlert('僅支援 JPG、PNG、WEBP 圖片格式', { type: 'warning' });
+                    e.target.value = '';
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    addAlert('檔案大小不能超過 10MB', { type: 'warning' });
+                    e.target.value = '';
+                    return;
+                }
+                this.discountProofFile.value = file;
+            }
+            e.target.value = '';  // 清除 input，與議程表上傳一致
+        };
+
+        this.handleDiscountProofDrop = (e) => {
+            const file = e.dataTransfer.files?.[0];
+            if (file) {
+                const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    addAlert('僅支援 JPG、PNG、WEBP 圖片格式', { type: 'warning' });
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    addAlert('檔案大小不能超過 10MB', { type: 'warning' });
+                    return;
+                }
+                this.discountProofFile.value = file;
+            }
+        };
+
+        this.removeDiscountProof = () => {
+            this.discountProofFile.value = null;
+            if (this.$refs.discountProofInput) {
+                this.$refs.discountProofInput.value = '';
+            }
+        };
 
         this.formatFileSize = (bytes) => {
             if (bytes === 0) return '0 Bytes';
@@ -411,7 +456,7 @@ window.$config = {
             this.showAgreementPDF.value = false;
 
             // 清除 pdfjs 記住的捲動位置
-            try { localStorage.removeItem('pdfjs.history'); } catch (e) {}
+            try { localStorage.removeItem('pdfjs.history'); } catch (e) { }
 
             this.pdfCacheBuster.value = Date.now();
 
@@ -1704,9 +1749,6 @@ window.$config = {
 
         /* ====== 提交預約 ====== */
         this.submitBooking = async () => {
-            console.log('🟢 submitBooking 開始執行');
-
-
             // ✅ 檢查是否已同意聲明書
             if (!this.hasReadAgreement.value) {
                 addAlert('請先閱讀並同意使用聲明書', { type: 'warning' });
@@ -1722,18 +1764,28 @@ window.$config = {
                 if (this.agendaFile.value) {
                     const base64 = await this.fileToBase64(this.agendaFile.value);
                     attachments.push({
-                        type: 1,
-                        fileName: this.agendaFile.value.name,
-                        base64Data: base64
+                        Type: 1,
+                        FileName: this.agendaFile.value.name,
+                        Base64Data: base64
                     });
                 }
 
                 for (const file of this.documentFiles.value) {
                     const base64 = await this.fileToBase64(file);
                     attachments.push({
-                        type: 2,
-                        fileName: file.name,
-                        base64Data: base64
+                        Type: 2,
+                        FileName: file.name,
+                        Base64Data: base64
+                    });
+                }
+
+                // ✅ 優惠證明 (Type: 3)
+                if (this.discountProofFile.value) {
+                    const base64 = await this.fileToBase64(this.discountProofFile.value);
+                    attachments.push({
+                        Type: 3,
+                        FileName: this.discountProofFile.value.name,
+                        Base64Data: base64
                     });
                 }
             } catch (err) {
@@ -1816,8 +1868,6 @@ window.$config = {
                 payload.reservationNo = this.editingReservationId.value;
             }
 
-            console.log('📤 payload:', JSON.stringify(payload));
-
             let apiCall;
             if (this.isEditMode.value) {
                 apiCall = global.api.reservations.update({ body: payload });
@@ -1827,36 +1877,37 @@ window.$config = {
                 apiCall = global.api.reservations.createreservation({ body: payload });
             }
 
-            apiCall
-                .then(res => {
-                    let successMsg;
-                    if (this.isEditMode.value) {
-                        successMsg = '預約已更新，請等待管理者審核！';
-                    } else if (this.form.isRecurring) {
-                        const data = res.data;
-                        const skippedMsg = data.SkippedCount > 0
-                            ? `（${data.SkippedCount} 筆時段衝突已跳過）`
-                            : '';
-                        successMsg = `循環預約已送出！共建立 ${data.SuccessCount} 筆${skippedMsg}，請等待管理者審核！`;
-                        if (data.SkippedDates && data.SkippedDates.length > 0) {
-                            setTimeout(() => addAlert(`跳過日期：${data.SkippedDates.join('、')}`, { type: 'warning' }), 300);
-                        }
-                    } else {
-                        successMsg = '預約已送出，請等待管理者審核！';
+            try {
+                const res = await apiCall;
+
+                let successMsg;
+                if (this.isEditMode.value) {
+                    successMsg = '預約已更新，請等待管理者審核！';
+                } else if (this.form.isRecurring) {
+                    const data = res.data;
+                    const skippedMsg = data.SkippedCount > 0
+                        ? `（${data.SkippedCount} 筆時段衝突已跳過）`
+                        : '';
+                    successMsg = `循環預約已送出！共建立 ${data.SuccessCount} 筆${skippedMsg}，請等待管理者審核！`;
+                    if (data.SkippedDates && data.SkippedDates.length > 0) {
+                        setTimeout(() => addAlert(`跳過日期：${data.SkippedDates.join('、')}`, { type: 'warning' }), 300);
                     }
+                } else {
+                    successMsg = '預約已送出，請等待管理者審核！';
+                }
 
-                    console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
-                    addAlert(successMsg, { type: 'success' });
+                console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
+                addAlert(successMsg, { type: 'success' });
 
-                    setTimeout(() => {
-                        window.location.href = '/reservationoverview';
-                    }, 1500);
-                })
-                .catch(err => {
-                    const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
-                    console.error('%c❌ 操作失敗!', 'color: #aa0000; font-weight: bold; font-size: 14px;');
-                    addAlert(`${errorMsg}:${err.message || '未知錯誤'}`, { type: 'danger' });
-                });
+                setTimeout(() => {
+                    window.location.href = '/reservationoverview';
+                }, 1500);
+            } catch (err) {
+                const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
+                console.error('%c❌ 操作失敗!', 'color: #aa0000; font-weight: bold; font-size: 14px;');
+                console.error('🔴 錯誤詳情:', err);
+                addAlert(`${errorMsg}:${err.message || '未知錯誤'}`, { type: 'danger' });
+            }
         };
 
         /* ====== Mounted ====== */

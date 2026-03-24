@@ -550,16 +550,6 @@
                                           placeholder="例:窗口、收據號碼…"></textarea>
                             </div>
 
-                            <!-- 優惠證明上傳 -->
-                            <div class="mb-3">
-                                <span class="form-label text-secondary font-size-18">
-                                    優惠證明(選填)
-                                </span>
-                                <input class="form-control" type="file" ref="counterDiscountProof"
-                                       accept="image/png,image/jpeg,image/jpg,application/pdf">
-                                <div class="form-text">如有優惠請上傳相關證明文件，支援 PNG、JPG、PDF</div>
-                            </div>
-
                             <div class="d-flex justify-content-end">
                                 <button type="button" class="btn btn-primary" @@click="submitCounterPayment">
                                     上傳憑證
@@ -616,14 +606,14 @@
                                               placeholder="例:銀行代碼、分行…"></textarea>
                                 </div>
 
-                                <!-- 優惠證明上傳 -->
+                                <!-- 匯款截圖上傳 -->
                                 <div class="col-12">
                                     <span class="form-label text-secondary font-size-18">
-                                        優惠證明(選填)
+                                        匯款截圖(選填)
                                     </span>
-                                    <input class="form-control" type="file" ref="transferDiscountProof"
-                                           accept="image/png,image/jpeg,image/jpg,application/pdf">
-                                    <div class="form-text">如有優惠請上傳相關證明文件，支援 PNG、JPG、PDF</div>
+                                    <input class="form-control" type="file" ref="transferScreenshot"
+                                           accept="image/png,image/jpeg,image/jpg">
+                                    <div class="form-text">可上傳匯款成功截圖，支援 PNG、JPG</div>
                                 </div>
                             </div>
                             <div style="display: flex;justify-content: flex-end;margin-bottom: 20px">

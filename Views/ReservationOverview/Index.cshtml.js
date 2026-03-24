@@ -44,8 +44,7 @@ window.$config = {
 
         /* ========= ✅ DOM Refs (重要!) ========= */
         this.counterPayFiles = ref(null);
-        this.counterDiscountProof = ref(null);  // 臨櫃優惠證明
-        this.transferDiscountProof = ref(null); // 匯款優惠證明
+        this.transferScreenshot = ref(null);  // 匯款截圖
 
         /* ========= ✅ 付款表單資料 ========= */
         this.paymentForm = reactive({
@@ -411,12 +410,6 @@ window.$config = {
                     formData.append('files', files[i]);
                 }
 
-                // ✅ 附加優惠證明（如果有的話）
-                const discountProofInput = this.counterDiscountProof?.value;
-                if (discountProofInput?.files?.[0]) {
-                    formData.append('discountProofFile', discountProofInput.files[0]);
-                }
-
                 // ✅ 呼叫 API
                 await global.api.payment.uploadcounter({ body: formData });
 
@@ -428,9 +421,6 @@ window.$config = {
                 this.paymentForm.counterNote = '';
                 if (fileInput) {
                     fileInput.value = '';
-                }
-                if (discountProofInput) {
-                    discountProofInput.value = '';
                 }
 
             } catch (err) {
@@ -461,10 +451,10 @@ window.$config = {
                 }
                 formData.append('note', this.paymentForm.transferNote || '');
 
-                // ✅ 附加優惠證明（如果有的話）
-                const discountProofInput = this.transferDiscountProof?.value;
-                if (discountProofInput?.files?.[0]) {
-                    formData.append('discountProofFile', discountProofInput.files[0]);
+                // 匯款截圖（如果有的話）
+                const screenshotInput = this.transferScreenshot?.value;
+                if (screenshotInput?.files?.[0]) {
+                    formData.append('screenshotFile', screenshotInput.files[0]);
                 }
 
                 await global.api.payment.transfer({ body: formData });
@@ -478,8 +468,8 @@ window.$config = {
                 this.paymentForm.amount = 0;
                 this.paymentForm.transferAt = '';
                 this.paymentForm.transferNote = '';
-                if (discountProofInput) {
-                    discountProofInput.value = '';
+                if (screenshotInput) {
+                    screenshotInput.value = '';
                 }
 
             } catch (err) {

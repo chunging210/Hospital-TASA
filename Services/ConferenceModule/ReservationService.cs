@@ -495,6 +495,11 @@ namespace TASA.Services.ConferenceModule
                     LatestProof = x.ConferencePaymentProofs
                         .Where(p => p.DeleteAt == null)
                         .OrderByDescending(p => p.UploadedAt)
+                        .FirstOrDefault(),
+                    // ✅ 取得優惠證明附件 (Type = 3)
+                    DiscountProofAttachment = x.Attachments
+                        .Where(a => a.AttachmentType == AttachmentType.DiscountProof)
+                        .OrderByDescending(a => a.UploadedAt)
                         .FirstOrDefault()
                 })
                 .Select(x => new ReservationListVM()
@@ -574,6 +579,14 @@ namespace TASA.Services.ConferenceModule
                             DiscountAmount = h.DiscountAmount,
                             DiscountReason = h.DiscountReason
                         }).ToList(),
+
+                    // ✅ 優惠證明（優先從附件取，其次從付款憑證取）
+                    DiscountProofPath = x.DiscountProofAttachment != null
+                        ? x.DiscountProofAttachment.FilePath
+                        : (x.LatestProof != null ? x.LatestProof.DiscountProofPath : null),
+                    DiscountProofName = x.DiscountProofAttachment != null
+                        ? x.DiscountProofAttachment.FileName
+                        : (x.LatestProof != null ? x.LatestProof.DiscountProofName : null),
 
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
