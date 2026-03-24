@@ -94,6 +94,21 @@ namespace TASA.Models.Enums
     }
 
     /// <summary>
+    /// 循環預約類型
+    /// </summary>
+    public enum RecurrenceType
+    {
+        /// <summary>每日重複</summary>
+        Daily = 1,
+
+        /// <summary>每週重複（指定星期幾）</summary>
+        Weekly = 2,
+
+        /// <summary>每月重複（指定幾號）</summary>
+        Monthly = 3
+    }
+
+    /// <summary>
     /// 審核關卡狀態 (ConferenceApprovalHistory.Status)
     /// </summary>
     public enum ApprovalStatus : byte

@@ -261,14 +261,80 @@ window.$config = {
             paymentMethod: '',
             departmentCode: '',
             attachments: [],
-            parkingTicketPurchase: 0  // 停車券加購張數
+            parkingTicketPurchase: 0,  // 停車券加購張數
+            // 循環預約（僅院內人員可用）
+            isRecurring: false,
+            recurrenceType: 'weekly',
+            recurrenceDaysOfWeek: [],
+            recurrenceDayOfMonth: 1,
+            recurrenceEndDate: ''
         });
 
         // ========== 跨日預約相關 ==========
-        // isMultiDay 改為 computed：開始日期 ≠ 結束日期 即為跨日
+        // isMultiDay 改為 computed：開始日期 ≠ 結束日期 即為跨日（循環模式下強制 false）
         this.isMultiDay = computed(() => {
+            if (this.form.isRecurring) return false;
             if (!this.form.startDate || !this.form.endDate) return false;
             return this.form.startDate !== this.form.endDate;
+        });
+
+        // ========== 循環預約相關 ==========
+
+        // 切換循環預約時的處理
+        this.onRecurringToggle = () => {
+            if (this.form.isRecurring) {
+                // 開啟循環：強制單日模式、強制成本分攤
+                this.form.endDate = this.form.startDate;
+                this.form.paymentMethod = 'cost-sharing';
+            }
+        };
+
+        // 預覽循環日期（前端產生，供確認用）
+        this.previewRecurringDates = computed(() => {
+            if (!this.form.isRecurring || !this.form.startDate || !this.form.recurrenceEndDate) return [];
+
+            const start = new Date(this.form.startDate + 'T00:00:00');
+            const end = new Date(this.form.recurrenceEndDate + 'T00:00:00');
+            if (end <= start) return [];
+
+            const maxEnd = new Date(start);
+            maxEnd.setFullYear(maxEnd.getFullYear() + 1);
+            const actualEnd = end < maxEnd ? end : maxEnd;
+
+            const dates = [];
+            const type = this.form.recurrenceType;
+            const fmt = d => `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+
+            if (type === 'daily') {
+                let cur = new Date(start);
+                while (cur <= actualEnd) {
+                    dates.push(fmt(cur));
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else if (type === 'weekly') {
+                if (!this.form.recurrenceDaysOfWeek.length) return [];
+                let cur = new Date(start);
+                while (cur <= actualEnd) {
+                    if (this.form.recurrenceDaysOfWeek.includes(cur.getDay())) {
+                        dates.push(fmt(cur));
+                    }
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else if (type === 'monthly') {
+                const targetDay = this.form.recurrenceDayOfMonth || 1;
+                let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+                while (cur <= actualEnd) {
+                    const daysInMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+                    const actualDay = Math.min(targetDay, daysInMonth);
+                    const targetDate = new Date(cur.getFullYear(), cur.getMonth(), actualDay);
+                    if (targetDate >= start && targetDate <= actualEnd) {
+                        dates.push(fmt(targetDate));
+                    }
+                    cur.setMonth(cur.getMonth() + 1);
+                }
+            }
+
+            return dates;
         });
 
         this.activeTab = ref('');      // 當前選中的日期 Tab
@@ -665,6 +731,30 @@ window.$config = {
             if (this.form.startDate < this.minBookingDate.value) {
                 addAlert(`開始日期必須在 ${this.minAdvanceBookingDays.value} 天後（最早可選 ${this.minBookingDate.value}）`, { type: 'warning' });
                 return;
+            }
+
+            // 循環預約額外驗證
+            if (this.form.isRecurring) {
+                if (!this.form.recurrenceEndDate) {
+                    addAlert('請設定循環結束日期', { type: 'warning' });
+                    return;
+                }
+                if (this.form.recurrenceEndDate <= this.form.startDate) {
+                    addAlert('循環結束日期必須在開始日期之後', { type: 'warning' });
+                    return;
+                }
+                if (this.form.recurrenceType === 'weekly' && this.form.recurrenceDaysOfWeek.length === 0) {
+                    addAlert('每週循環請至少選擇一個星期幾', { type: 'warning' });
+                    return;
+                }
+                if (this.form.recurrenceType === 'monthly' && (!this.form.recurrenceDayOfMonth || this.form.recurrenceDayOfMonth < 1 || this.form.recurrenceDayOfMonth > 31)) {
+                    addAlert('每月循環請輸入正確的日期（1-31）', { type: 'warning' });
+                    return;
+                }
+                if (this.previewRecurringDates.value.length === 0) {
+                    addAlert('根據目前循環設定，沒有可建立的日期', { type: 'warning' });
+                    return;
+                }
             }
 
             // 檢查是否有錯誤（中間天被佔用、首日末日限制等）
@@ -1675,6 +1765,13 @@ window.$config = {
                 }
             }
 
+            // 循環模式：slotInfos 只需要時段 key（不含日期，後端會自行帶入每次循環的日期）
+            if (this.form.isRecurring) {
+                slotInfos = slotInfos.map(s => ({ key: s.key, isSetup: s.isSetup, date: null }));
+            }
+
+            const recurrenceTypeMap = { daily: 1, weekly: 2, monthly: 3 };
+
             const payload = {
                 name: this.form.name,
                 description: this.form.content,
@@ -1689,7 +1786,7 @@ window.$config = {
                 // 日期欄位（統一使用 startDate/endDate）
                 reservationDate: this.form.startDate,
                 startDate: this.form.startDate,
-                endDate: this.form.endDate || this.form.startDate,
+                endDate: this.form.isRecurring ? this.form.startDate : (this.form.endDate || this.form.startDate),
                 paymentMethod: this.form.paymentMethod,
                 departmentCode: this.form.paymentMethod === 'cost-sharing' ? this.form.departmentCode : null,
                 roomCost: this.roomCost.value,
@@ -1706,7 +1803,13 @@ window.$config = {
                 boothIds: [...this.form.selectedBooths],
                 smallBooths: smallBoothData,  // 小型攤位資料
                 attendeeIds: [this.initiatorId.value],
-                attachments: attachments
+                attachments: attachments,
+                // 循環預約欄位（僅院內人員可用）
+                isRecurring: this.form.isRecurring,
+                recurrenceKind: this.form.isRecurring ? recurrenceTypeMap[this.form.recurrenceType] : null,
+                recurrenceDaysOfWeek: this.form.isRecurring && this.form.recurrenceType === 'weekly' ? this.form.recurrenceDaysOfWeek : null,
+                recurrenceDayOfMonth: this.form.isRecurring && this.form.recurrenceType === 'monthly' ? this.form.recurrenceDayOfMonth : null,
+                recurrenceEndDate: this.form.isRecurring ? this.form.recurrenceEndDate : null
             };
 
             if (this.isEditMode.value) {
@@ -1715,22 +1818,39 @@ window.$config = {
 
             console.log('📤 payload:', JSON.stringify(payload));
 
-            const apiCall = this.isEditMode.value
-                ? global.api.reservations.update({ body: payload })
-                : global.api.reservations.createreservation({ body: payload });
+            let apiCall;
+            if (this.isEditMode.value) {
+                apiCall = global.api.reservations.update({ body: payload });
+            } else if (this.form.isRecurring) {
+                apiCall = global.api.reservations.createrecurring({ body: payload });
+            } else {
+                apiCall = global.api.reservations.createreservation({ body: payload });
+            }
 
             apiCall
                 .then(res => {
-                    const successMsg = this.isEditMode.value
-                        ? '預約已更新，請等待管理者審核！'
-                        : '預約已送出，請等待管理者審核！';
+                    let successMsg;
+                    if (this.isEditMode.value) {
+                        successMsg = '預約已更新，請等待管理者審核！';
+                    } else if (this.form.isRecurring) {
+                        const data = res.data;
+                        const skippedMsg = data.SkippedCount > 0
+                            ? `（${data.SkippedCount} 筆時段衝突已跳過）`
+                            : '';
+                        successMsg = `循環預約已送出！共建立 ${data.SuccessCount} 筆${skippedMsg}，請等待管理者審核！`;
+                        if (data.SkippedDates && data.SkippedDates.length > 0) {
+                            setTimeout(() => addAlert(`跳過日期：${data.SkippedDates.join('、')}`, { type: 'warning' }), 300);
+                        }
+                    } else {
+                        successMsg = '預約已送出，請等待管理者審核！';
+                    }
 
                     console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                     addAlert(successMsg, { type: 'success' });
 
                     setTimeout(() => {
                         window.location.href = '/reservationoverview';
-                    }, 1000);
+                    }, 1500);
                 })
                 .catch(err => {
                     const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';

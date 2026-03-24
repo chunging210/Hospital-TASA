@@ -66,6 +66,7 @@ const global = new function () {
         reservations: apiMethods('/api/reservations', {
             // ===== 預約建立 =====
             createreservation: POST,
+            createrecurring: POST,       // 循環預約（僅院內人員）
 
             // ===== 租借審核 (主任/管理者) =====
             reservationlist: GET,      // 租借審核列表

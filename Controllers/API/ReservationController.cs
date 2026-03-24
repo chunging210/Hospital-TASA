@@ -38,6 +38,16 @@ namespace TASA.Controllers.API
             return Ok(id);
         }
 
+        /// <summary>
+        /// 1-1. 建立循環預約（僅院內人員可用）
+        /// </summary>
+        [HttpPost("createrecurring")]
+        public IActionResult CreateRecurringReservation([FromBody] InsertVM vm)
+        {
+            var result = service.ReservationService.CreateRecurringReservation(vm);
+            return Ok(result);
+        }
+
         // ===== 租借審核 (主任/管理者) =====
 
         /// <summary>

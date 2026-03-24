@@ -99,6 +99,13 @@ namespace TASA.Services.ConferenceModule
             public List<Guid>? AttendeeIds { get; set; }
             public string? ReservationNo { get; set; }
 
+            // ===== 循環預約（僅院內人員可用） =====
+            public bool IsRecurring { get; set; } = false;
+            public int? RecurrenceKind { get; set; }   // 1=每日, 2=每週, 3=每月
+            public List<int>? RecurrenceDaysOfWeek { get; set; }  // 0=日, 1=一, ..., 6=六（每週用）
+            public int? RecurrenceDayOfMonth { get; set; }         // 1-31（每月用）
+            public DateTime? RecurrenceEndDate { get; set; }       // 循環結束日期
+
             public List<AttachmentVM>? Attachments { get; set; }
 
             public record AttachmentVM

@@ -717,6 +717,256 @@ namespace TASA.Services.ConferenceModule
                 });
         }
 
+        // ===== 循環預約（僅院內人員可用） =====
+
+        public class RecurringReservationResultVM
+        {
+            public int SuccessCount { get; set; }
+            public int SkippedCount { get; set; }
+            public List<string> SkippedDates { get; set; } = new();
+            public List<Guid> CreatedIds { get; set; } = new();
+        }
+
+        /// <summary>
+        /// 建立循環預約 - 依據循環規則批次建立，衝突日跳過（僅院內人員可用）
+        /// </summary>
+        public RecurringReservationResultVM CreateRecurringReservation(InsertVM vm)
+        {
+            var userId = service.UserClaimsService.Me()?.Id
+                ?? throw new HttpException("無法取得使用者資訊");
+
+            // 驗證是否為院內人員
+            if (!service.AuthRoleServices.IsInternalStaff(userId))
+                throw new HttpException("循環預約僅限院內人員使用");
+
+            // 驗證付款方式必須是成本分攤
+            if (vm.PaymentMethod != "cost-sharing")
+                throw new HttpException("循環預約僅支援成本分攤付款方式");
+
+            ValidateReservationData(vm);
+
+            if (!vm.RecurrenceKind.HasValue)
+                throw new HttpException("循環預約必須指定循環類型");
+
+            if (!vm.RecurrenceEndDate.HasValue)
+                throw new HttpException("循環預約必須設定結束日期");
+
+            if (!vm.ReservationDate.HasValue)
+                throw new HttpException("循環預約必須設定開始日期");
+
+            var startDate = DateOnly.FromDateTime(vm.ReservationDate.Value.Date);
+            var endDate = DateOnly.FromDateTime(vm.RecurrenceEndDate.Value.Date);
+
+            if (endDate <= startDate)
+                throw new HttpException("循環結束日期必須在開始日期之後");
+
+            // 最多 1 年
+            var maxEndDate = startDate.AddYears(1);
+            if (endDate > maxEndDate)
+                endDate = maxEndDate;
+
+            var dates = GenerateRecurringDates(startDate, endDate, vm);
+            if (!dates.Any())
+                throw new HttpException("根據循環設定，沒有可建立的日期");
+
+            var slotList = ParseSlotInfosToList(vm);
+
+            var recurrenceId = Guid.NewGuid();
+            var result = new RecurringReservationResultVM();
+
+            // ✅ 記錄第一筆的附件資訊（後續循環共用檔案路徑）
+            Guid? firstConferenceId = null;
+
+            foreach (var date in dates)
+            {
+                if (CheckSlotsConflict(vm.RoomId!.Value, date, slotList, null))
+                {
+                    result.SkippedCount++;
+                    result.SkippedDates.Add(date.ToString("yyyy/MM/dd"));
+                    continue;
+                }
+
+                var conferenceId = Guid.NewGuid();
+                var slotsByDate = new Dictionary<DateOnly, List<(TimeOnly Start, TimeOnly End, bool IsSetup)>>
+                {
+                    { date, slotList }
+                };
+
+                // 每筆循環各自建立
+                var singleVm = vm with { ReservationDate = date.ToDateTime(TimeOnly.MinValue) };
+
+                var conference = CreateConferenceEntity(conferenceId, singleVm, userId);
+                conference.RecurrenceId = recurrenceId;
+
+                db.Conference.Add(conference);
+                db.SaveChanges();
+
+                CreateRoomSlots(conferenceId, vm.RoomId!.Value, slotsByDate);
+                CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, vm.SmallBooths, slotsByDate);
+
+                // ✅ 附件處理：第一筆儲存檔案，後續共用檔案路徑
+                if (vm.Attachments != null && vm.Attachments.Any())
+                {
+                    if (firstConferenceId == null)
+                    {
+                        // 第一筆：正常儲存附件檔案
+                        SaveAttachments(conferenceId, vm.Attachments, userId);
+                        firstConferenceId = conferenceId;
+                    }
+                    else
+                    {
+                        // 後續：複製附件記錄，共用檔案路徑
+                        CopyAttachmentsFromFirst(conferenceId, firstConferenceId.Value, userId);
+                    }
+                }
+
+                db.SaveChanges();
+
+                // ✅ 重新計算該日期的實際價格（根據假日/平日）
+                var actualRoomCost = db.ConferenceRoomSlot
+                    .Where(s => s.ConferenceId == conferenceId)
+                    .Sum(s => s.Price);
+
+                var actualEquipmentCost = db.ConferenceEquipment
+                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "8")
+                    .Sum(e => e.EquipmentPrice);
+
+                var actualBoothCost = db.ConferenceEquipment
+                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "9")
+                    .Sum(e => e.EquipmentPrice);
+
+                var actualSmallBoothCost = db.ConferenceEquipment
+                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "10")
+                    .Sum(e => e.EquipmentPrice * e.Quantity);
+
+                // 更新 Conference 的費用欄位
+                conference.RoomCost = (int)actualRoomCost;
+                conference.EquipmentCost = (int)actualEquipmentCost;
+                conference.BoothCost = (int)actualBoothCost;
+                conference.SmallBoothCost = (int)actualSmallBoothCost;
+                conference.TotalAmount = (int)(actualRoomCost + actualEquipmentCost + actualBoothCost + actualSmallBoothCost + conference.ParkingTicketCost);
+
+                db.SaveChanges();
+
+                result.SuccessCount++;
+                result.CreatedIds.Add(conferenceId);
+
+                // 只對第一筆寄送通知，避免大量寄信
+                if (result.SuccessCount == 1)
+                    service.ConferenceMail.ReservationCreated(conferenceId);
+            }
+
+            _ = service.LogServices.LogAsync("循環預約",
+                $"循環預約建立 - {vm.Name}，共 {result.SuccessCount} 筆成功，{result.SkippedCount} 筆衝突跳過");
+
+            return result;
+        }
+
+        /// <summary>
+        /// 依循環類型展開所有日期
+        /// </summary>
+        private List<DateOnly> GenerateRecurringDates(DateOnly startDate, DateOnly endDate, InsertVM vm)
+        {
+            var dates = new List<DateOnly>();
+
+            switch (vm.RecurrenceKind)
+            {
+                case 1: // Daily
+                    for (var d = startDate; d <= endDate; d = d.AddDays(1))
+                        dates.Add(d);
+                    break;
+
+                case 2: // Weekly
+                    if (vm.RecurrenceDaysOfWeek == null || !vm.RecurrenceDaysOfWeek.Any())
+                        throw new HttpException("每週循環必須選擇至少一個星期幾");
+                    for (var d = startDate; d <= endDate; d = d.AddDays(1))
+                        if (vm.RecurrenceDaysOfWeek.Contains((int)d.DayOfWeek))
+                            dates.Add(d);
+                    break;
+
+                case 3: // Monthly
+                    if (!vm.RecurrenceDayOfMonth.HasValue)
+                        throw new HttpException("每月循環必須選擇幾號");
+                    var targetDay = vm.RecurrenceDayOfMonth.Value;
+                    var current = new DateOnly(startDate.Year, startDate.Month, 1);
+                    while (current <= endDate)
+                    {
+                        var daysInMonth = DateTime.DaysInMonth(current.Year, current.Month);
+                        var actualDay = Math.Min(targetDay, daysInMonth);
+                        var targetDate = new DateOnly(current.Year, current.Month, actualDay);
+                        if (targetDate >= startDate && targetDate <= endDate)
+                            dates.Add(targetDate);
+                        current = current.AddMonths(1);
+                    }
+                    break;
+
+                default:
+                    throw new HttpException("不支援的循環類型");
+            }
+
+            return dates;
+        }
+
+        /// <summary>
+        /// 解析 SlotInfos / SlotKeys 為時段 List（不含日期，供循環使用）
+        /// </summary>
+        private List<(TimeOnly Start, TimeOnly End, bool IsSetup)> ParseSlotInfosToList(InsertVM vm)
+        {
+            var slots = new List<(TimeOnly Start, TimeOnly End, bool IsSetup)>();
+
+            if (vm.SlotInfos != null && vm.SlotInfos.Any())
+            {
+                foreach (var slotInfo in vm.SlotInfos)
+                {
+                    var parts = slotInfo.Key.Split('-');
+                    if (parts.Length != 2 ||
+                        !TimeOnly.TryParse(parts[0].Trim(), out var start) ||
+                        !TimeOnly.TryParse(parts[1].Trim(), out var end))
+                        throw new HttpException($"時段格式錯誤: {slotInfo.Key}");
+                    slots.Add((start, end, slotInfo.IsSetup));
+                }
+            }
+            else if (vm.SlotKeys != null && vm.SlotKeys.Any())
+            {
+                foreach (var slotKey in vm.SlotKeys)
+                {
+                    var parts = slotKey.Split('-');
+                    if (parts.Length != 2 ||
+                        !TimeOnly.TryParse(parts[0].Trim(), out var start) ||
+                        !TimeOnly.TryParse(parts[1].Trim(), out var end))
+                        throw new HttpException($"時段格式錯誤: {slotKey}");
+                    slots.Add((start, end, false));
+                }
+            }
+            else
+            {
+                throw new HttpException("必須選擇至少一個時段");
+            }
+
+            return slots;
+        }
+
+        /// <summary>
+        /// 檢查指定日期的時段是否有衝突（回傳 bool，不拋例外）
+        /// </summary>
+        private bool CheckSlotsConflict(Guid roomId, DateOnly date,
+            List<(TimeOnly Start, TimeOnly End, bool IsSetup)> slots, Guid? excludeConferenceId)
+        {
+            var query = db.ConferenceRoomSlot
+                .Where(s => s.RoomId == roomId
+                         && s.SlotDate == date
+                         && (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved));
+
+            if (excludeConferenceId.HasValue)
+                query = query.Where(s => s.ConferenceId != excludeConferenceId.Value);
+
+            var occupiedSlots = query.Select(s => new { s.StartTime, s.EndTime }).ToList();
+
+            return slots.Any(requested =>
+                occupiedSlots.Any(occupied =>
+                    requested.Start < occupied.EndTime && requested.End > occupied.StartTime));
+        }
+
         /// <summary>
         /// ✅ 建立預約(待審核狀態)
         /// </summary>
@@ -1658,6 +1908,10 @@ namespace TASA.Services.ConferenceModule
             if (string.IsNullOrWhiteSpace(vm.PaymentMethod))
                 throw new HttpException("必須選擇付款方式");
 
+            // ✅ 成本分攤必須填寫成本代碼
+            if (vm.PaymentMethod == "cost-sharing" && string.IsNullOrWhiteSpace(vm.DepartmentCode))
+                throw new HttpException("選擇成本分攤時必須填寫成本代碼");
+
             // ✅ 判斷是跨日模式還是單日模式
             var isMultiDay = vm.StartDate.HasValue && vm.EndDate.HasValue;
 
@@ -2112,6 +2366,34 @@ namespace TASA.Services.ConferenceModule
                 };
 
                 db.ConferenceAttachment.Add(attachmentEntity);
+            }
+        }
+
+        /// <summary>
+        /// 複製附件記錄（循環預約用，共用檔案路徑不重複儲存）
+        /// </summary>
+        private void CopyAttachmentsFromFirst(Guid conferenceId, Guid sourceConferenceId, Guid userId)
+        {
+            var sourceAttachments = db.ConferenceAttachment
+                .Where(a => a.ConferenceId == sourceConferenceId)
+                .ToList();
+
+            foreach (var source in sourceAttachments)
+            {
+                var copy = new ConferenceAttachment
+                {
+                    Id = Guid.NewGuid(),
+                    ConferenceId = conferenceId,
+                    AttachmentType = source.AttachmentType,
+                    FileName = source.FileName,
+                    FilePath = source.FilePath,  // ✅ 共用檔案路徑
+                    FileSize = source.FileSize,
+                    MimeType = source.MimeType,
+                    UploadedAt = DateTime.Now,
+                    UploadedBy = userId
+                };
+
+                db.ConferenceAttachment.Add(copy);
             }
         }
 
