@@ -42,6 +42,7 @@ const deptSearch = new function () {
     this.clear = (queryObj) => {
         this.keyword.value = '';
         queryObj.DepartmentCode = '';
+        this.showDropdown.value = false;
         copy(this.filtered, this.all);
     };
 }
@@ -62,38 +63,64 @@ const reservation = new function () {
         keyword: '',
         reservationStatus: 1,    // ✅ 租借審核狀態 (預設:待審核)
         paymentStatus: '2',      // ✅ 付款審核狀態 (預設:待查帳) - 使用字串避免 v-model 綁定問題
-        DepartmentCode: ''
+        DepartmentCode: '',
+        paymentMethod: ''        // ✅ 繳費方式篩選 (批量審核用)
     });
 
     // ========= 列表資料 =========
     this.approvalList = reactive([]);  // 租借審核列表
     this.paymentList = reactive([]);   // 付款審核列表
 
-    // ========= 批量選取 =========
-    this.selectedIds = reactive([]);
+    // ========= 批量選取（支援跨頁，限成本分攤）=========
+    this.selectedIds = reactive([]);         // 已選取的 ID 清單
+    this.selectedItems = reactive([]);       // 已選取的項目完整資料（跨頁顯示用）
 
     this.isAllSelected = computed(() => {
-        const pending = this.approvalList.filter(x => x.status === '待審核');
+        const pending = this.approvalList.filter(x => x.status === '待審核' && x.paymentMethod === 'cost-sharing');
         return pending.length > 0 && pending.every(x => this.selectedIds.includes(x.id));
     });
 
     this.toggleAll = () => {
-        const pending = this.approvalList.filter(x => x.status === '待審核').map(x => x.id);
+        const pendingOnPage = this.approvalList.filter(x => x.status === '待審核' && x.paymentMethod === 'cost-sharing');
         if (this.isAllSelected.value) {
-            this.selectedIds.splice(0, this.selectedIds.length);
+            pendingOnPage.forEach(x => {
+                const idx = this.selectedIds.indexOf(x.id);
+                if (idx !== -1) {
+                    this.selectedIds.splice(idx, 1);
+                    const itemIdx = this.selectedItems.findIndex(s => s.id === x.id);
+                    if (itemIdx !== -1) this.selectedItems.splice(itemIdx, 1);
+                }
+            });
         } else {
-            this.selectedIds.splice(0, this.selectedIds.length, ...pending);
+            pendingOnPage.filter(x => !this.selectedIds.includes(x.id)).forEach(x => {
+                this.selectedIds.push(x.id);
+                this.selectedItems.push(x);
+            });
         }
     };
 
-    this.toggleSelect = (id) => {
+    this.toggleSelect = (item) => {
+        const idx = this.selectedIds.indexOf(item.id);
+        if (idx === -1) {
+            this.selectedIds.push(item.id);
+            this.selectedItems.push(item);
+        } else {
+            this.selectedIds.splice(idx, 1);
+            const itemIdx = this.selectedItems.findIndex(s => s.id === item.id);
+            if (itemIdx !== -1) this.selectedItems.splice(itemIdx, 1);
+        }
+    };
+
+    this.removeSelected = (id) => {
         const idx = this.selectedIds.indexOf(id);
-        if (idx === -1) this.selectedIds.push(id);
-        else this.selectedIds.splice(idx, 1);
+        if (idx !== -1) this.selectedIds.splice(idx, 1);
+        const itemIdx = this.selectedItems.findIndex(s => s.id === id);
+        if (itemIdx !== -1) this.selectedItems.splice(itemIdx, 1);
     };
 
     this.clearSelection = () => {
         this.selectedIds.splice(0, this.selectedIds.length);
+        this.selectedItems.splice(0, this.selectedItems.length);
     };
 
     // ========= 批量表單 =========
@@ -108,10 +135,8 @@ const reservation = new function () {
     this.bulkRejectVm = reactive({ reason: '' });
 
     this.bulkPricing = computed(() => {
-        // 所有選取項目的原價總和
-        const base = this.approvalList
-            .filter(x => this.selectedIds.includes(x.id))
-            .reduce((sum, x) => sum + (x.totalAmount || 0), 0);
+        // 使用 selectedItems 計算，支援跨頁選取
+        const base = this.selectedItems.reduce((sum, x) => sum + (x.totalAmount || 0), 0);
         let discount = 0;
         if (this.bulkVm.discountType === 'percent') {
             discount = Math.round(base * (this.bulkVm.discountPercent / 100));
@@ -254,6 +279,10 @@ const reservation = new function () {
                 queryParams.DepartmentCode = this.query.DepartmentCode;
             }
 
+            if (this.query.paymentMethod) {
+                queryParams.paymentMethod = this.query.paymentMethod;
+            }
+
             // ✅ 只有選擇狀態時才加入參數
             if (this.query.reservationStatus !== null && this.query.reservationStatus !== '') {
                 queryParams.reservationStatus = this.query.reservationStatus;
@@ -288,8 +317,15 @@ const reservation = new function () {
                     time: x.Time,
                     roomName: x.RoomName,
                     paymentType: x.PaymentType,
+                    paymentMethod: x.PaymentMethod,
+                    departmentCode: x.DepartmentCode,
                     filePath: x.FilePath,
                     totalAmount: x.TotalAmount,
+                    parkingTicketCount: x.ParkingTicketCount,
+                    paymentDeadline: x.PaymentDeadline,
+                    organizerUnit: x.OrganizerUnit,
+                    contactPhone: x.ContactPhone,
+                    contactEmail: x.ContactEmail,
                     status: x.Status,
                     rejectReason: x.RejectReason,
                     // ✅ 多階層審核欄位
@@ -324,7 +360,6 @@ const reservation = new function () {
 
                 this.approvalList.splice(0, this.approvalList.length, ...mapped);
                 this.approvalCount.value = mapped.length;
-                this.clearSelection();
 
                 console.log('✅ 租借審核列表更新完成,共', mapped.length, '筆');
             }
@@ -686,19 +721,13 @@ const reservation = new function () {
             return;
         }
 
-        const discountPerItem = this.bulkVm.discountType === 'percent'
-            ? null  // percent 在後端每筆各自計算，這裡傳 null
-            : this.bulkVm.discountType === 'amount'
-                ? this.bulkVm.discountAmount
-                : this.bulkVm.discountType === 'free'
-                    ? null  // free 後端對每筆設全額折扣
-                    : null;
-
         try {
             const res = await global.api.reservations.bulkapprove({
                 body: {
                     conferenceIds: [...this.selectedIds],
-                    discountAmount: discountPerItem,
+                    discountType: this.bulkVm.discountType,
+                    discountPercent: this.bulkVm.discountType === 'percent' ? this.bulkVm.discountPercent : null,
+                    discountAmount: this.bulkVm.discountType === 'amount' ? this.bulkVm.discountAmount : null,
                     discountReason: this.bulkVm.discountReason || null,
                     paymentDeadline: this.bulkVm.paymentDeadline || null
                 }
@@ -711,6 +740,7 @@ const reservation = new function () {
                 console.warn('批量核准部分失敗:', Errors);
             }
             bootstrap.Modal.getInstance(document.getElementById('bulkApproveModal'))?.hide();
+            this.clearSelection();
             await this.getApprovalList(!!approvalPageRef);
         } catch (err) {
             addAlert('批量核准失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
@@ -739,6 +769,7 @@ const reservation = new function () {
                 console.warn('批量拒絕部分失敗:', Errors);
             }
             bootstrap.Modal.getInstance(document.getElementById('bulkRejectModal'))?.hide();
+            this.clearSelection();
             await this.getApprovalList(!!approvalPageRef);
         } catch (err) {
             addAlert('批量拒絕失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
@@ -840,9 +871,19 @@ window.$config = {
         // ✅ Watch 篩選條件變動
         watch([
             () => reservation.query.keyword,
-            () => reservation.query.reservationStatus
+            () => reservation.query.reservationStatus,
+            () => reservation.query.DepartmentCode,
+            () => reservation.query.paymentMethod
         ], () => {
             if (reservation.activeTab.value !== 'approval') return;
+
+            // 切換離成本分攤時，自動清除部門代碼篩選
+            if (reservation.query.paymentMethod !== 'cost-sharing') {
+                deptSearch.clear(reservation.query);
+            }
+
+            // 篩選條件改變時清空選取
+            reservation.clearSelection();
 
             if (approvalPageRef) {
                 approvalPageRef.go(1);

@@ -20,8 +20,8 @@
                     </div>
 
                     <!-- ✅ 租借審核狀態篩選 -->
-                    <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'approval'">
-                        <select v-model.number="reservation.query.reservationStatus" @@change="reservation.getList"
+                    <div class="col-12 col-lg-2" v-if="reservation.activeTab.value === 'approval'">
+                        <select v-model.number="reservation.query.reservationStatus"
                                 class="form-select">
                             <option :value="null">全部狀態</option>
                             <option :value="1">待審核</option>
@@ -31,7 +31,7 @@
                     </div>
 
                     <!-- ✅ 付款審核狀態篩選 (watch 會自動觸發查詢，不需要 @@change) -->
-                    <div class="col-12 col-lg-3" v-if="reservation.activeTab.value === 'payment'">
+                    <div class="col-12 col-lg-2" v-if="reservation.activeTab.value === 'payment'">
                         <select v-model="reservation.query.paymentStatus" class="form-select">
                             <option value="">全部狀態</option>
                             <option value="1">未付款</option>
@@ -41,9 +41,20 @@
                         </select>
                     </div>
 
-                    <!-- 部門代碼篩選 -->
-                    <div class="col-12 col-lg-3 position-relative dept-search-wrap"
-                         v-if="reservation.activeTab.value === 'approval'">
+                    <!-- ✅ 繳費方式篩選 (租借審核用，批量審核限成本分攤) -->
+                    <div class="col-12 col-lg-2" v-if="reservation.activeTab.value === 'approval'">
+                        <select v-model="reservation.query.paymentMethod"
+                                class="form-select">
+                            <option value="">全部繳費方式</option>
+                            <option value="cost-sharing">成本分攤</option>
+                            <option value="cash">現金付款</option>
+                            <option value="transfer">銀行匯款</option>
+                        </select>
+                    </div>
+
+                    <!-- 部門代碼篩選（只在選成本分攤時顯示） -->
+                    <div class="col-12 col-lg-2 position-relative dept-search-wrap"
+                         v-if="reservation.activeTab.value === 'approval' && reservation.query.paymentMethod === 'cost-sharing'">
                         <div class="input-group">
                             <input type="text" class="form-control"
                                    v-model="deptSearch.keyword.value"
@@ -51,7 +62,7 @@
                                    @@focus="deptSearch.showDropdown.value = true"
                                    placeholder="篩選部門代碼..." autocomplete="off">
                             <button v-if="deptSearch.keyword.value" class="btn btn-outline-secondary"
-                                    type="button" @@click="deptSearch.clear(reservation.query); reservation.getList()">
+                                    type="button" @@click="deptSearch.clear(reservation.query)">
                                 <span class="material-icons" style="font-size:16px;">close</span>
                             </button>
                         </div>
@@ -59,7 +70,7 @@
                              class="dept-dropdown">
                             <div v-for="item in deptSearch.filtered" :key="item.code"
                                  class="dept-item"
-                                 @@click="deptSearch.select(item, reservation.query); reservation.getList()">
+                                 @@click="deptSearch.select(item, reservation.query)">
                                 <strong>{{ item.code }}</strong> - {{ item.name }}
                             </div>
                         </div>
@@ -92,30 +103,32 @@
                 <!-- ✅ 租借審核列表 -->
                 <div v-show="reservation.activeTab.value === 'approval'">
 
-                    <!-- 批量操作列 -->
+                    <!-- 批量操作列 (限成本分攤，支援跨頁) -->
                     <div v-if="reservation.selectedIds.length > 0"
-                         class="d-flex align-items-center gap-2 mb-2 p-2 bg-primary-subtle rounded">
-                        <span class="text-primary fw-semibold">已選取 {{ reservation.selectedIds.length }} 筆</span>
-                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal"
-                                @@click="reservation.bulkVm.discountType = 'none'; reservation.bulkVm.discountReason = ''; reservation.bulkVm.paymentDeadline = ''">
-                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">done_all</span>
-                            批量核准
-                        </button>
-                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#bulkRejectModal"
-                                @@click="reservation.bulkRejectVm.reason = ''">
-                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">block</span>
-                            批量拒絕
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary ms-auto" @@click="reservation.clearSelection()">
-                            取消選取
-                        </button>
+                         class="mb-2 p-2 bg-primary-subtle rounded">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="text-primary fw-semibold">已選取 {{ reservation.selectedIds.length }} 筆（成本分攤）</span>
+                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal"
+                                    @@click="reservation.bulkVm.discountType = 'none'; reservation.bulkVm.discountReason = ''; reservation.bulkVm.paymentDeadline = ''">
+                                <span class="material-icons" style="font-size:16px;vertical-align:middle;">done_all</span>
+                                批量核准
+                            </button>
+                            <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#bulkRejectModal"
+                                    @@click="reservation.bulkRejectVm.reason = ''">
+                                <span class="material-icons" style="font-size:16px;vertical-align:middle;">block</span>
+                                批量拒絕
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary ms-auto" @@click="reservation.clearSelection()">
+                                全部取消
+                            </button>
+                        </div>
                     </div>
 
                     <table class="table table-hover">
                         <caption>租借審核列表</caption>
                         <thead>
                             <tr class="table-light">
-                                <th style="width:36px;">
+                                <th style="width:36px;" title="批量審核限成本分攤，支援跨頁選取">
                                     <input type="checkbox" class="form-check-input"
                                            :checked="reservation.isAllSelected.value"
                                            @@click="reservation.toggleAll()">
@@ -133,9 +146,10 @@
                             <tr v-for="item in reservation.approvalList" :key="item.id"
                                 :class="{ 'table-primary': reservation.selectedIds.includes(item.id) }">
                                 <td>
-                                    <input v-if="item.status === '待審核'" type="checkbox" class="form-check-input"
+                                    <input v-if="item.status === '待審核' && item.paymentMethod === 'cost-sharing'"
+                                           type="checkbox" class="form-check-input"
                                            :checked="reservation.selectedIds.includes(item.id)"
-                                           @@click="reservation.toggleSelect(item.id)">
+                                           @@click="reservation.toggleSelect(item)">
                                 </td>
                                 <td>{{ item.bookingNo }}</td>
                                 <td>{{ item.applicantName }}</td>
@@ -238,12 +252,47 @@
         <!-- 基本資料 -->
         <div class="border rounded p-3 bg-body-tertiary mb-3">
             <div class="row g-2 small">
-                <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentReview.applicantName }}</div>
-                <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentReview.roomName }}</div>
-                <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentReview.date }}</div>
-                <div class="col-md-6"><strong>時間：</strong>{{ reservation.formatTimeDisplay(reservation.currentReview) }}</div>
+                <div class="col-md-6"><strong>申請人:</strong> {{ reservation.currentReview.applicantName }}</div>
+                <div class="col-md-6"><strong>會議室:</strong> {{ reservation.currentReview.roomName }}</div>
+                <div class="col-md-6"><strong>日期:</strong> {{ reservation.currentReview.date }}</div>
+                <div class="col-md-6"><strong>時間:</strong> {{ reservation.formatTimeDisplay(reservation.currentReview) }}</div>
+                <div class="col-md-6" v-if="reservation.currentReview.organizerUnit">
+                    <strong>主辦單位:</strong> {{ reservation.currentReview.organizerUnit }}
+                </div>
                 <div class="col-md-6" v-if="reservation.currentReview.expectedAttendees">
-                    <strong>預計人數:</strong>{{ reservation.currentReview.expectedAttendees }} 人
+                    <strong>預計人數:</strong> {{ reservation.currentReview.expectedAttendees }} 人
+                </div>
+                <div class="col-md-6" v-if="reservation.currentReview.contactPhone">
+                    <strong>聯絡電話:</strong> {{ reservation.currentReview.contactPhone }}
+                </div>
+                <div class="col-md-6" v-if="reservation.currentReview.contactEmail">
+                    <strong>電子郵件:</strong> {{ reservation.currentReview.contactEmail }}
+                </div>
+                <div class="col-md-6">
+                    <strong>租借金額:</strong> NT${{ reservation.currentReview.totalAmount?.toLocaleString() }}
+                </div>
+                <div class="col-md-6" v-if="reservation.currentReview.parkingTicketCount > 0">
+                    <strong>停車券:</strong> {{ reservation.currentReview.parkingTicketCount }} 張
+                </div>
+            </div>
+        </div>
+
+        <!-- 繳費資訊 -->
+        <div class="border rounded p-3 bg-body-tertiary mb-3">
+            <h6 class="text-muted small mb-2">繳費資訊</h6>
+            <div class="row g-2 small">
+                <div class="col-md-6">
+                    <strong>繳費方式:</strong>
+                    <span class="badge ms-1"
+                          :class="reservation.currentReview.paymentMethod === 'cost-sharing' ? 'bg-info' : 'bg-secondary'">
+                        {{ getPaymentMethodText(reservation.currentReview.paymentMethod) || '-' }}
+                    </span>
+                </div>
+                <div class="col-md-6" v-if="reservation.currentReview.paymentMethod === 'cost-sharing' && reservation.currentReview.departmentCode">
+                    <strong>部門代碼:</strong> {{ reservation.currentReview.departmentCode }}
+                </div>
+                <div class="col-md-6" v-if="reservation.currentReview.paymentDeadline">
+                    <strong>繳費期限:</strong> {{ reservation.currentReview.paymentDeadline }}
                 </div>
             </div>
         </div>
@@ -341,8 +390,8 @@
                               required></textarea>
                 </div>
 
-                <!-- 折扣設定（核准或決行時顯示） -->
-                <div v-if="reservation.vm.result === 'approve' || reservation.vm.result === 'fasttrack'" class="col-12">
+                <!-- 折扣設定（第一關才顯示，核准或決行時） -->
+                <div v-if="(reservation.vm.result === 'approve' || reservation.vm.result === 'fasttrack') && reservation.currentReview.currentApprovalLevel === 0" class="col-12">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">折扣方式</label>

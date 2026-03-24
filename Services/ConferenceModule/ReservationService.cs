@@ -74,7 +74,9 @@ namespace TASA.Services.ConferenceModule
         public class BulkApproveVM
         {
             public List<Guid> ConferenceIds { get; set; } = [];
-            public int? DiscountAmount { get; set; }
+            public string DiscountType { get; set; } = "none";  // none, percent, amount, free
+            public int? DiscountPercent { get; set; }           // 百分比折扣 (1~100)
+            public int? DiscountAmount { get; set; }            // 固定金額折扣
             public string? DiscountReason { get; set; }
             public DateTime? PaymentDeadline { get; set; }
         }
@@ -488,6 +490,7 @@ namespace TASA.Services.ConferenceModule
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
                 .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
+                .WhereIf(!string.IsNullOrWhiteSpace(query.PaymentMethod), x => x.PaymentMethod == query.PaymentMethod)
                 .OrderByDescending(x => x.CreateAt)
                 .Select(x => new
                 {
@@ -1427,18 +1430,37 @@ namespace TASA.Services.ConferenceModule
             if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
                 throw new HttpException("請選擇至少一筆預約");
 
+            // 預先載入各筆金額與當前關卡，供折扣計算與判斷用
+            var conferenceData = db.Conference
+                .Where(c => vm.ConferenceIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.TotalAmount, c.CurrentApprovalLevel })
+                .ToDictionary(c => c.Id);
+
             var result = new BulkResultVM();
 
             foreach (var id in vm.ConferenceIds)
             {
                 try
                 {
+                    conferenceData.TryGetValue(id, out var data);
+                    var isFirstLevel = data?.CurrentApprovalLevel == 0;
+
+                    // 折扣只套用在第一關，其他關卡直接核准不打折
+                    int? discountAmount = isFirstLevel ? vm.DiscountType switch
+                    {
+                        "percent" when vm.DiscountPercent.HasValue =>
+                            (int)Math.Round((data?.TotalAmount ?? 0) * vm.DiscountPercent.Value / 100.0),
+                        "free" => data?.TotalAmount,
+                        "amount" => vm.DiscountAmount,
+                        _ => null
+                    } : null;
+
                     ApproveReservation(new ApproveVM
                     {
                         ConferenceId = id,
-                        DiscountAmount = vm.DiscountAmount,
-                        DiscountReason = vm.DiscountReason,
-                        PaymentDeadline = vm.PaymentDeadline
+                        DiscountAmount = discountAmount > 0 ? discountAmount : null,
+                        DiscountReason = isFirstLevel ? vm.DiscountReason : null,
+                        PaymentDeadline = isFirstLevel ? vm.PaymentDeadline : null
                     }, reviewedBy);
                     result.Success++;
                 }

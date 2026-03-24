@@ -7,4 +7,5 @@ public class ReservationQueryVM : BaseQueryVM
     public Guid? UserId { get; set; }
     public ReservationStatus? ReservationStatus { get; set; }  // ✅ 改成 enum
     public PaymentStatus? PaymentStatus { get; set; }  // ✅ 改成 enum
+    public string? PaymentMethod { get; set; }
 }
