@@ -270,6 +270,7 @@ window.$config = {
             if (!this.form.startDate || !this.form.endDate) return false;
             return this.form.startDate !== this.form.endDate;
         });
+
         this.activeTab = ref('');      // 當前選中的日期 Tab
         this.slotsByDate = reactive({});        // 每天的時段資料 { '2025-01-20': [...], ... }
         this.selectedSlotsByDate = reactive({}); // 每天的已選時段 { '2025-01-20': [{key, isSetup}], ... }
@@ -1721,8 +1722,8 @@ window.$config = {
             apiCall
                 .then(res => {
                     const successMsg = this.isEditMode.value
-                        ? '預約已更新,請等待管理者審核!'
-                        : '預約已送出,請等待管理者審核!';
+                        ? '預約已更新，請等待管理者審核！'
+                        : '預約已送出，請等待管理者審核！';
 
                     console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                     addAlert(successMsg, { type: 'success' });

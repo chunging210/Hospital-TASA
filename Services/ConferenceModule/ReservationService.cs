@@ -71,6 +71,27 @@ namespace TASA.Services.ConferenceModule
             public string? Reason { get; set; }
         }
 
+        public class BulkApproveVM
+        {
+            public List<Guid> ConferenceIds { get; set; } = [];
+            public int? DiscountAmount { get; set; }
+            public string? DiscountReason { get; set; }
+            public DateTime? PaymentDeadline { get; set; }
+        }
+
+        public class BulkRejectVM
+        {
+            public List<Guid> ConferenceIds { get; set; } = [];
+            public string? Reason { get; set; }
+        }
+
+        public class BulkResultVM
+        {
+            public int Success { get; set; }
+            public int Failed { get; set; }
+            public List<string> Errors { get; set; } = [];
+        }
+
         public class ReservationListVM
         {
             public Guid Id { get; set; }
@@ -466,6 +487,7 @@ namespace TASA.Services.ConferenceModule
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
+                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
                 .OrderByDescending(x => x.CreateAt)
                 .Select(x => new
                 {
@@ -611,6 +633,7 @@ namespace TASA.Services.ConferenceModule
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
+                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
                 .OrderByDescending(x => x.CreateAt)
                 .Select(x => new
                 {
@@ -1134,6 +1157,64 @@ namespace TASA.Services.ConferenceModule
 
             // 寄送審核拒絕通知
             service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
+        }
+
+        public BulkResultVM BulkApproveReservation(BulkApproveVM vm, Guid reviewedBy)
+        {
+            if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
+                throw new HttpException("請選擇至少一筆預約");
+
+            var result = new BulkResultVM();
+
+            foreach (var id in vm.ConferenceIds)
+            {
+                try
+                {
+                    ApproveReservation(new ApproveVM
+                    {
+                        ConferenceId = id,
+                        DiscountAmount = vm.DiscountAmount,
+                        DiscountReason = vm.DiscountReason,
+                        PaymentDeadline = vm.PaymentDeadline
+                    }, reviewedBy);
+                    result.Success++;
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    result.Errors.Add($"{id}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        public BulkResultVM BulkRejectReservation(BulkRejectVM vm, Guid reviewedBy)
+        {
+            if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
+                throw new HttpException("請選擇至少一筆預約");
+
+            var result = new BulkResultVM();
+
+            foreach (var id in vm.ConferenceIds)
+            {
+                try
+                {
+                    RejectReservation(new RejectVM
+                    {
+                        ConferenceId = id,
+                        Reason = vm.Reason
+                    }, reviewedBy);
+                    result.Success++;
+                }
+                catch (Exception ex)
+                {
+                    result.Failed++;
+                    result.Errors.Add($"{id}: {ex.Message}");
+                }
+            }
+
+            return result;
         }
 
         /// <summary>

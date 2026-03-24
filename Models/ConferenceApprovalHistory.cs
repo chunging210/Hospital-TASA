@@ -48,7 +48,7 @@ namespace TASA.Models
         /// 審核狀態 (0=待審核, 1=已核准, 2=已拒絕)
         /// </summary>
         [Required]
-        [Column(TypeName = "tinyint(1) unsigned")]
+        [Column(TypeName = "tinyint(3) unsigned")]
         public ApprovalStatus Status { get; set; } = ApprovalStatus.Pending;
 
         /// <summary>

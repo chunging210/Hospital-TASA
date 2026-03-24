@@ -21,7 +21,7 @@ window.$config = {
         // ✅ 可以查看「所有預約」的權限（管理員、主任、總務、房間管理者、代理人）
         this.canViewAllReservations = computed(() => {
             return this.isAdmin.value || this.isDirector.value ||
-                   this.isAccountant.value || this.isRoomManager.value;
+                this.isAccountant.value || this.isRoomManager.value;
         });
 
         /* ========= 搜尋與篩選 ========= */
@@ -141,6 +141,12 @@ window.$config = {
         // ✅ 審核進度摘要（例如：2/3 關已通過）
         this.getApprovalProgress = (history) => {
             if (!history || history.length === 0) return '';
+
+            // ✅ 優先以最終審核狀態為準
+            const finalStatus = this.selectedItem.value?.approvalStatus;
+            if (finalStatus === '審核拒絕') return '已拒絕';
+            if (finalStatus === '已取消') return '已取消';
+
             const total = history.length;
             const approved = history.filter(h => h.Status === 'Approved').length;
             const rejected = history.some(h => h.Status === 'Rejected');
@@ -152,6 +158,12 @@ window.$config = {
         // ✅ 進度徽章樣式
         this.getProgressBadgeClass = (history) => {
             if (!history || history.length === 0) return 'bg-secondary';
+
+            // ✅ 優先以最終審核狀態為準
+            const finalStatus = this.selectedItem.value?.approvalStatus;
+            if (finalStatus === '審核拒絕') return 'bg-danger';
+            if (finalStatus === '已取消') return 'bg-secondary';
+
             const rejected = history.some(h => h.Status === 'Rejected');
             if (rejected) return 'bg-danger';
             const allApproved = history.every(h => h.Status === 'Approved');

@@ -19,3 +19,28 @@ td.slot-empty {
     text-align: center;
     vertical-align: middle !important;
 }
+
+.unitname-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 1050;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    margin-top: 2px;
+}
+
+.unitname-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.unitname-item:last-child { border-bottom: none; }
+
+.unitname-item:hover { background-color: #f8f9fa; }

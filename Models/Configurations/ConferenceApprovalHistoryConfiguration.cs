@@ -32,7 +32,7 @@ namespace TASA.Models.Configurations
                 .HasComment("審核人ID");
 
             entity.Property(e => e.Status)
-                .HasColumnType("tinyint(1) unsigned")
+                .HasColumnType("tinyint(3) unsigned")
                 .HasDefaultValue(ApprovalStatus.Pending)
                 .HasComment("審核狀態");
 

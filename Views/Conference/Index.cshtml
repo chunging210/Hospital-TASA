@@ -3,44 +3,85 @@
     <div class="container-fluid vstack gap-3">
         <div class="card">
             <div class="card-header mx-4 mt-3">
-                <div class="row d-flex align-items-center g-2">
-                    <div class="col-auto text-branding d-flex align-items-center">
+                <!-- 主列：標題 + 日期 + 關鍵字 + 進階篩選按鈕（同一排） -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="text-branding d-flex align-items-center flex-shrink-0">
                         <span class="material-icons">calendar_month</span>會議總覽
                     </div>
-                    <!-- 日期範圍：未選會議室 或 選了會議室+列表視圖 -->
-                    <div class="col-12 col-lg-3" v-show="!conference.query.RoomId || conference.viewMode.value === 'list'">
-                        <div class="input-group input-group-sm">
+                    <!-- 日期範圍：未選會議室 或 列表視圖 -->
+                    <div v-show="!conference.query.RoomId || conference.viewMode.value === 'list'"
+                         style="min-width:260px; flex:1 1 260px;">
+                        <div class="input-group">
                             <input v-model="conference.query.Start" type="date" class="form-control">
                             <span class="input-group-text">~</span>
                             <input v-model="conference.query.End" type="date" class="form-control">
                         </div>
                     </div>
-                    <!-- 單一日期：選了會議室 + 日/週/月視圖 -->
-                    <div class="col-auto" v-show="conference.query.RoomId && conference.viewMode.value !== 'list'">
-                        <input type="date" class="form-control form-control-sm"
+                    <!-- 單一日期：選了會議室 + 非列表視圖 -->
+                    <div v-show="conference.query.RoomId && conference.viewMode.value !== 'list'"
+                         style="min-width:160px;">
+                        <input type="date" class="form-control"
                                :value="conference.formatSelectedDate()"
                                @@change="conference.onDatePickerChange($event)">
                     </div>
-                    <!-- 大樓篩選 -->
-                    <div class="col-6 col-lg-2">
-                        <select v-model="conference.query.Building" @@change="conference.onBuildingChange"
-                                class="form-select form-select-sm">
-                            <option value="">全部大樓</option>
-                            <option v-for="item in building.list" :value="item.Building">{{item.Building}}</option>
-                        </select>
-                    </div>
-                    <!-- 會議室篩選 -->
-                    <div class="col-6 col-lg-2">
-                        <select v-model="conference.query.RoomId" @@change="conference.onRoomChange"
-                                class="form-select form-select-sm">
-                            <option value="">全部會議室</option>
-                            <option v-for="{Id,Name} in conference.filteredRoomList.value" :value="Id">{{Name}}</option>
-                        </select>
-                    </div>
-                    <!-- 搜尋：只有未選會議室時顯示 -->
-                    <div class="col-12 col-lg-2" v-show="!conference.query.RoomId">
-                        <input type="text" class="form-control form-control-sm" v-model="conference.query.keyword"
+                    <!-- 關鍵字 -->
+                    <div style="min-width:180px; flex:1 1 180px;">
+                        <input type="text" class="form-control"
+                               v-model="conference.query.keyword"
                                placeholder="搜尋關鍵字...">
+                    </div>
+                    <!-- 進階篩選按鈕 -->
+                    <div class="ms-auto flex-shrink-0">
+                        <button class="btn d-flex align-items-center gap-2"
+                                :class="conference.showAdvancedFilter.value ? 'btn-primary' : 'btn-outline-secondary'"
+                                @@click="conference.showAdvancedFilter.value = !conference.showAdvancedFilter.value">
+                            <span class="material-icons" style="font-size:16px;">tune</span>
+                            進階篩選
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 進階篩選區塊 -->
+                <div v-show="conference.showAdvancedFilter.value"
+                     class="rounded mt-2 p-3" style="background:#f4f6f8;">
+                    <div class="row g-2">
+                        <!-- 大樓篩選 -->
+                        <div class="col-12 col-md-4">
+                            <select v-model="conference.query.Building" @@change="conference.onBuildingChange"
+                                    class="form-select">
+                                <option value="">全部大樓</option>
+                                <option v-for="item in building.list" :value="item.Building">{{item.Building}}</option>
+                            </select>
+                        </div>
+                        <!-- 會議室篩選 -->
+                        <div class="col-12 col-md-4">
+                            <select v-model="conference.query.RoomId" @@change="conference.onRoomChange"
+                                    class="form-select">
+                                <option value="">全部會議室</option>
+                                <option v-for="{Id,Name} in conference.filteredRoomList.value" :value="Id">{{Name}}</option>
+                            </select>
+                        </div>
+                        <!-- 部門代碼篩選 -->
+                        <div class="col-12 col-md-4 position-relative unitname-search-wrap">
+                            <div class="input-group">
+                                <input type="text" class="form-control"
+                                       v-model="deptSearch.keyword.value"
+                                       @@input="deptSearch.filter()"
+                                       @@focus="deptSearch.showDropdown.value = true"
+                                       placeholder="篩選部門代碼..." autocomplete="off">
+                                <button v-if="deptSearch.keyword.value" class="btn btn-outline-secondary"
+                                        type="button" @@click="deptSearch.clear()">
+                                    <span class="material-icons" style="font-size:16px;">close</span>
+                                </button>
+                            </div>
+                            <div v-if="deptSearch.showDropdown.value && deptSearch.filtered.length > 0"
+                                 class="unitname-dropdown">
+                                <div v-for="item in deptSearch.filtered" :key="item.code"
+                                     class="unitname-item" @@click="deptSearch.select(item)">
+                                    <strong>{{ item.code }}</strong> - {{ item.name }}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

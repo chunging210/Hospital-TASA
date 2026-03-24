@@ -40,6 +40,30 @@
                             <option value="4">待重新上傳</option>
                         </select>
                     </div>
+
+                    <!-- 部門代碼篩選 -->
+                    <div class="col-12 col-lg-3 position-relative dept-search-wrap"
+                         v-if="reservation.activeTab.value === 'approval'">
+                        <div class="input-group">
+                            <input type="text" class="form-control"
+                                   v-model="deptSearch.keyword.value"
+                                   @@input="deptSearch.filter()"
+                                   @@focus="deptSearch.showDropdown.value = true"
+                                   placeholder="篩選部門代碼..." autocomplete="off">
+                            <button v-if="deptSearch.keyword.value" class="btn btn-outline-secondary"
+                                    type="button" @@click="deptSearch.clear(reservation.query); reservation.getList()">
+                                <span class="material-icons" style="font-size:16px;">close</span>
+                            </button>
+                        </div>
+                        <div v-if="deptSearch.showDropdown.value && deptSearch.filtered.length > 0"
+                             class="dept-dropdown">
+                            <div v-for="item in deptSearch.filtered" :key="item.code"
+                                 class="dept-item"
+                                 @@click="deptSearch.select(item, reservation.query); reservation.getList()">
+                                <strong>{{ item.code }}</strong> - {{ item.name }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -67,10 +91,35 @@
 
                 <!-- ✅ 租借審核列表 -->
                 <div v-show="reservation.activeTab.value === 'approval'">
+
+                    <!-- 批量操作列 -->
+                    <div v-if="reservation.selectedIds.length > 0"
+                         class="d-flex align-items-center gap-2 mb-2 p-2 bg-primary-subtle rounded">
+                        <span class="text-primary fw-semibold">已選取 {{ reservation.selectedIds.length }} 筆</span>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal"
+                                @@click="reservation.bulkVm.discountType = 'none'; reservation.bulkVm.discountReason = ''; reservation.bulkVm.paymentDeadline = ''">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">done_all</span>
+                            批量核准
+                        </button>
+                        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#bulkRejectModal"
+                                @@click="reservation.bulkRejectVm.reason = ''">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">block</span>
+                            批量拒絕
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary ms-auto" @@click="reservation.clearSelection()">
+                            取消選取
+                        </button>
+                    </div>
+
                     <table class="table table-hover">
                         <caption>租借審核列表</caption>
                         <thead>
                             <tr class="table-light">
+                                <th style="width:36px;">
+                                    <input type="checkbox" class="form-check-input"
+                                           :checked="reservation.isAllSelected.value"
+                                           @@click="reservation.toggleAll()">
+                                </th>
                                 <th style="width:120px;">預約單號</th>
                                 <th>申請人</th>
                                 <th>日期</th>
@@ -81,7 +130,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="item in reservation.approvalList" :key="item.id">
+                            <tr v-for="item in reservation.approvalList" :key="item.id"
+                                :class="{ 'table-primary': reservation.selectedIds.includes(item.id) }">
+                                <td>
+                                    <input v-if="item.status === '待審核'" type="checkbox" class="form-check-input"
+                                           :checked="reservation.selectedIds.includes(item.id)"
+                                           @@click="reservation.toggleSelect(item.id)">
+                                </td>
                                 <td>{{ item.bookingNo }}</td>
                                 <td>{{ item.applicantName }}</td>
                                 <td>{{ item.date }}</td>
@@ -110,7 +165,7 @@
                                 </td>
                             </tr>
                             <tr v-if="reservation.approvalList.length === 0">
-                                <td colspan="7" class="text-center text-muted">
+                                <td colspan="8" class="text-center text-muted">
                                     {{ reservation.query.reservationStatus ? '沒有符合條件的資料' : '目前沒有待審核的租借申請' }}
                                 </td>
                             </tr>
@@ -224,6 +279,10 @@
                             <div class="step-label">
                                 <div class="step-name">第 {{ history.Level }} 關</div>
                                 <div class="step-status">{{ history.StatusText }}</div>
+                                <div v-if="reservation.currentReview.status === '審核拒絕' && history.Status === 'Approved'"
+     class="text-danger" style="font-size:11px;">
+    （審核拒絕）
+</div>
                                 <span v-if="history.Reason?.includes('決行') && !history.Reason?.includes('跳過')"
                                       class="step-tag tag-decision">決行</span>
                                 <span v-else-if="history.Reason?.includes('跳過')"
@@ -524,3 +583,80 @@
                         </form>
                     </div>
                 </div>
+
+<!-- ===== 批量核准 Modal ===== -->
+<div class="modal fade" id="bulkApproveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量核准</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">共選取 <strong>{{ reservation.selectedIds.length }}</strong> 筆待審核預約，以下設定將統一套用。</p>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">折扣方式</label>
+                        <select class="form-select" v-model="reservation.bulkVm.discountType">
+                            <option value="none">無折扣</option>
+                            <option value="percent">百分比折扣 (%)</option>
+                            <option value="amount">每筆金額折扣 (NT$)</option>
+                            <option value="free">全部免單</option>
+                        </select>
+                    </div>
+                    <div v-if="reservation.bulkVm.discountType === 'percent'" class="col-12">
+                        <label class="form-label">折扣％</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model.number="reservation.bulkVm.discountPercent" min="0" max="100">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div v-if="reservation.bulkVm.discountType === 'amount'" class="col-12">
+                        <label class="form-label">每筆折扣金額 (NT$)</label>
+                        <input type="number" class="form-control" v-model.number="reservation.bulkVm.discountAmount" min="0">
+                    </div>
+                    <div v-if="reservation.bulkVm.discountType !== 'none'" class="col-12">
+                        <label class="form-label">
+                            折扣原因
+                            <span v-if="reservation.bulkVm.discountType === 'free'" class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" v-model="reservation.bulkVm.discountReason" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">繳費期限</label>
+                        <input type="date" class="form-control" v-model="reservation.bulkVm.paymentDeadline" :min="reservation.today">
+                        <div class="form-text">不填則使用系統預設期限</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" @@click="reservation.submitBulkApprove()">確認核准</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 批量拒絕 Modal ===== -->
+<div class="modal fade" id="bulkRejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">批量拒絕</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">共選取 <strong>{{ reservation.selectedIds.length }}</strong> 筆待審核預約，將統一拒絕。</p>
+                <div>
+                    <label class="form-label">拒絕原因 <span class="text-danger">*</span></label>
+                    <textarea class="form-control" v-model="reservation.bulkRejectVm.reason" rows="3"
+                              placeholder="請填寫拒絕原因"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" @@click="reservation.submitBulkReject()">確認拒絕</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>

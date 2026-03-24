@@ -76,6 +76,28 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
+        [HttpPost("bulkapprove")]
+        public IActionResult BulkApproveReservation([FromBody] BulkApproveVM request)
+        {
+            var userId = GetCurrentUserId();
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+                throw new HttpException("您沒有審核租借的權限");
+
+            var result = service.ReservationService.BulkApproveReservation(request, userId);
+            return Ok(result);
+        }
+
+        [HttpPost("bulkreject")]
+        public IActionResult BulkRejectReservation([FromBody] BulkRejectVM request)
+        {
+            var userId = GetCurrentUserId();
+            if (!service.AuthRoleServices.CanApproveReservation(userId))
+                throw new HttpException("您沒有審核租借的權限");
+
+            var result = service.ReservationService.BulkRejectReservation(request, userId);
+            return Ok(result);
+        }
+
         /// <summary>
         /// 3-1. 決行（直接通過所有剩餘關卡）
         /// </summary>

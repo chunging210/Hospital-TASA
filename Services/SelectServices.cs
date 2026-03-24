@@ -489,6 +489,18 @@ namespace TASA.Services
         }
 
 
+        public IQueryable<string> UnitNames()
+        {
+            return db.AuthUser
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .WhereEnabled()
+                .Where(x => x.UnitName != null && x.UnitName != "")
+                .Select(x => x.UnitName!)
+                .Distinct()
+                .OrderBy(x => x);
+        }
+
         private static string GetRoleDisplayText(List<string> roles)
         {
             var displayNames = new List<string>();

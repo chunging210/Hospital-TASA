@@ -49,6 +49,7 @@ const global = new function () {
                 costcenters: GET,
                 smartsearch: POST,
                 internaluser: GET,
+                unitnames: GET,
                 calendarday: { method: POST, path: 'calendar/day' },
                 calendarweek: { method: POST, path: 'calendar/week' },
                 calendarmonth: { method: POST, path: 'calendar/month' }
@@ -71,6 +72,8 @@ const global = new function () {
             approve: POST,             // 租借審核通過
             reject: POST,              // 租借審核拒絕
             fasttrack: POST,           // 決行（直接通過所有剩餘關卡）
+            bulkapprove: POST,         // 批量核准
+            bulkreject: POST,          // 批量拒絕
 
             // ===== 付款審核 (總務/管理者) =====
             paymentlist: GET,

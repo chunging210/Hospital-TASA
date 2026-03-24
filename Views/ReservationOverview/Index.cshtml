@@ -468,6 +468,10 @@
                                                 <div class="step-name">第 {{ history.Level }} 關</div>
                                                 <div class="step-status">{{ history.StatusText }}</div>
                                                 <!-- 決行/跳過標籤 -->
+                                                <div v-if="selectedItem.approvalStatus === '審核拒絕' && history.Status === 'Approved'"
+     class="text-danger" style="font-size:11px;">
+    （審核拒絕）
+</div>
                                                 <span v-if="history.Reason?.includes('決行') && !history.Reason?.includes('跳過')"
                                                       class="step-tag tag-decision">決行</span>
                                                 <span v-else-if="history.Reason?.includes('跳過')"

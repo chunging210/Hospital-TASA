@@ -10,6 +10,42 @@ const { ref, reactive, onMounted, computed, watch, nextTick } = Vue;
 const approvalPage = ref(null);
 const paymentPage = ref(null);
 
+const deptSearch = new function () {
+    this.all = reactive([]);
+    this.filtered = reactive([]);
+    this.keyword = ref('');
+    this.showDropdown = ref(false);
+
+    this.load = () => {
+        global.api.select.costcenters()
+            .then((res) => {
+                const list = (res.data || []).map(c => ({ code: c.Code, name: c.Name }));
+                copy(this.all, list);
+                copy(this.filtered, list);
+            });
+    };
+
+    this.filter = () => {
+        const kw = this.keyword.value.trim().toLowerCase();
+        copy(this.filtered, kw
+            ? this.all.filter(c => c.code.toLowerCase().includes(kw) || c.name.toLowerCase().includes(kw))
+            : this.all
+        );
+    };
+
+    this.select = (item, queryObj) => {
+        this.keyword.value = `${item.code} - ${item.name}`;
+        queryObj.DepartmentCode = item.code;
+        this.showDropdown.value = false;
+    };
+
+    this.clear = (queryObj) => {
+        this.keyword.value = '';
+        queryObj.DepartmentCode = '';
+        copy(this.filtered, this.all);
+    };
+}
+
 const reservation = new function () {
     // ========= 權限資料 =========
     this.permissions = reactive({
@@ -25,12 +61,67 @@ const reservation = new function () {
     this.query = reactive({
         keyword: '',
         reservationStatus: 1,    // ✅ 租借審核狀態 (預設:待審核)
-        paymentStatus: '2'       // ✅ 付款審核狀態 (預設:待查帳) - 使用字串避免 v-model 綁定問題
+        paymentStatus: '2',      // ✅ 付款審核狀態 (預設:待查帳) - 使用字串避免 v-model 綁定問題
+        DepartmentCode: ''
     });
 
     // ========= 列表資料 =========
     this.approvalList = reactive([]);  // 租借審核列表
     this.paymentList = reactive([]);   // 付款審核列表
+
+    // ========= 批量選取 =========
+    this.selectedIds = reactive([]);
+
+    this.isAllSelected = computed(() => {
+        const pending = this.approvalList.filter(x => x.status === '待審核');
+        return pending.length > 0 && pending.every(x => this.selectedIds.includes(x.id));
+    });
+
+    this.toggleAll = () => {
+        const pending = this.approvalList.filter(x => x.status === '待審核').map(x => x.id);
+        if (this.isAllSelected.value) {
+            this.selectedIds.splice(0, this.selectedIds.length);
+        } else {
+            this.selectedIds.splice(0, this.selectedIds.length, ...pending);
+        }
+    };
+
+    this.toggleSelect = (id) => {
+        const idx = this.selectedIds.indexOf(id);
+        if (idx === -1) this.selectedIds.push(id);
+        else this.selectedIds.splice(idx, 1);
+    };
+
+    this.clearSelection = () => {
+        this.selectedIds.splice(0, this.selectedIds.length);
+    };
+
+    // ========= 批量表單 =========
+    this.bulkVm = reactive({
+        discountType: 'none',
+        discountPercent: 25,
+        discountAmount: 0,
+        discountReason: '',
+        paymentDeadline: ''
+    });
+
+    this.bulkRejectVm = reactive({ reason: '' });
+
+    this.bulkPricing = computed(() => {
+        // 所有選取項目的原價總和
+        const base = this.approvalList
+            .filter(x => this.selectedIds.includes(x.id))
+            .reduce((sum, x) => sum + (x.totalAmount || 0), 0);
+        let discount = 0;
+        if (this.bulkVm.discountType === 'percent') {
+            discount = Math.round(base * (this.bulkVm.discountPercent / 100));
+        } else if (this.bulkVm.discountType === 'amount') {
+            discount = this.bulkVm.discountAmount * this.selectedIds.length;
+        } else if (this.bulkVm.discountType === 'free') {
+            discount = base;
+        }
+        return { base, discount, final: Math.max(0, base - discount) };
+    });
 
     // ========= 計數 =========
     this.approvalCount = ref(0);
@@ -41,7 +132,7 @@ const reservation = new function () {
         result: 'approve',
         rejectReason: '',
         discountType: 'none',
-        discountPercent: 10,
+        discountPercent: 25,
         discountAmount: 0,
         discountReason: '',
         paymentDeadline: ''  // 自訂繳費期限
@@ -159,6 +250,10 @@ const reservation = new function () {
                 keyword: this.query.keyword || ''
             };
 
+            if (this.query.DepartmentCode) {
+                queryParams.DepartmentCode = this.query.DepartmentCode;
+            }
+
             // ✅ 只有選擇狀態時才加入參數
             if (this.query.reservationStatus !== null && this.query.reservationStatus !== '') {
                 queryParams.reservationStatus = this.query.reservationStatus;
@@ -226,6 +321,7 @@ const reservation = new function () {
 
                 this.approvalList.splice(0, this.approvalList.length, ...mapped);
                 this.approvalCount.value = mapped.length;
+                this.clearSelection();
 
                 console.log('✅ 租借審核列表更新完成,共', mapped.length, '筆');
             }
@@ -244,6 +340,10 @@ const reservation = new function () {
             const queryParams = {
                 keyword: this.query.keyword || ''
             };
+
+            if (this.query.DepartmentCode) {
+                queryParams.DepartmentCode = this.query.DepartmentCode;
+            }
 
             // ✅ 只有選擇狀態時才加入參數
             if (this.query.paymentStatus !== null && this.query.paymentStatus !== '') {
@@ -333,7 +433,7 @@ const reservation = new function () {
         this.vm.result = 'approve';
         this.vm.rejectReason = '';
         this.vm.discountType = 'none';
-        this.vm.discountPercent = 10;
+        this.vm.discountPercent = 25;
         this.vm.discountAmount = 0;
         this.vm.discountReason = '';
         this.vm.paymentDeadline = '';  // ✅ 重設繳費期限
@@ -357,6 +457,12 @@ const reservation = new function () {
     // 審核進度摘要（例如：2/3 關已通過）
     this.getApprovalProgress = (history) => {
         if (!history || history.length === 0) return '';
+
+        // ✅ 優先以最終審核狀態為準（審核頁用 currentReview）
+        const finalStatus = this.currentReview?.approvalStatus;
+        if (finalStatus === '審核拒絕') return '已拒絕';
+        if (finalStatus === '已取消') return '已取消';
+
         const total = history.length;
         const approved = history.filter(h => h.Status === 'Approved').length;
         const rejected = history.some(h => h.Status === 'Rejected');
@@ -365,9 +471,14 @@ const reservation = new function () {
         return `${approved}/${total} 關已通過`;
     };
 
-    // 進度徽章樣式
     this.getProgressBadgeClass = (history) => {
         if (!history || history.length === 0) return 'bg-secondary';
+
+        // ✅ 優先以最終審核狀態為準（審核頁用 currentReview）
+        const finalStatus = this.currentReview?.approvalStatus;
+        if (finalStatus === '審核拒絕') return 'bg-danger';
+        if (finalStatus === '已取消') return 'bg-secondary';
+
         const rejected = history.some(h => h.Status === 'Rejected');
         if (rejected) return 'bg-danger';
         const allApproved = history.every(h => h.Status === 'Approved');
@@ -565,6 +676,72 @@ const reservation = new function () {
         }
     };
 
+    // ========= 批量核准 =========
+    this.submitBulkApprove = async () => {
+        if (this.bulkVm.discountType === 'free' && !this.bulkVm.discountReason.trim()) {
+            addAlert('免單必須填寫原因', { type: 'warning' });
+            return;
+        }
+
+        const discountPerItem = this.bulkVm.discountType === 'percent'
+            ? null  // percent 在後端每筆各自計算，這裡傳 null
+            : this.bulkVm.discountType === 'amount'
+                ? this.bulkVm.discountAmount
+                : this.bulkVm.discountType === 'free'
+                    ? null  // free 後端對每筆設全額折扣
+                    : null;
+
+        try {
+            const res = await global.api.reservations.bulkapprove({
+                body: {
+                    conferenceIds: [...this.selectedIds],
+                    discountAmount: discountPerItem,
+                    discountReason: this.bulkVm.discountReason || null,
+                    paymentDeadline: this.bulkVm.paymentDeadline || null
+                }
+            });
+            const { Success, Failed, Errors } = res.data;
+            if (Failed === 0) {
+                addAlert(`批量核准完成，共 ${Success} 筆`, { type: 'success' });
+            } else {
+                addAlert(`完成 ${Success} 筆，失敗 ${Failed} 筆`, { type: 'warning' });
+                console.warn('批量核准部分失敗:', Errors);
+            }
+            bootstrap.Modal.getInstance(document.getElementById('bulkApproveModal'))?.hide();
+            await this.getApprovalList(!!approvalPageRef);
+        } catch (err) {
+            addAlert('批量核准失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
+        }
+    };
+
+    // ========= 批量拒絕 =========
+    this.submitBulkReject = async () => {
+        if (!this.bulkRejectVm.reason.trim()) {
+            addAlert('請填寫拒絕原因', { type: 'warning' });
+            return;
+        }
+
+        try {
+            const res = await global.api.reservations.bulkreject({
+                body: {
+                    conferenceIds: [...this.selectedIds],
+                    reason: this.bulkRejectVm.reason
+                }
+            });
+            const { Success, Failed, Errors } = res.data;
+            if (Failed === 0) {
+                addAlert(`批量拒絕完成，共 ${Success} 筆`, { type: 'success' });
+            } else {
+                addAlert(`完成 ${Success} 筆，失敗 ${Failed} 筆`, { type: 'warning' });
+                console.warn('批量拒絕部分失敗:', Errors);
+            }
+            bootstrap.Modal.getInstance(document.getElementById('bulkRejectModal'))?.hide();
+            await this.getApprovalList(!!approvalPageRef);
+        } catch (err) {
+            addAlert('批量拒絕失敗：' + (err.message || '未知錯誤'), { type: 'danger' });
+        }
+    };
+
     // ========= 送出付款審核 =========
     this.submitPaymentReview = async () => {
         console.log('🚀 送出付款審核');
@@ -663,7 +840,7 @@ window.$config = {
             () => reservation.query.reservationStatus
         ], () => {
             if (reservation.activeTab.value !== 'approval') return;
-            
+
             if (approvalPageRef) {
                 approvalPageRef.go(1);
             }
@@ -675,28 +852,35 @@ window.$config = {
             () => reservation.query.paymentStatus
         ], () => {
             if (reservation.activeTab.value !== 'payment') return;
-            
+
             if (paymentPageRef) {
                 paymentPageRef.go(1);
             }
             reservation.getPaymentList(!!paymentPageRef);
         });
 
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dept-search-wrap')) {
+                deptSearch.showDropdown.value = false;
+            }
+        });
+
         // ✅ 初始化
         onMounted(async () => {
             console.log('🚀 Vue 組件已掛載');
-            
+
             await reservation.loadPermissions();
-            
+            deptSearch.load();
+
             // ✅ 等待 DOM 渲染完成
             await nextTick();
-            
+
             // ✅ 綁定分頁元件 ref
             approvalPageRef = approvalPage.value;
             paymentPageRef = paymentPage.value;
-            
+
             console.log('📌 Mounted - approvalPageRef:', !!approvalPageRef, 'paymentPageRef:', !!paymentPageRef);
-            
+
             // ✅ 根據當前 tab 載入資料
             if (reservation.activeTab.value === 'approval') {
                 await reservation.getApprovalList(!!approvalPageRef);
@@ -714,6 +898,7 @@ window.$config = {
 
         return {
             reservation,
+            deptSearch,
             approvalPage,
             paymentPage,
             getPaymentMethodText,

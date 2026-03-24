@@ -45,6 +45,11 @@
         public bool? IsEnabled { get; set; }
 
         /// <summary>
+        /// 部門代碼（成本中心代碼）
+        /// </summary>
+        public string? DepartmentCode { get; set; }
+
+        /// <summary>
         /// 關鍵字
         /// </summary>
         public string? Keyword { get; set; }

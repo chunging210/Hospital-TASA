@@ -39,6 +39,47 @@ export const building = new function () {
     }
 }
 
+export const deptSearch = new function () {
+    this.all = reactive([]);          // 全部成本中心 [{Code, Name}]
+    this.filtered = reactive([]);     // 篩選後清單
+    this.keyword = ref('');           // 輸入框文字
+    this.showDropdown = ref(false);   // 是否顯示下拉
+
+    this.load = () => {
+        global.api.select.costcenters()
+            .then((res) => {
+                const list = (res.data || []).map(c => ({ code: c.Code, name: c.Name }));
+                copy(this.all, list);
+                copy(this.filtered, list);
+            });
+    };
+
+    this.filter = () => {
+        const kw = this.keyword.value.trim().toLowerCase();
+        if (!kw) {
+            copy(this.filtered, this.all);
+        } else {
+            copy(this.filtered, this.all.filter(c =>
+                c.code.toLowerCase().includes(kw) || c.name.toLowerCase().includes(kw)
+            ));
+        }
+    };
+
+    this.select = (item) => {
+        this.keyword.value = `${item.code} - ${item.name}`;
+        conference.query.DepartmentCode = item.code;
+        this.showDropdown.value = false;
+        conference.onFilterChange();
+    };
+
+    this.clear = () => {
+        this.keyword.value = '';
+        conference.query.DepartmentCode = '';
+        copy(this.filtered, this.all);
+        conference.onFilterChange();
+    };
+}
+
 export const conference = new function () {
 
     this.query = reactive({
@@ -46,8 +87,16 @@ export const conference = new function () {
         End: new Date().addDays(30).format(),
         RoomId: '',
         Building: '',
-        keyword: ''
+        keyword: '',
+        DepartmentCode: ''
     });
+
+    this.showAdvancedFilter = ref(false);
+
+    this.activeFilterCount = computed(() =>
+        [this.query.Building, this.query.RoomId, this.query.DepartmentCode]
+            .filter(v => !!v).length
+    );
 
     this.list = reactive([]);
     this.loading = ref(false);
@@ -341,11 +390,13 @@ window.$config = {
         this.room = room;
         this.building = building;
         this.conference = conference;
+        this.deptSearch = deptSearch;
         this.conferencepage = ref(null);
 
         watch(() => conference.query.keyword, () => {
             conference.onFilterChange();
         });
+
 
         watch(() => conference.query.Start, () => {
             conference.onFilterChange();
@@ -359,9 +410,16 @@ window.$config = {
             me.getVM();
             room.getList();
             building.getList();
+            deptSearch.load();
 
             conferencepageRef = this.conferencepage.value;
             conference.getList(true);
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.unitname-search-wrap')) {
+                    deptSearch.showDropdown.value = false;
+                }
+            });
         });
     }
 }

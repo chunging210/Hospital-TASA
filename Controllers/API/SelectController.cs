@@ -84,6 +84,12 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.User());
         }
 
+        [Authorize, HttpGet("unitnames")]
+        public IActionResult UnitNames()
+        {
+            return Ok(service.SelectServices.UnitNames());
+        }
+
         [HttpGet("internaluser")]
         public IActionResult InternalUser([FromQuery] Guid? departmentId = null, [FromQuery] string? unitName = null)
         {
