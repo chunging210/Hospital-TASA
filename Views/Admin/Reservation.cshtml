@@ -282,11 +282,7 @@
             <h6 class="text-muted small mb-2">繳費資訊</h6>
             <div class="row g-2 small">
                 <div class="col-md-6">
-                    <strong>繳費方式:</strong>
-                    <span class="badge ms-1"
-                          :class="reservation.currentReview.paymentMethod === 'cost-sharing' ? 'bg-info' : 'bg-secondary'">
-                        {{ getPaymentMethodText(reservation.currentReview.paymentMethod) || '-' }}
-                    </span>
+                    <strong>繳費方式:</strong> {{ getPaymentMethodText(reservation.currentReview.paymentMethod) || '-' }}
                 </div>
                 <div class="col-md-6" v-if="reservation.currentReview.paymentMethod === 'cost-sharing' && reservation.currentReview.departmentCode">
                     <strong>部門代碼:</strong> {{ reservation.currentReview.departmentCode }}

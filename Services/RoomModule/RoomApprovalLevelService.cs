@@ -116,6 +116,9 @@ namespace TASA.Services.RoomModule
                 });
             }
 
+            // 同步 ManagerId = 審核鍊第一關的人（無人則清空）
+            room.ManagerId = vm.Approvers.Count > 0 ? vm.Approvers[0].ApproverId : null;
+
             db.SaveChanges();
 
             _ = service.LogServices.LogAsync("審核設定",

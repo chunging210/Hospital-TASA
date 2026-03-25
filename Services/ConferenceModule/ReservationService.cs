@@ -254,8 +254,8 @@ namespace TASA.Services.ConferenceModule
         var canViewAll = userPermissions.Roles.Any(r =>
             r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR" || r == "ACCOUNTANT");
 
-        // 如果使用者是會議室管理者，但不是可看全部的角色
-        if (userPermissions.IsRoomManager && !canViewAll)
+        // 如果使用者是會議室管理者，但不是可看全部的角色，且不是查自己的預約
+        if (userPermissions.IsRoomManager && !canViewAll && !query.UserId.HasValue)
         {
             var managedRoomIds = userPermissions.ManagedRoomIds;
 
@@ -398,14 +398,14 @@ namespace TASA.Services.ConferenceModule
             // ✅ 取得今天日期，用於檢查代理人
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            // ✅ 檢查是否為 Admin
-            var isAdmin = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN");
+            // ✅ 檢查是否為 Admin 或主任
+            var isAdmin = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN", "DIRECTOR");
 
             var queryable = db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted();
 
-            // ✅ Admin 可以看到所有預約
+            // ✅ Admin / 主任 可以看到所有預約
             if (isAdmin)
             {
                 // 根據狀態篩選（如果有選擇的話）
@@ -608,7 +608,7 @@ namespace TASA.Services.ConferenceModule
         /// <summary>
         /// ✅ 付款審核列表 - 根據付款狀態篩選已審核通過的預約
         /// </summary>
-        public IQueryable<ReservationListVM> PendingCheckList(ReservationQueryVM query)
+        public IQueryable<ReservationListVM> PendingCheckList(ReservationQueryVM query, Guid userId)
         {
             // ✅ 根據付款狀態決定查詢範圍
             IQueryable<Conference> queryable;
@@ -642,6 +642,14 @@ namespace TASA.Services.ConferenceModule
                     .WhereNotDeleted()
                     .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment ||
                                 (x.ReservationStatus == ReservationStatus.Confirmed && x.PaymentStatus == PaymentStatus.Paid));
+            }
+
+            // 非總務角色：只看自己負責（ManagerId）的房間的預約
+            var isAccountant = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN", "ACCOUNTANT");
+            if (!isAccountant)
+            {
+                queryable = queryable.Where(x =>
+                    x.ConferenceRoomSlots.Any(s => s.Room.ManagerId == userId));
             }
 
             return queryable

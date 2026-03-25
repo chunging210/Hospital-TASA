@@ -163,7 +163,7 @@ namespace TASA.Controllers.API
                 query.ReservationStatus = ReservationStatus.PendingPayment; // 預設只看待繳費
             }
 
-            return Ok(service.ReservationService.PendingCheckList(query).ToPage(Request, Response));
+            return Ok(service.ReservationService.PendingCheckList(query, userId).ToPage(Request, Response));
         }
 
         /// <summary>

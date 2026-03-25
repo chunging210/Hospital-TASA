@@ -121,11 +121,17 @@ namespace TASA.Services.AuthUserModule
         }
 
         /// <summary>
-        /// ✅ 是否可以審核付款 (總務、管理者、開發者)
+        /// ✅ 是否可以審核付款 (總務看全部、審核鍊第一關的人看自己的房間)
         /// </summary>
         public bool CanApprovePayment(Guid userId)
         {
-            return HasAnyRole(userId, "ADMIN", "ADMINN", "ACCOUNTANT");
+            if (HasAnyRole(userId, "ADMIN", "ADMINN", "ACCOUNTANT"))
+                return true;
+
+            // 審核鍊第一關（ManagerId）也有付款審核權限
+            return db.SysRoom
+                .AsNoTracking()
+                .Any(r => r.ManagerId == userId && r.IsEnabled && r.DeleteAt == null);
         }
 
         /// <summary>
