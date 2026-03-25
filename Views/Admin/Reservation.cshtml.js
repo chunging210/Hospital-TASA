@@ -184,8 +184,18 @@ const reservation = new function () {
     // ========= 付款審核表單 =========
     this.paymentVm = reactive({
         result: 'approve',
-        rejectReason: ''
+        rejectReason: '',
+        rejectTemplate: ''
     });
+
+    this.onRejectTemplateChange = () => {
+        const tpl = this.paymentVm.rejectTemplate;
+        if (tpl && tpl !== '__custom__') {
+            this.paymentVm.rejectReason = tpl;
+        } else if (tpl === '__custom__') {
+            this.paymentVm.rejectReason = '';
+        }
+    };
 
     this.currentPayment = reactive({});
 
@@ -488,6 +498,7 @@ const reservation = new function () {
         // 重設表單為預設狀態 (核准)
         this.paymentVm.result = 'approve';
         this.paymentVm.rejectReason = '';
+        this.paymentVm.rejectTemplate = '';
     };
 
     // ========= ✅ 審核歷程輔助方法 =========

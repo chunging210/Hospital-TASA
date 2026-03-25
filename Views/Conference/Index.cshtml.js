@@ -290,7 +290,8 @@ export const conference = new function () {
         const response = await global.api.select.roomslots({
             body: {
                 RoomId: this.query.RoomId,
-                Date: dateStr
+                Date: dateStr,
+                DepartmentCode: this.query.DepartmentCode
             }
         });
         console.log('roomSlots:', response.data);
@@ -302,14 +303,17 @@ export const conference = new function () {
         const days = this.weekDays.value;
         const roomId = this.query.RoomId;
 
-        // 取得每天的資料
-        const weekData = [];
-        for (let i = 0; i < 7; i++) {
-            const resp = await global.api.select.roomslots({
-                body: { RoomId: roomId, Date: days[i].date }
-            });
-            weekData.push(resp.data || []);
-        }
+        // 一次抓整週資料
+        const response = await global.api.select.roomslotsrange({
+            body: {
+                RoomId: roomId,
+                StartDate: days[0].date,
+                EndDate: days[6].date,
+                DepartmentCode: this.query.DepartmentCode
+            }
+        });
+        const rangeData = response.data || {};
+        const weekData = days.map(day => rangeData[day.date] || []);
 
         // 用第一天的時段作為模板
         const slotTemplates = weekData[0] || [];
@@ -343,7 +347,8 @@ export const conference = new function () {
         const response = await global.api.select.calendarmonth({
             body: {
                 Date: formatDate(this.selectedMonth.value),
-                RoomId: this.query.RoomId
+                RoomId: this.query.RoomId,
+                DepartmentCode: this.query.DepartmentCode
             }
         });
         if (response.data) {
@@ -380,6 +385,9 @@ export const conference = new function () {
     this.onFilterChange = () => {
         conferencepageRef?.go(1);
         this.getList(true);
+        if (this.viewMode.value !== 'list' && this.query.RoomId) {
+            this.loadCalendarData();
+        }
     };
 };
 

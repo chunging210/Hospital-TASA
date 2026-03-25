@@ -43,6 +43,7 @@ const global = new function () {
                 floorsbybuilding: POST,
                 roomsbyfloor: POST,
                 roomslots: POST,
+                roomslotsrange: POST,
                 equipmentbyroom: POST,
                 smallbooths: GET,
                 roombyschedule: POST,

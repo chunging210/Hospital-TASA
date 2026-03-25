@@ -710,19 +710,23 @@ namespace TASA.Services.MailModule
             {
                 "transfer" => @"
 <div style='background-color: #e7f3ff; border-left: 4px solid #007bff; padding: 15px; margin: 15px 0;'>
-    <h4 style='margin: 0 0 10px 0; color: #007bff;'>💳 銀行匯款資訊</h4>
-    <p style='margin: 5px 0;'><strong>銀行名稱：</strong>合作金庫(006)</p>
-    <p style='margin: 5px 0;'><strong>分行名稱：</strong>石牌分行</p>
-    <p style='margin: 5px 0;'><strong>戶名：</strong>臺北榮民總醫院作業基金403專戶</p>
+    <h4 style='margin: 0 0 10px 0; color: #007bff;'>💳 匯款資訊</h4>
+    <p style='margin: 5px 0;'><strong>金融機構：</strong>合作金庫 石牌分行（銀行代碼 006）</p>
     <p style='margin: 5px 0;'><strong>帳號：</strong>1427713000733</p>
-    <p style='margin: 10px 0 0 0; color: #666;'><small>匯款完成後，請至系統上傳轉帳末五碼及金額</small></p>
+    <p style='margin: 5px 0;'><strong>戶名：</strong>臺北榮民總醫院作業基金403專戶</p>
+    <hr style='border: none; border-top: 1px solid #b8daff; margin: 10px 0;'>
+    <h4 style='margin: 0 0 10px 0; color: #007bff;'>📝 後續作業</h4>
+    <p style='margin: 5px 0;'>匯款後請將<strong>匯款證明（收據）</strong>上傳至系統，並請同時附註以下資訊以便開立發票：</p>
+    <ul style='margin: 5px 0 0 0; padding-left: 20px;'>
+        <li>承租會議名稱、日期及時間</li>
+        <li>發票抬頭、統一編號</li>
+        <li>發票寄送地址或自取</li>
+    </ul>
 </div>",
                 "cash" => @"
 <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 15px 0;'>
     <h4 style='margin: 0 0 10px 0; color: #856404;'>🏢 現金繳費資訊</h4>
-    <p style='margin: 5px 0;'><strong>繳費地點：</strong>中正樓與北護分院連通道的郵局旁</p>
-    <p style='margin: 5px 0;'><strong>服務時間：</strong>週一至週五 8:00AM - 5:00PM/5:30PM</p>
-    <p style='margin: 10px 0 0 0; color: #666;'><small>繳費完成後，請至系統上傳繳費收據</small></p>
+    <p style='margin: 5px 0;'>至本院會議室管理中心索取繳款單後至出納組繳費，再由本院補給室資財組開立發票。</p>
 </div>",
                 "cost-sharing" => @"
 <div style='background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 15px 0;'>

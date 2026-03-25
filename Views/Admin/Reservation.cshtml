@@ -620,8 +620,17 @@
                             <!-- 退回原因 -->
                             <div v-if="reservation.paymentVm.result === 'reject'" class="col-12">
                                 <label class="form-label">退回原因 <span class="text-danger">*</span></label>
-                                <textarea class="form-control" v-model="reservation.paymentVm.rejectReason" rows="3"
-                                          placeholder="請填寫退回原因,例如:金額不符、憑證不清楚等" required></textarea>
+                                <select class="form-select mb-2" v-model="reservation.paymentVm.rejectTemplate"
+                                        @@change="reservation.onRejectTemplateChange()">
+                                    <option value="">請選擇退回原因…</option>
+                                    <option value="未夾帶證明文件">未夾帶證明文件</option>
+                                    <option value="場租折扣不符合管理規定">場租折扣不符合管理規定</option>
+                                    <option value="租借日期與時段與來信或來電不相符">租借日期與時段與來信或來電不相符</option>
+                                    <option value="__custom__">自行輸入…</option>
+                                </select>
+                                <textarea v-if="reservation.paymentVm.rejectTemplate === '__custom__'"
+                                          class="form-control" v-model="reservation.paymentVm.rejectReason" rows="3"
+                                          placeholder="請填寫退回原因" required></textarea>
                             </div>
 
                             <!-- 按鈕 -->

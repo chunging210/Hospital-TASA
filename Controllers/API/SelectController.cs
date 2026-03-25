@@ -70,6 +70,12 @@ namespace TASA.Controllers.API
             return Ok(service.SelectServices.RoomSlots(query));
         }
 
+        [HttpPost("roomslotsrange")]
+        public IActionResult RoomSlotsRange([FromBody] RoomSlotRangeQueryVM query)
+        {
+            return Ok(service.SelectServices.RoomSlotsRange(query));
+        }
+
         [HttpPost("roombyschedule")]
         public IActionResult RoomTodaySchedule([FromBody] RoomTodayScheduleQueryVM query)
         {

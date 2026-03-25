@@ -78,6 +78,15 @@ namespace TASA.Services
             public Guid RoomId { get; init; }
             public DateOnly Date { get; init; }
             public string? ExcludeConferenceId { get; set; }
+            public string? DepartmentCode { get; set; }
+        }
+
+        public record RoomSlotRangeQueryVM
+        {
+            public Guid RoomId { get; init; }
+            public DateOnly StartDate { get; init; }
+            public DateOnly EndDate { get; init; }
+            public string? DepartmentCode { get; set; }
         }
 
         public record RoomSlotVM
@@ -235,10 +244,19 @@ namespace TASA.Services
                         ? x.Conference.CreateByNavigation.UnitName : null,
                     ExpectedAttendees = x.Conference != null ? x.Conference.ExpectedAttendees : null,
                     ContactPhone = x.Conference != null ? x.Conference.ContactPhone : null,
+                    DepartmentCode = x.Conference != null ? x.Conference.DepartmentCode : null,
                     StartTime = x.StartTime.ToTimeSpan(),
                     EndTime = x.EndTime.ToTimeSpan()
                 })
                 .ToList();
+
+            // ✅ 部門代碼篩選：只顯示該部門的佔用時段
+            if (!string.IsNullOrWhiteSpace(query.DepartmentCode))
+            {
+                occupiedSlots = occupiedSlots
+                    .Where(o => o.DepartmentCode == query.DepartmentCode)
+                    .ToList();
+            }
 
             // ✅ 編輯模式:排除正在編輯的預約
             if (!string.IsNullOrEmpty(query.ExcludeConferenceId) &&
@@ -301,6 +319,81 @@ namespace TASA.Services
                 ContactPhone = s.ContactPhone
             }).ToList();
         }
+
+        public Dictionary<string, IEnumerable<RoomSlotVM>> RoomSlotsRange(RoomSlotRangeQueryVM query)
+        {
+            // 1️⃣ 一次取得該會議室的所有可販售時段（所有天共用）
+            var baseSlots = db.SysRoomPricePeriod
+                .AsNoTracking()
+                .Where(x => x.RoomId == query.RoomId && x.IsEnabled && x.DeleteAt == null)
+                .Select(x => new { x.Id, x.Name, Start = x.StartTime, End = x.EndTime, x.Price, x.HolidayPrice, x.SetupPrice })
+                .ToList();
+
+            // 2️⃣ 一次取得整週所有已佔用時段
+            var occupiedAll = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Include(x => x.Conference)
+                    .ThenInclude(c => c.CreateByNavigation)
+                .Where(x =>
+                    x.RoomId == query.RoomId &&
+                    x.SlotDate >= query.StartDate &&
+                    x.SlotDate <= query.EndDate &&
+                    (x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
+                )
+                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.Conference!.DepartmentCode == query.DepartmentCode)
+                .Select(x => new
+                {
+                    x.SlotDate,
+                    ConferenceId = x.ConferenceId,
+                    ConferenceName = x.Conference != null ? x.Conference.Name : null,
+                    OrganizerUnit = x.Conference != null ? x.Conference.OrganizerUnit : null,
+                    CreatorUnitName = x.Conference != null && x.Conference.CreateByNavigation != null ? x.Conference.CreateByNavigation.UnitName : null,
+                    ExpectedAttendees = x.Conference != null ? x.Conference.ExpectedAttendees : null,
+                    ContactPhone = x.Conference != null ? x.Conference.ContactPhone : null,
+                    StartTime = x.StartTime.ToTimeSpan(),
+                    EndTime = x.EndTime.ToTimeSpan()
+                })
+                .ToList();
+
+            // 3️⃣ 依日期分組，對每天套用時段對應邏輯
+            var result = new Dictionary<string, IEnumerable<RoomSlotVM>>();
+            var current = query.StartDate;
+            while (current <= query.EndDate)
+            {
+                var dayOccupied = occupiedAll.Where(o => o.SlotDate == current).ToList();
+
+                var daySlots = baseSlots
+                    .OrderBy(s => s.Start)
+                    .Select(s =>
+                    {
+                        var occupied = dayOccupied.FirstOrDefault(o => !(o.EndTime <= s.Start || o.StartTime >= s.End));
+                        return new RoomSlotVM
+                        {
+                            Id = s.Id,
+                            Key = $"{s.Start:hh\\:mm\\:ss}-{s.End:hh\\:mm\\:ss}",
+                            Name = s.Name,
+                            TimeLabel = $"{s.Start:hh\\:mm}-{s.End:hh\\:mm}",
+                            StartTime = TimeOnly.FromTimeSpan(s.Start),
+                            EndTime = TimeOnly.FromTimeSpan(s.End),
+                            Price = s.Price,
+                            HolidayPrice = s.HolidayPrice,
+                            SetupPrice = s.SetupPrice,
+                            Occupied = occupied != null,
+                            ConferenceId = occupied?.ConferenceId,
+                            ConferenceName = occupied?.ConferenceName,
+                            OrganizerUnit = occupied?.OrganizerUnit,
+                            CreatorUnitName = occupied?.CreatorUnitName,
+                            ExpectedAttendees = occupied?.ExpectedAttendees,
+                            ContactPhone = occupied?.ContactPhone
+                        };
+                    });
+
+                result[current.ToString("yyyy-MM-dd")] = daySlots.ToList();
+                current = current.AddDays(1);
+            }
+            return result;
+        }
+
         public IEnumerable<RoomSelectVM> RoomsByFloor(RoomByFloorQueryVM query)
         {
 
@@ -1291,6 +1384,7 @@ namespace TASA.Services
             public DateOnly Date { get; set; }
             public string? Building { get; set; }
             public Guid? RoomId { get; set; }
+            public string? DepartmentCode { get; set; }
         }
 
         // ========== 日視圖（時間軸樣式）==========
@@ -1655,6 +1749,7 @@ namespace TASA.Services
                 .Where(x => x.SlotStatus == SlotStatus.Locked || x.SlotStatus == SlotStatus.Reserved)
                 .Where(x => roomIds.Contains(x.RoomId))
                 .Where(x => x.Conference != null && x.ConferenceId.HasValue)
+                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.Conference!.DepartmentCode == query.DepartmentCode)
                 .GroupBy(x => x.SlotDate)
                 .ToDictionary(
                     g => g.Key,
