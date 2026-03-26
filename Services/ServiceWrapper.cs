@@ -10,6 +10,7 @@ using TASA.Services.CaptchaModule;
 using TASA.Services.HolidayModule;
 using TASA.Services.ReportModule;
 using TASA.Services.CostCenterModule;
+using TASA.Services.StatisticsModule;
 using TASA.Services;
 
 namespace TASA.Services
@@ -52,7 +53,8 @@ namespace TASA.Services
         Lazy<RoomApprovalLevelService> roomApprovalLevelService,
         Lazy<HolidayService> holidayService,
         Lazy<ReportService> reportService,
-        Lazy<CostCenterManagerService> costCenterManagerService
+        Lazy<CostCenterManagerService> costCenterManagerService,
+        Lazy<StatisticsService> statisticsService
 
     )
     {
@@ -100,6 +102,8 @@ namespace TASA.Services
         public ReportService ReportService => reportService.Value;
 
         public CostCenterManagerService CostCenterManagerService => costCenterManagerService.Value;
+
+        public StatisticsService StatisticsService => statisticsService.Value;
 
     }
 }

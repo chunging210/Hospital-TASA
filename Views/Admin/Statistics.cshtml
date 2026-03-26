@@ -1,0 +1,139 @@
+<link rel="stylesheet" href="/css/statistics.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<div class="page-content" v-cloak>
+    <div class="container-fluid vstack gap-3">
+
+        <!-- 標題列 + 篩選 -->
+        <div class="card">
+            <div class="card-header mx-4 mt-3">
+                <div class="row d-flex align-items-center g-2">
+                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                        <span class="material-icons">bar_chart</span>使用率統計
+                    </div>
+                    <div class="col-auto ms-auto d-flex align-items-center gap-2 flex-wrap">
+                        <select class="form-select form-select-sm" style="width:90px"
+                                v-model.number="state.year" @@change="state.month = 0; loadStats()">
+                            <option v-for="y in state.years" :key="y" :value="y">{{ y }} 年</option>
+                        </select>
+                        <select class="form-select form-select-sm" style="width:100px"
+                                v-model.number="state.month" @@change="loadStats()">
+                            <option :value="0">全年</option>
+                            <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 錯誤 -->
+        <div class="alert alert-danger mx-1" v-if="state.error">
+            <span class="material-icons align-middle me-1">error_outline</span>{{ state.error }}
+        </div>
+
+        <!-- Loading -->
+        <div class="text-center py-5" v-if="state.loading">
+            <div class="spinner-border" style="color:#4361ee"></div>
+            <div class="mt-2 text-muted">載入中...</div>
+        </div>
+
+        <template v-if="state.data && !state.loading">
+
+            <!-- KPI 卡片 -->
+            <div class="row g-3">
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 stat-kpi-card">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                            <div class="stat-kpi-label">整體使用率</div>
+                            <div class="stat-kpi-value">{{ state.data.Kpi.UsageRate }}<span style="font-size:1.2rem">%</span></div>
+                            <div class="stat-kpi-sub mt-1">{{ state.data.Kpi.Period }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 stat-kpi-card">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                            <div class="stat-kpi-label">總使用時數</div>
+                            <div class="stat-kpi-value">{{ state.data.Kpi.TotalUsedHours }}<span style="font-size:1.2rem"> 時</span></div>
+                            <div class="stat-kpi-sub mt-1">開放 {{ state.data.Kpi.TotalAvailableHours }} 時</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 stat-kpi-card">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                            <div class="stat-kpi-label">統計會議室數</div>
+                            <div class="stat-kpi-value">{{ state.data.Kpi.RoomCount }}<span style="font-size:1.2rem"> 間</span></div>
+                            <div class="stat-kpi-sub mt-1">有開放時段的會議室</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趨勢折線圖 -->
+            <div class="card">
+                <div class="card-header mx-4 mt-3 pb-0 border-0">
+                    <span class="fw-semibold">使用率趨勢</span>
+                    <span class="text-muted ms-2" style="font-size:0.8rem">
+                        {{ state.month === 0 ? '每月' : '每日' }}
+                    </span>
+                </div>
+                <div class="card-body pt-2">
+                    <canvas id="chartTrend"></canvas>
+                </div>
+            </div>
+
+            <!-- 各會議室使用率 -->
+            <div class="card">
+                <div class="card-header mx-4 mt-3 pb-0 border-0">
+                    <span class="fw-semibold">各會議室使用率</span>
+                    <span class="text-muted ms-2" style="font-size:0.8rem">深=已使用 淺=剩餘</span>
+                </div>
+                <div class="card-body pt-2">
+                    <canvas id="chartRoom"></canvas>
+                </div>
+            </div>
+
+            <!-- 使用單位排行 -->
+            <div class="card" v-if="state.data.ByDepartment && state.data.ByDepartment.length">
+                <div class="card-header mx-4 mt-3 pb-0 border-0">
+                    <span class="fw-semibold">使用單位排行</span>
+                    <span class="text-muted ms-2" style="font-size:0.8rem">依使用時數排序</span>
+                </div>
+                <div class="card-body pt-2">
+                    <canvas id="chartDept"></canvas>
+                </div>
+            </div>
+
+            <!-- 熱力圖 -->
+            <div class="card" v-if="state.data.Heatmap && state.data.Heatmap.length">
+                <div class="card-header mx-4 mt-3 pb-0 border-0 d-flex align-items-center gap-3 flex-wrap">
+                    <span class="fw-semibold">使用時段熱力圖</span>
+                    <div class="heatmap-legend ms-auto">
+                        <span>少</span>
+                        <div class="heatmap-legend-bar"></div>
+                        <span>多</span>
+                    </div>
+                </div>
+                <div class="card-body mx-4 mb-3">
+                    <div class="heatmap-wrap">
+                        <div class="heatmap-grid"
+                             :style="{ gridTemplateColumns: '48px repeat(5, minmax(40px, 1fr))', minWidth: '320px' }">
+                            <div></div>
+                            <div v-for="d in ['週一','週二','週三','週四','週五']" :key="d" class="heatmap-header">{{ d }}</div>
+                            <template v-for="h in state.heatmapHours" :key="h">
+                                <div class="heatmap-hour">{{ h }}:00</div>
+                                <div v-for="dow in [1,2,3,4,5]" :key="dow"
+                                     class="heatmap-cell"
+                                     :style="{ backgroundColor: heatmapColor(dow, h) }"
+                                     :title="`${ ['','週一','週二','週三','週四','週五'][dow] } ${ h }:00 — ${ heatmapValue(dow, h) } 次`">
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </template>
+    </div>
+</div>

@@ -58,5 +58,10 @@ namespace TASA.Controllers.Mvc
         {
             return View();
         }
+
+        public IActionResult Statistics()
+        {
+            return View();
+        }
     }
 }

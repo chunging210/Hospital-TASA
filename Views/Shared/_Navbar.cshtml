@@ -127,6 +127,22 @@
                             </li>
                         }
 
+                        @if (user?.IsAdmin == true || user?.IsAccountant == true)
+                        {
+                            <li class="nav-item dropdown">
+                                <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="material-icons">bar_chart</span>
+                                    <span class="text">報表與統計</span>
+                                    <div class="arrow-down"></div>
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+                                    <a href="/admin/report" class="dropdown-item">會議報表</a>
+                                    <a href="/admin/statistics" class="dropdown-item">統計圖表</a>
+                                </div>
+                            </li>
+                        }
+
                         @if (user?.IsAdmin == true || user?.IsAccountant == true){
 
                             <li class="nav-item dropdown">
@@ -146,10 +162,6 @@
                                     @if (isGlobalAdmin)
                                     {
                                         <a href="/admin/sysdepartment" class="dropdown-item">單位總覽</a>
-                                    }
-                                    @if (user?.IsAdmin == true || user?.IsAccountant == true)
-                                    {
-                                        <a href="/admin/report" class="dropdown-item">會議報表</a>
                                     }
                                     @if (isGlobalAdmin)
                                     {

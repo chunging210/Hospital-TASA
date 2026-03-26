@@ -161,6 +161,7 @@ const global = new function () {
             costcentermanagerinsert: POST,
             costcentermanagerupdate: POST,
             costcentermanagerdelete: DELETE,
+            statisticsusage: GET,
         }),
         adminwebex: apiMethods('/api/adminwebex', {
             list: GET,

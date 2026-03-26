@@ -6,7 +6,7 @@
 @import 'createroom.css';
 @import 'reservation.css';
 @import 'sysconfig.css';
-@import 'syscroom.css';
+@import 'sysroom.css';
 
 table caption {
     display: none;

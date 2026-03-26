@@ -1697,15 +1697,17 @@ namespace TASA.Services.ConferenceModule
             // 記錄是否已繳費（用於後續寄送退費通知）
             var hasPaid = conference.PaymentStatus == PaymentStatus.Paid;
 
+            var isApplicant = userId == conference.CreateBy;
+
             switch (conference.ReservationStatus)
             {
                 case ReservationStatus.PendingApproval:
-                case ReservationStatus.PendingPayment:
                     break;
 
+                case ReservationStatus.PendingPayment:
                 case ReservationStatus.Confirmed:
-                    if (daysUntilReservation < 3)
-                        throw new HttpException("距離使用不足 3 天,無法取消");
+                    if (isApplicant)
+                        throw new HttpException("審核通過後僅管理者可取消預約");
                     break;
 
                 case ReservationStatus.Rejected:

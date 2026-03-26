@@ -7,6 +7,7 @@ using TASA.Services.DepartmentModule;
 using TASA.Services.EquipmentModule;
 using TASA.Services.RoomModule;
 using TASA.Services.CostCenterModule;
+using TASA.Services.StatisticsModule;
 using TASA.Extensions;
 
 namespace TASA.Controllers.API
@@ -220,6 +221,22 @@ namespace TASA.Controllers.API
         {
             service.CostCenterManagerService.Delete(id);
             return Ok();
+        }
+
+        /* --- 統計圖表 --- */
+
+        [HttpGet("statisticsusage")]
+        public IActionResult StatisticsUsage([FromQuery] int year = 0, [FromQuery] int month = 0)
+        {
+            try
+            {
+                if (year == 0) year = DateTime.Today.Year;
+                return Ok(service.StatisticsService.GetUsageStats(year, month));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message, detail = ex.InnerException?.Message ?? ex.StackTrace });
+            }
         }
     }
 }

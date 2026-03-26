@@ -1,5 +1,8 @@
 /bin
 /obj
+
+# Claude Code 本機設定
+.claude/settings.local.json
 # Visual Studio / Rider 暫存檔
 *.user
 *.suo
