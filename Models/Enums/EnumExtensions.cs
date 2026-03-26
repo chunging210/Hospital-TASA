@@ -49,20 +49,6 @@ namespace TASA.Extensions
         }
 
         /// <summary>
-        /// 取得憑證狀態中文名稱
-        /// </summary>
-        public static string GetDisplayName(this ProofStatus status)
-        {
-            return status switch
-            {
-                ProofStatus.PendingReview => "待審核",
-                ProofStatus.Approved => "已批准",
-                ProofStatus.Rejected => "已退回",
-                _ => "未知"
-            };
-        }
-
-        /// <summary>
         /// 取得預約狀態的 Bootstrap CSS Class
         /// </summary>
         public static string GetBadgeClass(this ReservationStatus status)
@@ -92,18 +78,5 @@ namespace TASA.Extensions
             };
         }
 
-        /// <summary>
-        /// 取得憑證狀態的 Bootstrap CSS Class
-        /// </summary>
-        public static string GetBadgeClass(this ProofStatus status)
-        {
-            return status switch
-            {
-                ProofStatus.PendingReview => "bg-warning",
-                ProofStatus.Approved => "bg-success",
-                ProofStatus.Rejected => "bg-danger",
-                _ => "bg-secondary"
-            };
-        }
     }
 }

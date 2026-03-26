@@ -80,21 +80,6 @@ namespace TASA.Models.Enums
     }
 
     /// <summary>
-    /// 憑證狀態 (ConferencePaymentProof.Status)
-    /// </summary>
-    public enum ProofStatus
-    {
-        /// <summary>待審核 - 已上傳,等待會計審核</summary>
-        PendingReview = 0,
-
-        /// <summary>已批准 - 會計確認通過</summary>
-        Approved = 1,
-
-        /// <summary>已退回 - 會計退回,需重新上傳</summary>
-        Rejected = 2
-    }
-
-    /// <summary>
     /// 循環預約類型
     /// </summary>
     public enum RecurrenceType
@@ -107,6 +92,21 @@ namespace TASA.Models.Enums
 
         /// <summary>每月重複（指定幾號）</summary>
         Monthly = 3
+    }
+
+    /// <summary>
+    /// 合併付款訂單狀態 (ConferencePaymentOrder.Status)
+    /// </summary>
+    public enum PaymentOrderStatus : byte
+    {
+        /// <summary>待查帳 - 已上傳憑證,等待審核</summary>
+        PendingVerification = 1,
+
+        /// <summary>已收款 - 審核確認收款</summary>
+        Paid = 2,
+
+        /// <summary>已退回 - 審核退回,需重新上傳</summary>
+        Rejected = 3
     }
 
     /// <summary>

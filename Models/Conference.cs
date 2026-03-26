@@ -365,9 +365,8 @@ public partial class Conference
     [InverseProperty("Conference")]
     public virtual ICollection<ConferenceRoomSlot> ConferenceRoomSlots { get; set; } = new List<ConferenceRoomSlot>();
 
-    // ✅ 新增：付款憑證關聯
     [InverseProperty("Conference")]
-    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofs { get; set; } = new List<ConferencePaymentProof>();
+    public virtual ICollection<ConferencePaymentOrderItem> ConferencePaymentOrderItems { get; set; } = new List<ConferencePaymentOrderItem>();
 
     public virtual ICollection<ConferenceAttachment> Attachments { get; set; } = new List<ConferenceAttachment>();
 

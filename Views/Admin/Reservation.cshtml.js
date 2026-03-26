@@ -420,33 +420,24 @@ const reservation = new function () {
 
             if (Array.isArray(res.data)) {
                 const mapped = res.data.map(x => ({
-                    id: x.Id,
-                    bookingNo: x.BookingNo,
+                    orderId: x.OrderId,
+                    orderStatus: x.OrderStatus,
                     applicantName: x.ApplicantName,
-                    date: x.Date,
-                    time: x.Time,
-                    roomName: x.RoomName,
                     totalAmount: x.TotalAmount,
+                    conferenceCount: x.ConferenceCount,
                     paymentMethod: x.PaymentMethod,
                     paymentType: x.PaymentType,
                     filePath: x.FilePath,
                     fileName: x.FileName,
                     uploadTime: x.UploadTime,
-                    paymentStatusText: x.PaymentStatusText,
                     lastFiveDigits: x.LastFiveDigits,
                     transferAmount: x.TransferAmount,
                     transferAt: x.TransferAt,
                     note: x.Note,
-                    // ✅ 優惠證明
+                    rejectReason: x.RejectReason,
                     discountProofPath: x.DiscountProofPath,
                     discountProofName: x.DiscountProofName,
-                    slots: (x.Slots || []).map(s => ({
-                        id: s.Id,
-                        slotDate: s.SlotDate,
-                        startTime: s.StartTime,
-                        endTime: s.EndTime,
-                        slotStatus: s.SlotStatus
-                    }))
+                    items: []  // 明細在開啟抽屜時載入
                 }));
 
                 this.paymentList.splice(0, this.paymentList.length, ...mapped);
@@ -491,7 +482,7 @@ const reservation = new function () {
     };
 
     // ========= 開啟付款審核抽屜 =========
-    this.openPaymentReview = (item) => {
+    this.openPaymentReview = async (item) => {
         console.log('💰 開啟付款審核, item:', item);
         copy(this.currentPayment, item);
 
@@ -499,6 +490,15 @@ const reservation = new function () {
         this.paymentVm.result = 'approve';
         this.paymentVm.rejectReason = '';
         this.paymentVm.rejectTemplate = '';
+
+        // ✅ 載入訂單明細
+        try {
+            const res = await global.api.reservations.orderdetail(item.orderId);
+            this.currentPayment.items = res.data || [];
+        } catch (err) {
+            console.error('❌ 載入訂單明細失敗:', err);
+            this.currentPayment.items = [];
+        }
     };
 
     // ========= ✅ 審核歷程輔助方法 =========
@@ -807,7 +807,7 @@ const reservation = new function () {
         try {
             await global.api.reservations.approvepayment({
                 body: {
-                    reservationId: this.currentPayment.id
+                    orderId: this.currentPayment.orderId
                 }
             });
 
@@ -826,7 +826,7 @@ const reservation = new function () {
         try {
             await global.api.reservations.rejectpayment({
                 body: {
-                    reservationId: this.currentPayment.id,
+                    orderId: this.currentPayment.orderId,
                     reason: this.paymentVm.rejectReason
                 }
             });

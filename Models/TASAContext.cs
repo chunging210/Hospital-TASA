@@ -111,7 +111,9 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<SysConfig> SysConfig { get; set; }
 
-    public virtual DbSet<ConferencePaymentProof> ConferencePaymentProof { get; set; }
+    public virtual DbSet<ConferencePaymentOrder> ConferencePaymentOrder { get; set; }
+
+    public virtual DbSet<ConferencePaymentOrderItem> ConferencePaymentOrderItem { get; set; }
 
     public virtual DbSet<ConferenceAttachment> ConferenceAttachment { get; set; }
 
@@ -154,7 +156,8 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceRoomSlotConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysConfigConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceEquipmentConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentProofConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentOrderConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.ConferencePaymentOrderItemConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.CostCenterConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.RoomManagerDelegateConfiguration());

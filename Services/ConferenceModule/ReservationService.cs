@@ -130,6 +130,9 @@ namespace TASA.Services.ConferenceModule
             public string? DiscountProofPath { get; set; }
             public string? DiscountProofName { get; set; }
 
+            // ✅ 合併付款用
+            public Guid? ManagerId { get; set; }
+
             // ✅ 多階層審核欄位
             public int CurrentApprovalLevel { get; set; }
             public int TotalApprovalLevels { get; set; }
@@ -180,6 +183,13 @@ namespace TASA.Services.ConferenceModule
             public string? DepartmentCode { get; set; }
             public string? RejectReason { get; set; }
             public string? PaymentRejectReason { get; set; }
+
+            // ✅ 付款憑證
+            public string? PaymentFilePath { get; set; }
+            public string? PaymentFileName { get; set; }
+            public string? PaymentNote { get; set; }
+            public string? DiscountProofPath { get; set; }
+            public string? DiscountProofName { get; set; }
 
             // ✅ 折扣資訊
             public int? DiscountAmount { get; set; }
@@ -290,67 +300,67 @@ namespace TASA.Services.ConferenceModule
                     x.Id.ToString().StartsWith(query.Keyword!))
                 .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
                 .ThenByDescending(x => x.CreateAt)
-                .Select(x => new
-                {
-                    Conference = x,
-                    LatestProof = x.ConferencePaymentProofs
-                        .Where(p => p.DeleteAt == null)
-                        .OrderByDescending(p => p.UploadedAt)
-                        .FirstOrDefault()
-                })
                 .Select(x => new ReservationListVM()
                 {
-                    Id = x.Conference.Id,
-                    BookingNo = x.Conference.Id.ToString().Substring(0, 8),
-                    ApplicantName = x.Conference.CreateByNavigation.Name,
-                    ConferenceName = x.Conference.Name,
-                    OrganizerUnit = x.Conference.OrganizerUnit,
-                    Chairman = x.Conference.Chairman,
-                    ContactPhone = x.Conference.ContactPhone,  // 聯絡電話
-                    ContactEmail = x.Conference.ContactEmail,  // 電子郵件
+                    Id = x.Id,
+                    BookingNo = x.Id.ToString().Substring(0, 8),
+                    ApplicantName = x.CreateByNavigation.Name,
+                    ConferenceName = x.Name,
+                    OrganizerUnit = x.OrganizerUnit,
+                    Chairman = x.Chairman,
+                    ContactPhone = x.ContactPhone,  // 聯絡電話
+                    ContactEmail = x.ContactEmail,  // 電子郵件
 
                     // ✅ 列表：只顯示日期範圍
-                    Date = x.Conference.ConferenceRoomSlots.Any()
-                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
-                                ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
-                                : x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
-                                  x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
+                    Date = x.ConferenceRoomSlots.Any()
+                            ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                                : x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                                  x.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                             : "-",
 
                     // ✅ 列表：單日顯示時間，跨日顯示「-」（詳細時間在 Detail 看）
-                    Time = x.Conference.ConferenceRoomSlots.Any()
-                            ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
-                                ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                                  $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                    Time = x.ConferenceRoomSlots.Any()
+                            ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
+                                ? $"{x.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                                  $"{x.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
                                 : "-")
                             : "-",
 
-                    RoomName = x.Conference.ConferenceRoomSlots
+                    RoomName = x.ConferenceRoomSlots
                             .Select(s => s.Room.Name)
                             .FirstOrDefault() ?? "-",
 
-                    TotalAmount = x.Conference.TotalAmount,
-                    ParkingTicketCount = x.Conference.ParkingTicketCount,  // ✅ 停車券張數
+                    ManagerId = x.ConferenceRoomSlots
+                            .Select(s => s.Room.ManagerId)
+                            .FirstOrDefault(),
 
-                    Status = x.Conference.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
-                             x.Conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
-                             x.Conference.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
-                             x.Conference.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
-                             x.Conference.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
+                    TotalAmount = x.TotalAmount,
+                    ParkingTicketCount = x.ParkingTicketCount,  // ✅ 停車券張數
 
-                    PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
-                                       x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
-                                       x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
-                                       x.Conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
+                    Status = x.ReservationStatus == ReservationStatus.Cancelled ? "已取消" :
+                             x.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
+                             x.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
+                             x.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
+                             x.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
 
-                    PaymentDeadline = x.Conference.PaymentDeadline.HasValue
-                        ? x.Conference.PaymentDeadline.Value.ToString("yyyy/MM/dd")
+                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                                       x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+                                       x.PaymentStatus == PaymentStatus.Paid ? "已收款" :
+                                       x.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
+
+                    PaymentDeadline = x.PaymentDeadline.HasValue
+                        ? x.PaymentDeadline.Value.ToString("yyyy/MM/dd")
                         : null,
 
-                    PaymentMethod = x.Conference.PaymentMethod,
-                    DepartmentCode = x.Conference.DepartmentCode,
-                    RejectReason = x.Conference.RejectReason,
-                    PaymentRejectReason = x.LatestProof != null ? x.LatestProof.RejectReason : null,
+                    PaymentMethod = x.PaymentMethod,
+                    DepartmentCode = x.DepartmentCode,
+                    RejectReason = x.RejectReason,
+                    PaymentRejectReason = x.ConferencePaymentOrderItems
+                        .Where(i => i.Order.Status == PaymentOrderStatus.Rejected && i.Order.DeleteAt == null)
+                        .OrderByDescending(i => i.Order.ReviewedAt)
+                        .Select(i => i.Order.RejectReason)
+                        .FirstOrDefault(),
 
                     UploadTime = null,
                     PaymentType = null,
@@ -362,17 +372,17 @@ namespace TASA.Services.ConferenceModule
                     Note = null,
 
                     // ✅ 多階層審核欄位
-                    CurrentApprovalLevel = x.Conference.CurrentApprovalLevel,
-                    TotalApprovalLevels = x.Conference.TotalApprovalLevels,
-                    CurrentApproverName = x.Conference.ApprovalHistory
-                        .Where(h => h.Level == x.Conference.CurrentApprovalLevel + 1 && h.Status == ApprovalStatus.Pending)
+                    CurrentApprovalLevel = x.CurrentApprovalLevel,
+                    TotalApprovalLevels = x.TotalApprovalLevels,
+                    CurrentApproverName = x.ApprovalHistory
+                        .Where(h => h.Level == x.CurrentApprovalLevel + 1 && h.Status == ApprovalStatus.Pending)
                         .Select(h => h.Approver.Name)
                         .FirstOrDefault(),
 
                     // ✅ 預計到達人數
-                    ExpectedAttendees = x.Conference.ExpectedAttendees,
+                    ExpectedAttendees = x.ExpectedAttendees,
 
-                    Slots = x.Conference.ConferenceRoomSlots
+                    Slots = x.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
                             .ThenBy(s => s.StartTime)
                             .Select(s => new SlotDetailVM
@@ -495,10 +505,6 @@ namespace TASA.Services.ConferenceModule
                 .Select(x => new
                 {
                     Conference = x,
-                    LatestProof = x.ConferencePaymentProofs
-                        .Where(p => p.DeleteAt == null)
-                        .OrderByDescending(p => p.UploadedAt)
-                        .FirstOrDefault(),
                     // ✅ 取得優惠證明附件 (Type = 3)
                     DiscountProofAttachment = x.Attachments
                         .Where(a => a.AttachmentType == AttachmentType.DiscountProof)
@@ -543,7 +549,11 @@ namespace TASA.Services.ConferenceModule
                     PaymentMethod = x.Conference.PaymentMethod,
                     DepartmentCode = x.Conference.DepartmentCode,
                     RejectReason = x.Conference.RejectReason,
-                    PaymentRejectReason = x.LatestProof != null ? x.LatestProof.RejectReason : null,
+                    PaymentRejectReason = x.Conference.ConferencePaymentOrderItems
+                        .Where(i => i.Order.Status == PaymentOrderStatus.Rejected && i.Order.DeleteAt == null)
+                        .OrderByDescending(i => i.Order.ReviewedAt)
+                        .Select(i => i.Order.RejectReason)
+                        .FirstOrDefault(),
                     UploadTime = null,
                     PaymentType = null,
                     LastFiveDigits = null,
@@ -583,13 +593,9 @@ namespace TASA.Services.ConferenceModule
                             DiscountReason = h.DiscountReason
                         }).ToList(),
 
-                    // ✅ 優惠證明（優先從附件取，其次從付款憑證取）
-                    DiscountProofPath = x.DiscountProofAttachment != null
-                        ? x.DiscountProofAttachment.FilePath
-                        : (x.LatestProof != null ? x.LatestProof.DiscountProofPath : null),
-                    DiscountProofName = x.DiscountProofAttachment != null
-                        ? x.DiscountProofAttachment.FileName
-                        : (x.LatestProof != null ? x.LatestProof.DiscountProofName : null),
+                    // ✅ 優惠證明（從附件取）
+                    DiscountProofPath = x.DiscountProofAttachment != null ? x.DiscountProofAttachment.FilePath : null,
+                    DiscountProofName = x.DiscountProofAttachment != null ? x.DiscountProofAttachment.FileName : null,
 
                     Slots = x.Conference.ConferenceRoomSlots
                             .OrderBy(s => s.SlotDate)
@@ -659,75 +665,61 @@ namespace TASA.Services.ConferenceModule
                     x.Id.ToString().StartsWith(query.Keyword!))
                 .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
                 .OrderByDescending(x => x.CreateAt)
-                .Select(x => new
-                {
-                    Conference = x,
-                    // ✅ 取得最新的付款憑證（不限狀態，以便顯示已收款的歷史記錄）
-                    LatestProof = x.ConferencePaymentProofs
-                        .Where(p => p.DeleteAt == null)
-                        .OrderByDescending(p => p.UploadedAt)
-                        .FirstOrDefault()
-                })
                 .Select(x => new ReservationListVM()
                 {
-                    Id = x.Conference.Id,
-                    BookingNo = x.Conference.Id.ToString().Substring(0, 8),
-                    ApplicantName = x.Conference.CreateByNavigation.Name,
-                    ConferenceName = x.Conference.Name,
-                    OrganizerUnit = x.Conference.OrganizerUnit,
-                    Chairman = x.Conference.Chairman,
-                    ContactPhone = x.Conference.ContactPhone,  // 聯絡電話
-                    ContactEmail = x.Conference.ContactEmail,  // 電子郵件
+                    Id = x.Id,
+                    BookingNo = x.Id.ToString().Substring(0, 8),
+                    ApplicantName = x.CreateByNavigation.Name,
+                    ConferenceName = x.Name,
+                    OrganizerUnit = x.OrganizerUnit,
+                    Chairman = x.Chairman,
+                    ContactPhone = x.ContactPhone,  // 聯絡電話
+                    ContactEmail = x.ContactEmail,  // 電子郵件
 
                     // ✅ 列表：只顯示日期範圍
-                    Date = x.Conference.ConferenceRoomSlots.Any()
-                        ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
-                            ? x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
-                            : x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
-                              x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
+                    Date = x.ConferenceRoomSlots.Any()
+                        ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                            : x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                              x.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                         : "-",
 
                     // ✅ 列表：單日顯示時間，跨日顯示「-」（詳細時間在 Detail 看）
-                    Time = x.Conference.ConferenceRoomSlots.Any()
-                        ? (x.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == x.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
-                            ? $"{x.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                              $"{x.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                    Time = x.ConferenceRoomSlots.Any()
+                        ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? $"{x.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
+                              $"{x.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
                             : "-")
                         : "-",
 
-                    RoomName = x.Conference.ConferenceRoomSlots
+                    RoomName = x.ConferenceRoomSlots
                         .Select(s => s.Room.Name)
                         .FirstOrDefault() ?? "-",
 
-                    TotalAmount = x.Conference.TotalAmount,
-                    ParkingTicketCount = x.Conference.ParkingTicketCount,  // ✅ 停車券張數
-                    PaymentMethod = x.Conference.PaymentMethod,
+                    TotalAmount = x.TotalAmount,
+                    ParkingTicketCount = x.ParkingTicketCount,  // ✅ 停車券張數
+                    PaymentMethod = x.PaymentMethod,
                     Status = "待繳費",
 
-                    PaymentStatusText = x.Conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
-                                       x.Conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
-                                       x.Conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
-                                       x.Conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
+                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                                       x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
+                                       x.PaymentStatus == PaymentStatus.Paid ? "已收款" :
+                                       x.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
 
-                    UploadTime = x.LatestProof != null
-                        ? x.LatestProof.UploadedAt.ToString("yyyy/MM/dd HH:mm")
-                        : null,
-
-                    PaymentType = x.LatestProof != null ? x.LatestProof.PaymentType : null,
-                    LastFiveDigits = x.LatestProof != null ? x.LatestProof.LastFiveDigits : null,
-                    TransferAmount = x.LatestProof != null ? x.LatestProof.TransferAmount : null,
-                    TransferAt = x.LatestProof != null && x.LatestProof.TransferAt.HasValue
-                        ? x.LatestProof.TransferAt.Value.ToString("yyyy/MM/dd HH:mm")
-                        : null,
-                    FilePath = x.LatestProof != null ? x.LatestProof.FilePath : null,
-                    FileName = x.LatestProof != null ? x.LatestProof.FileName : null,
-                    Note = x.LatestProof != null ? x.LatestProof.Note : null,
+                    UploadTime = null,
+                    PaymentType = null,
+                    LastFiveDigits = null,
+                    TransferAmount = null,
+                    TransferAt = null,
+                    FilePath = null,
+                    FileName = null,
+                    Note = null,
 
                     // ✅ 優惠證明
-                    DiscountProofPath = x.LatestProof != null ? x.LatestProof.DiscountProofPath : null,
-                    DiscountProofName = x.LatestProof != null ? x.LatestProof.DiscountProofName : null,
+                    DiscountProofPath = null,
+                    DiscountProofName = null,
 
-                    Slots = x.Conference.ConferenceRoomSlots
+                    Slots = x.ConferenceRoomSlots
                         .OrderBy(s => s.SlotDate)
                         .ThenBy(s => s.StartTime)
                         .Select(s => new SlotDetailVM
@@ -739,6 +731,147 @@ namespace TASA.Services.ConferenceModule
                             SlotStatus = s.SlotStatus
                         }).ToList()
                 });
+        }
+
+        // ===== 付款訂單列表 =====
+
+        public class PaymentOrderListVM
+        {
+            public Guid OrderId { get; set; }
+            public string OrderStatus { get; set; } = string.Empty;
+            public string PaymentMethod { get; set; } = string.Empty;
+            public string? PaymentType { get; set; }
+            public string? LastFiveDigits { get; set; }
+            public int? TransferAmount { get; set; }
+            public string? TransferAt { get; set; }
+            public string? FilePath { get; set; }
+            public string? FileName { get; set; }
+            public string? DiscountProofPath { get; set; }
+            public string? DiscountProofName { get; set; }
+            public string? Note { get; set; }
+            public string? RejectReason { get; set; }
+            public string UploadTime { get; set; } = string.Empty;
+            public string ApplicantName { get; set; } = string.Empty;
+            public int TotalAmount { get; set; }
+            public int ConferenceCount { get; set; }
+        }
+
+        public class OrderItemDetailVM
+        {
+            public Guid ConferenceId { get; set; }
+            public string BookingNo { get; set; } = string.Empty;
+            public string ConferenceName { get; set; } = string.Empty;
+            public string ApplicantName { get; set; } = string.Empty;
+            public string Date { get; set; } = string.Empty;
+            public string Time { get; set; } = string.Empty;
+            public string RoomName { get; set; } = string.Empty;
+            public int TotalAmount { get; set; }
+            public string? PaymentMethod { get; set; }
+            public string? DepartmentCode { get; set; }
+        }
+
+        /// <summary>
+        /// 付款審核列表 - 以 Order 為單位顯示
+        /// </summary>
+        public IQueryable<PaymentOrderListVM> PendingOrderList(ReservationQueryVM query, Guid userId)
+        {
+            var isAccountant = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN", "ACCOUNTANT");
+
+            var ordersQuery = db.ConferencePaymentOrder
+                .AsNoTracking()
+                .Where(o => o.DeleteAt == null);
+
+            // 非總務：只看自己管理的會議室的訂單
+            if (!isAccountant)
+            {
+                ordersQuery = ordersQuery.Where(o =>
+                    o.Items.Any(i => i.Conference.ConferenceRoomSlots.Any(s => s.Room.ManagerId == userId)));
+            }
+
+            // 依付款狀態篩選
+            if (query.PaymentStatus.HasValue)
+            {
+                if (query.PaymentStatus.Value == PaymentStatus.Paid)
+                    ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.Paid);
+                else if (query.PaymentStatus.Value == PaymentStatus.PendingVerification)
+                    ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.PendingVerification);
+                else if (query.PaymentStatus.Value == PaymentStatus.PendingReupload)
+                    ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.Rejected);
+            }
+            else
+            {
+                // 預設顯示待查帳的訂單
+                ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.PendingVerification);
+            }
+
+            // 部門篩選
+            if (!string.IsNullOrWhiteSpace(query.DepartmentCode))
+                ordersQuery = ordersQuery.Where(o =>
+                    o.Items.Any(i => i.Conference.DepartmentCode == query.DepartmentCode));
+
+            // 關鍵字搜尋
+            if (!string.IsNullOrEmpty(query.Keyword))
+                ordersQuery = ordersQuery.Where(o =>
+                    o.UploadedByNavigation.Name.Contains(query.Keyword) ||
+                    o.Items.Any(i => i.Conference.Name.Contains(query.Keyword) ||
+                                    i.Conference.Id.ToString().StartsWith(query.Keyword)));
+
+            return ordersQuery
+                .OrderByDescending(o => o.UploadedAt)
+                .Select(o => new PaymentOrderListVM
+                {
+                    OrderId = o.Id,
+                    OrderStatus = o.Status == PaymentOrderStatus.PendingVerification ? "待查帳" :
+                                  o.Status == PaymentOrderStatus.Paid ? "已收款" : "已退回",
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentType = o.PaymentType,
+                    LastFiveDigits = o.LastFiveDigits,
+                    TransferAmount = o.TransferAmount,
+                    TransferAt = o.TransferAt != null ? o.TransferAt.Value.ToString("yyyy/MM/dd HH:mm") : null,
+                    FilePath = o.FilePath,
+                    FileName = o.FileName,
+                    DiscountProofPath = o.DiscountProofPath,
+                    DiscountProofName = o.DiscountProofName,
+                    Note = o.Note,
+                    RejectReason = o.RejectReason,
+                    UploadTime = o.UploadedAt.ToString("yyyy/MM/dd HH:mm"),
+                    ApplicantName = o.UploadedByNavigation.Name,
+                    TotalAmount = o.Items.Sum(i => i.Conference.TotalAmount),
+                    ConferenceCount = o.Items.Count()
+                });
+        }
+
+        /// <summary>
+        /// 取得付款訂單明細
+        /// </summary>
+        public List<OrderItemDetailVM> GetOrderDetail(Guid orderId)
+        {
+            return db.ConferencePaymentOrderItem
+                .AsNoTracking()
+                .Where(i => i.OrderId == orderId)
+                .Select(i => new OrderItemDetailVM
+                {
+                    ConferenceId = i.ConferenceId,
+                    BookingNo = i.Conference.Id.ToString().Substring(0, 8),
+                    ConferenceName = i.Conference.Name,
+                    ApplicantName = i.Conference.CreateByNavigation.Name,
+                    Date = i.Conference.ConferenceRoomSlots.Any()
+                        ? (i.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == i.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? i.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
+                            : i.Conference.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
+                              i.Conference.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
+                        : "-",
+                    Time = i.Conference.ConferenceRoomSlots.Any()
+                        ? (i.Conference.ConferenceRoomSlots.Min(s => s.SlotDate) == i.Conference.ConferenceRoomSlots.Max(s => s.SlotDate)
+                            ? $"{i.Conference.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ {i.Conference.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
+                            : "-")
+                        : "-",
+                    RoomName = i.Conference.ConferenceRoomSlots.Select(s => s.Room.Name).FirstOrDefault() ?? "-",
+                    TotalAmount = i.Conference.TotalAmount,
+                    PaymentMethod = i.Conference.PaymentMethod,
+                    DepartmentCode = i.Conference.DepartmentCode
+                })
+                .ToList();
         }
 
         // ===== 循環預約（僅院內人員可用） =====
@@ -1781,7 +1914,6 @@ namespace TASA.Services.ConferenceModule
                 .Include(c => c.ConferenceRoomSlots)
                     .ThenInclude(s => s.Room)
                 .Include(c => c.ConferenceEquipments)
-                .Include(c => c.ConferencePaymentProofs.Where(p => p.DeleteAt == null))
                 .Include(c => c.ApprovalHistory)
                     .ThenInclude(h => h.Approver)
                 .Include(c => c.ApprovalHistory)
@@ -1828,9 +1960,11 @@ namespace TASA.Services.ConferenceModule
                 })
                 .ToList();
 
-            // 取得最新的付款憑證拒絕原因
-            var latestProof = conference.ConferencePaymentProofs
-                .OrderByDescending(p => p.UploadedAt)
+            // 取得最新的付款訂單（新合併付款系統）
+            var latestOrder = db.ConferencePaymentOrderItem
+                .Where(i => i.ConferenceId == conference.Id && i.Order.DeleteAt == null)
+                .OrderByDescending(i => i.Order.UploadedAt)
+                .Select(i => new { i.Order.FilePath, i.Order.FileName, i.Order.Note, i.Order.DiscountProofPath, i.Order.DiscountProofName })
                 .FirstOrDefault();
 
             return new ReservationDetailViewVM
@@ -1885,7 +2019,18 @@ namespace TASA.Services.ConferenceModule
                 PaymentMethod = conference.PaymentMethod,
                 DepartmentCode = conference.DepartmentCode,
                 RejectReason = conference.RejectReason,
-                PaymentRejectReason = latestProof?.RejectReason,
+                PaymentRejectReason = db.ConferencePaymentOrderItem
+                        .Where(i => i.ConferenceId == conference.Id &&
+                                    i.Order.Status == PaymentOrderStatus.Rejected &&
+                                    i.Order.DeleteAt == null)
+                        .OrderByDescending(i => i.Order.ReviewedAt)
+                        .Select(i => i.Order.RejectReason)
+                        .FirstOrDefault(),
+                PaymentFilePath = latestOrder?.FilePath,
+                PaymentFileName = latestOrder?.FileName,
+                PaymentNote = latestOrder?.Note,
+                DiscountProofPath = latestOrder?.DiscountProofPath,
+                DiscountProofName = latestOrder?.DiscountProofName,
                 DiscountAmount = conference.DiscountAmount,      // ✅ 折扣金額
                 DiscountReason = conference.DiscountReason,      // ✅ 折扣原因
                 Equipments = equipments,

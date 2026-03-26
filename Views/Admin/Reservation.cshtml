@@ -190,42 +190,39 @@
                     <page ref="approvalPage" @@reload="reservation.getApprovalList"></page>
                 </div>
 
-                <!-- ✅ 付款審核列表 -->
+                <!-- ✅ 付款審核列表（以 Order 為單位） -->
                 <div v-show="reservation.activeTab.value === 'payment'">
                     <table class="table table-hover">
                         <caption>付款審核列表</caption>
                         <thead>
                             <tr class="table-light">
-                                <th style="width:120px;">預約單號</th>
                                 <th>申請人</th>
-                                <th>日期</th>
-                                <th>會議室</th>
                                 <th>付款方式</th>
-                                <th>金額</th>
-                                <th>付款狀態</th>
+                                <th>合計金額</th>
+                                <th>筆數</th>
+                                <th>狀態</th>
                                 <th>上傳時間</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="item in reservation.paymentList" :key="item.id"
+                            <tr v-for="item in reservation.paymentList" :key="item.orderId"
                                 @@click="reservation.openPaymentReview(item)" class="row-click" style="cursor: pointer;"
                                 data-bs-toggle="offcanvas" data-bs-target="#paymentDrawer">
-                                <td>{{ item.bookingNo }}</td>
                                 <td>{{ item.applicantName }}</td>
-                                <td>{{ item.date }}</td>
-                                <td>{{ item.roomName }}</td>
                                 <td>{{ getPaymentMethodText(item.paymentMethod) }}</td>
                                 <td>NT${{ item.totalAmount.toLocaleString() }}</td>
+                                <td>{{ item.conferenceCount }} 筆</td>
                                 <td>
-                                    <span class="badge" :class="getPaymentStatusClass(item.paymentStatusText)">
-                                        {{ item.paymentStatusText }}
+                                    <span class="badge"
+                                          :class="item.orderStatus === '已收款' ? 'bg-success' : item.orderStatus === '已退回' ? 'bg-danger' : 'bg-warning text-dark'">
+                                        {{ item.orderStatus }}
                                     </span>
                                 </td>
                                 <td>{{ item.uploadTime || '-' }}</td>
                             </tr>
                             <tr v-if="reservation.paymentList.length === 0">
-                                <td colspan="8" class="text-center text-muted">
-                                    {{ reservation.query.paymentStatus ? '沒有符合條件的資料' : '目前沒有待審核的付款憑證' }}
+                                <td colspan="6" class="text-center text-muted">
+                                    目前沒有待審核的付款訂單
                                 </td>
                             </tr>
                         </tbody>
@@ -486,31 +483,50 @@
             <div class="offcanvas offcanvas-end offcanvas-large" tabindex="-1" id="paymentDrawer"
                  aria-labelledby="paymentDrawerLabel">
                 <div class="offcanvas-header">
-                    <h5 id="paymentDrawerLabel">付款審核 <small class="text-muted">{{ reservation.currentPayment.bookingNo }}</small>
-                    </h5>
+                    <h5 id="paymentDrawerLabel">付款審核</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
                 </div>
                 <div class="offcanvas-body">
-                    <!-- 基本資料 -->
+                    <!-- 訂單摘要 -->
                     <div class="border rounded p-3 bg-body-tertiary mb-3">
                         <div class="row g-2 small">
-                            <div class="col-md-6"><strong>申請人:</strong>{{ reservation.currentPayment.applicantName }}</div>
-                            <div class="col-md-6"><strong>會議室:</strong>{{ reservation.currentPayment.roomName }}</div>
-                            <div class="col-md-6"><strong>日期:</strong>{{ reservation.currentPayment.date }}</div>
-                            <div class="col-md-6"><strong>金額:</strong>NT${{ reservation.currentPayment.totalAmount?.toLocaleString()
-                                }}</div>
-                            </div>
+                            <div class="col-md-6"><strong>申請人:</strong> {{ reservation.currentPayment.applicantName }}</div>
+                            <div class="col-md-6"><strong>合計金額:</strong> NT${{ reservation.currentPayment.totalAmount?.toLocaleString() }}</div>
+                            <div class="col-md-6"><strong>付款方式:</strong> {{ getPaymentMethodText(reservation.currentPayment.paymentMethod) }}</div>
+                            <div class="col-md-6"><strong>上傳時間:</strong> {{ reservation.currentPayment.uploadTime || '-' }}</div>
                         </div>
+                    </div>
 
+                    <!-- 訂單明細 -->
+                    <div class="mb-3" v-if="reservation.currentPayment.items && reservation.currentPayment.items.length > 0">
+                        <h6 class="text-secondary mb-2">預約明細（{{ reservation.currentPayment.items.length }} 筆）</h6>
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>預約單號</th>
+                                    <th>會議名稱</th>
+                                    <th>日期</th>
+                                    <th class="text-end">金額</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="i in reservation.currentPayment.items" :key="i.ConferenceId">
+                                    <td>{{ i.BookingNo }}</td>
+                                    <td class="text-ellipsis">{{ i.ConferenceName }}</td>
+                                    <td>{{ i.Date }}</td>
+                                    <td class="text-end">NT${{ i.TotalAmount?.toLocaleString() }}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">合計</td>
+                                    <td class="text-end fw-bold">NT${{ reservation.currentPayment.totalAmount?.toLocaleString() }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
 
-                        <!-- 預約時間 -->
-                        <div class="mb-4">
-                            <div class="row g-2 small">
-                                <div class="col-md-6"><strong>時間：</strong>{{ reservation.formatTimeDisplay(reservation.currentPayment) }}</div>
-                            </div>
-                        </div>
-
-                        <hr>
+                    <hr>
                         <!-- 付款資訊 -->
                         <div class="mb-4">
                             <h6 class="mb-2">
@@ -523,18 +539,18 @@
                                     <strong>付款方式:</strong>
                                     {{ getPaymentMethodText(reservation.currentPayment.paymentMethod) }}
                                 </p>
-                                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '臨櫃'">
+                                <p class="mb-2" v-if="reservation.currentPayment.paymentMethod === '臨櫃'">
                                     <strong>憑證上傳時間:</strong>
                                     {{ reservation.currentPayment.uploadTime || '-' }}
                                 </p>
 
-                                <p class="mb-2" v-if="reservation.currentPayment.paymentType === '匯款'">
+                                <p class="mb-2" v-if="reservation.currentPayment.paymentMethod === '匯款'">
                                     <strong>提交時間:</strong>
                                     {{ reservation.currentPayment.uploadTime || '-' }}
                                 </p>
 
                                 <!-- ===== 匯款資訊 ===== -->
-                                <template v-if="reservation.currentPayment.paymentType === '匯款'">
+                                <template v-if="reservation.currentPayment.paymentMethod === '匯款'">
                                     <hr class="my-2">
                                     <h6 class="text-muted small mb-2">匯款資訊</h6>
                                     <p class="mb-1">
@@ -553,10 +569,24 @@
                                         <strong>備註:</strong>
                                         <span class="text-muted">{{ reservation.currentPayment.note }}</span>
                                     </p>
+                                    <!-- 匯款截圖（選填） -->
+                                    <template v-if="reservation.currentPayment.filePath && reservation.currentPayment.filePath !== '-'">
+                                        <hr class="my-2">
+                                        <h6 class="text-muted small mb-2">匯款截圖</h6>
+                                        <div class="text-center mb-2">
+                                            <img :src="reservation.currentPayment.filePath"
+                                                 :alt="reservation.currentPayment.fileName"
+                                                 class="img-fluid rounded border" style="max-height: 400px; cursor: pointer;"
+                                                 @@click="viewFullImage(reservation.currentPayment.filePath)" />
+                                        </div>
+                                        <p class="text-muted small text-center mb-0">
+                                            {{ reservation.currentPayment.fileName }}
+                                        </p>
+                                    </template>
                                 </template>
 
                                 <!-- ===== 臨櫃 ===== -->
-                                <template v-else-if="reservation.currentPayment.paymentType === '臨櫃'">
+                                <template v-else-if="reservation.currentPayment.paymentMethod === '臨櫃'">
                                     <hr class="my-2">
                                     <h6 class="text-muted small mb-2">付款憑證</h6>
                                     <div class="text-center mb-2">
@@ -710,6 +740,19 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" @@click="reservation.submitBulkReject()">確認拒絕</button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 圖片放大 Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-transparent border-0 position-relative">
+            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2"
+                    style="z-index:10;" data-bs-dismiss="modal"></button>
+            <div class="modal-body text-center p-2">
+                <img :src="fullImageUrl" class="img-fluid rounded" style="max-height:85vh;object-fit:contain;">
             </div>
         </div>
     </div>

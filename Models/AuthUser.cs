@@ -129,8 +129,8 @@ public partial class AuthUser
     public virtual ICollection<AuthRole> AuthRole { get; set; } = new List<AuthRole>();
 
     [InverseProperty("UploadedByNavigation")]
-    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofUploadedBy { get; set; } = new List<ConferencePaymentProof>();
+    public virtual ICollection<ConferencePaymentOrder> ConferencePaymentOrderUploadedBy { get; set; } = new List<ConferencePaymentOrder>();
 
     [InverseProperty("ReviewedByNavigation")]
-    public virtual ICollection<ConferencePaymentProof> ConferencePaymentProofReviewedBy { get; set; } = new List<ConferencePaymentProof>();
+    public virtual ICollection<ConferencePaymentOrder> ConferencePaymentOrderReviewedBy { get; set; } = new List<ConferencePaymentOrder>();
 }

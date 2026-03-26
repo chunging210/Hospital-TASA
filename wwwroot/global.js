@@ -81,6 +81,7 @@ const global = new function () {
             paymentlist: GET,
             approvepayment: POST,
             rejectpayment: POST,
+            orderdetail: (id) => fetch(`/api/reservations/orderdetail/${id}`).then(r => r.ok ? r.json().then(data => ({ data })) : Promise.reject(r)),
 
             // ===== 預約總覽 (查詢) =====
             list: GET,

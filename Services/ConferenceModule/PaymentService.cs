@@ -32,19 +32,19 @@ namespace TASA.Services.ConferenceModule
 
         public class ApprovePaymentVM
         {
-            public Guid ReservationId { get; set; }
+            public Guid OrderId { get; set; }
         }
 
         public class RejectPaymentVM
         {
-            public Guid ReservationId { get; set; }
+            public Guid OrderId { get; set; }
             public string Reason { get; set; } = string.Empty;
         }
 
         /// <summary>
-        /// ✅ 上傳臨櫃付款憑證
+        /// ✅ 上傳臨櫃付款憑證（建立合併付款訂單）
         /// </summary>
-        public async Task<List<Guid>> UploadCounterProof(UploadCounterVM vm)
+        public async Task<Guid> UploadCounterProof(UploadCounterVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id
                 ?? throw new HttpException("無法取得使用者資訊");
@@ -59,9 +59,7 @@ namespace TASA.Services.ConferenceModule
             if (!Directory.Exists(_uploadPath))
                 Directory.CreateDirectory(_uploadPath);
 
-            var proofIds = new List<Guid>();
-
-            // 先處理優惠證明（如果有的話）
+            // 先處理優惠證明
             string? discountProofPath = null;
             string? discountProofName = null;
             if (vm.DiscountProofFile != null && vm.DiscountProofFile.Length > 0)
@@ -69,72 +67,65 @@ namespace TASA.Services.ConferenceModule
                 var discountProofId = Guid.NewGuid();
                 var discountExt = Path.GetExtension(vm.DiscountProofFile.FileName);
                 var discountFileName = $"discount_{discountProofId}{discountExt}";
-                var discountFilePath = Path.Combine(_uploadPath, discountFileName);
-
-                using (var stream = new FileStream(discountFilePath, FileMode.Create))
-                {
+                using (var stream = new FileStream(Path.Combine(_uploadPath, discountFileName), FileMode.Create))
                     await vm.DiscountProofFile.CopyToAsync(stream);
-                }
-
                 discountProofPath = $"/uploads/payment-proofs/{discountFileName}";
                 discountProofName = vm.DiscountProofFile.FileName;
             }
 
-            // 處理每個預約單號
+            // 儲存第一個檔案作為付款憑證（臨櫃只取第一個）
+            var mainFile = vm.Files[0];
+            var mainProofId = Guid.NewGuid();
+            var mainExt = Path.GetExtension(mainFile.FileName);
+            var mainFileName = $"{mainProofId}{mainExt}";
+            using (var stream = new FileStream(Path.Combine(_uploadPath, mainFileName), FileMode.Create))
+                await mainFile.CopyToAsync(stream);
+
+            // 建立合併付款訂單
+            var orderId = Guid.NewGuid();
+            var order = new ConferencePaymentOrder
+            {
+                Id = orderId,
+                PaymentMethod = "臨櫃",
+                FilePath = $"/uploads/payment-proofs/{mainFileName}",
+                FileName = mainFile.FileName,
+                Note = vm.Note,
+                Status = PaymentOrderStatus.PendingVerification,
+                DiscountProofPath = discountProofPath,
+                DiscountProofName = discountProofName,
+                UploadedAt = DateTime.Now,
+                UploadedBy = userId,
+                CreateAt = DateTime.Now,
+                CreateBy = userId
+            };
+            db.ConferencePaymentOrder.Add(order);
+
+            // 找到所有對應的會議並建立訂單明細
             foreach (var reservationNo in vm.ReservationIds)
             {
-                // 根據預約單號前8碼找到會議
                 var conference = await db.Conference
                     .Where(c => c.Id.ToString().StartsWith(reservationNo))
                     .FirstOrDefaultAsync()
                     ?? throw new HttpException($"找不到預約單號: {reservationNo}");
 
-                // 檢查會議狀態
                 if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
 
-                // 儲存每個檔案
-                foreach (var file in vm.Files)
+                db.ConferencePaymentOrderItem.Add(new ConferencePaymentOrderItem
                 {
-                    var proofId = Guid.NewGuid();
-                    var fileExtension = Path.GetExtension(file.FileName);
-                    var fileName = $"{proofId}{fileExtension}";
-                    var filePath = Path.Combine(_uploadPath, fileName);
+                    Id = Guid.NewGuid(),
+                    OrderId = orderId,
+                    ConferenceId = conference.Id,
+                    CreateAt = DateTime.Now
+                });
 
-                    // 儲存檔案
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await file.CopyToAsync(stream);
-                    }
-
-                    // ✅ 改回 ConferencePaymentProof (單數)
-                    var proof = new ConferencePaymentProof
-                    {
-                        Id = proofId,
-                        ConferenceId = conference.Id,
-                        FilePath = $"/uploads/payment-proofs/{fileName}",
-                        FileName = file.FileName,
-                        PaymentType = "臨櫃",
-                        Note = vm.Note,
-                        Status = ProofStatus.PendingReview,
-                        UploadedAt = DateTime.Now,
-                        UploadedBy = userId,
-                        DiscountProofPath = discountProofPath,
-                        DiscountProofName = discountProofName
-                    };
-
-                    db.ConferencePaymentProof.Add(proof);
-                    proofIds.Add(proofId);
-                }
-
-                // 更新會議付款狀態為「待查帳」
                 conference.PaymentStatus = PaymentStatus.PendingVerification;
             }
 
             await db.SaveChangesAsync();
 
             _ = service.LogServices.LogAsync("付款憑證",
-                $"上傳臨櫃憑證 - 預約單: {string.Join(", ", vm.ReservationIds)}, 檔案數: {vm.Files.Count}");
+                $"上傳臨櫃憑證 - 預約單: {string.Join(", ", vm.ReservationIds)}, 訂單: {orderId}");
 
             // 寄送通知給總務
             foreach (var reservationNo in vm.ReservationIds)
@@ -143,18 +134,16 @@ namespace TASA.Services.ConferenceModule
                     .Where(c => c.Id.ToString().StartsWith(reservationNo))
                     .FirstOrDefaultAsync();
                 if (conf != null)
-                {
                     service.ConferenceMail.PaymentProofUploaded(conf.Id, "臨櫃繳費");
-                }
             }
 
-            return proofIds;
+            return orderId;
         }
 
         /// <summary>
-        /// ✅ 提交匯款資訊
+        /// ✅ 提交匯款資訊（建立合併付款訂單）
         /// </summary>
-        public async Task<List<Guid>> SubmitTransferInfo(TransferPaymentVM vm)
+        public async Task<Guid> SubmitTransferInfo(TransferPaymentVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id
                 ?? throw new HttpException("無法取得使用者資訊");
@@ -172,7 +161,7 @@ namespace TASA.Services.ConferenceModule
             if (!Directory.Exists(_uploadPath))
                 Directory.CreateDirectory(_uploadPath);
 
-            // 先處理優惠證明（如果有的話）
+            // 先處理優惠證明
             string? discountProofPath = null;
             string? discountProofName = null;
             if (vm.DiscountProofFile != null && vm.DiscountProofFile.Length > 0)
@@ -180,18 +169,13 @@ namespace TASA.Services.ConferenceModule
                 var discountProofId = Guid.NewGuid();
                 var discountExt = Path.GetExtension(vm.DiscountProofFile.FileName);
                 var discountFileName = $"discount_{discountProofId}{discountExt}";
-                var discountFilePath = Path.Combine(_uploadPath, discountFileName);
-
-                using (var stream = new FileStream(discountFilePath, FileMode.Create))
-                {
+                using (var stream = new FileStream(Path.Combine(_uploadPath, discountFileName), FileMode.Create))
                     await vm.DiscountProofFile.CopyToAsync(stream);
-                }
-
                 discountProofPath = $"/uploads/payment-proofs/{discountFileName}";
                 discountProofName = vm.DiscountProofFile.FileName;
             }
 
-            // 處理匯款截圖（如果有的話）
+            // 處理匯款截圖
             string? screenshotPath = null;
             string? screenshotName = null;
             if (vm.ScreenshotFile != null && vm.ScreenshotFile.Length > 0)
@@ -199,18 +183,33 @@ namespace TASA.Services.ConferenceModule
                 var screenshotId = Guid.NewGuid();
                 var screenshotExt = Path.GetExtension(vm.ScreenshotFile.FileName);
                 var screenshotFileName = $"transfer_{screenshotId}{screenshotExt}";
-                var screenshotFilePath = Path.Combine(_uploadPath, screenshotFileName);
-
-                using (var stream = new FileStream(screenshotFilePath, FileMode.Create))
-                {
+                using (var stream = new FileStream(Path.Combine(_uploadPath, screenshotFileName), FileMode.Create))
                     await vm.ScreenshotFile.CopyToAsync(stream);
-                }
-
                 screenshotPath = $"/uploads/payment-proofs/{screenshotFileName}";
                 screenshotName = vm.ScreenshotFile.FileName;
             }
 
-            var proofIds = new List<Guid>();
+            // 建立合併付款訂單
+            var orderId = Guid.NewGuid();
+            var order = new ConferencePaymentOrder
+            {
+                Id = orderId,
+                PaymentMethod = "匯款",
+                LastFiveDigits = vm.Last5,
+                TransferAmount = vm.Amount,
+                TransferAt = vm.TransferAt ?? DateTime.Now,
+                FilePath = screenshotPath ?? "-",
+                FileName = screenshotName ?? "匯款資訊",
+                Note = vm.Note,
+                Status = PaymentOrderStatus.PendingVerification,
+                DiscountProofPath = discountProofPath,
+                DiscountProofName = discountProofName,
+                UploadedAt = DateTime.Now,
+                UploadedBy = userId,
+                CreateAt = DateTime.Now,
+                CreateBy = userId
+            };
+            db.ConferencePaymentOrder.Add(order);
 
             foreach (var reservationNo in vm.ReservationIds)
             {
@@ -222,38 +221,21 @@ namespace TASA.Services.ConferenceModule
                 if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
 
-                var proofId = Guid.NewGuid();
-
-                // ✅ 改回 ConferencePaymentProof (單數)
-                var proof = new ConferencePaymentProof
+                db.ConferencePaymentOrderItem.Add(new ConferencePaymentOrderItem
                 {
-                    Id = proofId,
+                    Id = Guid.NewGuid(),
+                    OrderId = orderId,
                     ConferenceId = conference.Id,
-                    FilePath = screenshotPath ?? "-",  // 匯款截圖路徑
-                    FileName = screenshotName ?? "匯款資訊",
-                    PaymentType = "匯款",
-                    LastFiveDigits = vm.Last5,
-                    TransferAmount = vm.Amount,
-                    TransferAt = vm.TransferAt ?? DateTime.Now,
-                    Note = vm.Note,
-                    Status = ProofStatus.PendingReview,
-                    UploadedAt = DateTime.Now,
-                    UploadedBy = userId,
-                    DiscountProofPath = discountProofPath,
-                    DiscountProofName = discountProofName
-                };
+                    CreateAt = DateTime.Now
+                });
 
-                db.ConferencePaymentProof.Add(proof);
-                proofIds.Add(proofId);
-
-                // 更新會議付款狀態為「待查帳」
                 conference.PaymentStatus = PaymentStatus.PendingVerification;
             }
 
             await db.SaveChangesAsync();
 
             _ = service.LogServices.LogAsync("付款憑證",
-                $"提交匯款資訊 - 預約單: {string.Join(", ", vm.ReservationIds)}, 末五碼: {vm.Last5}");
+                $"提交匯款資訊 - 預約單: {string.Join(", ", vm.ReservationIds)}, 末五碼: {vm.Last5}, 訂單: {orderId}");
 
             // 寄送通知給總務
             foreach (var reservationNo in vm.ReservationIds)
@@ -262,116 +244,106 @@ namespace TASA.Services.ConferenceModule
                     .Where(c => c.Id.ToString().StartsWith(reservationNo))
                     .FirstOrDefaultAsync();
                 if (conf != null)
-                {
                     service.ConferenceMail.PaymentProofUploaded(conf.Id, "銀行匯款");
-                }
             }
 
-            return proofIds;
+            return orderId;
         }
 
         /// <summary>
-        /// ✅ 批准付款憑證
+        /// ✅ 批准付款訂單（核准訂單內所有會議）
         /// </summary>
         public async Task ApprovePayment(ApprovePaymentVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id
                 ?? throw new HttpException("無法取得使用者資訊");
 
-            var conference = await db.Conference
-                .Include(c => c.ConferencePaymentProofs)
-                .FirstOrDefaultAsync(c => c.Id == vm.ReservationId)
-                ?? throw new HttpException("找不到該預約");
+            var order = await db.ConferencePaymentOrder
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Conference)
+                        .ThenInclude(c => c.ConferenceRoomSlots)
+                .FirstOrDefaultAsync(o => o.Id == vm.OrderId && o.DeleteAt == null)
+                ?? throw new HttpException("找不到該付款訂單");
 
-            if (conference.ReservationStatus != ReservationStatus.PendingPayment)
-                throw new HttpException("該預約不在待繳費狀態");
+            if (order.Status != PaymentOrderStatus.PendingVerification)
+                throw new HttpException("該訂單不在待查帳狀態");
 
-            if (conference.PaymentStatus != PaymentStatus.PendingVerification)
-                throw new HttpException("該預約未上傳憑證");
+            // 更新訂單狀態
+            order.Status = PaymentOrderStatus.Paid;
+            order.ReviewedAt = DateTime.Now;
+            order.ReviewedBy = userId;
 
-            // 更新憑證狀態
-            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == ProofStatus.PendingReview).ToList();
-            // ✅ Navigation Property 用複數
-            foreach (var proof in proofs)
+            // 核准訂單內每個會議
+            foreach (var item in order.Items)
             {
-                proof.Status = ProofStatus.Approved;
-                proof.ReviewedAt = DateTime.Now;
-                proof.ReviewedBy = userId;
-            }
+                var conference = item.Conference;
+                if (conference == null) continue;
 
-            // 更新會議付款狀態為「已收款(全額)」
-            conference.PaymentStatus = PaymentStatus.Paid;
+                conference.PaymentStatus = PaymentStatus.Paid;
+                conference.ReservationStatus = ReservationStatus.Confirmed;
+                conference.ApprovedAt = DateTime.Now;
+                conference.PaidAt = DateTime.Now;
+                conference.Status = 1;
 
-
-            // ✅ 如果全額付清,變更為「預約成功」
-            conference.ReservationStatus = ReservationStatus.Confirmed;
-
-            conference.ApprovedAt = DateTime.Now;
-            conference.PaidAt = DateTime.Now;
-            conference.Status = 1;
-
-            // 設定會議時間
-            var slots = await db.ConferenceRoomSlot
-                .Where(s => s.ConferenceId == conference.Id)
-                .OrderBy(s => s.SlotDate)
-                .ThenBy(s => s.StartTime)
-                .ToListAsync();
-
-            if (slots.Any())
-            {
-                var firstSlot = slots.First();
-                conference.StartTime = firstSlot.SlotDate.ToDateTime(firstSlot.StartTime);
-
-                var lastSlot = slots.Last();
-                conference.EndTime = lastSlot.SlotDate.ToDateTime(lastSlot.EndTime);
+                // 設定會議時間
+                var slots = conference.ConferenceRoomSlots
+                    .OrderBy(s => s.SlotDate).ThenBy(s => s.StartTime).ToList();
+                if (slots.Any())
+                {
+                    conference.StartTime = slots.First().SlotDate.ToDateTime(slots.First().StartTime);
+                    conference.EndTime = slots.Last().SlotDate.ToDateTime(slots.Last().EndTime);
+                }
             }
 
             await db.SaveChangesAsync();
 
             _ = service.LogServices.LogAsync("付款審核",
-                $"批准付款 - {conference.Name} ({conference.Id})");
+                $"批准付款訂單 {order.Id}, 共 {order.Items.Count} 筆預約");
 
-            // 寄送繳費審核通過通知給使用者
-            service.ConferenceMail.PaymentApproved(vm.ReservationId);
+            // 寄送通知給每個預約人
+            foreach (var item in order.Items)
+                service.ConferenceMail.PaymentApproved(item.ConferenceId);
         }
 
         /// <summary>
-        /// ✅ 退回付款憑證
+        /// ✅ 退回付款訂單（退回訂單內所有會議）
         /// </summary>
         public async Task RejectPayment(RejectPaymentVM vm)
         {
             var userId = service.UserClaimsService.Me()?.Id
                 ?? throw new HttpException("無法取得使用者資訊");
 
-            var conference = await db.Conference
-                .Include(c => c.ConferencePaymentProofs)  // ✅ Navigation Property 用複數
-                .FirstOrDefaultAsync(c => c.Id == vm.ReservationId)
-                ?? throw new HttpException("找不到該預約");
+            var order = await db.ConferencePaymentOrder
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Conference)
+                .FirstOrDefaultAsync(o => o.Id == vm.OrderId && o.DeleteAt == null)
+                ?? throw new HttpException("找不到該付款訂單");
 
-            if (conference.PaymentStatus != PaymentStatus.PendingVerification)
-                throw new HttpException("該預約未上傳憑證");
+            if (order.Status != PaymentOrderStatus.PendingVerification)
+                throw new HttpException("該訂單不在待查帳狀態");
 
-            // 更新憑證狀態
-            var proofs = conference.ConferencePaymentProofs.Where(p => p.Status == ProofStatus.PendingReview).ToList();
-            // ✅ Navigation Property 用複數
-            foreach (var proof in proofs)
+            // 更新訂單狀態
+            order.Status = PaymentOrderStatus.Rejected;
+            order.RejectReason = vm.Reason;
+            order.ReviewedAt = DateTime.Now;
+            order.ReviewedBy = userId;
+
+            // 退回訂單內每個會議
+            foreach (var item in order.Items)
             {
-                proof.Status = ProofStatus.Rejected;
-                proof.ReviewedAt = DateTime.Now;
-                proof.ReviewedBy = userId;
-                proof.RejectReason = vm.Reason;
+                var conference = item.Conference;
+                if (conference == null) continue;
+                conference.PaymentStatus = PaymentStatus.PendingReupload;
             }
-
-            // 付款狀態改回「未付款」
-            conference.PaymentStatus = PaymentStatus.PendingReupload;
 
             await db.SaveChangesAsync();
 
             _ = service.LogServices.LogAsync("付款審核",
-                $"退回付款 - {conference.Name} ({conference.Id}), 原因: {vm.Reason}");
+                $"退回付款訂單 {order.Id}, 原因: {vm.Reason}");
 
-            // 寄送繳費審核拒絕通知給使用者
-            service.ConferenceMail.PaymentRejected(vm.ReservationId, vm.Reason);
+            // 寄送通知給每個預約人
+            foreach (var item in order.Items)
+                service.ConferenceMail.PaymentRejected(item.ConferenceId, vm.Reason);
         }
     }
 }

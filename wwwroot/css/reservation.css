@@ -56,6 +56,19 @@
     color: #212529 !important;
 }
 
+/* ===== 批次付款勾選列樣式 ===== */
+
+/* 不相容列：整列變灰，文字變淡 */
+tr.batch-row-disabled td {
+    background-color: #f3f4f6 !important;
+    color: #9ca3af !important;
+    opacity: 0.65;
+}
+tr.batch-row-disabled:hover td {
+    background-color: #f3f4f6 !important;
+    color: #9ca3af !important;
+}
+
 /* ===== Badge 基本樣式 ===== */
 .badge {
     font-size: 0.9rem !important;

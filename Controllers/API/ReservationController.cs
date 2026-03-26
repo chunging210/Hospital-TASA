@@ -146,7 +146,7 @@ namespace TASA.Controllers.API
         // ===== 付款審核 (總務/管理者) - ✅ 使用 PaymentService =====
 
         /// <summary>
-        /// 5. 取得付款審核列表 (ReservationStatus = 2 && PaymentStatus = 2)
+        /// 5. 取得付款審核列表（以 Order 為單位）
         /// </summary>
         [HttpGet("paymentlist")]
         public IActionResult PaymentList([FromQuery] ReservationQueryVM query)
@@ -154,16 +154,23 @@ namespace TASA.Controllers.API
             var userId = GetCurrentUserId();
 
             if (!service.AuthRoleServices.CanApprovePayment(userId))
-            {
                 throw new HttpException("您沒有查看付款審核列表的權限");
-            }
 
-            if (!query.ReservationStatus.HasValue)
-            {
-                query.ReservationStatus = ReservationStatus.PendingPayment; // 預設只看待繳費
-            }
+            return Ok(service.ReservationService.PendingOrderList(query, userId).ToPage(Request, Response));
+        }
 
-            return Ok(service.ReservationService.PendingCheckList(query, userId).ToPage(Request, Response));
+        /// <summary>
+        /// 5-1. 取得付款訂單明細
+        /// </summary>
+        [HttpGet("orderdetail/{orderId}")]
+        public IActionResult GetOrderDetail(Guid orderId)
+        {
+            var userId = GetCurrentUserId();
+
+            if (!service.AuthRoleServices.CanApprovePayment(userId))
+                throw new HttpException("您沒有查看付款審核列表的權限");
+
+            return Ok(service.ReservationService.GetOrderDetail(orderId));
         }
 
         /// <summary>

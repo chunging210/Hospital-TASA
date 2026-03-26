@@ -42,23 +42,22 @@ window.$config = {
         this.selectedItem = ref(null);
         this.approvalHistoryExpanded = ref(false);  // ✅ 審核歷程展開狀態
 
-        /* ========= ✅ DOM Refs (重要!) ========= */
-        this.counterPayFiles = ref(null);
-        this.transferScreenshot = ref(null);  // 匯款截圖
+        /* ========= Bootstrap Instances ========= */
+        this.bookingDrawerInstance = ref(null);
+        this.batchPayDrawerInstance = ref(null);
 
-        /* ========= ✅ 付款表單資料 ========= */
-        this.paymentForm = reactive({
-            // 臨櫃付款
+        /* ========= ✅ 批次付款 ========= */
+        this.selectedForBatch = ref([]);   // 勾選的預約項目
+        this.batchPayFiles = ref(null);    // 臨櫃檔案 input ref
+        this.batchTransferFile = ref(null); // 匯款截圖 input ref
+        this.batchPayForm = reactive({
+            mode: 'counter',  // 'counter' | 'transfer'
             counterNote: '',
-            // 匯款付款
             last5: '',
             amount: 0,
             transferAt: '',
             transferNote: ''
         });
-
-        /* ========= Bootstrap Instances ========= */
-        this.bookingDrawerInstance = ref(null);
 
         /* ========= 計算屬性 ========= */
         this.filteredAllReservations = computed(() => {
@@ -98,6 +97,39 @@ window.$config = {
             }
 
             return filtered;
+        });
+
+        /* ========= ✅ 批次付款 - 計算屬性 ========= */
+
+        // 基本條件：待繳費/待重新上傳 且非成本分攤
+        this.isBatchPayable = (item) => {
+            const needsPayment =
+                (item.approvalStatus === '待繳費' && item.paymentStatus === '未付款') ||
+                item.paymentStatus === '待重新上傳';
+            return needsPayment && !this.isCostSharingPayment(item.paymentMethod);
+        };
+
+        // 與已選清單相容（同 ManagerId + 同 PaymentMethod）
+        // 若清單為空，所有符合基本條件的都相容
+        this.isBatchCompatible = (item) => {
+            if (this.selectedForBatch.value.length === 0) return true;
+            const first = this.selectedForBatch.value[0];
+            return item.managerId === first.managerId &&
+                   item.paymentMethod === first.paymentMethod;
+        };
+
+        this.isBatchSelected = (item) => {
+            return this.selectedForBatch.value.some(s => s.id === item.id);
+        };
+
+        this.batchTotalAmount = computed(() => {
+            return this.selectedForBatch.value.reduce((sum, s) => sum + (s.amount || 0), 0);
+        });
+
+        this.batchPayMode = computed(() => {
+            if (this.selectedForBatch.value.length === 0) return null;
+            return this.isCounterPayment(this.selectedForBatch.value[0].paymentMethod)
+                ? 'counter' : 'transfer';
         });
 
         this.getUserFriendlyStatus = (item) => {
@@ -295,8 +327,8 @@ window.$config = {
                 if (this.userStatusFilter.value) {
                     const mapping = {
                         'pending': { reservationStatus: 1 },  // 待審核
-                        'payment': { reservationStatus: 2 },  // 待繳費
-                        'reupload': { paymentStatus: 4 },     // 待重新上傳
+                        'payment': { reservationStatus: 2, paymentStatus: 1 },  // 待繳費（未付款）
+                        'reupload': { reservationStatus: 2, paymentStatus: 4 },     // 待重新上傳
                         'confirmed': { reservationStatus: 3 }, // 預約成功
                         'rejected': { reservationStatus: 4 },  // 審核拒絕
                         'cancelled': { reservationStatus: 5 }  // 已取消
@@ -351,7 +383,8 @@ window.$config = {
                         costCenter: item.DepartmentCode || '-',
                         rejectReason: item.RejectReason || '',
                         paymentRejectReason: item.PaymentRejectReason || '',
-                        slots: item.Slots || []
+                        slots: item.Slots || [],
+                        managerId: item.ManagerId || null
                     };
                 });
 
@@ -376,108 +409,6 @@ window.$config = {
         };
 
         // 只允許輸入數字
-        this.onlyNumbers = (field, event) => {
-            const value = event.target.value.replace(/\D/g, '');
-            this.paymentForm[field] = value;
-        };
-
-        // ✅ 上傳臨櫃憑證
-        this.submitCounterPayment = async () => {
-            const fileInput = this.counterPayFiles.value;
-            if (!fileInput) {
-                console.error('❌ 找不到檔案輸入元素');
-                addAlert('找不到檔案輸入元素', { type: 'danger' });
-                return;
-            }
-
-            const files = fileInput.files;
-
-            if (!files || files.length === 0) {
-                const fileType = this.selectedItem.value.amount === 0 ? '證明文件' : '三聯單檔案';
-                addAlert(`請上傳${fileType}`, { type: 'warning' });
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-
-                // ✅ 使用 reservationNo
-                formData.append('reservationIds', JSON.stringify([this.selectedItem.value.reservationNo]));
-                formData.append('note', this.paymentForm.counterNote || '');
-
-                // 附加所有檔案
-                for (let i = 0; i < files.length; i++) {
-                    formData.append('files', files[i]);
-                }
-
-                // ✅ 呼叫 API
-                await global.api.payment.uploadcounter({ body: formData });
-
-                addAlert('憑證已上傳，等待審核', { type: 'success' });
-                this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations(true);
-
-                // 清空表單
-                this.paymentForm.counterNote = '';
-                if (fileInput) {
-                    fileInput.value = '';
-                }
-
-            } catch (err) {
-                console.error('❌ 上傳憑證失敗:', err);
-                addAlert(`上傳憑證失敗: ${err.message || '未知錯誤'}`, { type: 'danger' });
-            }
-        };
-
-        // ✅ 上傳匯款資訊（改用 FormData 以支援優惠證明上傳）
-        this.submitTransferPayment = async () => {
-            if (!this.paymentForm.last5 || this.paymentForm.last5.length !== 5) {
-                addAlert('請輸入正確的 5 碼轉帳末碼', { type: 'warning' });
-                return;
-            }
-
-            if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
-                addAlert('請輸入正確的金額', { type: 'warning' });
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append('reservationIds', JSON.stringify([this.selectedItem.value.reservationNo]));
-                formData.append('last5', this.paymentForm.last5);
-                formData.append('amount', parseInt(this.paymentForm.amount));
-                if (this.paymentForm.transferAt) {
-                    formData.append('transferAt', this.paymentForm.transferAt);
-                }
-                formData.append('note', this.paymentForm.transferNote || '');
-
-                // 匯款截圖（如果有的話）
-                const screenshotInput = this.transferScreenshot?.value;
-                if (screenshotInput?.files?.[0]) {
-                    formData.append('screenshotFile', screenshotInput.files[0]);
-                }
-
-                await global.api.payment.transfer({ body: formData });
-
-                addAlert('匯款資訊已提交，等待審核', { type: 'success' });
-                this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations(true);
-
-                // 清空表單
-                this.paymentForm.last5 = '';
-                this.paymentForm.amount = 0;
-                this.paymentForm.transferAt = '';
-                this.paymentForm.transferNote = '';
-                if (screenshotInput) {
-                    screenshotInput.value = '';
-                }
-
-            } catch (err) {
-                console.error('❌ 提交匯款資訊失敗:', err);
-                addAlert('提交匯款資訊失敗', { type: 'danger' });
-            }
-        };
-
         /* ========= 詳情相關方法 ========= */
         this.openDetailDrawer = async (item) => {
             try {
@@ -509,6 +440,13 @@ window.$config = {
                     rejectReason: detail.RejectReason || '',
                     paymentRejectReason: detail.PaymentRejectReason || '',
 
+                    // ✅ 付款憑證
+                    paymentFilePath: detail.PaymentFilePath || null,
+                    paymentFileName: detail.PaymentFileName || null,
+                    paymentNote: detail.PaymentNote || null,
+                    discountProofPath: detail.DiscountProofPath || null,
+                    discountProofName: detail.DiscountProofName || null,
+
                     // 新增欄位
                     equipments: detail.Equipments || [],  // 加租設備
                     booths: detail.Booths || [],  // 攤位加租
@@ -524,11 +462,6 @@ window.$config = {
 
                     openedFrom: this.activeTab.value
                 };
-
-                // 如果是匯款,預填金額
-                if (this.isTransferPayment(detail.PaymentMethod)) {
-                    this.paymentForm.amount = detail.TotalAmount;
-                }
 
                 // ✅ 重置審核歷程展開狀態
                 this.approvalHistoryExpanded.value = false;
@@ -626,6 +559,95 @@ window.$config = {
         this.editReservation = (item) => {
             // ✅ 使用 id (Guid)
             window.location.href = `/Conference/Create?id=${item.id}`;
+        };
+
+        /* ========= ✅ 批次付款 - 操作方法 ========= */
+        this.toggleBatchSelect = (item, event) => {
+            event?.stopPropagation();
+            if (!this.isBatchPayable(item)) return;
+            const idx = this.selectedForBatch.value.findIndex(s => s.id === item.id);
+            if (idx >= 0) {
+                this.selectedForBatch.value.splice(idx, 1);
+            } else {
+                this.selectedForBatch.value.push(item);
+            }
+        };
+
+        this.clearBatchSelection = () => {
+            this.selectedForBatch.value = [];
+        };
+
+        this.openBatchPayDrawer = () => {
+            if (this.selectedForBatch.value.length === 0) {
+                addAlert('請先勾選要付款的預約', { type: 'warning' });
+                return;
+            }
+            // 預填金額（匯款模式）
+            if (this.batchPayMode.value === 'transfer') {
+                this.batchPayForm.amount = this.batchTotalAmount.value;
+            }
+            this.batchPayDrawerInstance.value?.show();
+        };
+
+        this.submitBatchCounter = async () => {
+            const fileInput = this.batchPayFiles.value;
+            if (!fileInput?.files?.length) {
+                addAlert('請上傳付款憑證', { type: 'warning' });
+                return;
+            }
+            try {
+                const formData = new FormData();
+                const ids = this.selectedForBatch.value.map(s => s.reservationNo);
+                formData.append('reservationIds', JSON.stringify(ids));
+                formData.append('note', this.batchPayForm.counterNote || '');
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    formData.append('files', fileInput.files[i]);
+                }
+                await global.api.payment.uploadcounter({ body: formData });
+                addAlert('憑證已上傳，等待審核', { type: 'success' });
+                this.batchPayDrawerInstance.value?.hide();
+                this.clearBatchSelection();
+                this.batchPayForm.counterNote = '';
+                fileInput.value = '';
+                await this.loadPersonalReservations(true);
+            } catch (err) {
+                addAlert(`上傳失敗: ${err.message || '未知錯誤'}`, { type: 'danger' });
+            }
+        };
+
+        this.submitBatchTransfer = async () => {
+            if (!this.batchPayForm.last5 || this.batchPayForm.last5.length !== 5) {
+                addAlert('請輸入正確的 5 碼轉帳末碼', { type: 'warning' });
+                return;
+            }
+            if (!this.batchPayForm.amount || this.batchPayForm.amount <= 0) {
+                addAlert('請輸入正確的金額', { type: 'warning' });
+                return;
+            }
+            try {
+                const formData = new FormData();
+                const ids = this.selectedForBatch.value.map(s => s.reservationNo);
+                formData.append('reservationIds', JSON.stringify(ids));
+                formData.append('last5', this.batchPayForm.last5);
+                formData.append('amount', parseInt(this.batchPayForm.amount));
+                if (this.batchPayForm.transferAt) {
+                    formData.append('transferAt', this.batchPayForm.transferAt);
+                }
+                formData.append('note', this.batchPayForm.transferNote || '');
+                const ssInput = this.batchTransferFile?.value;
+                if (ssInput?.files?.[0]) {
+                    formData.append('screenshotFile', ssInput.files[0]);
+                }
+                await global.api.payment.transfer({ body: formData });
+                addAlert('匯款資訊已提交，等待審核', { type: 'success' });
+                this.batchPayDrawerInstance.value?.hide();
+                this.clearBatchSelection();
+                Object.assign(this.batchPayForm, { last5: '', amount: 0, transferAt: '', transferNote: '' });
+                if (ssInput) ssInput.value = '';
+                await this.loadPersonalReservations(true);
+            } catch (err) {
+                addAlert(`提交失敗: ${err.message || '未知錯誤'}`, { type: 'danger' });
+            }
         };
 
         // 確認取消預約
@@ -776,6 +798,12 @@ window.$config = {
             if (bookingDrawerEl) {
                 this.bookingDrawerInstance.value =
                     bootstrap.Offcanvas.getOrCreateInstance(bookingDrawerEl);
+            }
+
+            const batchPayDrawerEl = document.getElementById('batchPayDrawer');
+            if (batchPayDrawerEl) {
+                this.batchPayDrawerInstance.value =
+                    bootstrap.Offcanvas.getOrCreateInstance(batchPayDrawerEl);
             }
         });
 
