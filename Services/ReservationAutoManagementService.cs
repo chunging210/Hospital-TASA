@@ -144,59 +144,13 @@ namespace TASA.Services
 
             var now = DateTime.Now;
 
-            // ✅ 加上 IgnoreQueryFilters()
-            var overdueReservations = await dbContext.Conference
-                .IgnoreQueryFilters()  // ← 重點!
-                .Include(c => c.ConferenceRoomSlots)
-                .Include(c => c.ConferenceEquipments)
-                .Where(c => c.PaymentDeadline.HasValue
-                         && c.PaymentDeadline.Value.Date < now.Date  // 只比較日期，當天整天都可繳費
-                         && c.ReservationStatus == ReservationStatusEnum.PendingPayment)
-                .ToListAsync();
+            // 繳費期限改為會議結束後 N 天，不再自動取消逾期預約
+            _logger.LogInformation("📊 [繳費逾期自動取消] 已停用，略過");
 
-            _logger.LogInformation($"📊 找到 {overdueReservations.Count} 筆逾期預約");
-
-            // 記錄要發送通知的預約 ID
             var cancelledIds = new List<Guid>();
 
-            foreach (var conference in overdueReservations)
+            if (false) // 停用自動取消
             {
-                foreach (var slot in conference.ConferenceRoomSlots)
-                {
-                    slot.SlotStatus = (byte)SlotStatusEnum.Available;
-                    slot.ReleasedAt = now;
-                }
-
-                foreach (var equipment in conference.ConferenceEquipments)
-                {
-                    equipment.EquipmentStatus = 0;
-                    equipment.ReleasedAt = now;
-                }
-
-                conference.ReservationStatus = ReservationStatusEnum.Cancelled;
-                conference.CancelledAt = now;
-                conference.RejectReason = $"繳費期限 {conference.PaymentDeadline:yyyy/MM/dd} 已過期，系統自動取消";
-
-                cancelledIds.Add(conference.Id);
-            }
-
-            if (overdueReservations.Any())
-            {
-                await dbContext.SaveChangesAsync();
-                _logger.LogInformation($"[繳費逾期] 自動取消 {overdueReservations.Count} 筆預約");
-
-                // 發送通知信給用戶
-                foreach (var id in cancelledIds)
-                {
-                    try
-                    {
-                        serviceWrapper.ConferenceMail.PaymentOverdueCancelled(id);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"[繳費逾期] 發送通知信失敗，ConferenceId: {id}");
-                    }
-                }
             }
         }
     }

@@ -1338,7 +1338,14 @@ namespace TASA.Services.ConferenceModule
                     else
                     {
                         var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
-                        paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                        var lastSlotDate = conference.ConferenceRoomSlots
+                            .OrderBy(s => s.SlotDate)
+                            .Select(s => s.SlotDate)
+                            .LastOrDefault();
+                        var baseDate = lastSlotDate != default
+                            ? lastSlotDate.ToDateTime(TimeOnly.MinValue)
+                            : DateTime.Now;
+                        paymentDeadline = baseDate.AddDays(deadlineDays);
                     }
                     conference.ReservationStatus = ReservationStatus.PendingPayment;
                     conference.PaymentDeadline = paymentDeadline;
@@ -1472,7 +1479,14 @@ namespace TASA.Services.ConferenceModule
                 else
                 {
                     var deadlineDays = service.SysConfigService.GetPaymentDeadlineDays(conference.DepartmentId);
-                    paymentDeadline = DateTime.Now.AddDays(deadlineDays);
+                    var firstSlotDate = conference.ConferenceRoomSlots
+                        .OrderBy(s => s.SlotDate)
+                        .Select(s => s.SlotDate)
+                        .FirstOrDefault();
+                    var baseDate = firstSlotDate != default
+                        ? firstSlotDate.ToDateTime(TimeOnly.MinValue)
+                        : DateTime.Now;
+                    paymentDeadline = baseDate.AddDays(deadlineDays);
                 }
                 conference.ReservationStatus = ReservationStatus.PendingPayment;
                 conference.PaymentDeadline = paymentDeadline;

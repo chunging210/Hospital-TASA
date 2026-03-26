@@ -207,14 +207,6 @@ namespace TASA.Services
                 ? int.TryParse(bookingDaysConfig.ConfigValue, out int b) ? b : GetMinAdvanceBookingDays(departmentId)
                 : GetMinAdvanceBookingDays(departmentId);
 
-            // 驗證：最早預約天數必須大於繳費期限天數
-            if (minAdvanceBookingDays <= paymentDeadlineDays)
-            {
-                throw new HttpException(
-                    $"最早預約天數（{minAdvanceBookingDays} 天）必須大於繳費期限天數（{paymentDeadlineDays} 天），" +
-                    $"否則可能發生會議已開始但尚未繳費的情況");
-            }
-
             // 批次更新（不個別 SaveChanges，最後統一存）
             foreach (var config in configs)
             {
