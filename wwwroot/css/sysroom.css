@@ -472,11 +472,9 @@ body {
 
 .tab-content {
     background: #fff;
-    border: 1px solid #dee2e6;
     border-top: none;
     padding: 10px;
     min-height: 400px;
-    max-height: 500px;
     overflow-y: auto;
     border-radius: 0 0 8px 8px;
 }

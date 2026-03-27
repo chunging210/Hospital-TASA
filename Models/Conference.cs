@@ -302,6 +302,11 @@ public partial class Conference
     public Guid? CancelledBy { get; set; }
 
     /// <summary>
+    /// 取消原因
+    /// </summary>
+    public string? CancelledReason { get; set; }
+
+    /// <summary>
     /// 分院ID
     /// </summary>
     public Guid? DepartmentId { get; set; }

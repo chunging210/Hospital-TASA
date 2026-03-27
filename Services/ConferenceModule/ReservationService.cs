@@ -203,6 +203,11 @@ namespace TASA.Services.ConferenceModule
 
             // ✅ 審核歷程
             public List<ApprovalHistoryVM> ApprovalHistory { get; set; } = new();
+
+            // ✅ 取消資訊
+            public string? CancelledByName { get; set; }
+            public string? CancelledAt { get; set; }
+            public string? CancelledReason { get; set; }
         }
 
         public class ApprovalHistoryVM
@@ -230,6 +235,7 @@ namespace TASA.Services.ConferenceModule
         public class CancelReservationVM
         {
             public Guid ReservationId { get; set; }
+            public string? Reason { get; set; }
         }
 
         public class GetDetailVM
@@ -298,8 +304,10 @@ namespace TASA.Services.ConferenceModule
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
-                .OrderByDescending(x => x.UpdateAt ?? x.CreateAt)
-                .ThenByDescending(x => x.CreateAt)
+                .OrderBy(x => x.ConferenceRoomSlots.Any()
+                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
+                    : (x.StartTime ?? x.CreateAt))
+                .ThenBy(x => x.CreateAt)
                 .Select(x => new ReservationListVM()
                 {
                     Id = x.Id,
@@ -501,7 +509,10 @@ namespace TASA.Services.ConferenceModule
                     x.Id.ToString().StartsWith(query.Keyword!))
                 .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
                 .WhereIf(!string.IsNullOrWhiteSpace(query.PaymentMethod), x => x.PaymentMethod == query.PaymentMethod)
-                .OrderByDescending(x => x.CreateAt)
+                .OrderBy(x => x.ConferenceRoomSlots.Any()
+                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
+                    : (x.StartTime ?? x.CreateAt))
+                .ThenBy(x => x.CreateAt)
                 .Select(x => new
                 {
                     Conference = x,
@@ -664,7 +675,10 @@ namespace TASA.Services.ConferenceModule
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
                 .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
-                .OrderByDescending(x => x.CreateAt)
+                .OrderBy(x => x.PaymentDeadline ?? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue))
+                .ThenBy(x => x.ConferenceRoomSlots.Any()
+                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
+                    : (x.StartTime ?? x.CreateAt))
                 .Select(x => new ReservationListVM()
                 {
                     Id = x.Id,
@@ -1676,11 +1690,12 @@ namespace TASA.Services.ConferenceModule
         /// <summary>
         /// ✅ 取消預約
         /// </summary>
-        public void CancelReservation(Guid conferenceId, Guid userId)
+        public void CancelReservation(Guid conferenceId, Guid userId, string? reason = null)
         {
             var conference = db.Conference
                 .Include(c => c.ConferenceRoomSlots)
                 .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
                 .FirstOrDefault(x => x.Id == conferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
@@ -1699,15 +1714,42 @@ namespace TASA.Services.ConferenceModule
 
             var isApplicant = userId == conference.CreateBy;
 
+            // 取得操作者權限（管理員身份驗證用）
+            var userPermissions = service.AuthRoleServices.GetUserPermissions(userId);
+            var isPrivileged = userPermissions.Roles.Any(r =>
+                r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR" || r == "ACCOUNTANT");
+
+            // 驗證管理員是否有權管理此會議室
+            void CheckAdminRoomPermission()
+            {
+                if (isPrivileged) return;
+                var roomIds = conference.ConferenceRoomSlots.Select(s => s.RoomId).ToList();
+                if (!roomIds.Any(r => userPermissions.ManagedRoomIds.Contains(r)))
+                    throw new HttpException("您沒有權限取消此會議室的預約");
+            }
+
             switch (conference.ReservationStatus)
             {
                 case ReservationStatus.PendingApproval:
+                    if (isApplicant)
+                    {
+                        // 申請人：只有所有審核人都還未動作才能取消
+                        bool anyActed = conference.ApprovalHistory
+                            .Any(h => h.Status != ApprovalStatus.Pending);
+                        if (anyActed)
+                            throw new HttpException("審核已開始，如需取消請聯繫管理人員");
+                    }
+                    else
+                    {
+                        CheckAdminRoomPermission();
+                    }
                     break;
 
                 case ReservationStatus.PendingPayment:
                 case ReservationStatus.Confirmed:
                     if (isApplicant)
                         throw new HttpException("審核通過後僅管理者可取消預約");
+                    CheckAdminRoomPermission();
                     break;
 
                 case ReservationStatus.Rejected:
@@ -1719,6 +1761,7 @@ namespace TASA.Services.ConferenceModule
             conference.ReservationStatus = ReservationStatus.Cancelled;
             conference.CancelledAt = DateTime.Now;
             conference.CancelledBy = userId;
+            conference.CancelledReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
             conference.UpdateAt = DateTime.Now;
 
             foreach (var slot in conference.ConferenceRoomSlots)
@@ -1934,6 +1977,7 @@ namespace TASA.Services.ConferenceModule
                     .ThenInclude(h => h.Approver)
                 .Include(c => c.ApprovalHistory)
                     .ThenInclude(h => h.ApprovedByUser)
+                .Include(c => c.CancelledByNavigation)
                 .Where(c => c.Id == conferenceId && !c.DeleteAt.HasValue)
                 .FirstOrDefault();
 
@@ -2049,6 +2093,9 @@ namespace TASA.Services.ConferenceModule
                 DiscountProofName = latestOrder?.DiscountProofName,
                 DiscountAmount = conference.DiscountAmount,      // ✅ 折扣金額
                 DiscountReason = conference.DiscountReason,      // ✅ 折扣原因
+                CancelledByName = conference.CancelledByNavigation?.Name,
+                CancelledAt = conference.CancelledAt?.ToString("yyyy/MM/dd HH:mm"),
+                CancelledReason = conference.CancelledReason,
                 Equipments = equipments,
                 Booths = booths,
                 SmallBooths = smallBooths,  // ✅ 小型攤位

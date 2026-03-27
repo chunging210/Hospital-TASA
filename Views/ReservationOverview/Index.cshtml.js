@@ -11,6 +11,14 @@ window.$config = {
 
         /* ========= 基本資料 ========= */
         this.isAdmin = ref(false);
+
+        /* ========= 取消預約 Modal ========= */
+        this.cancelModal = reactive({
+            reason: '',
+            warning: '',
+            submit: () => {}
+        });
+        this.cancelModalInstance = ref(null);
         this.isDirector = ref(false);      // ✅ 主任
         this.isAccountant = ref(false);    // ✅ 總務
         this.isRoomManager = ref(false);   // ✅ 房間管理者 / 代理人
@@ -460,6 +468,11 @@ window.$config = {
                     // ✅ 審核歷程
                     approvalHistory: detail.ApprovalHistory || [],
 
+                    // ✅ 取消資訊
+                    cancelledByName: detail.CancelledByName || null,
+                    cancelledAt: detail.CancelledAt || null,
+                    cancelledReason: detail.CancelledReason || null,
+
                     openedFrom: this.activeTab.value
                 };
 
@@ -651,28 +664,24 @@ window.$config = {
         };
 
         // 確認取消預約
-        this.confirmCancel = async (item) => {
-            const warning = this.getCancelWarning(item);
-            const confirmText = warning
-                ? `${warning}\n\n確定要取消此預約嗎?`
-                : '確定要取消此預約嗎?';
-
-            if (!confirm(confirmText)) return;
-
-            try {
-                // ✅ 使用 id (Guid)
-                await global.api.reservations.cancel({
-                    body: { reservationId: item.id }
-                });
-
-                addAlert('預約已取消', { type: 'success' });
-                this.bookingDrawerInstance.value?.hide();
-                await this.loadPersonalReservations(true);
-
-            } catch (err) {
-                console.error('❌ 取消預約失敗:', err);
-                addAlert('取消預約失敗', { type: 'danger' });
-            }
+        this.confirmCancel = (item) => {
+            this.cancelModal.reason = '';
+            this.cancelModal.warning = this.getCancelWarning(item);
+            this.cancelModal.submit = async () => {
+                try {
+                    this.cancelModalInstance.value?.hide();
+                    await global.api.reservations.cancel({
+                        body: { reservationId: item.id, reason: this.cancelModal.reason || null }
+                    });
+                    addAlert('預約已取消', { type: 'success' });
+                    this.bookingDrawerInstance.value?.hide();
+                    await this.loadPersonalReservations(true);
+                } catch (err) {
+                    console.error('❌ 取消預約失敗:', err);
+                    addAlert(err?.message || '取消預約失敗', { type: 'danger' });
+                }
+            };
+            this.cancelModalInstance.value?.show();
         };
 
         // 確認刪除預約
@@ -708,24 +717,24 @@ window.$config = {
         };
 
         // 管理員確認取消預約
-        this.confirmAdminCancel = async (item) => {
-            const confirmText = `確定要取消「${item.reserverName}」的預約嗎？\n\n預約單號：${item.reservationNo}\n會議名稱：${item.conferenceName}`;
-
-            if (!confirm(confirmText)) return;
-
-            try {
-                await global.api.reservations.cancel({
-                    body: { reservationId: item.id }
-                });
-
-                addAlert('預約已取消', { type: 'success' });
-                this.bookingDrawerInstance.value?.hide();
-                await this.loadAllReservations(true);
-
-            } catch (err) {
-                console.error('❌ 取消預約失敗:', err);
-                addAlert('取消預約失敗', { type: 'danger' });
-            }
+        this.confirmAdminCancel = (item) => {
+            this.cancelModal.reason = '';
+            this.cancelModal.warning = `取消「${item.conferenceName}」的預約（${item.reserverName}）`;
+            this.cancelModal.submit = async () => {
+                try {
+                    this.cancelModalInstance.value?.hide();
+                    await global.api.reservations.cancel({
+                        body: { reservationId: item.id, reason: this.cancelModal.reason || null }
+                    });
+                    addAlert('預約已取消', { type: 'success' });
+                    this.bookingDrawerInstance.value?.hide();
+                    await this.loadAllReservations(true);
+                } catch (err) {
+                    console.error('❌ 取消預約失敗:', err);
+                    addAlert(err?.message || '取消預約失敗', { type: 'danger' });
+                }
+            };
+            this.cancelModalInstance.value?.show();
         };
 
         this.switchTab = (tab) => {
@@ -804,6 +813,11 @@ window.$config = {
             if (batchPayDrawerEl) {
                 this.batchPayDrawerInstance.value =
                     bootstrap.Offcanvas.getOrCreateInstance(batchPayDrawerEl);
+            }
+
+            const cancelModalEl = document.getElementById('cancelReasonModal');
+            if (cancelModalEl) {
+                this.cancelModalInstance.value = new bootstrap.Modal(cancelModalEl);
             }
         });
 

@@ -184,7 +184,9 @@ namespace TASA.Services.ConferenceModule
                 .WhereIf(query.UserId.HasValue, x => x.CreateBy == query.UserId)
                 .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
                 .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
-                .OrderBy(x => x.StartTime ?? x.CreateAt)
+                .OrderBy(x => x.ConferenceRoomSlots.Any()
+                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
+                    : (x.StartTime ?? x.CreateAt))
                 .Mapping(x => new ListVM()
                 {
                     Host = x.ConferenceUser.Where(y => y.IsHost).Select(y => y.User.Name).FirstOrDefault(),

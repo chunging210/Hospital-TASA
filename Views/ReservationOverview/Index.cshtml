@@ -224,6 +224,9 @@
             <h4 class="mb-0 fw-bold">
                 預約詳情 <small class="text-muted ms-2">#{{ selectedItem?.reservationNo }}</small>
             </h4>
+            <span v-if="selectedItem?.approvalStatus === '已取消'" class="text-muted ms-auto me-3" style="font-size:0.85rem;">
+                <i class="mdi mdi-cancel me-1"></i><template v-if="selectedItem.cancelledByName">由 {{ selectedItem.cancelledByName }} 取消</template><template v-else>已取消</template><span v-if="selectedItem.cancelledAt"> · {{ selectedItem.cancelledAt }}</span><span v-if="selectedItem.cancelledReason"> · {{ selectedItem.cancelledReason }}</span>
+            </span>
             <!-- ✅ 管理員操作按鈕區（所有預約） -->
             <div v-if="activeTab === 'all' && (canAdminEdit(selectedItem) || canAdminCancel(selectedItem))" class="">
                 <div class="d-flex flex-wrap gap-2">
@@ -727,5 +730,23 @@
                 </div>
                 <button class="btn btn-primary w-100" @@click="submitBatchTransfer()">送出</button>
             </template>
+        </div>
+    </div>
+
+    <!-- ✅ 取消預約 Modal -->
+    <div class="modal fade" id="cancelReasonModal" tabindex="-1" ref="cancelReasonModal">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body pt-4 px-4 pb-3">
+                    <p class="mb-2 fw-semibold">確認取消預約？</p>
+                    <p class="text-muted small mb-3" v-if="cancelModal.warning">{{ cancelModal.warning }}</p>
+                    <textarea class="form-control form-control-sm" v-model="cancelModal.reason" rows="2"
+                              placeholder="取消原因（選填）"></textarea>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-3 gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">返回</button>
+                    <button type="button" class="btn btn-sm btn-danger ms-auto" @@click="cancelModal.submit()">確認取消</button>
+                </div>
+            </div>
         </div>
     </div>

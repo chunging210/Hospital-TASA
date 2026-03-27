@@ -292,7 +292,7 @@ namespace TASA.Controllers.API
         public IActionResult CancelReservation([FromBody] CancelReservationVM vm)
         {
             var userId = GetCurrentUserId();
-            service.ReservationService.CancelReservation(vm.ReservationId, userId);
+            service.ReservationService.CancelReservation(vm.ReservationId, userId, vm.Reason);
             return Ok();
         }
 

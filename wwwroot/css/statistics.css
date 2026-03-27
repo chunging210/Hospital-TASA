@@ -4,8 +4,20 @@ canvas {
     max-height: none !important;
 }
 
-.stat-kpi-card {
-    border-left: 4px solid #4361ee;
+/* ===== KPI Row ===== */
+
+.stats-kpi-row {
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 0.25rem;
+}
+
+.stat-kpi-item {
+    text-align: center;
+    padding: 1.25rem 1rem;
+}
+
+.stat-kpi-item + .stat-kpi-item {
+    border-left: 1px solid #f0f0f0;
 }
 
 .stat-kpi-value {
@@ -23,6 +35,35 @@ canvas {
 
 .stat-kpi-sub {
     font-size: 0.8rem;
+    color: #adb5bd;
+    margin-top: 4px;
+}
+
+/* ===== Chart Sections ===== */
+
+.stats-section {
+    padding: 1.25rem 0;
+}
+
+.stats-section + .stats-section {
+    border-top: 1px solid #f0f0f0;
+}
+
+.stats-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.stats-section-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #343a40;
+}
+
+.stats-section-sub {
+    font-size: 0.78rem;
     color: #adb5bd;
 }
 
@@ -70,6 +111,7 @@ canvas {
     gap: 6px;
     font-size: 0.78rem;
     color: #6c757d;
+    margin-left: auto;
 }
 
 .heatmap-legend-bar {
