@@ -470,14 +470,14 @@ body {
     color: #007bff;
 }
 
-.tab-content {
+/* .tab-content {
     background: #fff;
     border-top: none;
     padding: 10px;
     min-height: 400px;
     overflow-y: auto;
     border-radius: 0 0 8px 8px;
-}
+} */
 
 .tab-pane {
     display: flex;
@@ -944,13 +944,14 @@ body {
 }
 
 .description-content {
-    max-height: 200px;
+    max-height: 250px;
     overflow-y: auto;
     word-break: break-word;
-    white-space: normal;
+    white-space: pre-wrap;
+    text-align: left;
     overflow-wrap: break-word;
     border-top: 1px solid #e0e0e0;
-    padding: 10px;
+    padding: 10px 10px 0 10px;
     color: #6c757d;
 }
 
@@ -1946,4 +1947,24 @@ body {
 
 .back-btn:hover {
     color: #0b5ed7;
+}
+
+/* ===== 會議室卡片排序按鈕 ===== */
+.sequence-buttons .btn {
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.sequence-buttons .btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: white;
 }

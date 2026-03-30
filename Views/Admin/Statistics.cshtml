@@ -7,16 +7,16 @@
 
             <!-- 標題列 + 篩選 -->
             <div class="card-header mx-4 mt-3">
-                <div class="row d-flex align-items-center g-2">
-                    <div class="col-xl-auto col-sm-12 text-branding d-flex align-items-center">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="text-branding d-flex align-items-center flex-shrink-0">
                         <span class="material-icons">bar_chart</span>使用率統計
                     </div>
-                    <div class="col-auto ms-auto d-flex align-items-center gap-2 flex-wrap">
-                        <select class="form-select form-select-sm" style="width:90px"
+                    <div class="ms-auto d-flex align-items-center gap-2">
+                        <select class="form-select" style="width:140px"
                                 v-model.number="state.year" @@change="state.month = 0; loadStats()">
                             <option v-for="y in state.years" :key="y" :value="y">{{ y }} 年</option>
                         </select>
-                        <select class="form-select form-select-sm" style="width:100px"
+                        <select class="form-select" style="width:130px"
                                 v-model.number="state.month" @@change="loadStats()">
                             <option :value="0">全年</option>
                             <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
@@ -93,7 +93,7 @@
                     </div>
 
                     <!-- 熱力圖 -->
-                    <div class="stats-section" v-if="state.data.Heatmap && state.data.Heatmap.length">
+                    @* <div class="stats-section" v-if="state.data.Heatmap && state.data.Heatmap.length">
                         <div class="stats-section-header">
                             <span class="stats-section-title">使用時段熱力圖</span>
                             <div class="heatmap-legend">
@@ -117,7 +117,7 @@
                                 </template>
                             </div>
                         </div>
-                    </div>
+                    </div> *@
 
                 </template>
             </div>

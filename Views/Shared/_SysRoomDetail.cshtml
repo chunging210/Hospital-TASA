@@ -108,7 +108,7 @@
                                     <div class="room-feature-content">
                                         <div class="info-label">會議室說明</div>
                                         <div class="description-content">
-                                            {{ detailRoom?.Description || '無' }}
+                                            {{ detailRoom?.Description?.trim() || '無' }}
                                         </div>
                                     </div>
                                 </div>

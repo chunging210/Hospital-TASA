@@ -812,11 +812,7 @@ namespace TASA.Services.ConferenceModule
                 else if (query.PaymentStatus.Value == PaymentStatus.PendingReupload)
                     ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.Rejected);
             }
-            else
-            {
-                // 預設顯示待查帳的訂單
-                ordersQuery = ordersQuery.Where(o => o.Status == PaymentOrderStatus.PendingVerification);
-            }
+            // 未傳入狀態時顯示全部
 
             // 部門篩選
             if (!string.IsNullOrWhiteSpace(query.DepartmentCode))
