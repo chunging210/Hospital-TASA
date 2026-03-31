@@ -112,57 +112,122 @@
                 </div>
 
                 <!-- 時段列表 -->
-                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="pricing-table-row">
-                    <div class="pricing-col-name">
-                        <input v-model="slot.Name" type="text" class="form-control form-control-sm"
-                               placeholder="時段名稱">
-                    </div>
-                    <div class="pricing-col-time">
-                        <div class="time-picker-group">
-                            <select v-model="slot.StartHour" class="form-select-sm time-hour">
-                                <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
-                            </select>
-                            <span class="time-colon">:</span>
-                            <select v-model="slot.StartMin" class="form-select-sm time-min">
-                                <option value="00">00</option>
-                                <option value="30">30</option>
-                            </select>
+                <div v-for="(slot, index) in room.timeSlots" :key="slot.Id" class="pricing-period-block mb-3 border rounded p-3">
+
+                    <!-- 主區間：名稱 + 時間 + 價格 + 刪除 -->
+                    <div class="pricing-table-row">
+                        <div class="pricing-col-name">
+                            <input v-model="slot.Name" type="text" class="form-control form-control-sm"
+                                   placeholder="時段名稱">
                         </div>
-                        <span class="text-muted mx-1">—</span>
-                        <div class="time-picker-group">
-                            <select v-model="slot.EndHour" class="form-select-sm time-hour">
-                                <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
-                            </select>
-                            <span class="time-colon">:</span>
-                            <select v-model="slot.EndMin" class="form-select-sm time-min">
-                                <option value="00">00</option>
-                                <option value="30">30</option>
-                            </select>
+                        <div class="pricing-col-time">
+                            <div class="time-picker-group">
+                                <select v-model="slot.StartHour" class="form-select-sm time-hour"
+                                        @@change="room.onParentTimeChange(slot)">
+                                    <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                </select>
+                                <span class="time-colon">:</span>
+                                <select v-model="slot.StartMin" class="form-select-sm time-min"
+                                        @@change="room.onParentTimeChange(slot)">
+                                    <option value="00">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                            </div>
+                            <span class="text-muted mx-1">—</span>
+                            <div class="time-picker-group">
+                                <select v-model="slot.EndHour" class="form-select-sm time-hour"
+                                        @@change="room.onParentTimeChange(slot)">
+                                    <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                </select>
+                                <span class="time-colon">:</span>
+                                <select v-model="slot.EndMin" class="form-select-sm time-min"
+                                        @@change="room.onParentTimeChange(slot)">
+                                    <option value="00">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="pricing-col-price">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input v-model.number="slot.Price" type="number" class="form-control" min="0">
+                            </div>
+                        </div>
+                        <div class="pricing-col-price">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input v-model.number="slot.HolidayPrice" type="number" class="form-control" min="0">
+                            </div>
+                        </div>
+                        <div class="pricing-col-price">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">$</span>
+                                <input v-model.number="slot.SetupPrice" type="number" class="form-control" min="0" placeholder="選填">
+                            </div>
+                        </div>
+                        <div class="pricing-col-action">
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    @@click="room.removeTimeSlot(index)">
+                                <span class="material-icons icons font-size-18">delete_outline</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="pricing-col-price">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">$</span>
-                            <input v-model.number="slot.Price" type="number" class="form-control" min="0">
+
+                    <!-- 子區間 -->
+                    <div class="mt-2">
+                        <!-- 已新增的子區間 tag 列 -->
+                        <div class="d-flex flex-wrap gap-1 mb-1">
+                            <span v-for="(sub, si) in slot.Slots" :key="sub.Id"
+                                  class="badge rounded-pill bg-light text-dark border d-inline-flex align-items-center gap-1 px-2 py-1">
+                                {{ sub.StartHour }}:{{ sub.StartMin }} — {{ sub.EndHour }}:{{ sub.EndMin }}
+                                <span class="material-icons icons ms-1"
+                                      style="font-size:14px;cursor:pointer;line-height:1"
+                                      @@click="room.removeSubSlot(slot, si)">close</span>
+                            </span>
+
+                            <!-- 新增按鈕（沒有展開 picker 時顯示） -->
+                            <button v-if="!slot.pendingSubSlot.show"
+                                    type="button"
+                                    class="badge rounded-pill border border-dashed bg-transparent text-muted d-inline-flex align-items-center gap-1 px-2 py-1"
+                                    style="cursor:pointer; border-style:dashed !important"
+                                    @@click="room.openAddSubSlot(slot)">
+                                <span class="material-icons icons font-size-14" style="vertical-align:middle">add</span> 新增子區間
+                            </button>
                         </div>
-                    </div>
-                    <div class="pricing-col-price">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">$</span>
-                            <input v-model.number="slot.HolidayPrice" type="number" class="form-control" min="0">
+
+                        <!-- Inline picker（點新增後展開） -->
+                        <div v-if="slot.pendingSubSlot.show" class="mt-1 p-2 bg-light rounded">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="time-picker-group">
+                                    <select v-model="slot.pendingSubSlot.StartHour" class="form-select-sm time-hour">
+                                        <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                    </select>
+                                    <span class="time-colon">:</span>
+                                    <select v-model="slot.pendingSubSlot.StartMin" class="form-select-sm time-min">
+                                        <option value="00">00</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                </div>
+                                <span class="text-muted">—</span>
+                                <div class="time-picker-group">
+                                    <select v-model="slot.pendingSubSlot.EndHour" class="form-select-sm time-hour">
+                                        <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                    </select>
+                                    <span class="time-colon">:</span>
+                                    <select v-model="slot.pendingSubSlot.EndMin" class="form-select-sm time-min">
+                                        <option value="00">00</option>
+                                        <option value="30">30</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary px-2"
+                                        @@click="room.confirmAddSubSlot(slot)">確認</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary px-2"
+                                        @@click="room.cancelAddSubSlot(slot)">取消</button>
+                            </div>
+                            <div v-if="slot.pendingSubSlot.error" class="text-danger small mt-1">
+                                {{ slot.pendingSubSlot.error }}
+                            </div>
                         </div>
-                    </div>
-                    <div class="pricing-col-price">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">$</span>
-                            <input v-model.number="slot.SetupPrice" type="number" class="form-control" min="0" placeholder="選填">
-                        </div>
-                    </div>
-                    <div class="pricing-col-action">
-                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                @@click="room.removeTimeSlot(index)">
-                            <span class="material-icons icons font-size-18">delete_outline</span>
-                        </button>
                     </div>
                 </div>
 

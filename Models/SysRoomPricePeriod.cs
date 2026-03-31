@@ -85,4 +85,7 @@ public partial class SysRoomPricePeriod
     [ForeignKey("RoomId")]
     [InverseProperty("SysRoomPricePeriod")]
     public virtual SysRoom Room { get; set; }
+
+    [InverseProperty("PricePeriod")]
+    public virtual ICollection<SysRoomPricePeriodSlot> Slots { get; set; } = new List<SysRoomPricePeriodSlot>();
 }

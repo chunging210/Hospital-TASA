@@ -966,8 +966,6 @@ namespace TASA.Services.ConferenceModule
                 conference.RecurrenceId = recurrenceId;
 
                 db.Conference.Add(conference);
-                db.SaveChanges();
-
                 CreateRoomSlots(conferenceId, vm.RoomId!.Value, slotsByDate);
                 CreateEquipmentLinks(conferenceId, vm.EquipmentIds, vm.BoothIds, vm.SmallBooths, slotsByDate);
 
@@ -976,37 +974,33 @@ namespace TASA.Services.ConferenceModule
                 {
                     if (firstConferenceId == null)
                     {
-                        // 第一筆：正常儲存附件檔案
                         SaveAttachments(conferenceId, vm.Attachments, userId);
                         firstConferenceId = conferenceId;
                     }
                     else
                     {
-                        // 後續：複製附件記錄，共用檔案路徑
                         CopyAttachmentsFromFirst(conferenceId, firstConferenceId.Value, userId);
                     }
                 }
 
-                db.SaveChanges();
+                // 從 change tracker 計算費用，避免額外 DB 查詢
+                var tracker = db.ChangeTracker.Entries();
+                var actualRoomCost = tracker
+                    .Where(e => e.Entity is ConferenceRoomSlot s && s.ConferenceId == conferenceId)
+                    .Sum(e => ((ConferenceRoomSlot)e.Entity).Price);
 
-                // ✅ 重新計算該日期的實際價格（根據假日/平日）
-                var actualRoomCost = db.ConferenceRoomSlot
-                    .Where(s => s.ConferenceId == conferenceId)
-                    .Sum(s => s.Price);
+                var actualEquipmentCost = tracker
+                    .Where(e => e.Entity is ConferenceEquipment eq && eq.ConferenceId == conferenceId && eq.EquipmentType == "8")
+                    .Sum(e => ((ConferenceEquipment)e.Entity).EquipmentPrice);
 
-                var actualEquipmentCost = db.ConferenceEquipment
-                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "8")
-                    .Sum(e => e.EquipmentPrice);
+                var actualBoothCost = tracker
+                    .Where(e => e.Entity is ConferenceEquipment eq && eq.ConferenceId == conferenceId && eq.EquipmentType == "9")
+                    .Sum(e => ((ConferenceEquipment)e.Entity).EquipmentPrice);
 
-                var actualBoothCost = db.ConferenceEquipment
-                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "9")
-                    .Sum(e => e.EquipmentPrice);
+                var actualSmallBoothCost = tracker
+                    .Where(e => e.Entity is ConferenceEquipment eq && eq.ConferenceId == conferenceId && eq.EquipmentType == "10")
+                    .Sum(e => ((ConferenceEquipment)e.Entity).EquipmentPrice * ((ConferenceEquipment)e.Entity).Quantity);
 
-                var actualSmallBoothCost = db.ConferenceEquipment
-                    .Where(e => e.ConferenceId == conferenceId && e.EquipmentType == "10")
-                    .Sum(e => e.EquipmentPrice * e.Quantity);
-
-                // 更新 Conference 的費用欄位
                 conference.RoomCost = (int)actualRoomCost;
                 conference.EquipmentCost = (int)actualEquipmentCost;
                 conference.BoothCost = (int)actualBoothCost;
@@ -1274,6 +1268,11 @@ namespace TASA.Services.ConferenceModule
                 .Include(c => c.ApprovalHistory)
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
+            ApproveReservationCore(conference, vm, reviewedBy);
+        }
+
+        private void ApproveReservationCore(Conference conference, ApproveVM vm, Guid reviewedBy)
+        {
 
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
@@ -1535,6 +1534,11 @@ namespace TASA.Services.ConferenceModule
                 .Include(c => c.ApprovalHistory)
                 .FirstOrDefault(x => x.Id == vm.ConferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
+            RejectReservationCore(conference, vm, reviewedBy);
+        }
+
+        private void RejectReservationCore(Conference conference, RejectVM vm, Guid reviewedBy)
+        {
 
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
                 throw new HttpException("該預約不在待審核狀態");
@@ -1595,10 +1599,12 @@ namespace TASA.Services.ConferenceModule
             if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
                 throw new HttpException("請選擇至少一筆預約");
 
-            // 預先載入各筆金額與當前關卡，供折扣計算與判斷用
-            var conferenceData = db.Conference
-                .Where(c => vm.ConferenceIds.Contains(c.Id))
-                .Select(c => new { c.Id, c.TotalAmount, c.CurrentApprovalLevel })
+            // 一次批量載入所有 conference（含 Include），避免 N 次個別查詢
+            var conferences = db.Conference
+                .Include(c => c.ConferenceRoomSlots)
+                .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
+                .Where(c => vm.ConferenceIds.Contains(c.Id) && !c.DeleteAt.HasValue)
                 .ToDictionary(c => c.Id);
 
             var result = new BulkResultVM();
@@ -1607,20 +1613,21 @@ namespace TASA.Services.ConferenceModule
             {
                 try
                 {
-                    conferenceData.TryGetValue(id, out var data);
-                    var isFirstLevel = data?.CurrentApprovalLevel == 0;
+                    if (!conferences.TryGetValue(id, out var conference))
+                        throw new HttpException("會議不存在");
 
-                    // 折扣只套用在第一關，其他關卡直接核准不打折
+                    var isFirstLevel = conference.CurrentApprovalLevel == 0;
+
                     int? discountAmount = isFirstLevel ? vm.DiscountType switch
                     {
                         "percent" when vm.DiscountPercent.HasValue =>
-                            (int)Math.Round((data?.TotalAmount ?? 0) * vm.DiscountPercent.Value / 100.0),
-                        "free" => data?.TotalAmount,
+                            (int)Math.Round(conference.TotalAmount * vm.DiscountPercent.Value / 100.0),
+                        "free" => conference.TotalAmount,
                         "amount" => vm.DiscountAmount,
                         _ => null
                     } : null;
 
-                    ApproveReservation(new ApproveVM
+                    ApproveReservationCore(conference, new ApproveVM
                     {
                         ConferenceId = id,
                         DiscountAmount = discountAmount > 0 ? discountAmount : null,
@@ -1644,13 +1651,24 @@ namespace TASA.Services.ConferenceModule
             if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
                 throw new HttpException("請選擇至少一筆預約");
 
+            // 一次批量載入所有 conference（含 Include），避免 N 次個別查詢
+            var conferences = db.Conference
+                .Include(c => c.ConferenceRoomSlots)
+                .Include(c => c.ConferenceEquipments)
+                .Include(c => c.ApprovalHistory)
+                .Where(c => vm.ConferenceIds.Contains(c.Id) && !c.DeleteAt.HasValue)
+                .ToDictionary(c => c.Id);
+
             var result = new BulkResultVM();
 
             foreach (var id in vm.ConferenceIds)
             {
                 try
                 {
-                    RejectReservation(new RejectVM
+                    if (!conferences.TryGetValue(id, out var conference))
+                        throw new HttpException("會議不存在");
+
+                    RejectReservationCore(conference, new RejectVM
                     {
                         ConferenceId = id,
                         Reason = vm.Reason
@@ -2284,33 +2302,55 @@ namespace TASA.Services.ConferenceModule
                     var firstDate = allDates.First();
                     var lastDate = allDates.Last();
 
-                    // 取得會議室的所有時段定義
-                    var roomSlotDefs = db.SysRoomPricePeriod
-                        .Where(p => p.RoomId == roomId && p.IsEnabled && p.DeleteAt == null)
-                        .OrderBy(p => p.StartTime)
-                        .ToList();
+                    // 判斷是否為時段制（有子區間）
+                    var hasSubSlots = db.SysRoomPricePeriodSlot
+                        .Any(s => s.PricePeriod.RoomId == roomId &&
+                                  s.PricePeriod.IsEnabled &&
+                                  s.PricePeriod.DeleteAt == null);
 
-                    if (roomSlotDefs.Any())
+                    var firstDaySlots = slotsByDate[firstDate];
+                    var lastDaySlots  = slotsByDate[lastDate];
+
+                    if (hasSubSlots)
                     {
-                        // ✅ 首日驗證：必須選到最後一個時段
-                        var lastSlotDef = roomSlotDefs.Last();
-                        var firstDaySlots = slotsByDate[firstDate];
-                        var hasLastSlot = firstDaySlots.Any(s =>
-                            s.Start.ToTimeSpan() == lastSlotDef.StartTime &&
-                            s.End.ToTimeSpan() == lastSlotDef.EndTime);
+                        // 時段制：比對邊界時間（子區間最早開始 / 最晚結束）
+                        var subTimes = db.SysRoomPricePeriodSlot
+                            .Where(s => s.PricePeriod.RoomId == roomId &&
+                                        s.PricePeriod.IsEnabled &&
+                                        s.PricePeriod.DeleteAt == null)
+                            .Select(s => new { s.StartTime, s.EndTime })
+                            .ToList();
+                        var subFirst = subTimes.Min(s => s.StartTime);
+                        var subLast  = subTimes.Max(s => s.EndTime);
 
-                        if (!hasLastSlot)
+                        if (!firstDaySlots.Any(s => s.End.ToTimeSpan() == subLast))
                             throw new HttpException($"跨日預約的首日 ({firstDate:yyyy/MM/dd}) 必須選擇到最後時段，才能與隔天連續");
 
-                        // ✅ 末日驗證：必須從第一個時段開始選
-                        var firstSlotDef = roomSlotDefs.First();
-                        var lastDaySlots = slotsByDate[lastDate];
-                        var hasFirstSlot = lastDaySlots.Any(s =>
-                            s.Start.ToTimeSpan() == firstSlotDef.StartTime &&
-                            s.End.ToTimeSpan() == firstSlotDef.EndTime);
-
-                        if (!hasFirstSlot)
+                        if (!lastDaySlots.Any(s => s.Start.ToTimeSpan() == subFirst))
                             throw new HttpException($"跨日預約的末日 ({lastDate:yyyy/MM/dd}) 必須從第一時段開始選，才能與前一天連續");
+                    }
+                    else
+                    {
+                        // 小時制（無子區間）：原本邏輯，精確比對主區間首尾的 start+end
+                        var roomSlotDefs = db.SysRoomPricePeriod
+                            .Where(p => p.RoomId == roomId && p.IsEnabled && p.DeleteAt == null)
+                            .OrderBy(p => p.StartTime)
+                            .ToList();
+
+                        if (roomSlotDefs.Any())
+                        {
+                            var lastSlotDef = roomSlotDefs.Last();
+                            if (!firstDaySlots.Any(s =>
+                                    s.Start.ToTimeSpan() == lastSlotDef.StartTime &&
+                                    s.End.ToTimeSpan()   == lastSlotDef.EndTime))
+                                throw new HttpException($"跨日預約的首日 ({firstDate:yyyy/MM/dd}) 必須選擇到最後時段，才能與隔天連續");
+
+                            var firstSlotDef = roomSlotDefs.First();
+                            if (!lastDaySlots.Any(s =>
+                                    s.Start.ToTimeSpan() == firstSlotDef.StartTime &&
+                                    s.End.ToTimeSpan()   == firstSlotDef.EndTime))
+                                throw new HttpException($"跨日預約的末日 ({lastDate:yyyy/MM/dd}) 必須從第一時段開始選，才能與前一天連續");
+                        }
                     }
 
                     // 檢查中間天
@@ -2524,43 +2564,62 @@ namespace TASA.Services.ConferenceModule
                 .Where(rs => rs.RoomId == roomId && rs.IsEnabled && rs.DeleteAt == null)
                 .ToList();
 
+            // 子區間對應表（StartTime/EndTime → PricePeriodId）
+            var subSlotMap = db.SysRoomPricePeriodSlot
+                .Where(s => s.PricePeriod.RoomId == roomId && s.PricePeriod.IsEnabled && s.PricePeriod.DeleteAt == null)
+                .Select(s => new { s.StartTime, s.EndTime, s.PricePeriodId })
+                .ToList();
+
             foreach (var (slotDate, requestedSlots) in slotsByDate)
             {
-                // ✅ 查詢該日期是否為假日（包含國定假日、補班日判斷）
                 var isHoliday = service.HolidayService.IsHoliday(slotDate);
+
+                // 時段制：記錄本日已計費的主區間（同主區間同天只收一次）
+                var chargedPeriodIds = new HashSet<Guid>();
 
                 foreach (var (start, end, isSetup) in requestedSlots)
                 {
                     var startTimeSpan = start.ToTimeSpan();
                     var endTimeSpan = end.ToTimeSpan();
 
-                    // ✅ 找到對應的時段價格
-                    var priceInfo = roomSlotPrices.FirstOrDefault(rs =>
-                        rs.StartTime == startTimeSpan && rs.EndTime == endTimeSpan
-                    );
-
-                    // ✅ 根據 isSetup 決定價格
                     decimal price = 0;
-                    if (priceInfo != null)
+                    Guid? pricePeriodId = null;
+
+                    // 透過子區間找到主區間（無子區間時直接比對主區間）
+                    var subSlot = subSlotMap.FirstOrDefault(s => s.StartTime == startTimeSpan && s.EndTime == endTimeSpan);
+                    if (subSlot != null)
                     {
-                        if (isSetup && priceInfo.SetupPrice.HasValue)
+                        pricePeriodId = subSlot.PricePeriodId;
+                        var priceInfo = roomSlotPrices.FirstOrDefault(rs => rs.Id == subSlot.PricePeriodId);
+                        if (priceInfo != null && !chargedPeriodIds.Contains(subSlot.PricePeriodId))
                         {
-                            // 場佈價格（固定，不分平假日）
-                            price = priceInfo.SetupPrice.Value;
+                            chargedPeriodIds.Add(subSlot.PricePeriodId);
+                            if (isSetup && priceInfo.SetupPrice.HasValue)
+                                price = priceInfo.SetupPrice.Value;
+                            else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+                                price = priceInfo.HolidayPrice.Value;
+                            else
+                                price = priceInfo.Price;
                         }
-                        else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+                        // 同主區間第二筆以上 price 維持 0
+                    }
+                    else
+                    {
+                        // fallback：無子區間，直接比對主區間
+                        var priceInfo = roomSlotPrices.FirstOrDefault(rs =>
+                            rs.StartTime == startTimeSpan && rs.EndTime == endTimeSpan);
+                        if (priceInfo != null)
                         {
-                            // 假日價格
-                            price = priceInfo.HolidayPrice.Value;
-                        }
-                        else
-                        {
-                            // 平日價格
-                            price = priceInfo.Price;
+                            if (isSetup && priceInfo.SetupPrice.HasValue)
+                                price = priceInfo.SetupPrice.Value;
+                            else if (isHoliday && priceInfo.HolidayPrice.HasValue)
+                                price = priceInfo.HolidayPrice.Value;
+                            else
+                                price = priceInfo.Price;
                         }
                     }
 
-                    var slot = new ConferenceRoomSlot
+                    db.ConferenceRoomSlot.Add(new ConferenceRoomSlot
                     {
                         Id = Guid.NewGuid(),
                         ConferenceId = conferenceId,
@@ -2570,12 +2629,12 @@ namespace TASA.Services.ConferenceModule
                         EndTime = end,
                         Price = price,
                         PricingType = PricingType.Period,
+                        PricePeriodId = pricePeriodId,
                         SlotStatus = SlotStatus.Locked,
                         LockedAt = DateTime.Now,
-                        IsSetup = isSetup
-                    };
-
-                    db.ConferenceRoomSlot.Add(slot);
+                        IsSetup = isSetup,
+                        CreateAt = DateTime.Now
+                    });
                 }
             }
         }

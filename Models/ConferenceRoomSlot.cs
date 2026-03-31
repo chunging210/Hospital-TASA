@@ -81,6 +81,11 @@ public partial class ConferenceRoomSlot
     public bool IsSetup { get; set; } = false;
 
     /// <summary>
+    /// 所屬主區間ID（時段制專用，小時制為 null）
+    /// </summary>
+    public Guid? PricePeriodId { get; set; }
+
+    /// <summary>
     /// 建立時間
     /// </summary>
     [Column(TypeName = "datetime")]
@@ -96,4 +101,7 @@ public partial class ConferenceRoomSlot
 
     [ForeignKey(nameof(RoomId))]
     public virtual SysRoom Room { get; set; }
+
+    [ForeignKey(nameof(PricePeriodId))]
+    public virtual SysRoomPricePeriod PricePeriod { get; set; }
 }

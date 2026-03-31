@@ -530,8 +530,102 @@ const room = new function () {
             Price: data.Price ?? 0,
             HolidayPrice: data.HolidayPrice ?? 0,
             SetupPrice: data.SetupPrice ?? null,
-            Enabled: data.Enabled ?? true
+            Enabled: data.Enabled ?? true,
+            Slots: reactive((data.Slots ?? []).map(s => ({
+                Id: `tmp_${Date.now()}_${Math.random()}`,
+                StartHour: (s.StartTime ?? '09:00').split(':')[0],
+                StartMin: (s.StartTime ?? '09:00').split(':')[1] ?? '00',
+                EndHour: (s.EndTime ?? '10:00').split(':')[0],
+                EndMin: (s.EndTime ?? '10:00').split(':')[1] ?? '00'
+            }))),
+            // 新增子區間用的暫存 picker 狀態
+            pendingSubSlot: reactive({ show: false, StartHour: '09', StartMin: '00', EndHour: '10', EndMin: '00', error: '' })
         };
+    };
+
+    this.openAddSubSlot = (parentSlot) => {
+        parentSlot.pendingSubSlot.StartHour = parentSlot.StartHour;
+        parentSlot.pendingSubSlot.StartMin = parentSlot.StartMin;
+        parentSlot.pendingSubSlot.EndHour = parentSlot.StartHour;
+        parentSlot.pendingSubSlot.EndMin = parentSlot.StartMin;
+        parentSlot.pendingSubSlot.error = '';
+        parentSlot.pendingSubSlot.show = true;
+    };
+
+    this.confirmAddSubSlot = (parentSlot) => {
+        const p = parentSlot.pendingSubSlot;
+        const toMin = (h, m) => parseInt(h) * 60 + parseInt(m);
+
+        const newStart = toMin(p.StartHour, p.StartMin);
+        const newEnd   = toMin(p.EndHour, p.EndMin);
+        const pStart   = toMin(parentSlot.StartHour, parentSlot.StartMin);
+        const pEnd     = toMin(parentSlot.EndHour, parentSlot.EndMin);
+
+        // 1. 開始必須早於結束
+        if (newStart >= newEnd) {
+            p.error = '開始時間必須早於結束時間';
+            return;
+        }
+        // 2. 必須在主區間範圍內
+        if (newStart < pStart || newEnd > pEnd) {
+            p.error = `子區間必須在主區間範圍內（${parentSlot.StartHour}:${parentSlot.StartMin} — ${parentSlot.EndHour}:${parentSlot.EndMin}）`;
+            return;
+        }
+        // 3. 不能與現有子區間重疊
+        const overlap = parentSlot.Slots.some(s => {
+            const sStart = toMin(s.StartHour, s.StartMin);
+            const sEnd   = toMin(s.EndHour, s.EndMin);
+            return newStart < sEnd && newEnd > sStart;
+        });
+        if (overlap) {
+            p.error = '與已設定的子區間時間重疊';
+            return;
+        }
+
+        parentSlot.Slots.push({
+            Id: `tmp_${Date.now()}_${Math.random()}`,
+            StartHour: p.StartHour,
+            StartMin: p.StartMin,
+            EndHour: p.EndHour,
+            EndMin: p.EndMin
+        });
+        p.show = false;
+        p.error = '';
+    };
+
+    this.cancelAddSubSlot = (parentSlot) => {
+        parentSlot.pendingSubSlot.show = false;
+        parentSlot.pendingSubSlot.error = '';
+    };
+
+    this.removeSubSlot = (parentSlot, index) => {
+        parentSlot.Slots.splice(index, 1);
+    };
+
+    this.onParentTimeChange = (parentSlot) => {
+        if (!parentSlot.Slots || parentSlot.Slots.length === 0) return;
+        const toMin = (h, m) => parseInt(h) * 60 + parseInt(m);
+        const pStart = toMin(parentSlot.StartHour, parentSlot.StartMin);
+        const pEnd   = toMin(parentSlot.EndHour, parentSlot.EndMin);
+
+        const removed = parentSlot.Slots.filter(s => {
+            const sStart = toMin(s.StartHour, s.StartMin);
+            const sEnd   = toMin(s.EndHour, s.EndMin);
+            return sStart < pStart || sEnd > pEnd;
+        });
+
+        if (removed.length > 0) {
+            // 移除超出範圍的子區間
+            for (let i = parentSlot.Slots.length - 1; i >= 0; i--) {
+                const s = parentSlot.Slots[i];
+                const sStart = toMin(s.StartHour, s.StartMin);
+                const sEnd   = toMin(s.EndHour, s.EndMin);
+                if (sStart < pStart || sEnd > pEnd) {
+                    parentSlot.Slots.splice(i, 1);
+                }
+            }
+            addAlert(`已自動移除 ${removed.length} 個超出主區間範圍的子區間`, { type: 'warning' });
+        }
     };
 
     this.getList = (page) => {
@@ -688,6 +782,45 @@ const room = new function () {
             ? global.api.admin.roomupdate
             : global.api.admin.roominsert;
 
+        // 驗證子區間
+        if (this.vm.PricingType === PricingType.Period) {
+            const enabledSlots = this.timeSlots.filter(s => s.Enabled);
+            const withSub    = enabledSlots.filter(s => s.Slots && s.Slots.length > 0).length;
+            const withoutSub = enabledSlots.filter(s => !s.Slots || s.Slots.length === 0).length;
+
+            if (withSub > 0 && withoutSub > 0) {
+                addAlert('子區間設定不一致：請所有時段都設定子區間，或全部都不設定', { type: 'danger' });
+                return;
+            }
+
+            if (withSub > 0) {
+                const toMin = (h, m) => parseInt(h) * 60 + parseInt(m);
+                for (const slot of enabledSlots) {
+                    const pStart = toMin(slot.StartHour, slot.StartMin);
+                    const pEnd   = toMin(slot.EndHour, slot.EndMin);
+                    const sorted = [...slot.Slots].sort((a, b) =>
+                        toMin(a.StartHour, a.StartMin) - toMin(b.StartHour, b.StartMin));
+
+                    if (toMin(sorted[0].StartHour, sorted[0].StartMin) !== pStart) {
+                        addAlert(`時段「${slot.Name}」的子區間未從主區間起始時間開始`, { type: 'danger' });
+                        return;
+                    }
+                    if (toMin(sorted[sorted.length - 1].EndHour, sorted[sorted.length - 1].EndMin) !== pEnd) {
+                        addAlert(`時段「${slot.Name}」的子區間未覆蓋到主區間結束時間`, { type: 'danger' });
+                        return;
+                    }
+                    for (let i = 0; i < sorted.length - 1; i++) {
+                        const curEnd  = toMin(sorted[i].EndHour, sorted[i].EndMin);
+                        const nextStart = toMin(sorted[i + 1].StartHour, sorted[i + 1].StartMin);
+                        if (curEnd !== nextStart) {
+                            addAlert(`時段「${slot.Name}」的子區間有空隙（${sorted[i].EndHour}:${sorted[i].EndMin} 到 ${sorted[i+1].StartHour}:${sorted[i+1].StartMin}）`, { type: 'danger' });
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
         const capacity = Number(this.vm.Capacity ?? 0);
         const area = Number(this.vm.Area ?? 0);
@@ -805,9 +938,8 @@ const room = new function () {
         this.timeSlots.splice(0);
 
         [
-            { Name: '上午場', StartTime: '09:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200, SetupPrice: null },
-            { Name: '中午場', StartTime: '12:00', EndTime: '14:00', Price: 800, HolidayPrice: 1000, SetupPrice: null },
-            { Name: '下午場', StartTime: '14:00', EndTime: '18:00', Price: 1200, HolidayPrice: 1500, SetupPrice: null }
+            { Name: '上午場', StartTime: '08:00', EndTime: '12:00', Price: 1000, HolidayPrice: 1200, SetupPrice: null },
+            { Name: '下午場', StartTime: '13:00', EndTime: '17:00', Price: 1200, HolidayPrice: 1500, SetupPrice: null }
         ].forEach(s => {
             this.timeSlots.push(this.createPeriodSlot(s));
         });
@@ -879,7 +1011,11 @@ const room = new function () {
                         Price: slot.Price,
                         HolidayPrice: slot.HolidayPrice,
                         SetupPrice: slot.SetupPrice ?? null,
-                        Enabled: true
+                        Enabled: true,
+                        Slots: (slot.Slots ?? []).map(s => ({
+                            StartTime: `${s.StartHour}:${s.StartMin}`,
+                            EndTime: `${s.EndHour}:${s.EndMin}`
+                        }))
                     });
                 }
             });

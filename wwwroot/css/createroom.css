@@ -6,6 +6,9 @@
     cursor: pointer;
     background: #fff;
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .time-slot-card:hover:not(.occupied):not(.disabled) {
@@ -32,6 +35,11 @@
 .slot-price {
     font-size: 14px;
     color: #0d6efd;
+    min-height: 2.8em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .time-slot-card.occupied .slot-price {
@@ -85,7 +93,7 @@
 
 .time-slot-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 10px;
     margin: 15px 0;
 }
@@ -562,6 +570,15 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid #e5eaf0;
+    width: 100%;
+}
+
+.slot-type-toggle .btn {
+    flex: 1;
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 4px 6px;
+    line-height: 1.4;
 }
 
 .slot-type-btn {

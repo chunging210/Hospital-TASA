@@ -342,6 +342,8 @@ window.$config = {
         this.selectedSlotsByDate = reactive({}); // 每天的已選時段 { '2025-01-20': [{key, isSetup}], ... }
         this.loadingSlots = reactive({});        // 每天的載入狀態
         this.middleDayErrors = reactive({});     // 中間天錯誤訊息
+        // 時段制：每個日期每個主區間的一般/場佈狀態 { '2025-01-20': { 'periodId': true/false } }
+        this.periodGroupSetup = reactive({});
 
         /* ========= 附件管理 ========= */
         this.agendaFile = ref(null);
@@ -635,12 +637,26 @@ window.$config = {
                 const slots = this.selectedSlotsByDate[dateStr] || [];
                 const dateSlots = this.slotsByDate[dateStr] || [];
 
+                // 時段制：同一 PricePeriodId 同一天只計費一次
+                const chargedPeriodIds = new Set();
+
                 for (const slotInfo of slots) {
                     const slot = dateSlots.find(s => s.Key === slotInfo.key);
                     if (!slot) continue;
 
+                    // 時段制：同 PricePeriodId 已計費 → 跳過
+                    if (slot.PricePeriodId) {
+                        if (chargedPeriodIds.has(slot.PricePeriodId)) continue;
+                        chargedPeriodIds.add(slot.PricePeriodId);
+                    }
+
+                    // 時段制從 group 狀態取 isSetup，小時制從 slotInfo 取
+                    const isSetup = slot.PricePeriodId
+                        ? !!(this.periodGroupSetup[dateStr]?.[slot.PricePeriodId])
+                        : slotInfo.isSetup;
+
                     let price;
-                    if (slotInfo.isSetup && slot.SetupPrice != null) {
+                    if (isSetup && slot.SetupPrice != null) {
                         price = slot.SetupPrice;
                     } else if (this.isHolidayForDate(dateStr) && slot.HolidayPrice) {
                         price = slot.HolidayPrice;
@@ -1186,6 +1202,7 @@ window.$config = {
             Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
             Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
             Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
+            Object.keys(this.periodGroupSetup).forEach(key => delete this.periodGroupSetup[key]);
 
             // 設定第一個日期為 active tab
             if (this.dateRange.value.length > 0) {
@@ -1206,6 +1223,10 @@ window.$config = {
 
         /* ====== 跨日模式：檢查時段是否為場佈（某日期） ====== */
         this.isSlotSetupForDate = (dateStr, slot) => {
+            // 時段制：從 group 狀態取值
+            if (slot.PricePeriodId) {
+                return !!(this.periodGroupSetup[dateStr]?.[slot.PricePeriodId]);
+            }
             const slots = this.selectedSlotsByDate[dateStr];
             if (!slots) return false;
             const found = slots.find(s => s.key === slot.Key);
@@ -1222,6 +1243,72 @@ window.$config = {
             }
         };
 
+        /* ====== 時段制：取得某主區間的子區間 slot 列表 ====== */
+        this.getSlotsForGroup = (dateStr, periodId) => {
+            return (this.slotsByDate[dateStr] || [])
+                .filter(s => s.PricePeriodId === periodId)
+                .sort((a, b) => a.StartTime.localeCompare(b.StartTime));
+        };
+
+        /* ====== 時段制：取得某日期所有主區間群組 ====== */
+        this.getPeriodGroupsForDate = (dateStr) => {
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            const map = new Map();
+            for (const slot of dateSlots) {
+                if (!slot.PricePeriodId) continue;
+                if (!map.has(slot.PricePeriodId)) {
+                    map.set(slot.PricePeriodId, {
+                        periodId: slot.PricePeriodId,
+                        name: slot.Name,
+                        startTime: slot.StartTime,
+                        endTime: slot.EndTime,
+                        price: slot.Price,
+                        holidayPrice: slot.HolidayPrice,
+                        setupPrice: slot.SetupPrice
+                    });
+                } else {
+                    const g = map.get(slot.PricePeriodId);
+                    if (slot.StartTime < g.startTime) g.startTime = slot.StartTime;
+                    if (slot.EndTime   > g.endTime)   g.endTime   = slot.EndTime;
+                }
+            }
+            return [...map.values()];
+        };
+
+        /* ====== 時段制：主區間群組的一般/場佈切換 ====== */
+        this.setPeriodGroupSetup = (dateStr, periodId, isSetup) => {
+            if (!this.periodGroupSetup[dateStr]) {
+                this.periodGroupSetup[dateStr] = reactive({});
+            }
+            this.periodGroupSetup[dateStr][periodId] = isSetup;
+
+            // 同步該群組所有已選子區間的 isSetup
+            const slots = this.selectedSlotsByDate[dateStr] || [];
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            slots.forEach(s => {
+                const ds = dateSlots.find(d => d.Key === s.key);
+                if (ds && ds.PricePeriodId === periodId) {
+                    s.isSetup = isSetup;
+                }
+            });
+        };
+
+        /* ====== 時段制：該日期某主區間是否有任何子區間被選 ====== */
+        this.isPeriodGroupSelected = (dateStr, periodId) => {
+            const selected = this.selectedSlotsByDate[dateStr] || [];
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            return selected.some(s => {
+                const ds = dateSlots.find(d => d.Key === s.key);
+                return ds && ds.PricePeriodId === periodId;
+            });
+        };
+
+        /* ====== 判斷目前房間是否為時段制 ====== */
+        this.isPeriodMode = computed(() => {
+            const dateSlots = Object.values(this.slotsByDate)[0] || [];
+            return dateSlots.some(s => s.PricePeriodId);
+        });
+
         /* ====== 跨日模式：取得時段顯示價格（某日期） ====== */
         this.getSlotDisplayPriceForDate = (dateStr, slot) => {
             const isSetup = this.isSlotSetupForDate(dateStr, slot);
@@ -1232,6 +1319,30 @@ window.$config = {
                 return slot.HolidayPrice;
             }
             return slot.Price;
+        };
+
+        /* ====== 時段制：判斷同一 PricePeriodId 是否已有其他子區間被選取（已包含在費用內）====== */
+        this.isPeriodAlreadyCharged = (dateStr, slot) => {
+            if (!slot.PricePeriodId) return false;
+            const selected = this.selectedSlotsByDate[dateStr] || [];
+            const dateSlots = this.slotsByDate[dateStr] || [];
+            // 找出同 PricePeriodId 的 selected 中是否有排序在前面的
+            const sameGroup = selected.filter(s => {
+                const ds = dateSlots.find(d => d.Key === s.key);
+                return ds && ds.PricePeriodId === slot.PricePeriodId && ds.Key !== slot.Key;
+            });
+            // 若有其他同組已選，且第一個被選者不是本 slot → 本 slot 費用已包含
+            if (sameGroup.length === 0) return false;
+            const allGroupSelected = selected.filter(s => {
+                const ds = dateSlots.find(d => d.Key === s.key);
+                return ds && ds.PricePeriodId === slot.PricePeriodId;
+            });
+            const firstSelected = allGroupSelected.sort((a, b) => {
+                const da = dateSlots.find(d => d.Key === a.key);
+                const db = dateSlots.find(d => d.Key === b.key);
+                return (da?.StartTime || '').localeCompare(db?.StartTime || '');
+            })[0];
+            return firstSelected && firstSelected.key !== slot.Key;
         };
 
         /* ====== 檢查時段是否可選（某日期） ====== */

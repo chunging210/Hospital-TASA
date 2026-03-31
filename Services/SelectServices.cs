@@ -107,6 +107,8 @@ namespace TASA.Services
             public string? CreatorUnitName { get; init; }  // 預約人部門
             public int? ExpectedAttendees { get; init; }
             public string? ContactPhone { get; init; }
+            // 時段制專用：所屬主區間 Id（小時制為 null）
+            public Guid? PricePeriodId { get; init; }
         }
 
         public record FloorsByBuildingQueryVM
@@ -205,25 +207,53 @@ namespace TASA.Services
             if (room == null)
                 return [];
 
-            // 1️⃣ 可販售時段
-            var baseSlots = db.SysRoomPricePeriod
+            // 1️⃣ 可販售時段：有子區間用子區間，無子區間用主區間
+            List<(Guid Id, string? Name, TimeSpan Start, TimeSpan End, decimal Price, decimal? HolidayPrice, decimal? SetupPrice, Guid? PricePeriodId)> baseSlots;
+
+            var subSlots = db.SysRoomPricePeriodSlot
                 .AsNoTracking()
-                .Where(x =>
-                    x.RoomId == query.RoomId &&
-                    x.IsEnabled &&
-                    x.DeleteAt == null
-                )
+                .Where(x => x.PricePeriod.RoomId == query.RoomId &&
+                            x.PricePeriod.IsEnabled &&
+                            x.PricePeriod.DeleteAt == null)
                 .Select(x => new
                 {
                     x.Id,
-                    x.Name,
+                    x.PricePeriod.Name,
                     Start = x.StartTime,
                     End = x.EndTime,
-                    x.Price,
-                    x.HolidayPrice,
-                    x.SetupPrice
+                    x.PricePeriod.Price,
+                    x.PricePeriod.HolidayPrice,
+                    x.PricePeriod.SetupPrice,
+                    PricePeriodId = (Guid?)x.PricePeriodId
                 })
+                .ToList()
+                .Select(x => (x.Id, (string?)x.Name, x.Start, x.End, x.Price, x.HolidayPrice, x.SetupPrice, x.PricePeriodId))
                 .ToList();
+
+            if (subSlots.Count > 0)
+            {
+                baseSlots = subSlots;
+            }
+            else
+            {
+                baseSlots = db.SysRoomPricePeriod
+                    .AsNoTracking()
+                    .Where(x => x.RoomId == query.RoomId && x.IsEnabled && x.DeleteAt == null)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Name,
+                        Start = x.StartTime,
+                        End = x.EndTime,
+                        x.Price,
+                        x.HolidayPrice,
+                        x.SetupPrice,
+                        PricePeriodId = (Guid?)null
+                    })
+                    .ToList()
+                    .Select(x => (x.Id, x.Name, x.Start, x.End, x.Price, x.HolidayPrice, x.SetupPrice, x.PricePeriodId))
+                    .ToList();
+            }
 
             // 2️⃣ 已佔用時段 - ✅ 加上狀態過濾
             var occupiedSlots = db.ConferenceRoomSlot
@@ -287,6 +317,7 @@ namespace TASA.Services
                         s.Price,
                         s.HolidayPrice,
                         s.SetupPrice,
+                        s.PricePeriodId,
                         Occupied = occupied != null,
                         ConferenceId = occupied?.ConferenceId,
                         ConferenceName = occupied?.ConferenceName,
@@ -310,6 +341,7 @@ namespace TASA.Services
                 Price = s.Price,
                 HolidayPrice = s.HolidayPrice,
                 SetupPrice = s.SetupPrice,
+                PricePeriodId = s.PricePeriodId,
                 Occupied = s.Occupied,
                 ConferenceId = s.ConferenceId,
                 ConferenceName = s.ConferenceName,
@@ -322,12 +354,39 @@ namespace TASA.Services
 
         public Dictionary<string, IEnumerable<RoomSlotVM>> RoomSlotsRange(RoomSlotRangeQueryVM query)
         {
+            var room = db.SysRoom.AsNoTracking().WhereNotDeleted().FirstOrDefault(x => x.Id == query.RoomId);
+            if (room == null) return [];
+
             // 1️⃣ 一次取得該會議室的所有可販售時段（所有天共用）
-            var baseSlots = db.SysRoomPricePeriod
+            List<(Guid Id, string? Name, TimeSpan Start, TimeSpan End, decimal Price, decimal? HolidayPrice, decimal? SetupPrice, Guid? PricePeriodId)> baseSlots;
+
+            var rangeSubSlots = db.SysRoomPricePeriodSlot
                 .AsNoTracking()
-                .Where(x => x.RoomId == query.RoomId && x.IsEnabled && x.DeleteAt == null)
-                .Select(x => new { x.Id, x.Name, Start = x.StartTime, End = x.EndTime, x.Price, x.HolidayPrice, x.SetupPrice })
+                .Where(x => x.PricePeriod.RoomId == query.RoomId && x.PricePeriod.IsEnabled && x.PricePeriod.DeleteAt == null)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.PricePeriod.Name,
+                    Start = x.StartTime,
+                    End = x.EndTime,
+                    x.PricePeriod.Price,
+                    x.PricePeriod.HolidayPrice,
+                    x.PricePeriod.SetupPrice,
+                    PricePeriodId = (Guid?)x.PricePeriodId
+                })
+                .ToList()
+                .Select(x => (x.Id, (string?)x.Name, x.Start, x.End, x.Price, x.HolidayPrice, x.SetupPrice, x.PricePeriodId))
                 .ToList();
+
+            baseSlots = rangeSubSlots.Count > 0
+                ? rangeSubSlots
+                : db.SysRoomPricePeriod
+                    .AsNoTracking()
+                    .Where(x => x.RoomId == query.RoomId && x.IsEnabled && x.DeleteAt == null)
+                    .Select(x => new { x.Id, x.Name, Start = x.StartTime, End = x.EndTime, x.Price, x.HolidayPrice, x.SetupPrice, PricePeriodId = (Guid?)null })
+                    .ToList()
+                    .Select(x => (x.Id, (string?)x.Name, x.Start, x.End, x.Price, x.HolidayPrice, x.SetupPrice, x.PricePeriodId))
+                    .ToList();
 
             // 2️⃣ 一次取得整週所有已佔用時段
             var occupiedAll = db.ConferenceRoomSlot
@@ -378,6 +437,7 @@ namespace TASA.Services
                             Price = s.Price,
                             HolidayPrice = s.HolidayPrice,
                             SetupPrice = s.SetupPrice,
+                            PricePeriodId = s.PricePeriodId,
                             Occupied = occupied != null,
                             ConferenceId = occupied?.ConferenceId,
                             ConferenceName = occupied?.ConferenceName,

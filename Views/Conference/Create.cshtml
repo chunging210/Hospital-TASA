@@ -402,49 +402,100 @@
                                                                 </div>
 
                                                                 <!-- 時段選擇 -->
-                                                                <div v-else class="time-slot-grid">
-                                                                    <div v-for="slot in slotsByDate[dateStr]" :key="dateStr + '-' + slot.Key"
-                                                                         class="time-slot-card" :class="{
-                                                                        selected: isSlotSelectedForDate(dateStr, slot) && !isSlotSetupForDate(dateStr, slot),
-                                                                        'selected-setup': isSlotSelectedForDate(dateStr, slot) && isSlotSetupForDate(dateStr, slot),
-                                                                        occupied: slot.Occupied,
-                                                                        disabled: !isSlotAvailableForDate(dateStr, slot)
-                                                                        }" @@click="toggleTimeSlotForDate(dateStr, slot)">
-                                                                        <div class="slot-time">
-                                                                            <strong>{{ slot.Name || '時段' }}</strong>
-                                                                            <div class="text-muted small">
-                                                                                {{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}
+                                                                <div v-else>
+
+                                                                    <!-- ===== 時段制：分組顯示 ===== -->
+                                                                    <div v-if="isPeriodMode">
+                                                                        <div v-for="group in getPeriodGroupsForDate(dateStr)" :key="group.periodId" class="mb-3">
+
+                                                                            <!-- 主區間 header -->
+                                                                            <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded-top border"
+                                                                                 :class="isPeriodGroupSelected(dateStr, group.periodId) ? 'border-primary bg-primary bg-opacity-10' : 'bg-light border-bottom-0'">
+                                                                                <div class="d-flex align-items-center gap-2">
+                                                                                    <strong>{{ group.name }}</strong>
+                                                                                    <span class="text-muted small">{{ group.startTime.slice(0,5) }} - {{ group.endTime.slice(0,5) }}</span>
+                                                                                    <span v-if="isHolidayForDate(dateStr) && group.holidayPrice"
+                                                                                          class="badge bg-warning text-dark" style="font-size:0.7rem">假日</span>
+                                                                                </div>
+                                                                                <div class="d-flex align-items-center gap-3">
+                                                                                    <!-- 價格說明 -->
+                                                                                    <span class="text-muted small">
+                                                                                        <span v-if="selectedRoom && selectedRoom.BookingSettings === 3">免費</span>
+                                                                                        <span v-else>
+                                                                                            ${{ isHolidayForDate(dateStr) && group.holidayPrice ? group.holidayPrice : group.price }}
+                                                                                            <span v-if="group.setupPrice" class="ms-1 text-warning">場佈 ${{ group.setupPrice }}</span>
+                                                                                        </span>
+                                                                                    </span>
+                                                                                    <!-- 一般/場佈切換（有選且有場佈價才顯示） -->
+                                                                                    <div v-if="isPeriodGroupSelected(dateStr, group.periodId) && group.setupPrice"
+                                                                                         class="btn-group btn-group-sm" @@click.stop>
+                                                                                        <button type="button" class="btn"
+                                                                                                :class="!periodGroupSetup[dateStr]?.[group.periodId] ? 'btn-primary' : 'btn-outline-primary'"
+                                                                                                @@click="setPeriodGroupSetup(dateStr, group.periodId, false)">一般</button>
+                                                                                        <button type="button" class="btn"
+                                                                                                :class="periodGroupSetup[dateStr]?.[group.periodId] ? 'btn-warning' : 'btn-outline-warning'"
+                                                                                                @@click="setPeriodGroupSetup(dateStr, group.periodId, true)">場佈</button>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
 
-                                                                        <div class="slot-price">
-                                                                            <span v-if="selectedRoom && selectedRoom.BookingSettings === 3">
-                                                                                免費
-                                                                            </span>
-                                                                            <span v-else>
-                                                                                {{ slot.Occupied ? '已預約' : '$' + getSlotDisplayPriceForDate(dateStr, slot) }}
-                                                                                <small v-if="!slot.Occupied && isSlotSetupForDate(dateStr, slot) && slot.SetupPrice"
-                                                                                       class="text-warning d-block">(場佈價)</small>
-                                                                                <small v-else-if="!slot.Occupied && isHolidayForDate(dateStr) && slot.HolidayPrice"
-                                                                                       class="text-warning d-block">(假日價)</small>
-                                                                            </span>
-                                                                        </div>
+                                                                            <!-- 子區間卡片列 -->
+                                                                            <div class="d-flex flex-wrap gap-2 p-2 border rounded-bottom"
+                                                                                 :class="isPeriodGroupSelected(dateStr, group.periodId) ? 'border-primary' : ''">
+                                                                                <div v-for="slot in getSlotsForGroup(dateStr, group.periodId)"
+                                                                                     :key="dateStr + '-' + slot.Key"
+                                                                                     class="time-slot-card flex-shrink-0"
+                                                                                     style="min-width:100px"
+                                                                                     :class="{
+                                                                                        selected: isSlotSelectedForDate(dateStr, slot) && !isSlotSetupForDate(dateStr, slot),
+                                                                                        'selected-setup': isSlotSelectedForDate(dateStr, slot) && isSlotSetupForDate(dateStr, slot),
+                                                                                        occupied: slot.Occupied,
+                                                                                        disabled: !isSlotAvailableForDate(dateStr, slot)
+                                                                                     }" @@click="toggleTimeSlotForDate(dateStr, slot)">
+                                                                                    <div class="slot-time">
+                                                                                        <div class="text-muted small">{{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}</div>
+                                                                                    </div>
+                                                                                    <div v-if="slot.Occupied" class="slot-price"><span>已預約</span></div>
+                                                                                </div>
+                                                                            </div>
 
-                                                                        <!-- 使用類型切換按鈕 -->
-                                                                        <div v-if="isSlotSelectedForDate(dateStr, slot) && slot.SetupPrice"
-                                                                             class="slot-type-toggle" @@click.stop>
-                                                                            <button type="button" class="btn btn-sm"
-                                                                                    :class="isSlotSetupForDate(dateStr, slot) ? 'btn-outline-primary' : 'btn-primary'"
-                                                                                    @@click="setSlotTypeForDate(dateStr, slot, false)">
-                                                                                一般使用
-                                                                            </button>
-                                                                            <button type="button" class="btn btn-sm"
-                                                                                    :class="isSlotSetupForDate(dateStr, slot) ? 'btn-warning' : 'btn-outline-warning'"
-                                                                                    @@click="setSlotTypeForDate(dateStr, slot, true)">
-                                                                                場地佈置
-                                                                            </button>
                                                                         </div>
                                                                     </div>
+
+                                                                    <!-- ===== 小時制：原本卡片格式 ===== -->
+                                                                    <div v-else class="time-slot-grid">
+                                                                        <div v-for="slot in slotsByDate[dateStr]" :key="dateStr + '-' + slot.Key"
+                                                                             class="time-slot-card" :class="{
+                                                                            selected: isSlotSelectedForDate(dateStr, slot) && !isSlotSetupForDate(dateStr, slot),
+                                                                            'selected-setup': isSlotSelectedForDate(dateStr, slot) && isSlotSetupForDate(dateStr, slot),
+                                                                            occupied: slot.Occupied,
+                                                                            disabled: !isSlotAvailableForDate(dateStr, slot)
+                                                                            }" @@click="toggleTimeSlotForDate(dateStr, slot)">
+                                                                            <div class="slot-time">
+                                                                                <strong>{{ slot.Name || '時段' }}</strong>
+                                                                                <div class="text-muted small">{{ slot.StartTime.slice(0,5) }} - {{ slot.EndTime.slice(0,5) }}</div>
+                                                                            </div>
+                                                                            <div class="slot-price">
+                                                                                <span v-if="selectedRoom && selectedRoom.BookingSettings === 3">免費</span>
+                                                                                <span v-else-if="slot.Occupied">已預約</span>
+                                                                                <span v-else>
+                                                                                    ${{ getSlotDisplayPriceForDate(dateStr, slot) }}
+                                                                                    <small v-if="isSlotSetupForDate(dateStr, slot) && slot.SetupPrice" class="text-warning d-block">(場佈價)</small>
+                                                                                    <small v-else-if="isHolidayForDate(dateStr) && slot.HolidayPrice" class="text-warning d-block">(假日價)</small>
+                                                                                </span>
+                                                                            </div>
+                                                                            <div v-if="isSlotSelectedForDate(dateStr, slot) && slot.SetupPrice"
+                                                                                 class="slot-type-toggle" @@click.stop>
+                                                                                <button type="button" class="btn btn-sm"
+                                                                                        :class="isSlotSetupForDate(dateStr, slot) ? 'btn-outline-primary' : 'btn-primary'"
+                                                                                        @@click="setSlotTypeForDate(dateStr, slot, false)">一般</button>
+                                                                                <button type="button" class="btn btn-sm"
+                                                                                        :class="isSlotSetupForDate(dateStr, slot) ? 'btn-warning' : 'btn-outline-warning'"
+                                                                                        @@click="setSlotTypeForDate(dateStr, slot, true)">場佈</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
                                                                 </div>
                                                             </div>
                                                         </div>

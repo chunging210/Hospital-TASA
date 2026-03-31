@@ -357,6 +357,13 @@ namespace TASA.Services.RoomModule
             public decimal? HolidayPrice { get; set; }
             public decimal? SetupPrice { get; set; }
             public bool Enabled { get; set; }
+            public List<PricingSlotVM>? Slots { get; set; }
+        }
+
+        public record PricingSlotVM
+        {
+            public string? StartTime { get; set; }
+            public string? EndTime { get; set; }
         }
 
         // ✅ 改成回傳 DetailVM（Images 是字串陣列）
@@ -367,6 +374,7 @@ namespace TASA.Services.RoomModule
                 .Include(x => x.Images)
                 .Include(x => x.Department)
                 .Include(x => x.SysRoomPricePeriod)
+                    .ThenInclude(p => p.Slots)
                 .Include(x => x.Equipment)
                 .Include(x => x.Manager)  // ✅ 已有
                 .WhereNotDeleted()
@@ -441,7 +449,14 @@ namespace TASA.Services.RoomModule
                         Price = x.Price,
                         HolidayPrice = x.HolidayPrice,
                         SetupPrice = x.SetupPrice,
-                        Enabled = x.IsEnabled
+                        Enabled = x.IsEnabled,
+                        Slots = x.Slots
+                            .OrderBy(s => s.StartTime)
+                            .Select(s => new PricingSlotVM
+                            {
+                                StartTime = s.StartTime.ToString(@"hh\:mm"),
+                                EndTime = s.EndTime.ToString(@"hh\:mm")
+                            }).ToList()
                     })
                     .ToList();
 
@@ -550,72 +565,41 @@ namespace TASA.Services.RoomModule
         /// 9. 小時制 跟 時段致 其一有勾選 且 至少某一時段 或 某一小時有勾選
         ///    如果有勾選的金額一定要有值
         /// </summary>
-        private void ValidatePricingDetails(PricingType pricingType, List<PricingDetailVM>? pricingDetails)
+        private void ValidatePricingDetails(List<PricingDetailVM>? pricingDetails)
         {
-
-            Console.WriteLine($"🔍 [Debug] PricingType: {pricingType}");
-            Console.WriteLine($"🔍 [Debug] PricingDetails Count: {pricingDetails?.Count ?? 0}");
-            // 必須有勾選的時段或小時
             if (pricingDetails == null || pricingDetails.Count == 0)
-            {
-                throw new HttpException($"請至少設定一個{(pricingType == PricingType.Hourly ? "小時" : "時段")}");
-            }
+                throw new HttpException("請至少設定一個時段");
 
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
-            Console.WriteLine($"🔍 [Debug] EnabledPricings Count: {enabledPricings.Count}");
-
-            // 必須有至少一個被勾選的項目
             if (enabledPricings.Count == 0)
-            {
-                throw new HttpException($"請至少勾選一個{(pricingType == PricingType.Hourly ? "小時" : "時段")}");
-            }
+                throw new HttpException("請至少勾選一個時段");
 
-            // 驗證每個勾選項目的金額
             foreach (var pricing in enabledPricings)
             {
                 if (pricing.Price <= 0)
-                {
-                    throw new HttpException($"勾選的{(pricingType == PricingType.Hourly ? "小時" : "時段")}費用必須 > 0，目前: {pricing.Price}");
-                }
+                    throw new HttpException($"勾選的時段費用必須 > 0，目前: {pricing.Price}");
 
                 if (pricing.Price > 999999)
-                {
                     throw new HttpException($"費用不得超過 999999，目前: {pricing.Price}");
-                }
             }
 
-            // 驗證時間格式
             foreach (var pricing in enabledPricings)
             {
                 if (!TimeSpan.TryParse(pricing.StartTime, out var startTime))
-                {
                     throw new HttpException($"開始時間格式錯誤: {pricing.StartTime}（格式: HH:mm）");
-                }
 
                 if (!TimeSpan.TryParse(pricing.EndTime, out var endTime))
-                {
                     throw new HttpException($"結束時間格式錯誤: {pricing.EndTime}（格式: HH:mm）");
-                }
 
-                // 開始時間不能 >= 結束時間
                 if (startTime >= endTime)
-                {
                     throw new HttpException($"開始時間必須早於結束時間: {pricing.StartTime} - {pricing.EndTime}");
-                }
 
-                // 時段時間跨度不得超過 24 小時
                 if (endTime - startTime > TimeSpan.FromHours(24))
-                {
                     throw new HttpException($"單個時段時間跨度不得超過 24 小時: {pricing.StartTime} - {pricing.EndTime}");
-                }
             }
 
-            // 時段制才需要檢查時段衝突等複雜規則
-            if (pricingType == PricingType.Period)
-            {
-                ValidatePeriodPricing(enabledPricings);
-            }
+            ValidatePeriodPricing(enabledPricings);
         }
 
         /// <summary>
@@ -686,6 +670,49 @@ namespace TASA.Services.RoomModule
                     }
                 }
             }
+
+            // ===== 檢查子區間混用 =====
+            var withSlots    = enabledPricings.Count(p => p.Slots != null && p.Slots.Count > 0);
+            var withoutSlots = enabledPricings.Count(p => p.Slots == null || p.Slots.Count == 0);
+            if (withSlots > 0 && withoutSlots > 0)
+            {
+                throw new HttpException("子區間設定不一致：請所有時段都設定子區間，或全部都不設定");
+            }
+
+            // ===== 檢查子區間完整覆蓋 =====
+            if (withSlots > 0)
+            {
+                foreach (var pricing in enabledPricings)
+                {
+                    TimeSpan.TryParse(pricing.StartTime, out var pStart);
+                    TimeSpan.TryParse(pricing.EndTime, out var pEnd);
+
+                    var sorted = pricing.Slots!
+                        .Select(s => new
+                        {
+                            Start = TimeSpan.Parse(s.StartTime!),
+                            End   = TimeSpan.Parse(s.EndTime!)
+                        })
+                        .OrderBy(s => s.Start)
+                        .ToList();
+
+                    // 第一個子區間必須從主區間開始
+                    if (sorted[0].Start != pStart)
+                        throw new HttpException($"時段「{pricing.Name}」的子區間未從主區間起始時間（{pStart:hh\\:mm}）開始");
+
+                    // 最後一個子區間必須到主區間結束
+                    if (sorted[^1].End != pEnd)
+                        throw new HttpException($"時段「{pricing.Name}」的子區間未覆蓋到主區間結束時間（{pEnd:hh\\:mm}）");
+
+                    // 中間不能有空隙
+                    for (int i = 0; i < sorted.Count - 1; i++)
+                    {
+                        if (sorted[i].End != sorted[i + 1].Start)
+                            throw new HttpException(
+                                $"時段「{pricing.Name}」的子區間有空隙：{sorted[i].End:hh\\:mm} 到 {sorted[i + 1].Start:hh\\:mm}");
+                    }
+                }
+            }
         }
 
         // ✅ 改成接收 InsertVM（Images 是完整物件）
@@ -722,7 +749,7 @@ namespace TASA.Services.RoomModule
             SetDefaultValues(vm);
 
             // ===== 3. 驗證收費設定 =====
-            ValidatePricingDetails(vm.PricingType, vm.PricingDetails);
+            ValidatePricingDetails(vm.PricingDetails);
 
             var userid = service.UserClaimsService.Me()?.Id;
             if (db.SysRoom.WhereNotDeleted().Any(x =>
@@ -798,7 +825,7 @@ namespace TASA.Services.RoomModule
             }
 
             // ===== 7. 保存收費詳情 =====
-            SavePricingDetails(newSysRoom.Id, vm.PricingType, vm.PricingDetails);
+            SavePricingDetails(newSysRoom.Id, vm.PricingDetails);
 
             _ = service.LogServices.LogAsync("會議室新增",
                 $"{newSysRoom.Name}({newSysRoom.Id}) IsEnabled:{newSysRoom.IsEnabled} " +
@@ -952,10 +979,9 @@ namespace TASA.Services.RoomModule
             SetDefaultValues(vm);
 
             // ===== 3. 驗證收費設定 =====
-            ValidatePricingDetails(vm.PricingType, vm.PricingDetails);
+            ValidatePricingDetails(vm.PricingDetails);
 
             var userid = service.UserClaimsService.Me()?.Id;
-            var oldPricingType = data.PricingType;
 
             // ===== 4. 更新基本資料 =====
             data.Name = vm.Name.Trim();
@@ -1040,8 +1066,8 @@ namespace TASA.Services.RoomModule
             }
 
             // ===== 7. 更新收費 =====
-            DeletePricingDetails(data.Id, oldPricingType);
-            SavePricingDetails(data.Id, vm.PricingType, vm.PricingDetails);
+            DeletePricingDetails(data.Id);
+            SavePricingDetails(data.Id, vm.PricingDetails);
 
             // ===== 8. 最後只存一次 =====
             db.SaveChanges();
@@ -1101,7 +1127,7 @@ namespace TASA.Services.RoomModule
             _ = service.LogServices.LogAsync("會議室刪除", $"{data.Name}({data.Id})");
         }
 
-        private void SavePricingDetails(Guid roomId, PricingType pricingType, List<PricingDetailVM>? pricingDetails)
+        private void SavePricingDetails(Guid roomId, List<PricingDetailVM>? pricingDetails)
         {
             if (pricingDetails == null || pricingDetails.Count == 0)
                 return;
@@ -1109,17 +1135,16 @@ namespace TASA.Services.RoomModule
             var userid = service.UserClaimsService.Me()?.Id;
             var enabledPricings = pricingDetails.Where(p => p.Enabled).ToList();
 
-            // if (pricingType == PricingType.Hourly)
-            if (pricingType == PricingType.Period)
             {
                 foreach (var pricing in enabledPricings)
                 {
                     TimeSpan.TryParse(pricing.StartTime, out var startTime);
                     TimeSpan.TryParse(pricing.EndTime, out var endTime);
 
+                    var periodId = Guid.NewGuid();
                     var periodPrice = new SysRoomPricePeriod
                     {
-                        Id = Guid.NewGuid(),
+                        Id = periodId,
                         RoomId = roomId,
                         Name = pricing.Name,
                         StartTime = startTime,
@@ -1132,23 +1157,38 @@ namespace TASA.Services.RoomModule
                         CreateBy = userid!.Value
                     };
                     db.SysRoomPricePeriod.Add(periodPrice);
+
+                    // 儲存子區間
+                    if (pricing.Slots != null)
+                    {
+                        foreach (var slot in pricing.Slots)
+                        {
+                            TimeSpan.TryParse(slot.StartTime, out var slotStart);
+                            TimeSpan.TryParse(slot.EndTime, out var slotEnd);
+                            db.SysRoomPricePeriodSlot.Add(new SysRoomPricePeriodSlot
+                            {
+                                Id = Guid.NewGuid(),
+                                PricePeriodId = periodId,
+                                StartTime = slotStart,
+                                EndTime = slotEnd,
+                                CreateAt = DateTime.Now
+                            });
+                        }
+                    }
                 }
             }
 
             db.SaveChanges();
         }
 
-        private void DeletePricingDetails(Guid roomId, PricingType pricingType)
+        private void DeletePricingDetails(Guid roomId)
         {
-            if (pricingType == PricingType.Period)
+            var periodPrices = db.SysRoomPricePeriod
+                .Where(x => x.RoomId == roomId && x.DeleteAt == null)
+                .ToList();
+            foreach (var price in periodPrices)
             {
-                var periodPrices = db.SysRoomPricePeriod
-                    .Where(x => x.RoomId == roomId && x.DeleteAt == null)
-                    .ToList();
-                foreach (var price in periodPrices)
-                {
-                    price.DeleteAt = DateTime.Now;
-                }
+                price.DeleteAt = DateTime.Now;
             }
 
             db.SaveChanges();
