@@ -1,4 +1,6 @@
 <link rel="stylesheet" href="/css/detailroom.css">
+<link rel="stylesheet" href="/css/pannellum.css">
+<script src="/js/pannellum.js"></script>
 
 <div class="modal fade room-detail-modal" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel"
      aria-hidden="true">
@@ -14,9 +16,17 @@
 
             <div class="modal-body">
                 <div class="row">
-                    <!-- 左側：圖片輪播 -->
+                    <!-- 左側：圖片輪播 / 全景圖 -->
                     <div class="col-lg-6 detail-image-column">
-                        <div class="detail-image-wrapper">
+                        <div style="position:relative; width:100%">
+                        <!-- 全景檢視器 -->
+                        <div v-show="panoramaMode && detailRoom?.PanoramaUrl"
+                             id="panorama-viewer"
+                             style="width:100%;height:550px;border-radius:8px;overflow:hidden;">
+                        </div>
+
+                        <!-- 圖片輪播 -->
+                        <div class="detail-image-wrapper" v-show="!panoramaMode">
                             <div class="room-image-carousel">
                                 <!-- 圖片區域 -->
                                 <div class="detail-image-container">
@@ -65,6 +75,24 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- 切換按鈕（最後渲染，確保在最上層；有全景圖才顯示） -->
+                        <div v-if="detailRoom?.PanoramaUrl"
+                             style="position:absolute;top:8px;right:8px;z-index:20;display:flex;flex-direction:row;gap:4px;">
+                            <button class="btn btn-sm"
+                                    :class="panoramaMode ? 'btn-secondary' : 'btn-light'"
+                                    style="opacity:0.9;backdrop-filter:blur(4px);white-space:nowrap;"
+                                    @@click="room.setPanoramaMode(false)">
+                                <span class="material-icons" style="font-size:14px;vertical-align:middle;">photo_library</span> 圖片
+                            </button>
+                            <button class="btn btn-sm"
+                                    :class="panoramaMode ? 'btn-light' : 'btn-secondary'"
+                                    style="opacity:0.9;backdrop-filter:blur(4px);white-space:nowrap;"
+                                    @@click="room.setPanoramaMode(true)">
+                                <span class="material-icons" style="font-size:14px;vertical-align:middle;">360</span> 環景
+                            </button>
+                        </div>
+                        </div> <!-- end position:relative wrapper -->
                     </div>
 
                     <!-- 右側：詳細資訊 Tab -->

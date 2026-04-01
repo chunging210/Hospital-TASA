@@ -415,6 +415,33 @@
                 </div>
             </div>
 
+            <!-- 360° 全景圖上傳 -->
+            <div class="form-section">
+                <h6>360° 全景圖</h6>
+                <div v-if="room.vm.Id && room.vm.PanoramaUrl && !room.form.panoramaFileName" class="alert alert-info py-2 mb-3">
+                    目前已有全景圖
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2"
+                            @@click="room.removePanorama()">移除</button>
+                </div>
+                <div v-if="!room.form.panoramaFileName" class="file-upload-area"
+                     @@click="room.triggerPanoramaUpload()">
+                    <div class="upload-placeholder">
+                        <p class="mb-1">點擊上傳全景圖</p>
+                        <small class="text-muted">支援 JPG / PNG，建議使用 equirectangular 格式</small>
+                    </div>
+                </div>
+                <div v-else class="has-file">
+                    <div class="uploaded-files-list">
+                        <div class="uploaded-file-item">
+                            <strong class="file-info">{{ room.form.panoramaFileName }}</strong>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @@click="room.clearPanorama()">移除</button>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="panoramaUpload" @@change="room.handlePanoramaUpload($event)"
+                       accept="image/*" style="display: none;">
+            </div>
+
             <!-- ✅ 聲明書上傳區塊 -->
             <div class="form-section">
                 <h6>聲明書設定</h6>

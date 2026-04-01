@@ -396,7 +396,9 @@ const room = new function () {
         departmentId: null,
         managerId: null,
         agreementBase64: null,      // ✅ 聲明書 Base64
-        agreementFileName: null     // ✅ 聲明書檔名
+        agreementFileName: null,    // ✅ 聲明書檔名
+        panoramaBase64: null,       // 全景圖 Base64
+        panoramaFileName: null      // 全景圖檔名
     });
     // ✅ 新增:今日時程
     this.todaySchedule = ref([]);
@@ -412,6 +414,35 @@ const room = new function () {
     this.detailRoomCarouselIndex = ref(0);
     this.carouselInterval = null;
     this.carouselDirection = 'next';
+    this.panoramaMode = ref(false);
+    this._pannellumViewer = null;
+
+    this.setPanoramaMode = (enabled) => {
+        this.panoramaMode.value = enabled;
+        if (enabled && this.detailRoom.value?.PanoramaUrl) {
+            this.stopCarousel();
+            setTimeout(() => {
+                if (this._pannellumViewer) {
+                    this._pannellumViewer.destroy();
+                    this._pannellumViewer = null;
+                }
+                this._pannellumViewer = pannellum.viewer('panorama-viewer', {
+                    type: 'equirectangular',
+                    panorama: this.detailRoom.value.PanoramaUrl,
+                    autoLoad: true,
+                    showZoomCtrl: true,
+                    mouseZoom: true,
+                    strings: { loadButtonLabel: '點擊載入全景圖', loadingLabel: '載入中...' }
+                });
+            }, 100);
+        } else {
+            if (this._pannellumViewer) {
+                this._pannellumViewer.destroy();
+                this._pannellumViewer = null;
+            }
+            this.startCarousel();
+        }
+    };
 
     // ✅ 載入今日時程
     this.loadTodaySchedule = async (roomId) => {
@@ -671,6 +702,7 @@ const room = new function () {
                     this.vm.DepartmentId = response.data.DepartmentId || response.data.Department?.Id;
                     this.vm.ManagerId = response.data.ManagerId;
                     this.vm.AgreementPath = response.data.AgreementPath;  // ✅ 聲明書路徑
+                    this.vm.PanoramaUrl = response.data.PanoramaUrl || null;
                     this.vm.EnableParkingTicket = response.data.EnableParkingTicket || false;  // ✅ 停車券
                     this.vm.ParkingTicketPrice = response.data.ParkingTicketPrice || 100;
                     this.vm.Sequence = response.data.Sequence || 0;  // ✅ 排序順序
@@ -753,6 +785,7 @@ const room = new function () {
             this.vm.PricingType = PricingType.Period;
             this.vm.BookingSettings = BookingSettings.InternalOnly;
             this.vm.AgreementPath = null;
+            this.vm.PanoramaUrl = null;
             this.vm.EnableParkingTicket = false;  // ✅ 停車券
             this.vm.ParkingTicketPrice = 100;
             this.generateCreateTimeSlotDefaults();
@@ -760,6 +793,8 @@ const room = new function () {
             this.vm.ManagerId = null;
             this.form.agreementBase64 = null;    // ✅ 重設聲明書
             this.form.agreementFileName = null;
+            this.form.panoramaBase64 = null;
+            this.form.panoramaFileName = null;
             manager.clearSelection();
             approvalChain.clear();  // ✅ 清空審核關卡
 
@@ -850,6 +885,8 @@ const room = new function () {
             PricingDetails: this.getPricingDetails(),
             AgreementBase64: this.form.agreementBase64,      // ✅ 聲明書
             AgreementFileName: this.form.agreementFileName,  // ✅ 聲明書檔名
+            PanoramaBase64: this.form.panoramaBase64,
+            PanoramaUrl: this.vm.PanoramaUrl ?? null,
             EnableParkingTicket: this.vm.EnableParkingTicket,  // ✅ 停車券
             ParkingTicketPrice: this.vm.ParkingTicketPrice || 100,
             Sequence: this.vm.Sequence || 0  // ✅ 排序順序
@@ -1124,12 +1161,39 @@ const room = new function () {
         this.vm.AgreementPath = null;
     };
 
+    this.triggerPanoramaUpload = () => {
+        document.getElementById('panoramaUpload').click();
+    };
+
+    this.handlePanoramaUpload = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.form.panoramaBase64 = e.target.result;
+            this.form.panoramaFileName = file.name;
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    };
+
+    this.clearPanorama = () => {
+        this.form.panoramaBase64 = null;
+        this.form.panoramaFileName = null;
+    };
+
+    this.removePanorama = () => {
+        this.vm.PanoramaUrl = null;
+    };
+
     this.viewRoom = (Id) => {
         global.api.admin.roomdetail({ body: { Id } })
             .then((response) => {
 
                 this.detailRoom.value = response.data;
                 this.detailRoomCarouselIndex.value = 0;
+                this.panoramaMode.value = false;
+                if (this._pannellumViewer) { this._pannellumViewer.destroy(); this._pannellumViewer = null; }
 
                 const modal = new bootstrap.Modal(document.getElementById('roomDetailModal'));
                 modal.show();
@@ -1174,6 +1238,7 @@ window.$config = {
         // this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
+        this.panoramaMode = room.panoramaMode;
         this.department = department;
         this.isAdmin = isAdmin;
         this.isGlobalAdmin = isGlobalAdmin;  // ✅ 全院管理者

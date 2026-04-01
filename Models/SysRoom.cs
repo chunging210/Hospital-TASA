@@ -119,6 +119,12 @@ public partial class SysRoom
     public string? AgreementPath { get; set; }
 
     /// <summary>
+    /// 360° 全景圖路徑
+    /// </summary>
+    [StringLength(500)]
+    public string? PanoramaUrl { get; set; }
+
+    /// <summary>
     /// 是否啟用停車券功能
     /// </summary>
     public bool EnableParkingTicket { get; set; } = false;

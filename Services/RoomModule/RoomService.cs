@@ -286,6 +286,7 @@ namespace TASA.Services.RoomModule
             public Guid? ManagerId { get; set; }  // ✅ 加這個
             public ManagerInfoVM? Manager { get; set; }  // ✅ 加這個
             public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
+            public string? PanoramaUrl { get; set; }    // 360° 全景圖路徑
 
             // ✅ 停車券設定
             public bool EnableParkingTicket { get; set; }
@@ -326,6 +327,8 @@ namespace TASA.Services.RoomModule
             public Guid? ManagerId { get; set; }
             public string? AgreementBase64 { get; set; }  // ✅ 聲明書 Base64（前端上傳用）
             public string? AgreementFileName { get; set; }  // ✅ 聲明書檔名
+            public string? PanoramaBase64 { get; set; }    // 全景圖 Base64（新上傳）
+            public string? PanoramaUrl { get; set; }        // 全景圖現有路徑（null=移除）
 
             // ✅ 停車券設定
             public bool EnableParkingTicket { get; set; }
@@ -421,6 +424,7 @@ namespace TASA.Services.RoomModule
                 } : null,
 
                 AgreementPath = room.AgreementPath,  // ✅ 聲明書路徑
+                PanoramaUrl = room.PanoramaUrl,
 
                 // ✅ 停車券設定
                 EnableParkingTicket = room.EnableParkingTicket,
@@ -783,6 +787,7 @@ namespace TASA.Services.RoomModule
                 IsEnabled = vm.IsEnabled,
                 ManagerId = vm.ManagerId,
                 AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName),  // ✅ 聲明書
+                PanoramaUrl = string.IsNullOrEmpty(vm.PanoramaBase64) ? null : SavePanorama(vm.PanoramaBase64),
                 EnableParkingTicket = vm.EnableParkingTicket,  // ✅ 停車券
                 ParkingTicketPrice = vm.ParkingTicketPrice,
                 Sequence = maxSequence + 1,  // ✅ 新會議室放最後
@@ -863,6 +868,18 @@ namespace TASA.Services.RoomModule
             {
                 throw new HttpException($"保存檔案失敗: {ex.Message}");
             }
+        }
+
+        private string SavePanorama(string base64Data)
+        {
+            var base64String = base64Data.Contains(",") ? base64Data.Split(",")[1] : base64Data;
+            byte[] bytes = Convert.FromBase64String(base64String);
+            string extension = ExtractExtensionFromBase64(base64Data) ?? ".jpg";
+            string fileName = $"{Guid.NewGuid()}{extension}";
+            string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "room-panoramas");
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            File.WriteAllBytes(Path.Combine(folder, fileName), bytes);
+            return $"/uploads/room-panoramas/{fileName}";
         }
 
         /// <summary>
@@ -1025,6 +1042,12 @@ namespace TASA.Services.RoomModule
 
             // ✅ 更新聲明書（有上傳新的才更新）
             data.AgreementPath = SaveAgreementPdf(vm.AgreementBase64, vm.AgreementFileName);
+
+            // 更新全景圖
+            if (!string.IsNullOrEmpty(vm.PanoramaBase64))
+                data.PanoramaUrl = SavePanorama(vm.PanoramaBase64);
+            else
+                data.PanoramaUrl = vm.PanoramaUrl; // null=移除, 有值=保留原路徑
 
             // ✅ 更新停車券設定
             data.EnableParkingTicket = vm.EnableParkingTicket;

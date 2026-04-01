@@ -218,6 +218,29 @@ const room = new function () {
     this.detailRoomCarouselIndex = ref(0);
     this.carouselInterval = null;
     this.carouselDirection = 'next';
+    this.panoramaMode = ref(false);
+    this._pannellumViewer = null;
+
+    this.setPanoramaMode = (enabled) => {
+        this.panoramaMode.value = enabled;
+        if (enabled && this.detailRoom.value?.PanoramaUrl) {
+            this.stopCarousel();
+            setTimeout(() => {
+                if (this._pannellumViewer) { this._pannellumViewer.destroy(); this._pannellumViewer = null; }
+                this._pannellumViewer = pannellum.viewer('panorama-viewer', {
+                    type: 'equirectangular',
+                    panorama: this.detailRoom.value.PanoramaUrl,
+                    autoLoad: true,
+                    showZoomCtrl: true,
+                    mouseZoom: true,
+                    strings: { loadButtonLabel: '點擊載入全景圖', loadingLabel: '載入中...' }
+                });
+            }, 100);
+        } else {
+            if (this._pannellumViewer) { this._pannellumViewer.destroy(); this._pannellumViewer = null; }
+            this.startCarousel();
+        }
+    };
 
     this.startCarousel = () => {
         if (this.carouselInterval) {
@@ -277,6 +300,8 @@ const room = new function () {
             .then(res => {
                 this.detailRoom.value = res.data;
                 this.detailRoomCarouselIndex.value = 0;
+                this.panoramaMode.value = false;
+                if (this._pannellumViewer) { this._pannellumViewer.destroy(); this._pannellumViewer = null; }
 
                 const modal = new bootstrap.Modal(
                     document.getElementById('roomDetailModal')
@@ -475,6 +500,7 @@ window.$config = {
 
         this.detailRoom = room.detailRoom;
         this.detailRoomCarouselIndex = room.detailRoomCarouselIndex;
+        this.panoramaMode = room.panoramaMode;
         this.hasDetailImages = room.hasDetailImages;
         this.currentDetailImage = room.currentDetailImage;
 
