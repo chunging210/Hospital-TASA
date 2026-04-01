@@ -11,16 +11,34 @@
                     <div class="text-branding d-flex align-items-center flex-shrink-0">
                         <span class="material-icons">bar_chart</span>使用率統計
                     </div>
-                    <div class="ms-auto d-flex align-items-center gap-2">
-                        <select class="form-select" style="width:140px"
-                                v-model.number="state.year" @@change="state.month = 0; loadStats()">
-                            <option v-for="y in state.years" :key="y" :value="y">{{ y }} 年</option>
-                        </select>
-                        <select class="form-select" style="width:130px"
-                                v-model.number="state.month" @@change="loadStats()">
-                            <option :value="0">全年</option>
-                            <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
-                        </select>
+                    <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                        <template v-if="!state.useCustomRange">
+                            <select class="form-select" style="width:140px"
+                                    v-model.number="state.year" @@change="state.month = 0; loadStats()">
+                                <option v-for="y in state.years" :key="y" :value="y">{{ y }} 年</option>
+                            </select>
+                            <select class="form-select" style="width:130px"
+                                    v-model.number="state.month" @@change="loadStats()">
+                                <option :value="0">全年</option>
+                                <option v-for="m in 12" :key="m" :value="m">{{ m }} 月</option>
+                            </select>
+                        </template>
+                        <template v-else>
+                            <input type="date" class="form-control" style="width:160px" v-model="state.customStart">
+                            <span class="text-muted">~</span>
+                            <input type="date" class="form-control" style="width:160px" v-model="state.customEnd">
+                            <button class="btn btn-outline-secondary btn-sm" @@click="loadStats()" :disabled="!state.customStart || !state.customEnd">查詢</button>
+                        </template>
+                        <button class="btn btn-outline-secondary btn-sm"
+                                @@click="state.useCustomRange = !state.useCustomRange; state.customStart = ''; state.customEnd = ''">
+                            {{ state.useCustomRange ? '年月查詢' : '自訂區間' }}
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" v-if="state.data" @@click="exportCsv()">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle">download</span> 統計報表
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" v-if="state.data" @@click="exportRaw()">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle">table_view</span> 原始資料
+                        </button>
                     </div>
                 </div>
             </div>
@@ -40,7 +58,7 @@
 
                 <template v-if="state.data && !state.loading">
 
-                    <!-- KPI -->
+                    <!-- KPI Row 1: 使用率 / 時數 / 會議室數 -->
                     <div class="row g-0 stats-kpi-row">
                         <div class="col-12 col-md-4">
                             <div class="stat-kpi-item">
@@ -65,59 +83,104 @@
                         </div>
                     </div>
 
-                    <!-- 趨勢折線圖 -->
+                    <!-- KPI Row 2: 預約次數 / 直接收入 / 成本分攤 -->
+                    <div class="row g-0 stats-kpi-row">
+                        <div class="col-12 col-md-4">
+                            <div class="stat-kpi-item">
+                                <div class="stat-kpi-label">總預約次數</div>
+                                <div class="stat-kpi-value">{{ state.data.Kpi.TotalBookingCount }}<span style="font-size:1.2rem"> 次</span></div>
+                                <div class="stat-kpi-sub">計費時段內成立的預約</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="stat-kpi-item">
+                                <div class="stat-kpi-label">直接收入</div>
+                                <div class="stat-kpi-value">{{ (state.data.Kpi.DirectRevenue || 0).toLocaleString() }}<span style="font-size:1.2rem"> 元</span></div>
+                                <div class="stat-kpi-sub">直接付款場地費</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="stat-kpi-item">
+                                <div class="stat-kpi-label">成本分攤費用</div>
+                                <div class="stat-kpi-value">{{ (state.data.Kpi.CostSharingRevenue || 0).toLocaleString() }}<span style="font-size:1.2rem"> 元</span></div>
+                                <div class="stat-kpi-sub">成本分攤場地費</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 趨勢圖：使用率 + 次數 -->
                     <div class="stats-section">
                         <div class="stats-section-header">
-                            <span class="stats-section-title">使用率趨勢</span>
-                            <span class="stats-section-sub">{{ state.month === 0 ? '每月' : '每日' }}</span>
+                            <span class="stats-section-title">趨勢</span>
+                            <span class="stats-section-sub">{{ state.month === 0 && !state.useCustomRange ? '每月' : '每日' }}｜折線=使用率　長條=預約次數</span>
+                            <div class="ms-auto d-flex gap-1">
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadChartPng('chartTrend', '趨勢')"><span class="material-icons">image</span>圖表</button>
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadTrendCsv()"><span class="material-icons">table_view</span>CSV</button>
+                            </div>
                         </div>
                         <canvas id="chartTrend"></canvas>
                     </div>
 
-                    <!-- 各會議室使用率 -->
+                    <!-- 各會議室使用率 + 圓餅圖 -->
                     <div class="stats-section">
                         <div class="stats-section-header">
                             <span class="stats-section-title">各會議室使用率</span>
                             <span class="stats-section-sub">深=已使用 淺=剩餘</span>
+                            <div class="ms-auto d-flex gap-1">
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadChartPng('chartRoom', '各會議室長條')"><span class="material-icons">bar_chart</span>長條圖</button>
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadChartPng('chartRoomPie', '各會議室圓餅')"><span class="material-icons">pie_chart</span>圓餅圖</button>
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadRoomCsv()"><span class="material-icons">table_view</span>CSV</button>
+                            </div>
                         </div>
-                        <canvas id="chartRoom"></canvas>
+                        <div class="row g-3 align-items-start">
+                            <div class="col-12 col-md-8">
+                                <canvas id="chartRoom"></canvas>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="stats-section-header mb-2">
+                                    <span class="stats-section-title" style="font-size:0.85rem">使用時數佔比</span>
+                                </div>
+                                <canvas id="chartRoomPie"></canvas>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 使用單位排行 -->
+                    <!-- 使用單位排行（圖表） -->
                     <div class="stats-section" v-if="state.data.ByDepartment && state.data.ByDepartment.length">
                         <div class="stats-section-header">
-                            <span class="stats-section-title">使用單位排行</span>
+                            <span class="stats-section-title">各成本中心統計</span>
                             <span class="stats-section-sub">依使用時數排序</span>
+                            <div class="ms-auto d-flex gap-1">
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadChartPng('chartDept', '各成本中心')"><span class="material-icons">image</span>圖表</button>
+                                <button class="btn btn-outline-secondary stats-dl-btn" @@click="downloadDeptCsv()"><span class="material-icons">table_view</span>CSV</button>
+                            </div>
                         </div>
                         <canvas id="chartDept"></canvas>
-                    </div>
 
-                    <!-- 熱力圖 -->
-                    @* <div class="stats-section" v-if="state.data.Heatmap && state.data.Heatmap.length">
-                        <div class="stats-section-header">
-                            <span class="stats-section-title">使用時段熱力圖</span>
-                            <div class="heatmap-legend">
-                                <span>少</span>
-                                <div class="heatmap-legend-bar"></div>
-                                <span>多</span>
-                            </div>
+                        <!-- 成本中心詳細表格 -->
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm table-hover stats-dept-table">
+                                <thead>
+                                    <tr>
+                                        <th>單位</th>
+                                        <th class="text-end">預約次數</th>
+                                        <th class="text-end">使用時數</th>
+                                        <th class="text-end">場地費用</th>
+                                        <th class="text-end">使用佔比</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="d in state.data.ByDepartment" :key="d.UnitName">
+                                        <td>{{ d.UnitName }}</td>
+                                        <td class="text-end">{{ d.BookingCount }} 次</td>
+                                        <td class="text-end">{{ d.UsedHours }} 時</td>
+                                        <td class="text-end">{{ d.Revenue.toLocaleString() }} 元</td>
+                                        <td class="text-end">{{ d.UsageRate }}%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="heatmap-wrap">
-                            <div class="heatmap-grid"
-                                 :style="{ gridTemplateColumns: '48px repeat(5, minmax(40px, 1fr))', minWidth: '320px' }">
-                                <div></div>
-                                <div v-for="d in ['週一','週二','週三','週四','週五']" :key="d" class="heatmap-header">{{ d }}</div>
-                                <template v-for="h in state.heatmapHours" :key="h">
-                                    <div class="heatmap-hour">{{ h }}:00</div>
-                                    <div v-for="dow in [1,2,3,4,5]" :key="dow"
-                                         class="heatmap-cell"
-                                         :style="{ backgroundColor: heatmapColor(dow, h) }"
-                                         :title="`${ ['','週一','週二','週三','週四','週五'][dow] } ${ h }:00 — ${ heatmapValue(dow, h) } 次`">
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div> *@
+                    </div>
 
                 </template>
             </div>

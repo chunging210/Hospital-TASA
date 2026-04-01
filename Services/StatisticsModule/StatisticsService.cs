@@ -21,6 +21,9 @@ namespace TASA.Services.StatisticsModule
             public double UsageRate { get; set; }
             public double TotalUsedHours { get; set; }
             public double TotalAvailableHours { get; set; }
+            public int TotalBookingCount { get; set; }
+            public decimal DirectRevenue { get; set; }
+            public decimal CostSharingRevenue { get; set; }
             public int RoomCount { get; set; }
             public string Period { get; set; } = "";
         }
@@ -31,6 +34,8 @@ namespace TASA.Services.StatisticsModule
             public double UsageRate { get; set; }
             public double UsedHours { get; set; }
             public double AvailableHours { get; set; }
+            public int BookingCount { get; set; }
+            public decimal Revenue { get; set; }
         }
 
         public class RoomVM
@@ -39,12 +44,16 @@ namespace TASA.Services.StatisticsModule
             public double UsedHours { get; set; }
             public double AvailableHours { get; set; }
             public double UsageRate { get; set; }
+            public int BookingCount { get; set; }
         }
 
         public class DepartmentVM
         {
             public string UnitName { get; set; } = "";
             public double UsedHours { get; set; }
+            public int BookingCount { get; set; }
+            public decimal Revenue { get; set; }
+            public double UsageRate { get; set; }
         }
 
         public class HeatmapVM
@@ -56,19 +65,23 @@ namespace TASA.Services.StatisticsModule
 
         /// <param name="year">年份</param>
         /// <param name="month">0 = 全年，1~12 = 特定月份</param>
-        public UsageStatsVM GetUsageStats(int year, int month = 0)
+        /// <param name="startOverride">自訂起始日（覆蓋 year/month 計算）</param>
+        /// <param name="endOverride">自訂結束日（覆蓋 year/month 計算）</param>
+        public UsageStatsVM GetUsageStats(int year, int month = 0, DateOnly? startOverride = null, DateOnly? endOverride = null)
         {
-            DateOnly startDate = month == 0
-                ? new DateOnly(year, 1, 1)
-                : new DateOnly(year, month, 1);
-            DateOnly endDate = month == 0
-                ? new DateOnly(year, 12, 31)
-                : new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+            bool isCustomRange = startOverride.HasValue && endOverride.HasValue;
+            DateOnly startDate = isCustomRange ? startOverride!.Value
+                : month == 0 ? new DateOnly(year, 1, 1)
+                             : new DateOnly(year, month, 1);
+            DateOnly endDate = isCustomRange ? endOverride!.Value
+                : month == 0 ? new DateOnly(year, 12, 31)
+                             : new DateOnly(year, month, DateTime.DaysInMonth(year, month));
 
-            // 假日設定
+            // 假日設定（跨年範圍載入所有相關年份）
+            var relevantYears = Enumerable.Range(startDate.Year, endDate.Year - startDate.Year + 1).ToList();
             var holidays = db.SysHoliday
                 .AsNoTracking()
-                .Where(h => h.Year == year && h.IsEnabled && h.DeleteAt == null)
+                .Where(h => relevantYears.Contains(h.Year) && h.IsEnabled && h.DeleteAt == null)
                 .ToList();
             var holidayDates = holidays.Where(h => !h.IsWorkday).Select(h => h.Date).ToHashSet();
             var workdayOverrides = holidays.Where(h => h.IsWorkday).Select(h => h.Date).ToHashSet();
@@ -109,7 +122,7 @@ namespace TASA.Services.StatisticsModule
                          && s.SlotStatus == SlotStatus.Reserved && s.ConferenceId != null)
                 .ToList();
 
-            // 計費時段：排除週末（工作日 + 國定假日）
+            // 計費時段：工作日 + 國定假日
             var billableSlots = usedSlots
                 .Where(s => IsWorkday(s.SlotDate, holidayDates, workdayOverrides) || holidayDates.Contains(s.SlotDate))
                 .ToList();
@@ -129,18 +142,25 @@ namespace TASA.Services.StatisticsModule
 
             double totalUsed = billableSlots.Sum(s => (s.EndTime - s.StartTime).TotalHours);
             int roomCount = activeRooms.Count;
-
-            var confIds = billableSlots
+            int totalBookingCount = billableSlots
+                .Where(s => s.ConferenceId.HasValue)
+                .Select(s => s.ConferenceId!.Value).Distinct().Count();
+            // 成本分攤會議（用 usedSlots 以包含週末預約的會議）
+            var confIds = usedSlots
                 .Where(s => s.ConferenceId.HasValue)
                 .Select(s => s.ConferenceId!.Value).ToHashSet();
             var costSharingConfs = db.Conference
                 .AsNoTracking()
-                .Where(c => c.PaymentMethod == "cost-sharing"
-                         && c.DepartmentCode != null && c.DepartmentCode != "")
+                .Where(c => c.PaymentMethod == "cost-sharing")
                 .Select(c => new { c.Id, c.DepartmentCode })
                 .AsEnumerable()
-                .Where(c => confIds.Contains(c.Id))
+                .Where(c => confIds.Contains(c.Id) && !string.IsNullOrEmpty(c.DepartmentCode))
                 .ToDictionary(c => c.Id, c => c.DepartmentCode!);
+
+            decimal costSharingRevenue = billableSlots
+                .Where(s => s.ConferenceId.HasValue && costSharingConfs.ContainsKey(s.ConferenceId.Value))
+                .Sum(s => s.Price);
+            decimal directRevenue = billableSlots.Sum(s => s.Price) - costSharingRevenue;
 
             var codes = costSharingConfs.Values.Distinct().ToList();
             var costCenterNames = db.CostCenter
@@ -150,9 +170,10 @@ namespace TASA.Services.StatisticsModule
                 .Where(cc => codes.Contains(cc.Code))
                 .ToDictionary(cc => cc.Code, cc => cc.Name);
 
-            // 趨勢：全年 → 按月；單月 → 按日
+            // 趨勢：全年 → 按月；單月或自訂區間 → 按日
             var trend = new List<TrendVM>();
-            if (month == 0)
+            bool showMonthlyTrend = !isCustomRange && month == 0;
+            if (showMonthlyTrend)
             {
                 for (int m = 1; m <= 12; m++)
                 {
@@ -171,26 +192,27 @@ namespace TASA.Services.StatisticsModule
                         avail += roomMonthWorkdays * dailyHours + roomHolidayUsed;
                     }
 
-                    double used = billableSlots
-                        .Where(s => s.SlotDate.Month == m)
-                        .Sum(s => (s.EndTime - s.StartTime).TotalHours);
+                    var monthSlots = billableSlots.Where(s => s.SlotDate.Month == m).ToList();
+                    double used = monthSlots.Sum(s => (s.EndTime - s.StartTime).TotalHours);
 
                     trend.Add(new TrendVM
                     {
                         Label = $"{m} 月",
                         UsageRate = avail > 0 ? Math.Round(used / avail * 100, 1) : 0,
                         UsedHours = Math.Round(used, 1),
-                        AvailableHours = Math.Round(avail, 1)
+                        AvailableHours = Math.Round(avail, 1),
+                        BookingCount = monthSlots.Where(s => s.ConferenceId.HasValue)
+                            .Select(s => s.ConferenceId!.Value).Distinct().Count(),
+                        Revenue = monthSlots.Sum(s => s.Price)
                     });
                 }
             }
             else
             {
-                int daysInMonth = DateTime.DaysInMonth(year, month);
-                for (int day = 1; day <= daysInMonth; day++)
+                // 按日（單月或自訂區間）
+                for (var date = startDate; date <= endDate; date = date.AddDays(1))
                 {
-                    var date = new DateOnly(year, month, day);
-                    bool isWorkday = IsWorkday(date, holidayDates, workdayOverrides);
+                    bool isWorkdayFlag = IsWorkday(date, holidayDates, workdayOverrides);
                     bool isNationalHoliday = holidayDates.Contains(date);
 
                     double usedOnDate = usedSlots
@@ -203,21 +225,27 @@ namespace TASA.Services.StatisticsModule
                         .Sum(r => roomDailyHours.GetValueOrDefault(r.Id, 0));
 
                     double avail;
-                    if (isWorkday)
+                    if (isWorkdayFlag)
                         avail = roomsAvailHours;
                     else if (isNationalHoliday)
                         avail = usedOnDate;  // 假日：用多少才算多少
                     else
                         avail = 0;           // 週末：不算
 
-                    double used = isWorkday || isNationalHoliday ? usedOnDate : 0;
+                    double used = isWorkdayFlag || isNationalHoliday ? usedOnDate : 0;
+
+                    var daySlots = billableSlots.Where(s => s.SlotDate == date).ToList();
+                    string label = isCustomRange ? $"{date.Month}/{date.Day}" : $"{month}/{date.Day}";
 
                     trend.Add(new TrendVM
                     {
-                        Label = $"{month}/{day}",
+                        Label = label,
                         UsageRate = avail > 0 ? Math.Round(used / avail * 100, 1) : 0,
                         UsedHours = Math.Round(used, 1),
-                        AvailableHours = Math.Round(avail, 1)
+                        AvailableHours = Math.Round(avail, 1),
+                        BookingCount = daySlots.Where(s => s.ConferenceId.HasValue)
+                            .Select(s => s.ConferenceId!.Value).Distinct().Count(),
+                        Revenue = daySlots.Sum(s => s.Price)
                     });
                 }
             }
@@ -232,6 +260,11 @@ namespace TASA.Services.StatisticsModule
                 .GroupBy(s => s.RoomId)
                 .ToDictionary(g => g.Key, g => g.Sum(s => (s.EndTime - s.StartTime).TotalHours));
 
+            var roomBookingDict = billableSlots
+                .Where(s => s.ConferenceId.HasValue)
+                .GroupBy(s => s.RoomId)
+                .ToDictionary(g => g.Key, g => g.Select(s => s.ConferenceId!.Value).Distinct().Count());
+
             var byRoom = activeRooms
                 .Select(r =>
                 {
@@ -245,7 +278,8 @@ namespace TASA.Services.StatisticsModule
                         RoomName = r.Name,
                         UsedHours = Math.Round(used, 1),
                         AvailableHours = Math.Round(avail, 1),
-                        UsageRate = avail > 0 ? Math.Round(used / avail * 100, 1) : 0
+                        UsageRate = avail > 0 ? Math.Round(used / avail * 100, 1) : 0,
+                        BookingCount = roomBookingDict.GetValueOrDefault(r.Id, 0)
                     };
                 })
                 .OrderByDescending(r => r.UsageRate)
@@ -258,10 +292,14 @@ namespace TASA.Services.StatisticsModule
                 .Select(g =>
                 {
                     var name = costCenterNames.TryGetValue(g.Key, out var n) ? n : g.Key;
+                    double deptUsed = g.Sum(s => (s.EndTime - s.StartTime).TotalHours);
                     return new DepartmentVM
                     {
                         UnitName = name,
-                        UsedHours = Math.Round(g.Sum(s => (s.EndTime - s.StartTime).TotalHours), 1)
+                        UsedHours = Math.Round(deptUsed, 1),
+                        BookingCount = g.Select(s => s.ConferenceId!.Value).Distinct().Count(),
+                        Revenue = g.Sum(s => s.Price),
+                        UsageRate = totalUsed > 0 ? Math.Round(deptUsed / totalUsed * 100, 1) : 0
                     };
                 })
                 .OrderByDescending(d => d.UsedHours)
@@ -282,6 +320,14 @@ namespace TASA.Services.StatisticsModule
                 }
             }
 
+            string periodLabel;
+            if (isCustomRange)
+                periodLabel = $"{startDate:yyyy/M/d} ~ {endDate:yyyy/M/d}";
+            else if (month == 0)
+                periodLabel = $"{year} 全年";
+            else
+                periodLabel = $"{year} 年 {month} 月";
+
             return new UsageStatsVM
             {
                 Kpi = new KpiVM
@@ -289,8 +335,11 @@ namespace TASA.Services.StatisticsModule
                     UsageRate = totalAvail > 0 ? Math.Round(totalUsed / totalAvail * 100, 1) : 0,
                     TotalUsedHours = Math.Round(totalUsed, 1),
                     TotalAvailableHours = Math.Round(totalAvail, 1),
+                    TotalBookingCount = totalBookingCount,
+                    DirectRevenue = directRevenue,
+                    CostSharingRevenue = costSharingRevenue,
                     RoomCount = roomCount,
-                    Period = month == 0 ? $"{year} 全年" : $"{year} 年 {month} 月"
+                    Period = periodLabel
                 },
                 Trend = trend,
                 ByRoom = byRoom,
@@ -299,6 +348,62 @@ namespace TASA.Services.StatisticsModule
                     .Select(kv => new HeatmapVM { DayOfWeek = kv.Key.dow, Hour = kv.Key.hour, Count = kv.Value })
                     .ToList()
             };
+        }
+
+        public class RawSlotVM
+        {
+            public string SlotDate { get; set; } = "";
+            public string DayOfWeek { get; set; } = "";
+            public string RoomName { get; set; } = "";
+            public string ConferenceName { get; set; } = "";
+            public string PaymentMethod { get; set; } = "";
+            public string CostCenter { get; set; } = "";
+            public string TimeRange { get; set; } = "";
+            public double Hours { get; set; }
+            public decimal Price { get; set; }
+        }
+
+        public List<RawSlotVM> GetRawSlots(DateOnly startDate, DateOnly endDate)
+        {
+            string[] dowNames = ["日", "一", "二", "三", "四", "五", "六"];
+
+            var slots = db.ConferenceRoomSlot
+                .AsNoTracking()
+                .Include(s => s.Room)
+                .Include(s => s.Conference)
+                .Where(s => s.SlotDate >= startDate && s.SlotDate <= endDate
+                         && s.SlotStatus == SlotStatus.Reserved && s.ConferenceId != null)
+                .OrderBy(s => s.SlotDate).ThenBy(s => s.StartTime)
+                .ToList();
+
+            var deptCodes = slots
+                .Where(s => !string.IsNullOrEmpty(s.Conference?.DepartmentCode))
+                .Select(s => s.Conference!.DepartmentCode!)
+                .Distinct().ToList();
+            var costCenterNames = db.CostCenter
+                .AsNoTracking()
+                .Select(cc => new { cc.Code, cc.Name })
+                .AsEnumerable()
+                .Where(cc => deptCodes.Contains(cc.Code))
+                .ToDictionary(cc => cc.Code, cc => cc.Name);
+
+            return slots.Select(s =>
+            {
+                string deptCode = s.Conference?.DepartmentCode ?? "";
+                string deptName = !string.IsNullOrEmpty(deptCode) && costCenterNames.TryGetValue(deptCode, out var n) ? n : deptCode;
+                return new RawSlotVM
+                {
+                    SlotDate = s.SlotDate.ToString("yyyy/MM/dd"),
+                    DayOfWeek = $"({dowNames[(int)s.SlotDate.DayOfWeek]})",
+                    RoomName = s.Room?.Name ?? "",
+                    ConferenceName = s.Conference?.Name ?? "",
+                    PaymentMethod = s.Conference?.PaymentMethod ?? "",
+                    CostCenter = deptName,
+                    TimeRange = $"{s.StartTime:HH\\:mm}~{s.EndTime:HH\\:mm}",
+                    Hours = Math.Round((s.EndTime - s.StartTime).TotalHours, 1),
+                    Price = s.Price
+                };
+            }).ToList();
         }
 
         private static bool IsWorkday(DateOnly date, HashSet<DateOnly> holidayDates, HashSet<DateOnly> workdayOverrides)

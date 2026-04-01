@@ -120,3 +120,45 @@ canvas {
     border-radius: 3px;
     background: linear-gradient(to right, #e8f0fe, #4361ee);
 }
+
+/* ===== Section Download Buttons ===== */
+
+.stats-dl-btn {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    color: #6c757d;
+    border-color: #dee2e6;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.stats-dl-btn .material-icons {
+    font-size: 16px;
+}
+
+.stats-dl-btn:hover {
+    color: #4361ee;
+    border-color: #4361ee;
+    background: #f0f3ff;
+}
+
+/* ===== Dept Table ===== */
+
+.stats-dept-table {
+    font-size: 0.85rem;
+}
+
+.stats-dept-table thead th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #f0f0f0;
+    padding: 6px 8px;
+}
+
+.stats-dept-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #f8f9fa;
+    vertical-align: middle;
+}

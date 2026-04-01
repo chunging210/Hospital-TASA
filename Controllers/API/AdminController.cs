@@ -226,12 +226,89 @@ namespace TASA.Controllers.API
         /* --- 統計圖表 --- */
 
         [HttpGet("statisticsusage")]
-        public IActionResult StatisticsUsage([FromQuery] int year = 0, [FromQuery] int month = 0)
+        public IActionResult StatisticsUsage([FromQuery] int year = 0, [FromQuery] int month = 0,
+            [FromQuery] string? startDate = null, [FromQuery] string? endDate = null)
         {
             try
             {
-                if (year == 0) year = DateTime.Today.Year;
-                return Ok(service.StatisticsService.GetUsageStats(year, month));
+                DateOnly? start = startDate != null ? DateOnly.Parse(startDate) : null;
+                DateOnly? end = endDate != null ? DateOnly.Parse(endDate) : null;
+                if (year == 0 && start == null) year = DateTime.Today.Year;
+                return Ok(service.StatisticsService.GetUsageStats(year, month, start, end));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message, detail = ex.InnerException?.Message ?? ex.StackTrace });
+            }
+        }
+
+        [HttpGet("statisticsexport")]
+        public IActionResult StatisticsExport([FromQuery] int year = 0, [FromQuery] int month = 0,
+            [FromQuery] string? startDate = null, [FromQuery] string? endDate = null)
+        {
+            try
+            {
+                DateOnly? start = startDate != null ? DateOnly.Parse(startDate) : null;
+                DateOnly? end = endDate != null ? DateOnly.Parse(endDate) : null;
+                if (year == 0 && start == null) year = DateTime.Today.Year;
+                var data = service.StatisticsService.GetUsageStats(year, month, start, end);
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"統計區間,{data.Kpi.Period}");
+                sb.AppendLine($"整體使用率,{data.Kpi.UsageRate}%");
+                sb.AppendLine($"總使用時數,{data.Kpi.TotalUsedHours}");
+                sb.AppendLine($"總預約次數,{data.Kpi.TotalBookingCount}");
+                sb.AppendLine($"直接收入,{data.Kpi.DirectRevenue}");
+                sb.AppendLine($"成本分攤費用,{data.Kpi.CostSharingRevenue}");
+                sb.AppendLine();
+                sb.AppendLine("各會議室");
+                sb.AppendLine("會議室,預約次數,使用時數,開放時數,使用率");
+                foreach (var r in data.ByRoom)
+                    sb.AppendLine($"{r.RoomName},{r.BookingCount},{r.UsedHours},{r.AvailableHours},{r.UsageRate}%");
+                sb.AppendLine();
+                sb.AppendLine("各成本中心");
+                sb.AppendLine("單位,預約次數,使用時數,費用,使用率");
+                foreach (var d in data.ByDepartment)
+                    sb.AppendLine($"{d.UnitName},{d.BookingCount},{d.UsedHours},{d.Revenue},{d.UsageRate}%");
+                sb.AppendLine();
+                sb.AppendLine("趨勢");
+                sb.AppendLine("期間,使用率,使用時數,開放時數,預約次數,費用");
+                foreach (var t in data.Trend)
+                    sb.AppendLine($"{t.Label},{t.UsageRate}%,{t.UsedHours},{t.AvailableHours},{t.BookingCount},{t.Revenue}");
+
+                var bytes = new System.Text.UTF8Encoding(true).GetBytes(sb.ToString());
+                var filename = $"statistics_{data.Kpi.Period.Replace(" ", "").Replace("/", "-")}.csv";
+                return File(bytes, "text/csv; charset=utf-8", filename);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message, detail = ex.InnerException?.Message ?? ex.StackTrace });
+            }
+        }
+
+        [HttpGet("statisticsrawexport")]
+        public IActionResult StatisticsRawExport([FromQuery] int year = 0, [FromQuery] int month = 0,
+            [FromQuery] string? startDate = null, [FromQuery] string? endDate = null)
+        {
+            try
+            {
+                DateOnly? start = startDate != null ? DateOnly.Parse(startDate) : null;
+                DateOnly? end = endDate != null ? DateOnly.Parse(endDate) : null;
+                if (year == 0 && start == null) year = DateTime.Today.Year;
+
+                DateOnly sd = start ?? (month == 0 ? new DateOnly(year, 1, 1) : new DateOnly(year, month, 1));
+                DateOnly ed = end ?? (month == 0 ? new DateOnly(year, 12, 31) : new DateOnly(year, month, DateTime.DaysInMonth(year, month)));
+
+                var rows = service.StatisticsService.GetRawSlots(sd, ed);
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("日期,星期,會議室,活動名稱,付款方式,成本中心,時段,時數,費用");
+                foreach (var r in rows)
+                    sb.AppendLine($"{r.SlotDate},{r.DayOfWeek},{r.RoomName},\"{r.ConferenceName}\",{r.PaymentMethod},{r.CostCenter},{r.TimeRange},{r.Hours},{r.Price}");
+
+                string period = start.HasValue ? $"{sd:yyyy-MM-dd}_{ed:yyyy-MM-dd}" : month == 0 ? $"{year}" : $"{year}-{month:D2}";
+                var bytes = new System.Text.UTF8Encoding(true).GetBytes(sb.ToString());
+                return File(bytes, "text/csv; charset=utf-8", $"raw_{period}.csv");
             }
             catch (Exception ex)
             {
