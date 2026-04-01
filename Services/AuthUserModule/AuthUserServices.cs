@@ -98,7 +98,6 @@ namespace TASA.Services.AuthUserModule
             {
                 Id = Guid.NewGuid(),
                 Account = vm.Account,
-                //Password = password,
                 PasswordHash = passwordHash.Hash,
                 PasswordSalt = passwordHash.Salt,
                 Name = vm.Name,
@@ -166,6 +165,7 @@ namespace TASA.Services.AuthUserModule
                 }
 
                 var wasEnabled = data.IsEnabled;
+                var wasApproved = data.IsApproved;
                 data.Name = vm.Name;
                 data.Email = vm.Email;
                 data.DepartmentId = vm.DepartmentId;
@@ -173,12 +173,16 @@ namespace TASA.Services.AuthUserModule
                 data.IsEnabled = vm.IsEnabled;
                 data.AuthRole = [.. db.AuthRole.WhereNotDeleted().Where(x => vm.Role.Contains(x.Id))];
 
-                // 從停用變啟用 → 標記已審核 + 寄信通知使用者
+                // 從停用變啟用
                 if (!wasEnabled && data.IsEnabled)
                 {
                     data.IsApproved = true;
                     db.SaveChanges();
-                    service.PasswordMail.AccountApproved(data.Email);
+                    // 首次審核才寄通過信；若已審核過（例如因登入失敗被鎖定後解鎖），不寄信
+                    if (!wasApproved)
+                    {
+                        service.PasswordMail.AccountApproved(data.Email);
+                    }
                 }
                 else
                 {
@@ -205,6 +209,26 @@ namespace TASA.Services.AuthUserModule
         {
             public Guid UserId { get; set; }
             public string Reason { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// 解除帳號鎖定
+        /// </summary>
+        public void UnlockAccount(Guid userId)
+        {
+            var user = db.AuthUser.WhereNotDeleted().FirstOrDefault(x => x.Id == userId);
+            if (user == null) throw new HttpException("使用者不存在");
+
+            user.FailedLoginCount = 0;
+            db.SaveChanges();
+
+            var operatorUser = service.UserClaimsService.Me();
+            _ = service.LogServices.LogAsync("user_unlock", JsonConvert.SerializeObject(new
+            {
+                OperatorName = operatorUser?.Name ?? "系統",
+                TargetName = user.Name,
+                UserName = user.Account
+            }), user.Id, user.DepartmentId);
         }
 
         /// <summary>

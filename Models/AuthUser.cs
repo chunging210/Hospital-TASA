@@ -128,6 +128,17 @@ public partial class AuthUser
     [InverseProperty("AuthUser")]
     public virtual ICollection<AuthRole> AuthRole { get; set; } = new List<AuthRole>();
 
+    /// <summary>
+    /// 登入失敗次數
+    /// </summary>
+    public int FailedLoginCount { get; set; }
+
+    /// <summary>
+    /// 密碼最後變更時間
+    /// </summary>
+    [Column(TypeName = "datetime")]
+    public DateTime? PasswordChangedAt { get; set; }
+
     [InverseProperty("UploadedByNavigation")]
     public virtual ICollection<ConferencePaymentOrder> ConferencePaymentOrderUploadedBy { get; set; } = new List<ConferencePaymentOrder>();
 

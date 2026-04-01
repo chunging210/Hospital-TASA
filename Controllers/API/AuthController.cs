@@ -13,17 +13,19 @@ namespace TASA.Controllers.API
         [AllowAnonymous]
         public IActionResult Login(LoginVM vm)
         {
-            var user = service.LoginServices.Login(vm);
-            service.LoginServices.GenerateCookie(Response.Cookies, user);
+            var result = service.LoginServices.Login(vm);
+            service.LoginServices.GenerateCookie(Response.Cookies, result.User);
 
-            // ✅ Debug: 檢查 Cookie
             Console.WriteLine("========== 登入成功 Debug ==========");
-            Console.WriteLine($"UserId: {user.Id}");
-            Console.WriteLine($"UserName: {user.Name}");
-            Console.WriteLine($"Response.Cookies: {Response.Cookies.GetType()}");
+            Console.WriteLine($"UserId: {result.User.Id}");
+            Console.WriteLine($"UserName: {result.User.Name}");
             Console.WriteLine("===================================");
 
-            return Ok();
+            return Ok(new
+            {
+                passwordExpiresInDays = result.PasswordExpiresInDays,
+                forgetUrl = result.ForgetUrl
+            });
         }
 
         [HttpGet("logout"), HttpPost("logout")]

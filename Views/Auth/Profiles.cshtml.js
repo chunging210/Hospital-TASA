@@ -6,10 +6,15 @@ class VM { Id = null; Name = ''; Email = ''; Password = ''; Password2 = ''; }
 
 // 密碼規則驗證
 const isValidPassword = (password) => {
-    const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
-    return regexPattern.test(password);
+    if (password.length < 8) return false;
+    let cats = 0;
+    if (/[a-z]/.test(password)) cats++;
+    if (/[A-Z]/.test(password)) cats++;
+    if (/\d/.test(password)) cats++;
+    if (/[@$!%*?&\-_#^]/.test(password)) cats++;
+    return cats >= 3;
 };
-const passwordRuleMessage = '密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）';
+const passwordRuleMessage = '密碼須至少 8 個字元，並包含大寫字母、小寫字母、數字、特殊符號中的任意三種';
 
 const personal = new function () {
     this.vm = reactive(new VM());
@@ -157,6 +162,18 @@ window.$config = {
             personal.getVM();
             delegateSection.load();
             window.addEventListener('ctrls', () => personal.save());
+
+            // 密碼到期警告
+            const params = new URLSearchParams(location.search);
+            const pwExpiring = params.get('pwExpiring');
+            if (pwExpiring !== null) {
+                const days = parseInt(pwExpiring);
+                const msg = days === 0
+                    ? '您的密碼今天到期，請立即變更'
+                    : `您的密碼將於 ${days} 天後到期，請盡快變更`;
+                addAlert(msg, { type: 'warning' });
+                document.querySelector('input[type=password]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         });
     }
 }

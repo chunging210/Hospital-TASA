@@ -294,6 +294,7 @@ namespace TASA.Services.AuthModule
                 UnitName = vm.UnitName?.Trim(),  // 部門
                 IsEnabled = false,
                 CreateAt = DateTime.Now,
+                PasswordChangedAt = DateTime.Now,
             };
 
             user.AuthRole.Add(role);

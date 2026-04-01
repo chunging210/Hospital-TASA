@@ -13,7 +13,12 @@ const sysConfig = new function () {
         isRegistrationOpen: true,
         paymentDeadlineDays: 7,
         minAdvanceBookingDays: 7,
-        managerEmail: ''
+        managerEmail: '',
+        passwordLockoutAttempts: 5,
+        passwordLockoutMinutes: 30,
+        passwordExpiryDays: 0,
+        passwordExpiryWarningDays: 7,
+        passwordHistoryCount: 3,
     });
 
     // 載入用戶資訊
@@ -74,6 +79,11 @@ const sysConfig = new function () {
                     this.settings.paymentDeadlineDays = parseInt(data.PAYMENT_DEADLINE_DAYS) || 7;
                     this.settings.minAdvanceBookingDays = parseInt(data.MIN_ADVANCE_BOOKING_DAYS) || 7;
                     this.settings.managerEmail = data.MANAGER_EMAIL || '';
+                    this.settings.passwordLockoutAttempts = parseInt(data.PASSWORD_LOCKOUT_ATTEMPTS ?? '5');
+                    this.settings.passwordLockoutMinutes = parseInt(data.PASSWORD_LOCKOUT_MINUTES ?? '30');
+                    this.settings.passwordExpiryDays = parseInt(data.PASSWORD_EXPIRY_DAYS ?? '0');
+                    this.settings.passwordExpiryWarningDays = parseInt(data.PASSWORD_EXPIRY_WARNING_DAYS ?? '7');
+                    this.settings.passwordHistoryCount = parseInt(data.PASSWORD_HISTORY_COUNT ?? '3');
                 }
             })
             .catch(error => {
@@ -97,9 +107,16 @@ const sysConfig = new function () {
             departmentId = this.departmentId.value;
         }
 
-        // 只有 Admin 在編輯全局設定時才能修改「是否開啟訪客註冊」
+        // 只有 Admin 在編輯全局設定時才能修改「是否開啟訪客註冊」和密碼安全政策
         if (this.isAdmin.value && this.selectedDepartmentId.value === null) {
             configs.push({ configKey: 'GUEST_REGISTRATION', configValue: this.settings.isRegistrationOpen.toString() });
+            configs.push(
+                { configKey: 'PASSWORD_LOCKOUT_ATTEMPTS', configValue: this.settings.passwordLockoutAttempts.toString() },
+                { configKey: 'PASSWORD_LOCKOUT_MINUTES', configValue: this.settings.passwordLockoutMinutes.toString() },
+                { configKey: 'PASSWORD_EXPIRY_DAYS', configValue: this.settings.passwordExpiryDays.toString() },
+                { configKey: 'PASSWORD_EXPIRY_WARNING_DAYS', configValue: this.settings.passwordExpiryWarningDays.toString() },
+                { configKey: 'PASSWORD_HISTORY_COUNT', configValue: this.settings.passwordHistoryCount.toString() },
+            );
         }
 
         // 其他設定都可以修改
@@ -140,6 +157,11 @@ const sysConfig = new function () {
         this.settings.paymentDeadlineDays = 7;
         this.settings.minAdvanceBookingDays = 14;
         this.settings.managerEmail = '';
+        this.settings.passwordLockoutAttempts = 5;
+        this.settings.passwordLockoutMinutes = 30;
+        this.settings.passwordExpiryDays = 0;
+        this.settings.passwordExpiryWarningDays = 7;
+        this.settings.passwordHistoryCount = 3;
 
         addAlert('已重設為預設值 (請記得儲存設定)', { type: 'info' });
     };

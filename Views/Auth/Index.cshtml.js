@@ -86,10 +86,20 @@ window.$config = {
         this.auth = () => {
             global.api.auth.login({ body: this.vm })
                 .then(response => {
+                    const data = response.data || {};
+                    if (data.passwordExpiresInDays !== null && data.passwordExpiresInDays !== undefined) {
+                        if (data.passwordExpiresInDays < 0 && data.forgetUrl) {
+                            location.href = data.forgetUrl;
+                            return;
+                        } else if (data.passwordExpiresInDays >= 0 && data.passwordExpiresInDays <= 7) {
+                            location.href = `/Auth/Profiles?pwExpiring=${data.passwordExpiresInDays}`;
+                            return;
+                        }
+                    }
                     location.href = '/api/auth/redirection';
                 })
                 .catch(error => {
-                    addAlert(error.details || '登入失敗', { type: 'danger', click: error.download });
+                    addAlert(error.details || error.message || '登入失敗', { type: 'danger', click: error.download });
                     this.refreshCaptcha();
                 });
         }
@@ -135,10 +145,15 @@ window.$config = {
 
         // 密碼規則驗證
         this.isValidPassword = (password) => {
-            const regexPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$/;
-            return regexPattern.test(password);
+            if (password.length < 8) return false;
+            let cats = 0;
+            if (/[a-z]/.test(password)) cats++;
+            if (/[A-Z]/.test(password)) cats++;
+            if (/\d/.test(password)) cats++;
+            if (/[@$!%*?&\-_#^]/.test(password)) cats++;
+            return cats >= 3;
         };
-        this.passwordRuleMessage = '密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）';
+        this.passwordRuleMessage = '密碼須至少 8 個字元，並包含大寫字母、小寫字母、數字、特殊符號中的任意三種';
 
         this.registerGuest = () => {
 

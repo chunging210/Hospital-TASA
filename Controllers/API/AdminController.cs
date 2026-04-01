@@ -48,6 +48,15 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
+        public record UserIdVM { public Guid UserId { get; set; } }
+
+        [HttpPost("userunlock")]
+        public IActionResult UserUnlock([FromBody] UserIdVM vm)
+        {
+            service.AuthUserServices.UnlockAccount(vm.UserId);
+            return Ok();
+        }
+
         /* --- */
 
         [HttpGet("departmentlist")]

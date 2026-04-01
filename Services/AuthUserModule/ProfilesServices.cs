@@ -120,30 +120,12 @@ namespace TASA.Services.AuthUserModule
                     _ = service.LogServices.LogAsync("user_update_profile", JsonConvert.SerializeObject(profileUpdateInfo), user.Id, user.DepartmentId);
                 }
 
+                db.SaveChanges();
+
                 if (!string.IsNullOrEmpty(vm.Password))
                 {
-                    if (!IsValidPassword(vm.Password))
-                    {
-                        throw new HttpException("密碼不符合規則");
-                    }
-                    // ✅ 記錄變更密碼
-                    var deviceInfo = GetDeviceInfo();
-                    var passwordUpdateInfo = new
-                    {
-                        OperatorName = user.Name,  // 自己修改自己
-                        TargetName = user.Name,
-                        UserName = user.Account,
-                        Action = "change_password",
-                        IsSuccess = true,
-                        ClientIp = GetClientIp(),
-                        DeviceInfo = deviceInfo.device,
-                        BrowserInfo = deviceInfo.browser,
-                        Timestamp = DateTime.Now
-                    };
-                    _ = service.LogServices.LogAsync("user_update_password", JsonConvert.SerializeObject(passwordUpdateInfo), user.Id, user.DepartmentId);
-                    user.Password = vm.Password;
+                    service.PasswordServices.ChangePW(new AuthModule.PasswordServices.ChangePWVM { Password = vm.Password });
                 }
-                db.SaveChanges();
             }
         }
     }

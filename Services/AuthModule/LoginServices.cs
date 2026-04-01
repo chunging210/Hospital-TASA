@@ -449,6 +449,7 @@ namespace TASA.Services.AuthModule
                     IsApproved = true,
                     CreateAt = DateTime.Now,
                     CreateBy = SYSTEM_USER_ID,
+                    PasswordChangedAt = DateTime.Now,
                 };
 
                 newUser.AuthRole.Add(role);
@@ -521,7 +522,35 @@ namespace TASA.Services.AuthModule
                 }
 
                 if (!HashString.Verify(password, user.PasswordHash, user.PasswordSalt))
+                {
+                    // 密碼錯誤：遞增失敗次數
+                    var lockoutAttempts = service.SysConfigService.GetPasswordLockoutAttempts();
+                    var trackedUser = db.AuthUser.WhereNotDeleted().FirstOrDefault(x => x.Id == user.Id);
+                    if (trackedUser != null && lockoutAttempts > 0)
+                    {
+                        trackedUser.FailedLoginCount++;
+                        if (trackedUser.FailedLoginCount >= lockoutAttempts)
+                        {
+                            trackedUser.IsEnabled = false;
+                            trackedUser.FailedLoginCount = 0;
+                            db.SaveChanges();
+                            throw new HttpException("密碼錯誤次數過多，帳號已被鎖定，請聯絡管理者解除")
+                            {
+                                StatusCode = System.Net.HttpStatusCode.Unauthorized
+                            };
+                        }
+                        db.SaveChanges();
+                    }
                     return null;
+                }
+
+                // 密碼正確：重置失敗次數
+                var mutableUser = db.AuthUser.WhereNotDeleted().FirstOrDefault(x => x.Id == user.Id);
+                if (mutableUser != null && mutableUser.FailedLoginCount > 0)
+                {
+                    mutableUser.FailedLoginCount = 0;
+                    db.SaveChanges();
+                }
 
                 IsEnabled(user);
                 return user;
@@ -551,7 +580,14 @@ namespace TASA.Services.AuthModule
         }
 
         // ===================== 登入 =====================
-        public AuthUser Login(LoginVM vm)
+        public record LoginResult
+        {
+            public AuthUser User { get; set; }
+            public int? PasswordExpiresInDays { get; set; }  // null=不適用, 負數=已過期
+            public string? ForgetUrl { get; set; }            // 密碼已過期時的重設連結
+        }
+
+        public LoginResult Login(LoginVM vm)
         {
             var user = IsValidUser(vm.Account, vm.Password);
             if (user == null)
@@ -577,7 +613,7 @@ namespace TASA.Services.AuthModule
             var successDeviceInfo = GetDeviceInfo();
             var successInfo = new
             {
-                UserName = user.Name,  // 使用中文名稱
+                UserName = user.Name,
                 Account = user.Account,
                 IsSuccess = true,
                 ClientIp = GetClientIp(),
@@ -586,7 +622,43 @@ namespace TASA.Services.AuthModule
                 Timestamp = DateTime.Now
             };
             _ = service.LogServices.LogAsync("login_success", JsonConvert.SerializeObject(successInfo), user.Id, user.DepartmentId);
-            return user;
+
+            // 計算密碼到期天數
+            int? expiresInDays = null;
+            string? forgetUrl = null;
+            var expiryDays = service.SysConfigService.GetPasswordExpiryDays();
+            if (expiryDays > 0)
+            {
+                var baseline = user.PasswordChangedAt ?? user.CreateAt;
+                var expireAt = baseline.AddDays(expiryDays);
+                expiresInDays = (int)Math.Floor((expireAt - DateTime.Now).TotalDays);
+
+                // 密碼已過期：產生重設 token
+                if (expiresInDays < 0)
+                {
+                    var forget = new AuthForget
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = user.Id,
+                        ExpiresAt = DateTime.Now.AddMinutes(30),
+                        IsUsed = false
+                    };
+                    var trackedUser = db.AuthUser.FirstOrDefault(x => x.Id == user.Id);
+                    if (trackedUser != null)
+                    {
+                        db.AuthForget.Add(forget);
+                        db.SaveChanges();
+                        forgetUrl = $"/Auth/Forget?i={forget.Id}&reason=expired";
+                    }
+                }
+            }
+
+            return new LoginResult
+            {
+                User = user,
+                PasswordExpiresInDays = expiresInDays,
+                ForgetUrl = forgetUrl
+            };
         }
 
         // ===================== 以下保持原樣 =====================

@@ -4,9 +4,15 @@
 
 @section head {
     <style>
-        .bg-overlay {
-            opacity: 0 !important;
-        }
+        html, body { height: 100%; overflow: hidden; }
+        .bg-overlay { opacity: 0 !important; }
+        .auth-page { height: 100vh; overflow: hidden; }
+        .auth-page > .container-fluid,
+        .auth-page > .container-fluid > .row { height: 100%; }
+        .auth-page .col-12.col-lg-4 { height: 100%; overflow-y: hidden; display: flex; align-items: center; }
+        .auth-page .col-12.col-lg-4 > .row { width: 100%; }
+        .auth-page .col-lg-8 { height: 100%; }
+        .auth-bg { height: 100% !important; }
     </style>
 }
 
@@ -23,10 +29,11 @@
                                 <div class="d-block auth-logo mb-4">
                                     <img src="/images/auth/logo-ucms.png" alt="logo" height="42" class="auth-logo-dark">
                                 </div>
-                                <div class="my-5">
+                                <div>
                                     <div class="text-center">
                                         <h5 class="mb-0">重設密碼</h5>
-                                        <p class="text-muted mt-2">請輸入您的新密碼</p>
+                                        <p v-if="isExpiredRedirect" class="text-danger mt-2">您的密碼已過期，請設定新密碼後重新登入</p>
+                                        <p v-else class="text-muted mt-2">請輸入您的新密碼</p>
                                     </div>
                                     <div class="mt-4 pt-2">
                                         <div class="form-floating form-floating-custom mb-2">
@@ -39,7 +46,7 @@
                                         </div>
                                         <div class="form-text text-muted mb-3" style="font-size: 0.8rem;">
                                             <span class="material-icons" style="font-size: 14px; vertical-align: middle;">info</span>
-                                            密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@@$!%*?&）
+                                            密碼須至少 8 個字元，並包含大寫字母、小寫字母、數字、特殊符號（@@$!%*?&-_#^）中的任意三種
                                         </div>
                                         <div class="form-floating form-floating-custom mb-4">
                                             <input v-model="vm.ConfirmPassword" @@keyup.enter="resetPassword" type="password" class="form-control"
@@ -61,9 +68,6 @@
                                             </a>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="mt-4 text-center">
-                                    {{copyyear}} &copy; iMageTech <br>圖像科技股份有限公司
                                 </div>
                             </div>
                         </div>

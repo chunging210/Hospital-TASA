@@ -54,15 +54,20 @@ namespace TASA.Services.AuthModule
         }
 
         /// <summary>
-        /// 密碼驗證規則：至少10字元，包含大小寫字母、數字、特殊字元
+        /// 密碼驗證規則：至少8字元，大寫/小寫/數字/特殊符號 4取3
         /// </summary>
         public static bool IsValidPassword(string password)
         {
-            string regexPattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$";
-            return Regex.IsMatch(password, regexPattern);
+            if (password.Length < 8) return false;
+            int categories = 0;
+            if (Regex.IsMatch(password, @"[a-z]")) categories++;
+            if (Regex.IsMatch(password, @"[A-Z]")) categories++;
+            if (Regex.IsMatch(password, @"\d")) categories++;
+            if (Regex.IsMatch(password, @"[@$!%*?&\-_#^]")) categories++;
+            return categories >= 3;
         }
 
-        public static string PasswordRuleMessage => "密碼須至少 10 個字元，並包含大寫字母、小寫字母、數字及特殊字元（@$!%*?&）";
+        public static string PasswordRuleMessage => "密碼須至少 8 個字元，並包含大寫字母、小寫字母、數字、特殊符號（@$!%*?&-_#^）中的任意三種";
 
         public void ToHash()
         {
@@ -141,10 +146,22 @@ namespace TASA.Services.AuthModule
                     .FirstOrDefault(x => x.Id == forget.UserId);
                 if (user != null)
                 {
+                    // 密碼不得與帳號相同
+                    if (vm.Password.Equals(user.Account, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new HttpException("密碼不得與帳號相同");
+                    }
+
+                    // 不得沿用歷史密碼
+                    CheckSameAsCurrentPassword(user, vm.Password);
+
                     forget.IsUsed = true;
                     var hashPassword = HashString.Hash(vm.Password);
+    
                     user.PasswordHash = hashPassword.Hash;
                     user.PasswordSalt = hashPassword.Salt;
+
+                    user.PasswordChangedAt = DateTime.Now;
                     db.SaveChanges();
                     // ✅ 記錄透過忘記密碼重設密碼（手動傳入 UserId 和 DepartmentId，因為用戶還沒登入）
                     var deviceInfo = GetDeviceInfo();
@@ -167,6 +184,18 @@ namespace TASA.Services.AuthModule
             }
         }
 
+        /// <summary>
+        /// 檢查新密碼是否與目前密碼相同
+        /// </summary>
+        private void CheckSameAsCurrentPassword(AuthUser user, string newPassword)
+        {
+            if (!string.IsNullOrEmpty(user.PasswordHash) &&
+                HashString.Verify(newPassword, user.PasswordHash, user.PasswordSalt))
+            {
+                throw new HttpException("不可使用與目前相同的密碼");
+            }
+        }
+
         public record ChangePWVM
         {
             [Required(ErrorMessage = "密碼是必要項")]
@@ -186,15 +215,28 @@ namespace TASA.Services.AuthModule
                 .FirstOrDefault(x => x.Id == userid);
             if (user != null)
             {
+                // 密碼不得與帳號相同
+                if (vm.Password.Equals(user.Account, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new HttpException("密碼不得與帳號相同");
+                }
+
+                // 不得沿用歷史密碼
+                CheckSameAsCurrentPassword(user, vm.Password);
+
                 var hashPassword = HashString.Hash(vm.Password);
+
+
                 user.PasswordHash = hashPassword.Hash;
                 user.PasswordSalt = hashPassword.Salt;
+                user.PasswordChangedAt = DateTime.Now;
                 db.SaveChanges();
+
                 // ✅ 記錄變更密碼
                 var deviceInfo = GetDeviceInfo();
                 var changeInfo = new
                 {
-                    OperatorName = user.Name,  // 自己修改自己
+                    OperatorName = user.Name,
                     TargetName = user.Name,
                     UserName = user.Account,
                     Email = user.Email,
@@ -210,22 +252,23 @@ namespace TASA.Services.AuthModule
             }
         }
 
-        // /// <summary>
-        // /// 測試用：直接重置密碼（不檢查密碼規則，不寄信）
-        // /// </summary>
-        // public void DevResetPassword(string account, string password)
-        // {
-        //     var user = db.AuthUser
-        //         .WhereNotDeleted()
-        //         .FirstOrDefault(x => x.Account == account || x.Email == account);
-        //     if (user == null)
-        //     {
-        //         throw new HttpException("找不到此帳號");
-        //     }
-        //     var hashPassword = HashString.Hash(password);
-        //     user.PasswordHash = hashPassword.Hash;
-        //     user.PasswordSalt = hashPassword.Salt;
-        //     db.SaveChanges();
-        // }
+        /// <summary>
+        /// 測試用：直接重置密碼（不檢查密碼規則，不寄信）
+        /// </summary>
+        public void DevResetPassword(string account, string password)
+        {
+            var user = db.AuthUser
+                .WhereNotDeleted()
+                .FirstOrDefault(x => x.Account == account || x.Email == account);
+            if (user == null)
+            {
+                throw new HttpException("找不到此帳號");
+            }
+            var hashPassword = HashString.Hash(password);
+            user.PasswordHash = hashPassword.Hash;
+            user.PasswordSalt = hashPassword.Salt;
+            user.PasswordChangedAt = DateTime.Now;
+            db.SaveChanges();
+        }
     }
 }

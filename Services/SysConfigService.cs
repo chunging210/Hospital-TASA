@@ -31,7 +31,12 @@ namespace TASA.Services
             ["GUEST_REGISTRATION"] = "true",
             ["PAYMENT_DEADLINE_DAYS"] = "7",
             ["MIN_ADVANCE_BOOKING_DAYS"] = "14",
-            ["MANAGER_EMAIL"] = ""
+            ["MANAGER_EMAIL"] = "",
+            ["PASSWORD_LOCKOUT_ATTEMPTS"] = "5",   // 0 = 停用
+            ["PASSWORD_LOCKOUT_MINUTES"] = "30",
+            ["PASSWORD_EXPIRY_DAYS"] = "0",         // 0 = 停用
+            ["PASSWORD_EXPIRY_WARNING_DAYS"] = "7",
+            ["PASSWORD_HISTORY_COUNT"] = "3",       // 0 = 停用
         };
 
         // ========== 統一的 Config 處理方法 ==========
@@ -353,6 +358,38 @@ namespace TASA.Services
         public void SetManagerEmail(string email, Guid? departmentId = null)
         {
             SetConfigValue("MANAGER_EMAIL", email ?? "", departmentId);
+        }
+
+        // ========== 5. 密碼安全設定（全局） ==========
+
+        public int GetPasswordLockoutAttempts()
+        {
+            var v = GetConfigValue("PASSWORD_LOCKOUT_ATTEMPTS");
+            return int.TryParse(v, out int n) ? n : 5;
+        }
+
+        public int GetPasswordLockoutMinutes()
+        {
+            var v = GetConfigValue("PASSWORD_LOCKOUT_MINUTES");
+            return int.TryParse(v, out int n) ? n : 30;
+        }
+
+        public int GetPasswordExpiryDays()
+        {
+            var v = GetConfigValue("PASSWORD_EXPIRY_DAYS");
+            return int.TryParse(v, out int n) ? n : 0;
+        }
+
+        public int GetPasswordExpiryWarningDays()
+        {
+            var v = GetConfigValue("PASSWORD_EXPIRY_WARNING_DAYS");
+            return int.TryParse(v, out int n) ? n : 7;
+        }
+
+        public int GetPasswordHistoryCount()
+        {
+            var v = GetConfigValue("PASSWORD_HISTORY_COUNT");
+            return int.TryParse(v, out int n) ? n : 3;
         }
 
     }

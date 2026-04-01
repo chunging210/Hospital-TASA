@@ -127,6 +127,45 @@
                     </div>
                 </div> *@
 
+                <!-- 4. 密碼安全設定（只有全院管理者才顯示） -->
+                <div class="setting-item" v-if="isGlobalAdmin && selectedDepartmentId === null">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong class="text-primary">密碼安全政策</strong>
+                            <small class="text-muted d-block mt-1">設定 0 表示停用該功能</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">錯誤幾次後鎖定帳號</label>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="number" class="form-control" v-model.number="settings.passwordLockoutAttempts" min="0" max="20">
+                                <span class="input-group-text">次（0=停用）</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <small class="text-muted">鎖定後需管理者至帳號管理頁重新啟用</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">密碼有效期限</label>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="number" class="form-control" v-model.number="settings.passwordExpiryDays" min="0" max="365">
+                                <span class="input-group-text">天（0=停用）</span>
+                            </div>
+                        </div>
+                        <label class="col-md-2 col-form-label">到期前幾天警告</label>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="number" class="form-control" v-model.number="settings.passwordExpiryWarningDays" min="1" max="30">
+                                <span class="input-group-text">天</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
                 <!-- 操作按鈕 - 置中 -->
                 <div class="text-center mt-5">
                     <button type="button" @@click="saveSettings" class="btn btn-primary btn-lg px-5 me-3">
