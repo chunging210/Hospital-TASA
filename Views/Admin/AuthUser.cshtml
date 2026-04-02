@@ -142,7 +142,7 @@
                             <div class="position-relative unit-dropdown-container">
                                 <input type="text" class="form-control"
                                        v-model="costCenter.search.value"
-                                       @@input="costCenter.filter()"
+                                       @@input="costCenter.filter(); authuser.vm.UnitName = costCenter.search.value"
                                        @@focus="costCenter.onFocus()"
                                        placeholder="輸入部門名稱搜尋..." autocomplete="off">
 
