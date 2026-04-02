@@ -7,9 +7,10 @@ const loginlogpage = ref(null);  // ✅ 移到這裡宣告
 
 const loginlog = new function () {
     this.tabs = [
-        { text: '登入日誌', value: 'login_' },
+        { text: '登入/登出日誌', value: 'login_' },
         { text: '新增帳號日誌', value: 'user_register_' },
         { text: '修改帳號日誌', value: 'user_update' },
+        { text: '預約日誌', value: 'reservation_' },
     ];
 
     this.selectedTab = ref('login_');

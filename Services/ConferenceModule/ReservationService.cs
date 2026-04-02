@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -1018,7 +1019,7 @@ namespace TASA.Services.ConferenceModule
             }
 
             _ = service.LogServices.LogAsync("reservation_recurring",
-                $"循環預約建立 - {vm.Name}，共 {result.SuccessCount} 筆成功，{result.SkippedCount} 筆衝突跳過");
+                JsonConvert.SerializeObject(new { ActionDescription = $"循環預約建立:{vm.Name}，共{result.SuccessCount}筆成功，{result.SkippedCount}筆衝突跳過" }));
 
             return result;
         }
@@ -1169,8 +1170,9 @@ namespace TASA.Services.ConferenceModule
                 ? $"{dateRange.First():yyyy/MM/dd}"
                 : $"{dateRange.First():yyyy/MM/dd} ~ {dateRange.Last():yyyy/MM/dd}";
 
+            var creatorName = db.AuthUser.Where(u => u.Id == userId).Select(u => u.Name).FirstOrDefault() ?? "未知";
             _ = service.LogServices.LogAsync("reservation_insert",
-                $"預約建立 - {conference.Name} ({conference.Id})，日期: {dateRangeStr}，共 {totalSlots} 個時段");
+                JsonConvert.SerializeObject(new { ActionDescription = $"{creatorName}建立預約:{conference.Name}，日期:{dateRangeStr}，共{totalSlots}個時段" }), userId, null);
 
             // 寄送預約通知信件
             service.ConferenceMail.ReservationCreated(conferenceId);
@@ -1253,8 +1255,9 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
+            var updaterName = db.AuthUser.Where(u => u.Id == userId).Select(u => u.Name).FirstOrDefault() ?? "未知";
             _ = service.LogServices.LogAsync("reservation_update",
-                $"更新預約 - {conference.Name} ({conference.Id})");
+                JsonConvert.SerializeObject(new { ActionDescription = $"{updaterName}更新預約:{conference.Name}" }), userId, null);
         }
 
         /// <summary>
@@ -1376,8 +1379,7 @@ namespace TASA.Services.ConferenceModule
 
                 var approverName1 = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
                 _ = service.LogServices.LogAsync("reservation_approve",
-                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 審核人：{approverName1}, 總折扣: {conference.DiscountAmount ?? 0}" +
-                    (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""), reviewedBy, null);
+                    JsonConvert.SerializeObject(new { ActionDescription = $"{approverName1}審核通過:{conference.Name}（全部{conference.TotalApprovalLevels}關），折扣:{conference.DiscountAmount ?? 0}" }), reviewedBy, null);
 
                 // 寄送審核通過通知給申請人
                 service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
@@ -1389,7 +1391,7 @@ namespace TASA.Services.ConferenceModule
 
                 var approverName2 = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
                 _ = service.LogServices.LogAsync("reservation_approve",
-                    $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核通過 - {conference.Name} ({conference.Id}), 審核人：{approverName2}", reviewedBy, null);
+                    JsonConvert.SerializeObject(new { ActionDescription = $"{approverName2}審核通過（第{nextLevel}/{conference.TotalApprovalLevels}關）:{conference.Name}" }), reviewedBy, null);
 
                 // 取得下一關審核人並寄信通知
                 var nextApproval = conference.ApprovalHistory
@@ -1517,9 +1519,9 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
+            var finalApproverName = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? "未知";
             _ = service.LogServices.LogAsync("reservation_final_approve",
-                $"第 {nextLevel} 關決行通過（跳過剩餘 {remainingApprovals.Count} 關）- {conference.Name} ({conference.Id})" +
-                (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""));
+                JsonConvert.SerializeObject(new { ActionDescription = $"{finalApproverName}決行通過（第{nextLevel}關，跳過剩餘{remainingApprovals.Count}關）:{conference.Name}" }), reviewedBy, null);
 
             // 寄送審核通過通知給申請人
             service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
@@ -1591,7 +1593,7 @@ namespace TASA.Services.ConferenceModule
 
             var rejecterName = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
             _ = service.LogServices.LogAsync("reservation_reject",
-                $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核拒絕 - {conference.Name} ({conference.Id}), 審核人：{rejecterName}, 原因: {vm.Reason}", reviewedBy, null);
+                JsonConvert.SerializeObject(new { ActionDescription = $"{rejecterName}審核拒絕（第{nextLevel}/{conference.TotalApprovalLevels}關）:{conference.Name}，原因:{vm.Reason}" }), reviewedBy, null);
 
             // 寄送審核拒絕通知
             service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
@@ -1806,15 +1808,16 @@ namespace TASA.Services.ConferenceModule
                 var adminName = admin?.Name ?? "管理員";
 
                 _ = service.LogServices.LogAsync("reservation_cancel",
-                    $"管理員取消預約 - {conference.Name} ({conference.Id})，操作者：{adminName}");
+                    JsonConvert.SerializeObject(new { ActionDescription = $"{adminName}（管理員）取消預約:{conference.Name}" }), userId, null);
 
                 // 通知預約者預約已被管理員取消
                 service.ConferenceMail.ReservationCancelledByAdmin(conferenceId, adminName);
             }
             else
             {
+                var cancellerName = db.AuthUser.Where(u => u.Id == userId).Select(u => u.Name).FirstOrDefault() ?? "使用者";
                 _ = service.LogServices.LogAsync("reservation_cancel",
-                    $"使用者取消預約 - {conference.Name} ({conference.Id})");
+                    JsonConvert.SerializeObject(new { ActionDescription = $"{cancellerName}取消預約:{conference.Name}" }), userId, null);
             }
 
             // 如果已繳費，通知總務退費
@@ -1868,8 +1871,9 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
+            var removerName = db.AuthUser.Where(u => u.Id == userId).Select(u => u.Name).FirstOrDefault() ?? "未知";
             _ = service.LogServices.LogAsync("reservation_remove",
-                $"使用者移除預約 - {conference.Name} ({conference.Id})");
+                JsonConvert.SerializeObject(new { ActionDescription = $"{removerName}移除預約:{conference.Name}" }), userId, null);
         }
         /// <summary>
         /// ✅ 取得預約詳情

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using TASA.Models;
 using TASA.Program;
 using TASA.Services.AuthModule;
@@ -7,6 +8,19 @@ namespace TASA.Services
 {
     public class LogServices(IDbContextFactory<TASAContext> dbContextFactory, IHttpContextAccessor httpContextAccessor, UserClaimsService userClaimsService) : IService
     {
+        /// <summary>
+        /// 確保 info 為 JSON 格式。若傳入純字串，自動包成 {"ActionDescription":"..."} 格式。
+        /// </summary>
+        private static string EnsureJson(string info)
+        {
+            if (string.IsNullOrEmpty(info))
+                return JsonConvert.SerializeObject(new { ActionDescription = "" });
+            var trimmed = info.Trim();
+            if (trimmed.StartsWith("{") || trimmed.StartsWith("["))
+                return info;
+            return JsonConvert.SerializeObject(new { ActionDescription = info });
+        }
+
         public static async Task LogAsync(TASAContext db, string ip, string infoType, string info, Guid? userId, Guid? departmentId)
         {
             var newSysLog = new LogSys
@@ -14,7 +28,7 @@ namespace TASA.Services
                 Ip = ip,
                 Time = DateTime.Now,
                 InfoType = infoType,
-                Info = info,
+                Info = EnsureJson(info),
                 UserId = userId,
                 DepartmentId = departmentId
             };

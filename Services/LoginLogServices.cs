@@ -27,7 +27,8 @@ namespace TASA.Services
             public string DeviceInfo { get; set; } = string.Empty;
             public string BrowserInfo { get; set; } = string.Empty;
             public string Type { get; set; } = string.Empty;
-            public string ActionDescription { get; set; } = string.Empty;  // 操作描述
+            public string ActionDescription { get; set; } = string.Empty;
+            public string InfoTypeLabel { get; set; } = string.Empty;
         }
 
         public IQueryable<ListVM> List(QueryVM query)
@@ -76,7 +77,8 @@ namespace TASA.Services
                             DeviceInfo = info?.DeviceInfo ?? "Unknown",
                             BrowserInfo = info?.BrowserInfo ?? "Unknown",
                             Type = type,
-                            ActionDescription = GenerateActionDescription(x.InfoType, info)
+                            ActionDescription = GenerateActionDescription(x.InfoType, info),
+                            InfoTypeLabel = GetInfoTypeLabel(x.InfoType)
                         };
                     }
                     catch
@@ -93,7 +95,8 @@ namespace TASA.Services
                             DeviceInfo = "Unknown",
                             BrowserInfo = "Unknown",
                             Type = ExtractType(x.InfoType),
-                            ActionDescription = x.Info.Length > 50 ? x.Info.Substring(0, 50) + "..." : x.Info
+                            ActionDescription = x.Info,
+                            InfoTypeLabel = GetInfoTypeLabel(x.InfoType)
                         };
                     }
                 })
@@ -106,7 +109,8 @@ namespace TASA.Services
                     .Where(x =>
                         x.UserName.Contains(query.Keyword, StringComparison.OrdinalIgnoreCase) ||
                         x.IpAddress.Contains(query.Keyword, StringComparison.OrdinalIgnoreCase) ||
-                        x.DeviceInfo.Contains(query.Keyword, StringComparison.OrdinalIgnoreCase)
+                        x.DeviceInfo.Contains(query.Keyword, StringComparison.OrdinalIgnoreCase) ||
+                        x.ActionDescription.Contains(query.Keyword, StringComparison.OrdinalIgnoreCase)
                     )
                     .ToList();
             }
@@ -125,12 +129,29 @@ namespace TASA.Services
             {
                 var x when x.Contains("login") => "login",
                 var x when x.Contains("user_register") => "user_register",
-                var x when x.Contains("user_update") => "user_update",  // 包含 user_update_profile, user_update_password
+                var x when x.Contains("user_update") => "user_update",
                 var x when x.Contains("user_insert") || x.Contains("user_create") => "user_insert",
                 var x when x.Contains("user_delete") => "user_delete",
+                var x when x.StartsWith("reservation_") => "reservation",
                 _ => "other"
             };
         }
+
+        private static string GetInfoTypeLabel(string infoType) => infoType switch
+        {
+            "login_success" => "登入成功",
+            "login_failed" => "登入失敗",
+            "login_out" => "登出",
+            "reservation_insert" => "預約",
+            "reservation_recurring" => "循環預約",
+            "reservation_update" => "預約更新",
+            "reservation_approve" => "審核通過",
+            "reservation_final_approve" => "最終審核通過",
+            "reservation_reject" => "審核拒絕",
+            "reservation_cancel" => "取消預約",
+            "reservation_remove" => "移除預約",
+            _ => infoType
+        };
 
         /// <summary>
         /// 根據 InfoType 和 Info 生成操作描述
@@ -139,6 +160,10 @@ namespace TASA.Services
         private string GenerateActionDescription(string infoType, dynamic? info)
         {
             if (info == null) return "-";
+
+            // 若 JSON 已有預建的 ActionDescription，直接使用
+            string? prebuilt = info?.ActionDescription?.ToString();
+            if (!string.IsNullOrEmpty(prebuilt)) return prebuilt;
 
             string operatorName = info?.OperatorName ?? info?.UserName ?? "系統";
             string targetName = info?.TargetName ?? info?.UserName ?? "";

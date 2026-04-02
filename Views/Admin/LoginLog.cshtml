@@ -62,14 +62,37 @@
                     </tbody>
                 </table>
 
-                <!-- ✅ 登入日誌 / 新增帳號日誌 - 完整表格 -->
+                <!-- 預約日誌 -->
+                <table v-else-if="loginlog.selectedTab.value === 'reservation_'" class="table table-hover">
+                    <caption>預約日誌列表</caption>
+                    <thead>
+                        <tr class="table-light">
+                            <th style="width:180px;">時間</th>
+                            <th style="width:120px;">動作</th>
+                            <th>說明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in loginlog.list" :key="index">
+                            <td>{{ item?.LoginTime ? new Date(item.LoginTime).toLocaleString('zh-TW') : '' }}</td>
+                            <td><span class="badge bg-secondary">{{ item?.InfoTypeLabel || item?.Type }}</span></td>
+                            <td>{{ item?.ActionDescription || '-' }}</td>
+                        </tr>
+                        <tr v-if="loginlog.list.length === 0">
+                            <td colspan="3" class="text-center text-muted">查無資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- ✅ 登入/登出日誌 / 新增帳號日誌 - 完整表格 -->
                 <table v-else class="table table-hover">
                     <caption>日誌列表</caption>
                     <thead>
                         <tr class="table-light">
-                            <th>{{ loginlog.selectedTab.value === 'user_register_' ? '註冊時間' : '登入時間' }}</th>
+                            <th>{{ loginlog.selectedTab.value === 'user_register_' ? '註冊時間' : '時間' }}</th>
                             <th>使用者</th>
-                            <th>狀態</th>
+                            <th v-if="loginlog.selectedTab.value === 'login_'">動作</th>
+                            <th v-if="loginlog.selectedTab.value !== 'login_'">狀態</th>
                             <th>IP 位址</th>
                             <th>裝置 / 瀏覽器</th>
                         </tr>
@@ -81,10 +104,21 @@
                                 :title="item?.UserName">
                                 {{ item?.UserName }}
                             </td>
-                            <td>
+                            <!-- 登入/登出 Tab：動作欄 -->
+                            <td v-if="loginlog.selectedTab.value === 'login_'">
+                                <span v-if="item?.InfoTypeLabel === '登出'" class="badge bg-secondary">登出</span>
+                                <span v-else-if="item?.IsSuccess" class="badge bg-success">
+                                    <span class="material-icons font-size-12">check_circle</span> 登入成功
+                                </span>
+                                <span v-else class="badge bg-danger">
+                                    <span class="material-icons font-size-12">cancel</span>
+                                    登入失敗 {{ item?.FailureReason ? '(' + item.FailureReason + ')' : '' }}
+                                </span>
+                            </td>
+                            <!-- 其他 Tab：狀態欄 -->
+                            <td v-if="loginlog.selectedTab.value !== 'login_'">
                                 <span v-if="item?.IsSuccess" class="badge bg-success">
-                                    <span class="material-icons font-size-12">check_circle</span>
-                                    成功
+                                    <span class="material-icons font-size-12">check_circle</span> 成功
                                 </span>
                                 <span v-else class="badge bg-danger">
                                     <span class="material-icons font-size-12">cancel</span>

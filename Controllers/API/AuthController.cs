@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using TASA.Services;
 using static TASA.Services.AuthModule.LoginServices;
 using static TASA.Services.AuthModule.RegisterServices;
@@ -32,7 +33,7 @@ namespace TASA.Controllers.API
         public IActionResult Logout()
         {
             var me = service.UserClaimsService.Me();
-            _ = service.LogServices.LogAsync("logout", $"登出 - {me?.Name ?? "未知使用者"}", me?.Id, me?.DepartmentId);
+            _ = service.LogServices.LogAsync("login_out", JsonConvert.SerializeObject(new { UserName = me?.Name ?? "未知使用者", IsSuccess = true }), me?.Id, me?.DepartmentId);
             service.LoginServices.DeleteCookie(Response.Cookies);
             return Redirection();
         }
