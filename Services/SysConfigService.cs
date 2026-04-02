@@ -115,7 +115,7 @@ namespace TASA.Services
                 };
                 db.SysConfig.Add(config);
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("系統設定新增", $"[{departmentName}] {configKey}: {configValue}");
+                _ = service.LogServices.LogAsync("sysconfig_insert", $"[{departmentName}] {configKey}: {configValue}");
             }
             else
             {
@@ -123,7 +123,7 @@ namespace TASA.Services
                 var oldValue = config.ConfigValue;
                 config.ConfigValue = configValue;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("系統設定編輯", $"[{departmentName}] {configKey}: {oldValue} -> {configValue}");
+                _ = service.LogServices.LogAsync("sysconfig_update", $"[{departmentName}] {configKey}: {oldValue} -> {configValue}");
             }
         }
 
@@ -226,7 +226,7 @@ namespace TASA.Services
                 ? db.SysDepartment.AsNoTracking().FirstOrDefault(d => d.Id == departmentId.Value)?.Name ?? "未知分院"
                 : "全局";
             var configSummary = string.Join(", ", configs.Select(c => $"{c.ConfigKey}={c.ConfigValue}"));
-            _ = service.LogServices.LogAsync("系統設定批次更新", $"[{departmentName}] {configSummary}");
+            _ = service.LogServices.LogAsync("sysconfig_batch_update", $"[{departmentName}] {configSummary}");
         }
 
         /// <summary>
@@ -277,7 +277,7 @@ namespace TASA.Services
                 db.SaveChanges();
 
                 var departmentName = db.SysDepartment.FirstOrDefault(d => d.Id == departmentId)?.Name ?? "未知分院";
-                _ = service.LogServices.LogAsync("系統設定刪除", $"[{departmentName}] {configKey} (恢復使用全局預設)");
+                _ = service.LogServices.LogAsync("sysconfig_delete", $"[{departmentName}] {configKey} (恢復使用全局預設)");
             }
         }
 

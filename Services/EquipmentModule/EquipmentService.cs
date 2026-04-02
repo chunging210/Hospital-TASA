@@ -276,7 +276,7 @@ namespace TASA.Services.EquipmentModule
 
             var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
             var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "設備加租";
-            _ = service.LogServices.LogAsync("設備新增",
+            _ = service.LogServices.LogAsync("equipment_insert",
                 $"{newEquipment.Name}({newEquipment.Id}) {deptInfo} {roomInfo} IsEnabled:{newEquipment.IsEnabled}");
         }
         /// <summary>
@@ -368,7 +368,7 @@ namespace TASA.Services.EquipmentModule
 
             var deptInfo = departmentId.HasValue ? $"分院: {departmentId}" : "未指派分院";
             var roomInfo = vm.RoomId.HasValue ? $"會議室: {vm.RoomId}" : "設備加租";
-            _ = service.LogServices.LogAsync("設備編輯",
+            _ = service.LogServices.LogAsync("equipment_update",
                 $"{data.Name}({data.Id}) {deptInfo} {roomInfo} IsEnabled:{data.IsEnabled}");
         }
         /// <summary>
@@ -395,7 +395,7 @@ namespace TASA.Services.EquipmentModule
 
             data.DeleteAt = DateTime.Now;
             db.SaveChanges();
-            _ = service.LogServices.LogAsync("設備刪除", $"{data.Name}({data.Id})");
+            _ = service.LogServices.LogAsync("equipment_delete", $"{data.Name}({data.Id})");
         }
 
         /// <summary>

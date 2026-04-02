@@ -1017,7 +1017,7 @@ namespace TASA.Services.ConferenceModule
                     service.ConferenceMail.ReservationCreated(conferenceId);
             }
 
-            _ = service.LogServices.LogAsync("循環預約",
+            _ = service.LogServices.LogAsync("reservation_recurring",
                 $"循環預約建立 - {vm.Name}，共 {result.SuccessCount} 筆成功，{result.SkippedCount} 筆衝突跳過");
 
             return result;
@@ -1169,7 +1169,7 @@ namespace TASA.Services.ConferenceModule
                 ? $"{dateRange.First():yyyy/MM/dd}"
                 : $"{dateRange.First():yyyy/MM/dd} ~ {dateRange.Last():yyyy/MM/dd}";
 
-            _ = service.LogServices.LogAsync("預約系統",
+            _ = service.LogServices.LogAsync("reservation_insert",
                 $"預約建立 - {conference.Name} ({conference.Id})，日期: {dateRangeStr}，共 {totalSlots} 個時段");
 
             // 寄送預約通知信件
@@ -1253,7 +1253,7 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約更新",
+            _ = service.LogServices.LogAsync("reservation_update",
                 $"更新預約 - {conference.Name} ({conference.Id})");
         }
 
@@ -1374,9 +1374,10 @@ namespace TASA.Services.ConferenceModule
 
                 db.SaveChanges();
 
-                _ = service.LogServices.LogAsync("預約審核",
-                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 總折扣: {conference.DiscountAmount ?? 0}" +
-                    (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""));
+                var approverName1 = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
+                _ = service.LogServices.LogAsync("reservation_approve",
+                    $"審核通過（全部 {conference.TotalApprovalLevels} 關）- {conference.Name} ({conference.Id}), 審核人：{approverName1}, 總折扣: {conference.DiscountAmount ?? 0}" +
+                    (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""), reviewedBy, null);
 
                 // 寄送審核通過通知給申請人
                 service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
@@ -1386,8 +1387,9 @@ namespace TASA.Services.ConferenceModule
                 // ✅ 還有下一關：通知下一位審核人
                 db.SaveChanges();
 
-                _ = service.LogServices.LogAsync("預約審核",
-                    $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核通過 - {conference.Name} ({conference.Id})");
+                var approverName2 = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
+                _ = service.LogServices.LogAsync("reservation_approve",
+                    $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核通過 - {conference.Name} ({conference.Id}), 審核人：{approverName2}", reviewedBy, null);
 
                 // 取得下一關審核人並寄信通知
                 var nextApproval = conference.ApprovalHistory
@@ -1515,7 +1517,7 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約決行",
+            _ = service.LogServices.LogAsync("reservation_final_approve",
                 $"第 {nextLevel} 關決行通過（跳過剩餘 {remainingApprovals.Count} 關）- {conference.Name} ({conference.Id})" +
                 (conference.PaymentMethod == "cost-sharing" ? ", 成本分攤自動收款" : ""));
 
@@ -1587,8 +1589,9 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約拒絕",
-                $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核拒絕 - {conference.Name} ({conference.Id}) 原因: {vm.Reason}");
+            var rejecterName = db.AuthUser.Where(u => u.Id == reviewedBy).Select(u => u.Name).FirstOrDefault() ?? reviewedBy.ToString();
+            _ = service.LogServices.LogAsync("reservation_reject",
+                $"第 {nextLevel}/{conference.TotalApprovalLevels} 關審核拒絕 - {conference.Name} ({conference.Id}), 審核人：{rejecterName}, 原因: {vm.Reason}", reviewedBy, null);
 
             // 寄送審核拒絕通知
             service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
@@ -1802,7 +1805,7 @@ namespace TASA.Services.ConferenceModule
                 var admin = db.AuthUser.FirstOrDefault(u => u.Id == userId);
                 var adminName = admin?.Name ?? "管理員";
 
-                _ = service.LogServices.LogAsync("預約取消",
+                _ = service.LogServices.LogAsync("reservation_cancel",
                     $"管理員取消預約 - {conference.Name} ({conference.Id})，操作者：{adminName}");
 
                 // 通知預約者預約已被管理員取消
@@ -1810,7 +1813,7 @@ namespace TASA.Services.ConferenceModule
             }
             else
             {
-                _ = service.LogServices.LogAsync("預約取消",
+                _ = service.LogServices.LogAsync("reservation_cancel",
                     $"使用者取消預約 - {conference.Name} ({conference.Id})");
             }
 
@@ -1865,7 +1868,7 @@ namespace TASA.Services.ConferenceModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("預約移除",
+            _ = service.LogServices.LogAsync("reservation_remove",
                 $"使用者移除預約 - {conference.Name} ({conference.Id})");
         }
         /// <summary>

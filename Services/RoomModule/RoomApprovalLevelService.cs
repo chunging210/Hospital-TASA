@@ -121,7 +121,7 @@ namespace TASA.Services.RoomModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("審核設定",
+            _ = service.LogServices.LogAsync("approval_setting",
                 $"更新會議室審核順序 - {room.Name}, 共 {vm.Approvers.Count} 關");
         }
 

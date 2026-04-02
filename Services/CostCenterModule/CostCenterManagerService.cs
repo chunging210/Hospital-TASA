@@ -186,7 +186,7 @@ namespace TASA.Services.CostCenterModule
             db.CostCenterManager.Add(entity);
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("成本中心主管新增",
+            _ = service.LogServices.LogAsync("cost_center_manager_insert",
                 $"分院: {department.Name}, 成本代碼: {vm.CostCenterCode}, 主管: {manager.Name}");
         }
 
@@ -246,7 +246,7 @@ namespace TASA.Services.CostCenterModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("成本中心主管更新",
+            _ = service.LogServices.LogAsync("cost_center_manager_update",
                 $"分院: {department.Name}, 成本代碼: {vm.CostCenterCode}, 主管: {manager.Name}");
         }
 
@@ -275,7 +275,7 @@ namespace TASA.Services.CostCenterModule
             db.CostCenterManager.Remove(entity);
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("成本中心主管刪除",
+            _ = service.LogServices.LogAsync("cost_center_manager_delete",
                 $"分院: {departmentName}, 成本代碼: {costCenterCode}, 主管: {managerName}");
         }
 

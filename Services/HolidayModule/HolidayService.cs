@@ -140,7 +140,7 @@ namespace TASA.Services.HolidayModule
             db.SysHoliday.Add(holiday);
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("假日新增", $"{vm.Date:yyyy-MM-dd} {vm.Name} (手動新增)");
+            _ = service.LogServices.LogAsync("holiday_insert", $"{vm.Date:yyyy-MM-dd} {vm.Name} (手動新增)");
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace TASA.Services.HolidayModule
             holiday.DeleteAt = DateTime.Now;
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("假日刪除", $"{holiday.Date:yyyy-MM-dd} {holiday.Name}");
+            _ = service.LogServices.LogAsync("holiday_delete", $"{holiday.Date:yyyy-MM-dd} {holiday.Name}");
         }
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace TASA.Services.HolidayModule
             holiday.UpdateAt = DateTime.Now;
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("假日狀態變更", $"{holiday.Date:yyyy-MM-dd} {holiday.Name} - {(holiday.IsEnabled ? "啟用" : "停用")}");
+            _ = service.LogServices.LogAsync("holiday_status_update", $"{holiday.Date:yyyy-MM-dd} {holiday.Name} - {(holiday.IsEnabled ? "啟用" : "停用")}");
         }
 
         #endregion
@@ -254,7 +254,7 @@ namespace TASA.Services.HolidayModule
 
                 var yearText = detectedYear.HasValue ? $"{detectedYear} 年" : "";
                 var message = $"匯入完成：新增 {added} 筆，更新 {updated} 筆";
-                _ = service.LogServices.LogAsync("假日匯入", $"{yearText} - {message}");
+                _ = service.LogServices.LogAsync("holiday_import", $"{yearText} - {message}");
 
                 return (added, updated, message);
             }
@@ -264,7 +264,7 @@ namespace TASA.Services.HolidayModule
             }
             catch (Exception ex) when (ex is not HttpException)
             {
-                _ = service.LogServices.LogAsync("假日匯入失敗", ex.Message);
+                _ = service.LogServices.LogAsync("holiday_import_failed", ex.Message);
                 throw new HttpException($"匯入失敗：{ex.Message}");
             }
         }
@@ -340,7 +340,7 @@ namespace TASA.Services.HolidayModule
                 db.SaveChanges();
 
                 var message = $"同步完成：新增 {added} 筆，更新 {updated} 筆";
-                _ = service.LogServices.LogAsync("假日同步", $"{year} 年 - {message}");
+                _ = service.LogServices.LogAsync("holiday_sync", $"{year} 年 - {message}");
 
                 return (added, updated, message);
             }
@@ -350,7 +350,7 @@ namespace TASA.Services.HolidayModule
             }
             catch (Exception ex) when (ex is not HttpException)
             {
-                _ = service.LogServices.LogAsync("假日同步失敗", $"{year} 年 - {ex.Message}");
+                _ = service.LogServices.LogAsync("holiday_sync_failed", $"{year} 年 - {ex.Message}");
                 throw new HttpException($"同步失敗：{ex.Message}");
             }
         }

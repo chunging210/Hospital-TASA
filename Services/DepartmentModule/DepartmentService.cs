@@ -62,7 +62,7 @@ namespace TASA.Services.DepartmentModule
             };
             db.SysDepartment.Add(newSysDepartment);
             db.SaveChanges();
-            _ = service.LogServices.LogAsync("單位新增", $"{newSysDepartment.Name}({newSysDepartment.Id}) IsEnabled:{newSysDepartment.IsEnabled}");
+            _ = service.LogServices.LogAsync("department_insert", $"{newSysDepartment.Name}({newSysDepartment.Id}) IsEnabled:{newSysDepartment.IsEnabled}");
         }
 
         public void Update(DetailVM vm)
@@ -76,7 +76,7 @@ namespace TASA.Services.DepartmentModule
                 data.Name = vm.Name;
                 data.IsEnabled = vm.IsEnabled;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("單位編輯", $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled}");
+                _ = service.LogServices.LogAsync("department_update", $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled}");
             }
         }
 
@@ -90,7 +90,7 @@ namespace TASA.Services.DepartmentModule
             {
                 data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("單位刪除", $"{data.Name}({data.Id})");
+                _ = service.LogServices.LogAsync("department_delete", $"{data.Name}({data.Id})");
             }
         }
     }

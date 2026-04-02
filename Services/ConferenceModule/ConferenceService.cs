@@ -378,7 +378,7 @@ namespace TASA.Services.ConferenceModule
             db.SaveChanges();
 
             service.ConferenceMail.New(data);
-            _ = service.LogServices.LogAsync("會議新增", $"{data.Name}({data.Id})");
+            _ = service.LogServices.LogAsync("conference_insert", $"{data.Name}({data.Id})");
 
             return data.Id;
         }
@@ -438,7 +438,7 @@ namespace TASA.Services.ConferenceModule
             db.SaveChanges();
 
             service.ConferenceMail.New(data, "[會議修改通知]");
-            _ = service.LogServices.LogAsync("會議編輯", $"{data.Name}({data.Id})");
+            _ = service.LogServices.LogAsync("conference_update", $"{data.Name}({data.Id})");
         }
 
         private static readonly string[] stringArray = ["已被預約"];
@@ -510,7 +510,7 @@ namespace TASA.Services.ConferenceModule
                 data.FinishTime = DateTime.Now;
                 data.Status = 4;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("會議結束", $"{data.Name}({data.Id})");
+                _ = service.LogServices.LogAsync("conference_end", $"{data.Name}({data.Id})");
             }
         }
 
@@ -527,7 +527,7 @@ namespace TASA.Services.ConferenceModule
             {
                 data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("會議刪除", $"{data.Name}({data.Id})");
+                _ = service.LogServices.LogAsync("conference_delete", $"{data.Name}({data.Id})");
             }
         }
     }

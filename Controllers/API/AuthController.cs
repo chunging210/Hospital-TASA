@@ -31,6 +31,8 @@ namespace TASA.Controllers.API
         [HttpGet("logout"), HttpPost("logout")]
         public IActionResult Logout()
         {
+            var me = service.UserClaimsService.Me();
+            _ = service.LogServices.LogAsync("logout", $"登出 - {me?.Name ?? "未知使用者"}", me?.Id, me?.DepartmentId);
             service.LoginServices.DeleteCookie(Response.Cookies);
             return Redirection();
         }

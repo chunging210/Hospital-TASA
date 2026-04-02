@@ -128,7 +128,6 @@ namespace TASA.Services
                 var x when x.Contains("user_update") => "user_update",  // 包含 user_update_profile, user_update_password
                 var x when x.Contains("user_insert") || x.Contains("user_create") => "user_insert",
                 var x when x.Contains("user_delete") => "user_delete",
-                var x when x.Contains("變更密碼") || x.Contains("忘記密碼") => "user_update",  // 相容舊資料
                 _ => "other"
             };
         }
@@ -146,7 +145,7 @@ namespace TASA.Services
             string action = info?.Action?.ToString() ?? "";
 
             // 根據 InfoType 生成描述
-            if (infoType.Contains("user_update_password") || infoType.Contains("變更密碼"))
+            if (infoType.Contains("user_update_password"))
             {
                 if (action == "reset_password")
                     return $"{targetName} 透過忘記密碼重設了密碼";

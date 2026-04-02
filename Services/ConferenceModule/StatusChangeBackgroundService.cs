@@ -25,7 +25,7 @@ namespace TASA.Services.ConferenceModule
             var newLogBackground = new LogBackground
             {
                 Time = DateTime.Now,
-                InfoType = "StatusChange",
+                InfoType = "status_change",
                 Info = $"Status=>{status}|{name}"
             };
             Task.Run(() =>

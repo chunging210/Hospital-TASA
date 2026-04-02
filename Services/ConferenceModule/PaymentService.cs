@@ -124,7 +124,7 @@ namespace TASA.Services.ConferenceModule
 
             await db.SaveChangesAsync();
 
-            _ = service.LogServices.LogAsync("付款憑證",
+            _ = service.LogServices.LogAsync("payment_voucher",
                 $"上傳臨櫃憑證 - 預約單: {string.Join(", ", vm.ReservationIds)}, 訂單: {orderId}");
 
             // 寄送通知給總務
@@ -234,7 +234,7 @@ namespace TASA.Services.ConferenceModule
 
             await db.SaveChangesAsync();
 
-            _ = service.LogServices.LogAsync("付款憑證",
+            _ = service.LogServices.LogAsync("payment_voucher",
                 $"提交匯款資訊 - 預約單: {string.Join(", ", vm.ReservationIds)}, 末五碼: {vm.Last5}, 訂單: {orderId}");
 
             // 寄送通知給總務
@@ -297,7 +297,7 @@ namespace TASA.Services.ConferenceModule
 
             await db.SaveChangesAsync();
 
-            _ = service.LogServices.LogAsync("付款審核",
+            _ = service.LogServices.LogAsync("payment_approve",
                 $"批准付款訂單 {order.Id}, 共 {order.Items.Count} 筆預約");
 
             // 寄送通知給每個預約人
@@ -338,7 +338,7 @@ namespace TASA.Services.ConferenceModule
 
             await db.SaveChangesAsync();
 
-            _ = service.LogServices.LogAsync("付款審核",
+            _ = service.LogServices.LogAsync("payment_approve",
                 $"退回付款訂單 {order.Id}, 原因: {vm.Reason}");
 
             // 寄送通知給每個預約人

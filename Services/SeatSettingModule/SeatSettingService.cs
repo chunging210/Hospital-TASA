@@ -103,7 +103,7 @@ namespace TASA.Services.SeatSettingModule
                 existingData.UpdateBy = userId.Value;
 
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("電子桌牌設定", $"更新設定({existingData.Id})");
+                _ = service.LogServices.LogAsync("seat_setting", $"更新設定({existingData.Id})");
                 return existingData.Id;
             }
             else
@@ -122,7 +122,7 @@ namespace TASA.Services.SeatSettingModule
 
                 db.SeatSettings.Add(newData);
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("電子桌牌設定", $"新增設定({newData.Id})");
+                _ = service.LogServices.LogAsync("seat_setting", $"新增設定({newData.Id})");
                 return newData.Id;
             }
         }
@@ -209,7 +209,7 @@ namespace TASA.Services.SeatSettingModule
             {
                 data.DeleteAt = DateTime.Now;
                 db.SaveChanges();
-                _ = service.LogServices.LogAsync("電子桌牌設定", $"刪除設定({data.Id})");
+                _ = service.LogServices.LogAsync("seat_setting", $"刪除設定({data.Id})");
             }
         }
     }

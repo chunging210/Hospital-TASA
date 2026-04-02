@@ -832,7 +832,7 @@ namespace TASA.Services.RoomModule
             // ===== 7. 保存收費詳情 =====
             SavePricingDetails(newSysRoom.Id, vm.PricingDetails);
 
-            _ = service.LogServices.LogAsync("會議室新增",
+            _ = service.LogServices.LogAsync("room_insert",
                 $"{newSysRoom.Name}({newSysRoom.Id}) IsEnabled:{newSysRoom.IsEnabled} " +
                 $"PricingType:{newSysRoom.PricingType} BookingSettings:{newSysRoom.BookingSettings}");
 
@@ -1096,7 +1096,7 @@ namespace TASA.Services.RoomModule
             db.SaveChanges();
 
             _ = service.LogServices.LogAsync(
-                "會議室編輯",
+                "room_update",
                 $"{data.Name}({data.Id}) IsEnabled:{data.IsEnabled} PricingType:{data.PricingType} BookingSettings:{data.BookingSettings}"
             );
         }
@@ -1147,7 +1147,7 @@ namespace TASA.Services.RoomModule
             }
 
             db.SaveChanges();
-            _ = service.LogServices.LogAsync("會議室刪除", $"{data.Name}({data.Id})");
+            _ = service.LogServices.LogAsync("room_delete", $"{data.Name}({data.Id})");
         }
 
         private void SavePricingDetails(Guid roomId, List<PricingDetailVM>? pricingDetails)
@@ -1266,7 +1266,7 @@ namespace TASA.Services.RoomModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("會議室排序", $"上移 {room.Name}");
+            _ = service.LogServices.LogAsync("room_reorder", $"上移 {room.Name}");
             return new MoveResultVM { Success = true, Message = $"已與「{previousRoom.Name}」交換位置" };
         }
 
@@ -1313,7 +1313,7 @@ namespace TASA.Services.RoomModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("會議室排序", $"下移 {room.Name}");
+            _ = service.LogServices.LogAsync("room_reorder", $"下移 {room.Name}");
             return new MoveResultVM { Success = true, Message = $"已與「{nextRoom.Name}」交換位置" };
         }
 
@@ -1365,7 +1365,7 @@ namespace TASA.Services.RoomModule
 
             db.SaveChanges();
 
-            _ = service.LogServices.LogAsync("會議室排序", $"初始化所有會議室順序，共 {rooms.Count} 間");
+            _ = service.LogServices.LogAsync("room_reorder", $"初始化所有會議室順序，共 {rooms.Count} 間");
         }
     }
 }
