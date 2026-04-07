@@ -97,11 +97,8 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<SysDepartment> SysDepartment { get; set; }
 
-    public virtual DbSet<SysMenu> SysMenu { get; set; }
 
     public virtual DbSet<SysRoom> SysRoom { get; set; }
-
-    public virtual DbSet<SeatSettings> SeatSettings { get; set; }
 
     public virtual DbSet<SysRoomPricePeriod> SysRoomPricePeriod { get; set; }
 
@@ -150,9 +147,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.LogMailConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.LogSysConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysDepartmentConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.SysMenuConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomConfiguration());
-        modelBuilder.ApplyConfiguration(new Configurations.SeatSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPricePeriodConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomPricePeriodSlotConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysRoomImageConfiguration());

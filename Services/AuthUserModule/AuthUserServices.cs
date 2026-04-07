@@ -166,6 +166,7 @@ namespace TASA.Services.AuthUserModule
 
                 var wasEnabled = data.IsEnabled;
                 var wasApproved = data.IsApproved;
+                var oldName = data.Name;
                 data.Name = vm.Name;
                 data.Email = vm.Email;
                 data.DepartmentId = vm.DepartmentId;
@@ -191,15 +192,18 @@ namespace TASA.Services.AuthUserModule
 
                 // ✅ 取得操作者名稱，記錄啟用/停用狀態變更
                 var operatorUser = service.UserClaimsService.Me();
+                var enabledChanged = wasEnabled != data.IsEnabled;
                 var updateInfo = new
                 {
                     OperatorName = operatorUser?.Name ?? "系統",
                     TargetName = data.Name,
+                    OldName = oldName != data.Name ? oldName : null,  // 只有名稱真的改變才記錄
+                    NewName = oldName != data.Name ? data.Name : null,
                     UserName = data.Name,
                     Email = data.Email,
                     Action = "update",
-                    IsEnabled = data.IsEnabled,
-                    WasEnabled = wasEnabled  // 記錄之前的狀態以便追蹤
+                    IsEnabled = enabledChanged ? (bool?)data.IsEnabled : null,  // 只有狀態真的改變才記錄
+                    WasEnabled = wasEnabled
                 };
                 _ = service.LogServices.LogAsync("user_update", JsonConvert.SerializeObject(updateInfo), data.Id, data.DepartmentId);
             }

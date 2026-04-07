@@ -69,17 +69,6 @@ namespace TASA.Services.AuthModule
 
         public static string PasswordRuleMessage => "密碼須至少 8 個字元，並包含大寫字母、小寫字母、數字、特殊符號（@$!%*?&-_#^）中的任意三種";
 
-        public void ToHash()
-        {
-            var user = db.AuthUser.Where(x => string.IsNullOrEmpty(x.PasswordHash)).ToList();
-            foreach (var item in user)
-            {
-                var hashPassword = HashString.Hash(item.Password);
-                item.PasswordHash = hashPassword.Hash;
-                item.PasswordSalt = hashPassword.Salt;
-            }
-            db.SaveChanges();
-        }
 
         public record ForgetMailVM
         {

@@ -20,9 +20,7 @@ namespace TASA.Services.ConferenceModule
             public record ExtendedPropsVM
             {
                 public Guid Id { get; set; }
-                public IEnumerable<string> Room { get; set; } = [];
                 public IEnumerable<string> User { get; set; } = [];
-                public IEnumerable<string> Department { get; set; } = [];
                 public bool Self { get; set; }
             }
             public string Title { get; set; } = string.Empty;
@@ -60,9 +58,7 @@ namespace TASA.Services.ConferenceModule
                     ExtendedProps = new ListVM.ExtendedPropsVM()
                     {
                         Id = x.Id,
-                        Room = x.Room.Select(y => y.Name).ToList(),
                         User = x.ConferenceUser.Select(y => y.User.Name).ToList(),
-                        Department = x.Department.Select(y => y.Name).ToList(),
                         Self = ConferencesIds.Contains(x.Id),
                     }
                 });

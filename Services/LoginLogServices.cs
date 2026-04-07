@@ -199,6 +199,11 @@ namespace TASA.Services
                         ? $"{operatorName} 啟用了 {targetName} 的帳號"
                         : $"{operatorName} 停用了 {targetName} 的帳號";
                 }
+                // 檢查是否有名稱變更
+                if (info?.OldName != null && info?.NewName != null)
+                {
+                    return $"{operatorName} 修改了 {info.OldName} 的名稱: {info.OldName} → {info.NewName}";
+                }
                 return $"{operatorName} 修改了 {targetName} 的帳號資料";
             }
 

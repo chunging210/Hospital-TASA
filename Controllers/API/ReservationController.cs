@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using TASA.Services;
 using TASA.Program;
 using static TASA.Services.ConferenceModule.ReservationService;
-using static TASA.Services.ConferenceModule.ConferenceService;
 using static TASA.Services.ConferenceModule.PaymentService;
 using TASA.Models.Enums;
 using TASA.Extensions;

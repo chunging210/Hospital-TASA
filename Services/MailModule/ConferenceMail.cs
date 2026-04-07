@@ -39,7 +39,7 @@ namespace TASA.Services.MailModule
             {
                 var mail = NewMailMessage();
                 mail.Subject = $"{subject} - {conference.Name}";
-                mail.Body = BuildBody(conference, item.IsHost);
+                mail.Body = BuildBody(conference);
                 mail.To.Add(item.Email);
                 Task.Run(async () =>
                 {
@@ -48,13 +48,13 @@ namespace TASA.Services.MailModule
             }
         }
 
-        private static string BuildBody(Conference conference, bool isHost)
+        private static string BuildBody(Conference conference)
         {
             // ✅ 使用 .Value 因為上面已經檢查 StartTime/EndTime HasValue
             return $@"<p>會議名稱: {conference.Name}</p>
                 <p>會議時間: {TimeFormat(conference.StartTime!.Value)} - {TimeFormat(conference.EndTime!.Value)}</p>
                 <p>會議內容: {conference.Description}</p>
-                <p>會議地點: {string.Join(",", conference.Room.Select(x => x.Name))}</p>";
+                <p>會議地點: </p>";
         }
 
         private static string TimeFormat(DateTime time)

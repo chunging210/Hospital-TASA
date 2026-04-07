@@ -31,11 +31,6 @@ public partial class AuthRole
     public string Name { get; set; }
 
     /// <summary>
-    /// 是否全域
-    /// </summary>
-    public bool Global { get; set; }
-
-    /// <summary>
     /// 角色代碼
     /// </summary>
     [StringLength(20)]
@@ -56,7 +51,4 @@ public partial class AuthRole
     [InverseProperty("AuthRole")]
     public virtual ICollection<AuthUser> AuthUser { get; set; } = new List<AuthUser>();
 
-    [ForeignKey("AuthRoleId")]
-    [InverseProperty("AuthRole")]
-    public virtual ICollection<SysMenu> SysMenu { get; set; } = new List<SysMenu>();
 }

@@ -99,8 +99,9 @@ window.$config = {
             return dayOfWeek === 0 || dayOfWeek === 6;
         };
 
-        // 最早可預約日期 computed
+        // 最早可預約日期 computed（Admin 不受限制）
         this.minBookingDate = computed(() => {
+            if (this.isAdmin.value) return '2000-01-01';
             const today = new Date();
             today.setDate(today.getDate() + this.minAdvanceBookingDays.value);
             return today.toISOString().split('T')[0];
@@ -789,7 +790,7 @@ window.$config = {
                 addAlert('請選擇開始日期', { type: 'warning' });
                 return;
             }
-            if (this.form.startDate < this.minBookingDate.value) {
+            if (!this.isAdmin.value && this.form.startDate < this.minBookingDate.value) {
                 addAlert(`開始日期必須在 ${this.minAdvanceBookingDays.value} 天後（最早可選 ${this.minBookingDate.value}）`, { type: 'warning' });
                 return;
             }

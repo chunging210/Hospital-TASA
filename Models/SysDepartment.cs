@@ -66,8 +66,4 @@ public partial class SysDepartment
     [InverseProperty("Department")]
     public virtual ICollection<AuthUser> AuthUser { get; set; } = new List<AuthUser>();
 
-    [ForeignKey("DepartmentId")]
-    [InverseProperty("Department")]
-    public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
-
 }

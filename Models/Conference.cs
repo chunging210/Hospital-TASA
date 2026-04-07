@@ -35,23 +35,6 @@ public partial class Conference
     public string Name { get; set; }
 
     /// <summary>
-    /// 會議種類 (1:一般 2:視訊)
-    /// </summary>
-    [Column(TypeName = "tinyint(1) unsigned")]
-    public byte UsageType { get; set; }
-
-    /// <summary>
-    /// 連線選項
-    /// </summary>
-    [Column(TypeName = "tinyint(1) unsigned")]
-    public byte? MCU { get; set; }
-
-    /// <summary>
-    /// 錄製
-    /// </summary>
-    public bool Recording { get; set; }
-
-    /// <summary>
     /// 會議內容
     /// </summary>
     [Column(TypeName = "text")]
@@ -92,23 +75,6 @@ public partial class Conference
     /// </summary>
     [Column(TypeName = "tinyint(2) unsigned")]
     public byte DurationSS { get; set; }
-
-    /// <summary>
-    /// 重複會議父ID
-    /// </summary>
-    public Guid? RecurrenceId { get; set; }
-
-    /// <summary>
-    /// 重複(RFC5545)
-    /// </summary>
-    [StringLength(200)]
-    public string RRule { get; set; }
-
-    /// <summary>
-    /// 電子郵件通知信箱群
-    /// </summary>
-    [Column(TypeName = "text")]
-    public string Email { get; set; }
 
     /// <summary>
     /// 狀態 (會議進行狀態：未開始、進行中、已結束等)
@@ -169,22 +135,6 @@ public partial class Conference
     /// </summary>
     [Column(TypeName = "datetime")]
     public DateTime? PaymentReminderSentAt { get; set; }
-
-    /// <summary>
-    /// 報到時間
-    /// </summary>
-    [Column(TypeName = "datetime")]
-    public DateTime? CheckinAt { get; set; }
-
-    /// <summary>
-    /// 報到者
-    /// </summary>
-    public Guid? CheckinBy { get; set; }
-
-    /// <summary>
-    /// 協助報到者
-    /// </summary>
-    public Guid? AgentBy { get; set; }
 
     /// <summary>
     /// 付費方式
@@ -351,14 +301,6 @@ public partial class Conference
     [ForeignKey("Status")]
     [InverseProperty("Conference")]
     public virtual ConferenceStatus StatusNavigation { get; set; }
-
-    [ForeignKey("ConferenceId")]
-    [InverseProperty("Conference")]
-    public virtual ICollection<SysDepartment> Department { get; set; } = new List<SysDepartment>();
-
-    [ForeignKey("ConferenceId")]
-    [InverseProperty("Conference")]
-    public virtual ICollection<SysRoom> Room { get; set; } = new List<SysRoom>();
 
     // ✅ 如果有 Navigation Property,也可以加上:
     public virtual AuthUser? CancelledByNavigation { get; set; }

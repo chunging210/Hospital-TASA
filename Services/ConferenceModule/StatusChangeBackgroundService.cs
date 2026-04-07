@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TASA.Extensions;
 using TASA.Models;
+using TASA.Models.Enums;
 using TASA.Program;
 
 namespace TASA.Services.ConferenceModule
@@ -16,6 +17,7 @@ namespace TASA.Services.ConferenceModule
                 Status2(service);
                 Status3();
                 Status4();
+                NewSystemStatus(service);
                 await Task.Delay(Cron.GetDelayMilliseconds("* * * * *"), stoppingToken);
             }
         }
@@ -56,7 +58,6 @@ namespace TASA.Services.ConferenceModule
         {
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
-                    .Include(x => x.Room)
                     .WhereNotDeleted()
                     .Where(x => DateTime.Now >= x.StartTime && (x.Status == 1 || x.Status == 2))
                     .ToList();
@@ -72,7 +73,6 @@ namespace TASA.Services.ConferenceModule
         {
             using var db = dbContextFactory.CreateDbContext();
             var conference = db.Conference
-                    .Include(x => x.Room)
                     .WhereNotDeleted()
                     .Where(x => DateTime.Now >= (x.FinishTime ?? x.EndTime) && (x.Status == 1 || x.Status == 2 || x.Status == 3))
                     .ToList();
@@ -80,6 +80,48 @@ namespace TASA.Services.ConferenceModule
             {
                 item.Status = 4;
                 Log(4, item.Name);
+            }
+            db.SaveChanges();
+        }
+
+        // 新預約系統：依 ConferenceRoomSlot 時段更新 Status
+        private void NewSystemStatus(ServiceWrapper service)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var now = TimeOnly.FromDateTime(DateTime.Now);
+            var preparationMinutes = service.SettingServices.GetSettings().UCNS.BeforeStart;
+            var preparationTime = now.AddMinutes(preparationMinutes);
+
+            using var db = dbContextFactory.CreateDbContext();
+            var conferences = db.Conference
+                .Include(x => x.ConferenceRoomSlots.Where(s => s.SlotDate == today))
+                .WhereNotDeleted()
+                .Where(x => !x.StartTime.HasValue)
+                .Where(x => x.ReservationStatus == ReservationStatus.Confirmed)
+                .Where(x => x.ConferenceRoomSlots.Any(s => s.SlotDate == today))
+                .ToList();
+
+            foreach (var conference in conferences)
+            {
+                var todaySlots = conference.ConferenceRoomSlots.ToList();
+                if (!todaySlots.Any()) continue;
+
+                var minStart = todaySlots.Min(s => s.StartTime);
+                var maxEnd = todaySlots.Max(s => s.EndTime);
+
+                byte newStatus;
+                if (now >= maxEnd)
+                    newStatus = 3;
+                else if (preparationTime >= minStart)
+                    newStatus = 2;
+                else
+                    newStatus = 1;
+
+                if (conference.Status != newStatus)
+                {
+                    conference.Status = newStatus;
+                    Log(newStatus, conference.Name);
+                }
             }
             db.SaveChanges();
         }

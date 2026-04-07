@@ -40,12 +40,6 @@ public partial class AuthUser
     public string Account { get; set; }
 
     /// <summary>
-    /// 密碼
-    /// </summary>
-    [StringLength(50)]
-    public string Password { get; set; }
-
-    /// <summary>
     /// 密碼雜湊
     /// </summary>
     [Required]
@@ -64,12 +58,6 @@ public partial class AuthUser
     /// </summary>
     [StringLength(100)]
     public string Email { get; set; }
-
-    /// <summary>
-    /// 卡號
-    /// </summary>
-    [StringLength(50)]
-    public string Card { get; set; }
 
     /// <summary>
     /// 分院
@@ -115,9 +103,6 @@ public partial class AuthUser
     [InverseProperty("User")]
     public virtual ICollection<ConferenceUser> ConferenceUser { get; set; } = new List<ConferenceUser>();
 
-    // ✅ 加入這行
-    [InverseProperty("CreateByNavigation")]
-    public virtual ICollection<SeatSettings> SeatSetting { get; set; } = new List<SeatSettings>();
 
 
     [ForeignKey("DepartmentId")]

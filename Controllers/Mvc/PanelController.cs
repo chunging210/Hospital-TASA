@@ -25,7 +25,7 @@ namespace NUU.Controllers.Mvc
                 .AsNoTracking()
                 .WhereNotDeleted()
                 .WhereEnabled()
-                .Where(x => x.Room.Any(y => y.No == no) && start <= x.StartTime && x.StartTime <= end)
+                .Where(x => x.ConferenceRoomSlots.Any(s => s.Room.No == no) && start <= x.StartTime && x.StartTime <= end)
                 .OrderBy(x => x.StartTime)
                 .Select(x => new
                 {

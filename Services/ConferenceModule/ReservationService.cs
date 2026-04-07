@@ -5,13 +5,175 @@ using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
 using TASA.Program.ModelState;
-using static TASA.Services.ConferenceModule.ConferenceService;
 using TASA.Models.Enums;
 
 namespace TASA.Services.ConferenceModule
 {
     public class ReservationService(TASAContext db, ServiceWrapper service) : IService
     {
+        public SettingServices.SettingsModel.UCMSSettings ConferenceSettings => service.SettingServices.GetSettings().UCNS;
+        public DateTime PreparationTime => DateTime.Now.AddMinutes(ConferenceSettings.BeforeStart);
+
+        public record InsertVM
+        {
+            public Guid? Id { get; set; }
+
+            [RequiredI18n(ErrorMessage = "會議名稱是必要項")]
+            public string? Name { get; set; }
+
+            public string? Description { get; set; }
+
+            [RequiredI18n(ErrorMessage = "承辦單位是必要項")]
+            public string? OrganizerUnit { get; set; }
+
+            [RequiredI18n(ErrorMessage = "會議主席是必要項")]
+            public string? Chairman { get; set; }
+
+            public int? ExpectedAttendees { get; set; }
+
+            [RequiredI18n(ErrorMessage = "聯絡電話是必要項")]
+            public string? ContactPhone { get; set; }
+
+            [RequiredI18n(ErrorMessage = "電子郵件是必要項")]
+            public string? ContactEmail { get; set; }
+
+            [RequiredI18n(ErrorMessage = "持續時間是必要項")]
+            public byte? DurationHH { get; set; }
+
+            [RequiredI18n(ErrorMessage = "持續時間是必要項")]
+            public byte? DurationSS { get; set; }
+
+            public Guid? RoomId { get; set; }
+            public DateTime? ReservationDate { get; set; }
+            public DateTime? StartDate { get; set; }
+            public DateTime? EndDate { get; set; }
+            public List<string>? SlotKeys { get; set; }
+            public List<SlotInfoVM>? SlotInfos { get; set; }
+
+            public record SlotInfoVM
+            {
+                public string Key { get; set; } = string.Empty;
+                public bool IsSetup { get; set; } = false;
+                public string? Date { get; set; }
+            }
+
+            public List<Guid>? EquipmentIds { get; set; } = [];
+            public List<Guid>? BoothIds { get; set; } = [];
+            public List<SmallBoothVM>? SmallBooths { get; set; } = [];
+
+            public record SmallBoothVM
+            {
+                public Guid BoothId { get; set; }
+                public int Quantity { get; set; }
+            }
+
+            public decimal? RoomCost { get; set; }
+            public decimal? EquipmentCost { get; set; }
+            public decimal? BoothCost { get; set; }
+            public decimal? SmallBoothCost { get; set; }
+            public int? ParkingTicketCount { get; set; }
+            public int? ParkingTicketCost { get; set; }
+            public decimal? TotalAmount { get; set; }
+            public string? PaymentMethod { get; set; }
+            public string? DepartmentCode { get; set; }
+
+            public List<Guid> User { get; set; } = [];
+            public Guid? Host { get; set; }
+            public string? ReservationNo { get; set; }
+
+            public bool IsRecurring { get; set; } = false;
+            public int? RecurrenceKind { get; set; }
+            public List<int>? RecurrenceDaysOfWeek { get; set; }
+            public int? RecurrenceDayOfMonth { get; set; }
+            public DateTime? RecurrenceEndDate { get; set; }
+
+            public List<AttachmentVM>? Attachments { get; set; }
+
+            public record AttachmentVM
+            {
+                public AttachmentType Type { get; set; }
+                public string FileName { get; set; } = string.Empty;
+                public string Base64Data { get; set; } = string.Empty;
+            }
+        }
+
+        public record ListVM
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public DateTime? StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
+            public byte DurationHH { get; set; }
+            public byte DurationSS { get; set; }
+            public string? Host { get; set; }
+            public IEnumerable<string> ConferenceUser { get; set; } = [];
+            public Guid CreateBy { get; set; }
+            public string CreateByName { get; set; } = string.Empty;
+            public byte Status { get; set; }
+            public bool CanEdit { get; set; }
+            public string? OrganizerUnit { get; set; }
+            public string? Chairman { get; set; }
+            public string? RoomLocation { get; set; }
+            public DateOnly? SlotDate { get; set; }
+            public DateOnly? SlotDateEnd { get; set; }
+            public TimeOnly? SlotStart { get; set; }
+            public TimeOnly? SlotEnd { get; set; }
+            public int SlotCount { get; set; }
+            public bool IsMultiDay => SlotDate.HasValue && SlotDateEnd.HasValue && SlotDate != SlotDateEnd;
+        }
+
+        public IQueryable<ListVM> List(BaseQueryVM query)
+        {
+            return db.Conference
+                .AsNoTracking()
+                .WhereNotDeleted()
+                .Where(x =>
+                    x.ReservationStatus != ReservationStatus.Cancelled &&
+                    x.ReservationStatus != ReservationStatus.Rejected
+                )
+                .WhereIf(query.Start.HasValue, x =>
+                    (x.StartTime.HasValue && query.Start <= x.StartTime) ||
+                    (!x.StartTime.HasValue && x.ConferenceRoomSlots.Any(s => s.SlotDate >= DateOnly.FromDateTime(query.Start!.Value.Date))))
+                .WhereIf(query.End.HasValue, x =>
+                    (x.StartTime.HasValue && x.StartTime <= query.End) ||
+                    (!x.StartTime.HasValue && x.ConferenceRoomSlots.Any(s => s.SlotDate <= DateOnly.FromDateTime(query.End!.Value.Date))))
+                .WhereIf(query.RoomId.HasValue, x =>
+                    x.ConferenceRoomSlots.Any(s => s.RoomId == query.RoomId))
+                .WhereIf(!string.IsNullOrWhiteSpace(query.Building), x =>
+                    x.ConferenceRoomSlots.Any(s => s.Room.Building == query.Building))
+                .WhereIf(query.UserId.HasValue, x => x.CreateBy == query.UserId)
+                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
+                .WhereIf(query.Keyword, x => x.Name.Contains(query.Keyword!))
+                .OrderBy(x => x.ConferenceRoomSlots.Any()
+                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
+                    : (x.StartTime ?? x.CreateAt))
+                .Mapping(x => new ListVM()
+                {
+                    Host = x.ConferenceUser.Where(y => y.IsHost).Select(y => y.User.Name).FirstOrDefault(),
+                    ConferenceUser = x.ConferenceUser.Select(y => y.User.Name).ToList(),
+                    CreateByName = x.CreateByNavigation.Name,
+                    CanEdit = x.StartTime.HasValue && x.StartTime > PreparationTime,
+                    RoomLocation = x.ConferenceRoomSlots
+                        .OrderBy(s => s.StartTime)
+                        .Select(s => s.Room.Building + " " + s.Room.Floor + "樓 " + s.Room.Name)
+                        .FirstOrDefault(),
+                    SlotDate = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Min(s => (DateOnly?)s.SlotDate)
+                        : null,
+                    SlotDateEnd = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Max(s => (DateOnly?)s.SlotDate)
+                        : null,
+                    SlotStart = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Min(s => (TimeOnly?)s.StartTime)
+                        : null,
+                    SlotEnd = x.ConferenceRoomSlots.Any()
+                        ? x.ConferenceRoomSlots.Max(s => (TimeOnly?)s.EndTime)
+                        : null,
+                    SlotCount = x.ConferenceRoomSlots.Count(),
+                });
+        }
+
         public class ApproveVM
         {
             public Guid ConferenceId { get; set; }
@@ -623,131 +785,6 @@ namespace TASA.Services.ConferenceModule
                 });
         }
 
-        /// <summary>
-        /// ✅ 付款審核列表 - 根據付款狀態篩選已審核通過的預約
-        /// </summary>
-        public IQueryable<ReservationListVM> PendingCheckList(ReservationQueryVM query, Guid userId)
-        {
-            // ✅ 根據付款狀態決定查詢範圍
-            IQueryable<Conference> queryable;
-
-            if (query.PaymentStatus.HasValue)
-            {
-                if (query.PaymentStatus.Value == PaymentStatus.Paid)
-                {
-                    // 已收款：查詢 ReservationStatus = Confirmed 且 PaymentStatus = Paid
-                    queryable = db.Conference
-                        .AsNoTracking()
-                        .WhereNotDeleted()
-                        .Where(x => x.ReservationStatus == ReservationStatus.Confirmed &&
-                                    x.PaymentStatus == PaymentStatus.Paid);
-                }
-                else
-                {
-                    // 未付款/待查帳/待重新上傳：查詢 ReservationStatus = PendingPayment
-                    queryable = db.Conference
-                        .AsNoTracking()
-                        .WhereNotDeleted()
-                        .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment &&
-                                    x.PaymentStatus == query.PaymentStatus.Value);
-                }
-            }
-            else
-            {
-                // 全部狀態：顯示待繳費 + 已收款的記錄
-                queryable = db.Conference
-                    .AsNoTracking()
-                    .WhereNotDeleted()
-                    .Where(x => x.ReservationStatus == ReservationStatus.PendingPayment ||
-                                (x.ReservationStatus == ReservationStatus.Confirmed && x.PaymentStatus == PaymentStatus.Paid));
-            }
-
-            // 非總務角色：只看自己負責（ManagerId）的房間的預約
-            var isAccountant = service.AuthRoleServices.HasAnyRole(userId, "ADMIN", "ADMINN", "ACCOUNTANT");
-            if (!isAccountant)
-            {
-                queryable = queryable.Where(x =>
-                    x.ConferenceRoomSlots.Any(s => s.Room.ManagerId == userId));
-            }
-
-            return queryable
-                .WhereIf(query.Keyword, x =>
-                    x.Name.Contains(query.Keyword!) ||
-                    x.CreateByNavigation.Name.Contains(query.Keyword!) ||
-                    x.Id.ToString().StartsWith(query.Keyword!))
-                .WhereIf(!string.IsNullOrWhiteSpace(query.DepartmentCode), x => x.DepartmentCode == query.DepartmentCode)
-                .OrderBy(x => x.PaymentDeadline ?? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue))
-                .ThenBy(x => x.ConferenceRoomSlots.Any()
-                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
-                    : (x.StartTime ?? x.CreateAt))
-                .Select(x => new ReservationListVM()
-                {
-                    Id = x.Id,
-                    BookingNo = x.Id.ToString().Substring(0, 8),
-                    ApplicantName = x.CreateByNavigation.Name,
-                    ConferenceName = x.Name,
-                    OrganizerUnit = x.OrganizerUnit,
-                    Chairman = x.Chairman,
-                    ContactPhone = x.ContactPhone,  // 聯絡電話
-                    ContactEmail = x.ContactEmail,  // 電子郵件
-
-                    // ✅ 列表：只顯示日期範圍
-                    Date = x.ConferenceRoomSlots.Any()
-                        ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
-                            ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd")
-                            : x.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
-                              x.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
-                        : "-",
-
-                    // ✅ 列表：單日顯示時間，跨日顯示「-」（詳細時間在 Detail 看）
-                    Time = x.ConferenceRoomSlots.Any()
-                        ? (x.ConferenceRoomSlots.Min(s => s.SlotDate) == x.ConferenceRoomSlots.Max(s => s.SlotDate)
-                            ? $"{x.ConferenceRoomSlots.Min(s => s.StartTime):HH\\:mm} ~ " +
-                              $"{x.ConferenceRoomSlots.Max(s => s.EndTime):HH\\:mm}"
-                            : "-")
-                        : "-",
-
-                    RoomName = x.ConferenceRoomSlots
-                        .Select(s => s.Room.Name)
-                        .FirstOrDefault() ?? "-",
-
-                    TotalAmount = x.TotalAmount,
-                    ParkingTicketCount = x.ParkingTicketCount,  // ✅ 停車券張數
-                    PaymentMethod = x.PaymentMethod,
-                    Status = "待繳費",
-
-                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
-                                       x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
-                                       x.PaymentStatus == PaymentStatus.Paid ? "已收款" :
-                                       x.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
-
-                    UploadTime = null,
-                    PaymentType = null,
-                    LastFiveDigits = null,
-                    TransferAmount = null,
-                    TransferAt = null,
-                    FilePath = null,
-                    FileName = null,
-                    Note = null,
-
-                    // ✅ 優惠證明
-                    DiscountProofPath = null,
-                    DiscountProofName = null,
-
-                    Slots = x.ConferenceRoomSlots
-                        .OrderBy(s => s.SlotDate)
-                        .ThenBy(s => s.StartTime)
-                        .Select(s => new SlotDetailVM
-                        {
-                            Id = s.Id,
-                            SlotDate = s.SlotDate.ToString("yyyy/MM/dd"),
-                            StartTime = s.StartTime.ToString(@"HH\:mm"),
-                            EndTime = s.EndTime.ToString(@"HH\:mm"),
-                            SlotStatus = s.SlotStatus
-                        }).ToList()
-                });
-        }
-
         // ===== 付款訂單列表 =====
 
         public class PaymentOrderListVM
@@ -964,7 +1001,6 @@ namespace TASA.Services.ConferenceModule
                 var singleVm = vm with { ReservationDate = date.ToDateTime(TimeOnly.MinValue) };
 
                 var conference = CreateConferenceEntity(conferenceId, singleVm, userId);
-                conference.RecurrenceId = recurrenceId;
 
                 db.Conference.Add(conference);
                 CreateRoomSlots(conferenceId, vm.RoomId!.Value, slotsByDate);
@@ -2190,42 +2226,49 @@ namespace TASA.Services.ConferenceModule
             if (!isMultiDay && !vm.ReservationDate.HasValue)
                 throw new HttpException("必須指定預約日期");
 
-            // ✅ 根據會議室的分院 ID 取得最早預約天數設定
-            var room = db.SysRoom.AsNoTracking().FirstOrDefault(r => r.Id == vm.RoomId);
-            var departmentId = room?.DepartmentId;
-            var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays(departmentId);
-            var minDate = DateTime.Today.AddDays(minAdvanceDays);
+            var currentUser = service.UserClaimsService.Me();
+            var isAdmin = currentUser?.IsAdmin == true;
 
-            // ✅ 最大預約日期：當前年份 + 1 年的年底
-            var maxDate = new DateTime(DateTime.Today.Year + 1, 12, 31);
-
-            if (isMultiDay)
+            // Admin 不受日期限制，可預約任何時間（含過去）
+            if (!isAdmin)
             {
-                // 跨日模式：檢查開始日期
-                if (vm.StartDate!.Value.Date < minDate)
-                    throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+                // ✅ 根據會議室的分院 ID 取得最早預約天數設定
+                var room = db.SysRoom.AsNoTracking().FirstOrDefault(r => r.Id == vm.RoomId);
+                var departmentId = room?.DepartmentId;
+                var minAdvanceDays = service.SysConfigService.GetMinAdvanceBookingDays(departmentId);
+                var minDate = DateTime.Today.AddDays(minAdvanceDays);
 
-                // 檢查結束日期不能超過最大日期
-                if (vm.EndDate!.Value.Date > maxDate)
-                    throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
+                // ✅ 最大預約日期：當前年份 + 1 年的年底
+                var maxDate = new DateTime(DateTime.Today.Year + 1, 12, 31);
 
-                if (vm.EndDate!.Value.Date < vm.StartDate.Value.Date)
-                    throw new HttpException("結束日期不能早於開始日期");
+                if (isMultiDay)
+                {
+                    if (vm.StartDate!.Value.Date < minDate)
+                        throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
 
-                // ✅ 跨日預約最多 7 天
-                var totalDays = (vm.EndDate!.Value.Date - vm.StartDate!.Value.Date).Days + 1;
-                if (totalDays > 7)
-                    throw new HttpException("跨日預約最多只能選擇 7 天");
+                    if (vm.EndDate!.Value.Date > maxDate)
+                        throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
+
+                    if (vm.EndDate!.Value.Date < vm.StartDate.Value.Date)
+                        throw new HttpException("結束日期不能早於開始日期");
+
+                    var totalDays = (vm.EndDate!.Value.Date - vm.StartDate!.Value.Date).Days + 1;
+                    if (totalDays > 7)
+                        throw new HttpException("跨日預約最多只能選擇 7 天");
+                }
+                else
+                {
+                    if (vm.ReservationDate!.Value.Date < minDate)
+                        throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
+
+                    if (vm.ReservationDate!.Value.Date > maxDate)
+                        throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
+                }
             }
-            else
+            else if (isMultiDay && vm.EndDate!.Value.Date < vm.StartDate!.Value.Date)
             {
-                // 單日模式：檢查預約日期
-                if (vm.ReservationDate!.Value.Date < minDate)
-                    throw new HttpException($"預約日期必須在 {minAdvanceDays} 天後（最早可選 {minDate:yyyy-MM-dd}）");
-
-                // 檢查預約日期不能超過最大日期
-                if (vm.ReservationDate!.Value.Date > maxDate)
-                    throw new HttpException($"預約日期最遠只能到 {maxDate:yyyy-MM-dd}");
+                // Admin 仍需確保結束日期不早於開始日期
+                throw new HttpException("結束日期不能早於開始日期");
             }
         }
 
@@ -2471,9 +2514,6 @@ namespace TASA.Services.ConferenceModule
             {
                 Id = conferenceId,
                 Name = vm.Name,
-                UsageType = vm.UsageType ?? 1,
-                MCU = null,
-                Recording = false,
                 Description = vm.Description,
                 ExpectedAttendees = vm.ExpectedAttendees,  // ✅ 預計到達人數
                 OrganizerUnit = vm.OrganizerUnit,
@@ -2484,7 +2524,6 @@ namespace TASA.Services.ConferenceModule
                 EndTime = null,
                 DurationHH = vm.DurationHH ?? 0,
                 DurationSS = vm.DurationSS ?? 0,
-                RRule = null,
                 Status = 1,
                 DepartmentId = room.DepartmentId,
                 ReservationStatus = ReservationStatus.PendingApproval,
@@ -2508,7 +2547,6 @@ namespace TASA.Services.ConferenceModule
                 CreateBy = userId,
                 CreateAt = DateTime.Now,
                 UpdateAt = DateTime.Now,
-                Email = null,
                 ConferenceUser = new List<ConferenceUser>
                 {
                     new ConferenceUser

@@ -7,12 +7,6 @@ namespace TASA.Controllers.API
     [ApiController, Route("api/[controller]")]
     public class PasswordController(ServiceWrapper service) : ControllerBase
     {
-        [HttpGet("tohash")]
-        public IActionResult ToHash()
-        {
-            service.PasswordServices.ToHash();
-            return Ok();
-        }
 
         [HttpPost("forgetmail")]
         public IActionResult ForgetMail(ForgetMailVM vm)

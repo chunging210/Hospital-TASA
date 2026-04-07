@@ -30,8 +30,6 @@ namespace TASA.Services
         Lazy<UserClaimsService> userClaimsService,
         Lazy<UserContextService> userContextService,
 
-        Lazy<ConferenceService> conferenceService,
-
         Lazy<ProfilesServices> profilesServices,
         Lazy<AuthUserServices> authUserServices,
         Lazy<AuthRoleServices> authRoleServices,
@@ -40,7 +38,6 @@ namespace TASA.Services
         Lazy<DepartmentService> departmentService,
         Lazy<PaymentService> paymentService,
         Lazy<ReservationService> reservationService,
-        Lazy<JobService> jobService,
         Lazy<ConferenceMail> conferenceMail,
         Lazy<CalendarService> calendarService,
 
@@ -78,10 +75,8 @@ namespace TASA.Services
 
         public RoomService RoomService => roomService.Value;
         public DepartmentService DepartmentService => departmentService.Value;
-        public ConferenceService ConferenceService => conferenceService.Value;
         public PaymentService PaymentService => paymentService.Value;
         public ReservationService ReservationService => reservationService.Value;
-        public JobService JobService => jobService.Value;
         public ConferenceMail ConferenceMail => conferenceMail.Value;
         public CalendarService CalendarService => calendarService.Value;
 

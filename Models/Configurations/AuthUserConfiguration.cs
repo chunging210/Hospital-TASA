@@ -17,7 +17,6 @@ namespace TASA.Models.Configurations
                 .ValueGeneratedOnAdd()     
                 .HasComment("流水號");
             entity.Property(e => e.Account).HasComment("帳號");
-            entity.Property(e => e.Card).HasComment("卡號");
             entity.Property(e => e.CreateAt).HasComment("建立時間	");
             entity.Property(e => e.DeleteAt).HasComment("刪除");
             entity.Property(e => e.DepartmentId).HasComment("單位");
@@ -26,7 +25,6 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.IsEnabled).HasComment("啟用");
             entity.Property(e => e.IsApproved).HasDefaultValue(false).HasComment("已審核");
             entity.Property(e => e.Name).HasComment("名稱");
-            entity.Property(e => e.Password).HasComment("密碼");
             entity.Property(e => e.PasswordHash).HasComment("密碼雜湊");
             entity.Property(e => e.PasswordSalt).HasComment("密碼鹽值");
 

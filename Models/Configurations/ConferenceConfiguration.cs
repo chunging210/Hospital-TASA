@@ -15,9 +15,7 @@ namespace TASA.Models.Configurations
             entity.HasKey(e => e.No).HasName("PRIMARY");
 
             entity.Property(e => e.No).HasComment("流水號");
-            entity.Property(e => e.AgentBy).HasComment("協助報到者");
-            entity.Property(e => e.CheckinAt).HasComment("報到時間");
-            entity.Property(e => e.CheckinBy).HasComment("報到者");
+
             entity.Property(e => e.CreateAt).HasComment("建立時間");
             entity.Property(e => e.CreateBy).HasComment("建立者");
             entity.Property(e => e.UpdateAt)
@@ -28,21 +26,15 @@ namespace TASA.Models.Configurations
             entity.Property(e => e.ExpectedAttendees).HasComment("預計到達人數");
             entity.Property(e => e.DurationHH).HasComment("持續時間(小時)");
             entity.Property(e => e.DurationSS).HasComment("持續時間(分鐘)");
-            entity.Property(e => e.Email).HasComment("電子郵件通知信箱群");
-            entity.Property(e => e.EndTime).HasComment("結束時間 (由 ConferenceRoomSlot 決定，可為 NULL)"); // ✅ 修改註釋
+            entity.Property(e => e.EndTime).HasComment("結束時間 (由 ConferenceRoomSlot 決定，可為 NULL)");
             entity.Property(e => e.FinishTime).HasComment("實際結束時間");
             entity.Property(e => e.Id).HasComment("會議ID");
-            entity.Property(e => e.MCU).HasComment("連線選項");
             entity.Property(e => e.Name).HasComment("名稱");
-            entity.Property(e => e.RRule).HasComment("重複(RFC5545)");
-            entity.Property(e => e.Recording).HasComment("錄製");
-            entity.Property(e => e.RecurrenceId).HasComment("重複會議父ID");
-            entity.Property(e => e.StartTime).HasComment("開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)"); // ✅ 修改註釋
+            entity.Property(e => e.StartTime).HasComment("開始時間 (由 ConferenceRoomSlot 決定，可為 NULL)");
             entity.Property(e => e.Status)
                 .HasColumnType("tinyint(1) unsigned")
                 .HasDefaultValue(null)
                 .HasComment("會議狀態 (1=已排程, 2=進行中, 3=已完成, 4=未出席)");
-            entity.Property(e => e.UsageType).HasComment("會議種類 (1:一般 2:視訊)");
 
             // ✅ 新增預約狀態欄位
             entity.Property(e => e.ReservationStatus)
@@ -154,45 +146,6 @@ namespace TASA.Models.Configurations
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_slot_conf");
 
-            entity.HasMany(d => d.Department).WithMany(p => p.Conference)
-                .UsingEntity<Dictionary<string, object>>(
-                    "ConferenceDepartment",
-                    r => r.HasOne<SysDepartment>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("DepartmentId")
-                        .HasConstraintName("ConferenceDepartment_ibfk_2"),
-                    l => l.HasOne<Conference>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("ConferenceId")
-                        .HasConstraintName("ConferenceDepartment_ibfk_1"),
-                    j =>
-                    {
-                        j.HasKey("ConferenceId", "DepartmentId")
-                            .HasName("PRIMARY")
-                            .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-                        j.HasIndex(new[] { "DepartmentId" }, "ConferencesDepartments_ibfk_2");
-                    });
-
-            entity.HasMany(d => d.Room).WithMany(p => p.Conference)
-                .UsingEntity<Dictionary<string, object>>(
-                    "ConferenceRoom",
-                    r => r.HasOne<SysRoom>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("RoomId")
-                        .HasConstraintName("ConferenceRoom_ibfk_2"),
-                    l => l.HasOne<Conference>().WithMany()
-                        .HasPrincipalKey("Id")
-                        .HasForeignKey("ConferenceId")
-                        .HasConstraintName("ConferenceRoom_ibfk_1"),
-                    j =>
-                    {
-                        j.HasKey("ConferenceId", "RoomId")
-                            .HasName("PRIMARY")
-                            .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
-                        j.HasIndex(new[] { "RoomId" }, "ConferencesRooms_ibfk_2");
-                        j.IndexerProperty<Guid>("ConferenceId").HasComment("會議ID");
-                        j.IndexerProperty<Guid>("RoomId").HasComment("會議室ID");
-                    });
             entity.Property(e => e.CancelledAt)
                 .HasColumnType("datetime")
                 .HasComment("取消時間");

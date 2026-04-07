@@ -140,10 +140,6 @@ public partial class SysRoom
     /// </summary>
     public int Sequence { get; set; } = 0;
 
-    [ForeignKey("RoomId")]
-    [InverseProperty("Room")]
-    public virtual ICollection<Conference> Conference { get; set; } = new List<Conference>();
-
     [InverseProperty("Room")]
     public virtual ICollection<SysRoomPricePeriod> SysRoomPricePeriod { get; set; } = new List<SysRoomPricePeriod>();
 

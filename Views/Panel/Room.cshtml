@@ -11,7 +11,7 @@
         .WhereNotDeleted()
         .WhereEnabled()
         // ✅ 防呆：只查詢 StartTime/EndTime 都有值的會議
-        .Where(x => x.Room.Any(y => y.No == Model) 
+        .Where(x => x.ConferenceRoomSlots.Any(s => s.Room.No == Model)
              && x.StartTime.HasValue 
              && x.EndTime.HasValue
              && start <= x.StartTime 
