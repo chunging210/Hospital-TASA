@@ -45,7 +45,10 @@ namespace TASA.Models.Enums
         Rejected = 4,
 
         /// <summary>已取消 - 使用者主動取消預約</summary>
-        Cancelled = 5
+        Cancelled = 5,
+
+        /// <summary>逾期未繳 - 繳費期限已過，尚未繳費</summary>
+        PaymentOverdue = 6
     }
 
     /// <summary>

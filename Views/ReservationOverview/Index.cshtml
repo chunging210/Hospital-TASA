@@ -36,12 +36,13 @@
                                         </select>
                                     </div>
                                     <div class="col-xl-2 col-sm-12">
-                                        <select class="form-select" v-model.number="paymentStatusFilter">
+                                        <select class="form-select" v-model="paymentStatusFilter">
                                             <option value="">付款狀態</option>
                                             <option :value="1">未付款</option>
                                             <option :value="2">待查帳</option>
                                             <option :value="3">已收款</option>
                                             <option :value="4">待重新上傳</option>
+                                            <option value="overdue">逾期未繳</option>
                                         </select>
                                     </div>
                                 </template>

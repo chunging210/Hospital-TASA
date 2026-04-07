@@ -140,18 +140,32 @@ namespace TASA.Services
         {
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<TASAContext>();
-            var serviceWrapper = scope.ServiceProvider.GetRequiredService<ServiceWrapper>();
 
             var now = DateTime.Now;
 
-            // 繳費期限改為會議結束後 N 天，不再自動取消逾期預約
-            _logger.LogInformation("📊 [繳費逾期自動取消] 已停用，略過");
+            // 找出逾期未繳的預約：待繳費 + 未付款 + 超過繳費期限
+            var overdueList = await dbContext.Conference
+                .IgnoreQueryFilters()
+                .Where(c => c.DeleteAt == null
+                         && c.ReservationStatus == ReservationStatusEnum.PendingPayment
+                         && c.PaymentStatus == TASA.Models.Enums.PaymentStatus.Unpaid
+                         && c.PaymentDeadline.HasValue
+                         && c.PaymentDeadline.Value < now)
+                .ToListAsync();
 
-            var cancelledIds = new List<Guid>();
-
-            if (false) // 停用自動取消
+            if (overdueList.Count == 0)
             {
+                _logger.LogInformation("📊 [繳費逾期] 無逾期未繳的預約");
+                return;
             }
+
+            foreach (var conference in overdueList)
+            {
+                conference.ReservationStatus = ReservationStatusEnum.PaymentOverdue;
+            }
+
+            await dbContext.SaveChangesAsync();
+            _logger.LogInformation($"📊 [繳費逾期] 已將 {overdueList.Count} 筆預約標記為逾期未繳");
         }
     }
 }

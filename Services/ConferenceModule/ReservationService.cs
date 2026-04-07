@@ -513,9 +513,11 @@ namespace TASA.Services.ConferenceModule
                              x.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
                              x.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
                              x.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
-                             x.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
+                             x.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" :
+                             x.ReservationStatus == ReservationStatus.PaymentOverdue ? "待繳費" : "未知",
 
-                    PaymentStatusText = x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                    PaymentStatusText = x.ReservationStatus == ReservationStatus.PaymentOverdue ? "逾期未繳" :
+                                       x.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
                                        x.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
                                        x.PaymentStatus == PaymentStatus.Paid ? "已收款" :
                                        x.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",
@@ -2126,8 +2128,10 @@ namespace TASA.Services.ConferenceModule
                          conference.ReservationStatus == ReservationStatus.PendingApproval ? "待審核" :
                          conference.ReservationStatus == ReservationStatus.PendingPayment ? "待繳費" :
                          conference.ReservationStatus == ReservationStatus.Confirmed ? "預約成功" :
-                         conference.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" : "未知",
-                PaymentStatusText = conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
+                         conference.ReservationStatus == ReservationStatus.Rejected ? "審核拒絕" :
+                         conference.ReservationStatus == ReservationStatus.PaymentOverdue ? "待繳費" : "未知",
+                PaymentStatusText = conference.ReservationStatus == ReservationStatus.PaymentOverdue ? "逾期未繳" :
+                                   conference.PaymentStatus == PaymentStatus.Unpaid ? "未付款" :
                                    conference.PaymentStatus == PaymentStatus.PendingVerification ? "待查帳" :
                                    conference.PaymentStatus == PaymentStatus.Paid ? "已收款" :
                                    conference.PaymentStatus == PaymentStatus.PendingReupload ? "待重新上傳" : "未知",

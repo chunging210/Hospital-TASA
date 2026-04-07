@@ -11,7 +11,8 @@ export const ReservationStatus = {
     PendingPayment: 2,
     Confirmed: 3,
     Rejected: 4,
-    Cancelled: 5
+    Cancelled: 5,
+    PaymentOverdue: 6
 };
 
 export function getReservationStatusText(status) {
@@ -20,7 +21,8 @@ export function getReservationStatusText(status) {
         2: '待繳費',
         3: '預約成功',
         4: '審核拒絕',
-        5: '已取消'
+        5: '已取消',
+        6: '逾期未繳'
     };
     return map[status] || '未知';
 }
@@ -32,7 +34,8 @@ export function getReservationStatusClass(status) {
         '預約成功': 'bg-success',
         '審核拒絕': 'bg-danger',
         '已取消': 'bg-secondary',
-        '已釋放': 'bg-secondary'
+        '已釋放': 'bg-secondary',
+        '逾期未繳': 'bg-danger'
     };
     return map[status] || 'bg-secondary';
 }
@@ -43,8 +46,9 @@ export function getReservationStatusBadgeClass(status) {
         '待繳費': 'badge bg-info text-white',
         '預約成功': 'badge bg-success text-white',
         '審核拒絕': 'badge bg-danger text-white',
-        '已取消': 'badge bg-secondary text-white',    // ✅
-        '已釋放': 'badge bg-secondary text-white'     // ✅
+        '已取消': 'badge bg-secondary text-white',
+        '已釋放': 'badge bg-secondary text-white',
+        '逾期未繳': 'badge bg-danger text-white'
     };
     return map[status] || 'badge bg-secondary text-white';
 }
@@ -113,7 +117,8 @@ export function getPaymentStatusClass(status) {
         '未付款': 'bg-secondary',
         '待查帳': 'bg-warning',
         '已收款': 'bg-success',
-        '待重新上傳': 'bg-danger'
+        '待重新上傳': 'bg-danger',
+        '逾期未繳': 'bg-danger'
     };
     return map[status] || 'bg-secondary';
 }
@@ -122,10 +127,11 @@ export function getPaymentStatusBadgeClass(status) {
     if (status === '-') return '';
 
     const map = {
-        '未付款': 'badge bg-secondary text-white',    // ✅
+        '未付款': 'badge bg-secondary text-white',
         '待查帳': 'badge bg-warning text-dark',
         '已收款': 'badge bg-success text-white',
-        '待重新上傳': 'badge bg-danger text-white'
+        '待重新上傳': 'badge bg-danger text-white',
+        '逾期未繳': 'badge bg-danger text-white'
     };
     return map[status] || 'badge bg-secondary text-white';
 }
@@ -166,6 +172,7 @@ export function getUserFriendlyStatus(reservationStatusText, paymentStatusText) 
     if (reservationStatusText === '預約成功') return '預約成功';
     if (reservationStatusText === '審核拒絕') return '已拒絕';
     if (reservationStatusText === '已取消') return '已取消';
+    if (reservationStatusText === '逾期未繳') return '逾期未繳';
 
     // 待審核
     if (reservationStatusText === '待審核') return '審核中';
@@ -175,6 +182,7 @@ export function getUserFriendlyStatus(reservationStatusText, paymentStatusText) 
         if (paymentStatusText === '未付款') return '待繳費';
         if (paymentStatusText === '待查帳') return '審核中';
         if (paymentStatusText === '待重新上傳') return '待重新上傳';
+        if (paymentStatusText === '逾期未繳') return '逾期未繳';
         return '處理中';
     }
 
@@ -194,7 +202,8 @@ export function getUserFriendlyStatusBadgeClass(userFriendlyStatus) {
         '處理中': 'badge bg-warning text-dark',       // 黃色
         '預約成功': 'badge bg-success text-white',    // 綠色
         '已拒絕': 'badge bg-danger text-white',       // 紅色
-        '已取消': 'badge bg-secondary text-white'     // 灰色 ✅ 加上 text-white
+        '已取消': 'badge bg-secondary text-white',
+        '逾期未繳': 'badge bg-danger text-white'
     };
     return map[userFriendlyStatus] || 'badge bg-secondary text-white';
 }
@@ -225,7 +234,8 @@ export function getUserStatusFilterOptions() {
         { value: 'reupload', text: '待重新上傳' },
         { value: 'confirmed', text: '預約成功' },
         { value: 'rejected', text: '已拒絕' },
-        { value: 'cancelled', text: '已取消' }
+        { value: 'cancelled', text: '已取消' },
+        { value: 'overdue', text: '逾期未繳' }
     ];
 }
 

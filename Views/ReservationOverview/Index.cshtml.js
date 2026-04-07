@@ -262,7 +262,11 @@ window.$config = {
                 }
 
                 if (this.paymentStatusFilter.value) {
-                    queryParams.paymentStatus = this.paymentStatusFilter.value;
+                    if (this.paymentStatusFilter.value === 'overdue') {
+                        queryParams.reservationStatus = 6;
+                    } else {
+                        queryParams.paymentStatus = this.paymentStatusFilter.value;
+                    }
                 }
 
                 const options = { body: queryParams };
@@ -339,7 +343,8 @@ window.$config = {
                         'reupload': { reservationStatus: 2, paymentStatus: 4 },     // 待重新上傳
                         'confirmed': { reservationStatus: 3 }, // 預約成功
                         'rejected': { reservationStatus: 4 },  // 審核拒絕
-                        'cancelled': { reservationStatus: 5 }  // 已取消
+                        'cancelled': { reservationStatus: 5 },  // 已取消
+                        'overdue': { reservationStatus: 6 }    // 逾期未繳
                     };
 
                     const filter = mapping[this.userStatusFilter.value];

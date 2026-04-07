@@ -16,6 +16,7 @@ namespace TASA.Extensions
                 ReservationStatus.Confirmed => "預約成功",
                 ReservationStatus.Rejected => "審核拒絕",
                 ReservationStatus.Cancelled => "已取消",
+                ReservationStatus.PaymentOverdue => "逾期未繳",
                 _ => "未知"
             };
         }
@@ -60,6 +61,7 @@ namespace TASA.Extensions
                 ReservationStatus.Confirmed => "bg-success",
                 ReservationStatus.Rejected => "bg-danger",
                 ReservationStatus.Cancelled => "bg-secondary",
+                ReservationStatus.PaymentOverdue => "bg-danger",
                 _ => "bg-secondary"
             };
         }

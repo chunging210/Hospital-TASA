@@ -395,7 +395,11 @@ const reservation = new function () {
 
             // ✅ 只有選擇狀態時才加入參數
             if (this.query.paymentStatus !== null && this.query.paymentStatus !== '') {
-                queryParams.paymentStatus = this.query.paymentStatus;
+                if (this.query.paymentStatus === 'overdue') {
+                    queryParams.reservationStatus = 6;
+                } else {
+                    queryParams.paymentStatus = this.query.paymentStatus;
+                }
             }
 
             console.log('🔍 付款審核查詢參數:', queryParams);
