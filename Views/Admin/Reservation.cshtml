@@ -289,6 +289,23 @@
             </div>
         </div>
 
+        <!-- ===== 優惠證明（通用） ===== -->
+        <template v-if="reservation.currentReview.discountProofPath">
+            <div class="border rounded p-3 bg-body-tertiary mb-3">
+                <h6 class="text-muted small mb-2">
+                    <span class="material-icons" style="font-size: 16px; vertical-align: middle;">verified</span>
+                    優惠證明
+                </h6>
+                <div class="text-center mb-2">
+                    <img :src="reservation.currentReview.discountProofPath"
+                         :alt="reservation.currentReview.discountProofName"
+                         class="img-fluid rounded border" style="max-height: 300px; cursor: pointer;"
+                         @@click="viewFullImage(reservation.currentReview.discountProofPath)" />
+                </div>
+                <p class="text-muted small text-center mb-0">{{ reservation.currentReview.discountProofName }}</p>
+            </div>
+        </template>
+
         <!-- ✅ 審核歷程（水平步驟進度條） -->
         <template v-if="reservation.currentReview.approvalHistory?.length > 0">
             <div class="mb-3">
