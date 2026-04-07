@@ -56,13 +56,9 @@
 
                                     <!-- 左右箭頭 -->
                                     <button v-if="hasDetailImages" class="carousel-btn prev"
-                                        @@click="room.prevDetailImage()">
-                                        &lt;
-                                    </button>
+                                        @@click="room.prevDetailImage()"><span>&#8249;</span></button>
                                     <button v-if="hasDetailImages" class="carousel-btn next"
-                                        @@click="room.nextDetailImage()">
-                                        &gt;
-                                    </button>
+                                        @@click="room.nextDetailImage()"><span>&#8250;</span></button>
 
                                     <!-- 圖片指示器 -->
                                     <div v-if="hasDetailImages" class="image-indicators">

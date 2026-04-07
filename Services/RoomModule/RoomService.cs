@@ -152,7 +152,8 @@ namespace TASA.Services.RoomModule
                 .AsNoTracking()
                 .Where(s => roomIds.Contains(s.RoomId))
                 .Where(s => s.SlotDate == today)
-                .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+                .Where(s => s.Conference.ReservationStatus != ReservationStatus.Cancelled
+                           && s.Conference.ReservationStatus != ReservationStatus.Rejected)
                 .Where(s => s.ConferenceId.HasValue)
                 .OrderBy(s => s.RoomId)  // ✅ 先按會議室排序
                 .ThenBy(s => s.StartTime)  // ✅ 再按時間排序

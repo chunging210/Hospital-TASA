@@ -136,7 +136,6 @@ namespace TASA.Services
             public string ConferenceName { get; set; } = string.Empty;
             public TimeOnly StartTime { get; set; }
             public TimeOnly EndTime { get; set; }
-            public byte? Status { get; set; }
         }
 
         public record BuildingsByDepartmentQueryVM
@@ -156,15 +155,12 @@ namespace TASA.Services
         }
 
 
-        private string GetDisplayStatus(byte? status)
+        private string GetDisplayStatus(TimeOnly startTime, TimeOnly endTime)
         {
-            return status switch
-            {
-                0 or 1 => "upcoming",    // 待報到 or 已排程 → 待開始
-                2 => "ongoing",          // 進行中
-                3 or 4 => "completed",   // 已完成 or 未出席 → 已完成
-                _ => "upcoming"
-            };
+            var now = TimeOnly.FromDateTime(DateTime.Now);
+            if (now >= endTime) return "completed";
+            if (now >= startTime) return "ongoing";
+            return "upcoming";
         }
 
 
@@ -740,7 +736,8 @@ namespace TASA.Services
                 .AsNoTracking()
                 .Where(s => s.RoomId == roomId)
                 .Where(s => s.SlotDate == today)
-                .Where(s => s.Conference.ReservationStatus == ReservationStatus.Confirmed)
+                .Where(s => s.Conference.ReservationStatus != ReservationStatus.Cancelled
+                           && s.Conference.ReservationStatus != ReservationStatus.Rejected)
                 .Where(s => s.ConferenceId.HasValue)
                 .OrderBy(s => s.StartTime)  // ✅ 重點:排序
                 .Select(s => new RawSlot
@@ -748,8 +745,7 @@ namespace TASA.Services
                     ConferenceId = s.ConferenceId!.Value,
                     ConferenceName = s.Conference.Name,
                     StartTime = s.StartTime,
-                    EndTime = s.EndTime,
-                    Status = s.Conference.Status
+                    EndTime = s.EndTime
                 })
                 .ToList();
 
@@ -764,10 +760,10 @@ namespace TASA.Services
             // 3️⃣ 轉換成 ViewModel
             return mergedSlots.Select(s => new RoomTodayScheduleVM
             {
-                StartTime = s.StartTime.ToString(@"HH\:mm"),  // ✅ 改用 HH (24小時制)
+                StartTime = s.StartTime.ToString(@"HH\:mm"),
                 EndTime = s.EndTime.ToString(@"HH\:mm"),
                 ConferenceName = s.ConferenceName,
-                Status = GetDisplayStatus(s.Status)
+                Status = GetDisplayStatus(s.StartTime, s.EndTime)
             });
         }
 
@@ -784,8 +780,7 @@ namespace TASA.Services
                 ConferenceId = slots[0].ConferenceId,
                 ConferenceName = slots[0].ConferenceName,
                 StartTime = slots[0].StartTime,
-                EndTime = slots[0].EndTime,
-                Status = slots[0].Status
+                EndTime = slots[0].EndTime
             };
 
             Console.WriteLine($"\n開始合併時段:");
@@ -814,8 +809,7 @@ namespace TASA.Services
                         ConferenceId = slot.ConferenceId,
                         ConferenceName = slot.ConferenceName,
                         StartTime = slot.StartTime,
-                        EndTime = slot.EndTime,
-                        Status = slot.Status
+                        EndTime = slot.EndTime
                     };
 
                     Console.WriteLine($"  🆕 開始新的: {current.ConferenceName} {current.StartTime} - {current.EndTime}");
