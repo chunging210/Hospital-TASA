@@ -11,6 +11,7 @@ namespace TASA.Services.AuthUserModule
         public record ListVM
         {
             public Guid Id { get; set; }
+            public Guid? DepartmentId { get; set; }
             public string DepartmentName { get; set; } = string.Empty;
             public string? UnitName { get; set; }  // 部門
             public string Name { get; set; } = string.Empty;
@@ -43,6 +44,7 @@ namespace TASA.Services.AuthUserModule
 
             return q.Mapping(x => new ListVM()
                 {
+                    DepartmentId = x.DepartmentId,
                     DepartmentName = x.Department.Name,
                     UnitName = x.UnitName,
                     IsNormal = x.AuthRole.Any(r => r.Code == AuthRoleServices.Normal),

@@ -189,19 +189,42 @@ window.$config = {
         this.role = role;
         this.costCenter = costCenter;
         this.authuser = authuser;
+        this.departmentFilter = ref(null);
+        this.unitFilterInput = ref('');
+        this.unitFilterDropdown = ref(false);
+        this.unitFilterFiltered = computed(() => {
+            const kw = this.unitFilterInput.value.toLowerCase().trim();
+            if (!kw) return costCenter.list;
+            return costCenter.list.filter(x => x.Name.toLowerCase().includes(kw));
+        });
         this.staffList = computed(() => authuser.list.filter(x => x.IsStaff));
-        this.tabData = computed(() => authuser.list.filter(x => x[tabs.select.value]));
+        const departmentFilter = this.departmentFilter;
+        const unitFilterInput = this.unitFilterInput;
+        this.tabData = computed(() => authuser.list.filter(x => {
+            if (!x[tabs.select.value]) return false;
+            if (departmentFilter.value && x.DepartmentId?.toLowerCase() !== departmentFilter.value?.toLowerCase()) return false;
+            const kw = unitFilterInput.value.trim();
+            if (kw && !x.UnitName?.toLowerCase().includes(kw.toLowerCase())) return false;
+            return true;
+        }));
 
         watch(() => authuser.query.keyword, () => {
             authuser.getList(1);
         });
 
+        const unitFilterDropdown = this.unitFilterDropdown;
         onMounted(() => {
             department.gettree();
             role.getList();
             costCenter.getList();
             costCenter.initClickOutside();
             authuser.getList();
+            document.addEventListener('click', (e) => {
+                const container = document.querySelector('.unit-filter-container');
+                if (container && !container.contains(e.target)) {
+                    unitFilterDropdown.value = false;
+                }
+            });
         });
     }
 }

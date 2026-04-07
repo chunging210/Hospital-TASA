@@ -1,4 +1,9 @@
-﻿<div v-cloak>
+﻿@using TASA.Services.AuthModule
+@{
+    var user = UserClaimsService.ToAuthUser(Context.User.Claims);
+    var isGlobalAdmin = user?.IsGlobalAdmin == true;
+}
+<div v-cloak>
 <div class="page-content">
     <div class="container-fluid vstack gap-3">
         <div class="card">
@@ -8,12 +13,52 @@
                         <span class="material-icons">people</span>使用者總覽
                     </div>
 
-                    <div class="col-12 col-lg-4">
+                    <div class="col-12 col-lg-3">
                         <div class="search-box">
                             <div class="position-relative">
                                 <input type="text" class="form-control" v-model="authuser.query.keyword"
                                        placeholder="搜尋關鍵字...">
                                 <span class="material-icons search-icon">search</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (isGlobalAdmin)
+                    {
+                        <div class="col-12 col-lg-3">
+                            <select class="form-select" v-model="departmentFilter">
+                                <option :value="null">全部分院</option>
+                                <template v-for="{Id,Name,Children} in department.tree">
+                                    <optgroup v-if="Children && Children.length > 0" :label="Name">
+                                        <option :value="Id">{{ Name }}</option>
+                                        <option v-for="child in Children" :key="child.Id" :value="child.Id">{{ child.Name }}</option>
+                                    </optgroup>
+                                    <option v-else :key="Id" :value="Id">{{ Name }}</option>
+                                </template>
+                            </select>
+                        </div>
+                    }
+
+                    <div class="col-12 col-lg-3">
+                        <div class="position-relative unit-filter-container">
+                            <input type="text" class="form-control" v-model="unitFilterInput"
+                                   @@focus="unitFilterDropdown = true"
+                                   @@input="unitFilterDropdown = true"
+                                   placeholder="篩選部門..." autocomplete="off">
+                            <div v-if="unitFilterDropdown && unitFilterFiltered.length > 0"
+                                 class="position-absolute w-100 bg-white border rounded shadow-sm"
+                                 style="max-height: 200px; overflow-y: auto; z-index: 1050;">
+                                <div class="px-3 py-2 text-muted" style="cursor:pointer; font-size:0.85rem;"
+                                     @@click="unitFilterInput = ''; unitFilterDropdown = false">
+                                    全部部門
+                                </div>
+                                <div v-for="item in unitFilterFiltered" :key="item.Code"
+                                     class="px-3 py-2" style="cursor: pointer;"
+                                     @@click="unitFilterInput = item.Name; unitFilterDropdown = false"
+                                     @@mouseover="$event.target.style.backgroundColor='#f8f9fa'"
+                                     @@mouseout="$event.target.style.backgroundColor=''">
+                                    {{ item.Name }}
+                                </div>
                             </div>
                         </div>
                     </div>
