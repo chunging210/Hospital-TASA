@@ -497,10 +497,12 @@ window.$config = {
             return Math.ceil((reservationDate - today) / (1000 * 60 * 60 * 24));
         };
 
-        // 使用者可以取消（只有待審核狀態）
+        // 使用者可以取消（待審核 且 尚未有任何人審核）
         this.canCancel = (item) => {
             if (!item) return false;
-            return item.approvalStatus === '待審核';
+            if (item.approvalStatus !== '待審核') return false;
+            if (item.approvalHistory && item.approvalHistory.some(h => h.Status !== 'Pending')) return false;
+            return true;
         };
 
         // 管理者可以編輯（只有待審核狀態）

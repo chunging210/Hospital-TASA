@@ -166,6 +166,32 @@ namespace TASA.Services.AuthUserModule
                     }
                 }
 
+                // ✅ 檢查角色是否降級（移除管理權限）
+                var oldRoleCodes = data.AuthRole.Select(r => r.Code).ToHashSet();
+                var newRoleIds = vm.Role.ToHashSet();
+                var newRoleCodes = db.AuthRole.WhereNotDeleted()
+                    .Where(r => newRoleIds.Contains(r.Id))
+                    .Select(r => r.Code)
+                    .ToHashSet();
+                var managementRoles = new[] { AuthRoleServices.Staff, AuthRoleServices.Admin, AuthRoleServices.Director };
+                var hadManagementRole = oldRoleCodes.Any(c => managementRoles.Contains(c));
+                var willHaveManagementRole = newRoleCodes.Any(c => managementRoles.Contains(c));
+                if (hadManagementRole && !willHaveManagementRole)
+                {
+                    var managedRoomsByRole = db.SysRoom
+                        .IgnoreQueryFilters()
+                        .Where(r => r.ManagerId == data.Id
+                                 && r.DeleteAt == null
+                                 && r.IsEnabled)
+                        .Select(r => r.Name)
+                        .ToList();
+
+                    if (managedRoomsByRole.Any())
+                    {
+                        throw new HttpException($"該使用者仍管理以下會議室，請先更換管理者後再變更角色：{string.Join("、", managedRoomsByRole)}");
+                    }
+                }
+
                 var wasEnabled = data.IsEnabled;
                 var wasApproved = data.IsApproved;
                 var oldName = data.Name;

@@ -98,6 +98,8 @@ namespace TASA.Services.AuthModule
                 db.AuthForget.Add(newAuthForget);
                 db.SaveChanges();
                 // 忘記密碼申請只是發信，不記錄在「修改帳號日誌」
+                if (string.IsNullOrWhiteSpace(user.Email))
+                    throw new HttpException("此帳號尚未設定信箱，請聯繫管理員重設密碼");
                 service.PasswordMail.Forget(newAuthForget.Id, newAuthForget.ExpiresAt, user.Email);
             }
         }

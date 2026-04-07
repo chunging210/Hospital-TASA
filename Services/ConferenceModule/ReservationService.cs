@@ -1242,13 +1242,14 @@ namespace TASA.Services.ConferenceModule
                 .FirstOrDefault(x => x.Id == conferenceId && !x.DeleteAt.HasValue)
                 ?? throw new HttpException("會議不存在");
 
-            // 權限檢查
-            if (conference.CreateBy != userId)
-                throw new HttpException("您沒有權限修改此預約");
+            // 權限檢查：只有管理者可以編輯，一般使用者不可編輯
+            var isAdmin = service.AuthRoleServices.HasAnyRole(userId, "ADMINN", "ADMIN", "DIRECTOR", "ACCOUNTANT");
+            if (!isAdmin)
+                throw new HttpException("只有管理者可以修改預約");
 
-            // 狀態檢查
+            // 狀態檢查：審核完成後不可編輯，只能取消
             if (conference.ReservationStatus != ReservationStatus.PendingApproval)
-                throw new HttpException("只有「待審核」狀態的預約可以修改");
+                throw new HttpException("只有「待審核」狀態的預約可以修改，若需異動請先取消再重新申請");
 
             // 驗證基本資料
             ValidateReservationData(vm);
