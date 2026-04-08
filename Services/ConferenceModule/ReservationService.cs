@@ -462,14 +462,38 @@ namespace TASA.Services.ConferenceModule
                 queryable = queryable.Where(x => x.PaymentStatus == query.PaymentStatus.Value);
             }
 
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
             return queryable
                 .WhereIf(query.Keyword, x =>
                     x.Name.Contains(query.Keyword!) ||
                     x.CreateByNavigation.Name.Contains(query.Keyword!) ||
                     x.Id.ToString().StartsWith(query.Keyword!))
-                .OrderBy(x => x.ConferenceRoomSlots.Any()
-                    ? x.ConferenceRoomSlots.Min(s => s.SlotDate).ToDateTime(TimeOnly.MinValue)
-                    : (x.StartTime ?? x.CreateAt))
+                // Group 0（0）：需要處理的 或 未來會議 → 升冪
+                // Group 1（1）：已結束/已取消/已拒絕 → 降冪（用負 DayNumber 模擬）
+                .OrderBy(x =>
+                    x.ReservationStatus == ReservationStatus.PendingApproval ||
+                    x.ReservationStatus == ReservationStatus.PendingPayment ||
+                    x.ReservationStatus == ReservationStatus.PaymentOverdue ||
+                    (x.ReservationStatus == ReservationStatus.Confirmed &&
+                     x.ConferenceRoomSlots.Any(s => s.SlotDate >= today))
+                    ? 0 : 1
+                )
+                .ThenBy(x =>
+                    // Group 0：正數 DayNumber（升冪，最近的在最前）
+                    // Group 1：負數 DayNumber（降冪，最近的歷史在最前）
+                    (x.ReservationStatus == ReservationStatus.PendingApproval ||
+                     x.ReservationStatus == ReservationStatus.PendingPayment ||
+                     x.ReservationStatus == ReservationStatus.PaymentOverdue ||
+                     (x.ReservationStatus == ReservationStatus.Confirmed &&
+                      x.ConferenceRoomSlots.Any(s => s.SlotDate >= today)))
+                    ? (x.ConferenceRoomSlots.Any()
+                        ? (long)x.ConferenceRoomSlots.Min(s => s.SlotDate).DayNumber
+                        : (long)(x.StartTime ?? x.CreateAt).Ticks / 864000000000L)
+                    : (x.ConferenceRoomSlots.Any()
+                        ? -(long)x.ConferenceRoomSlots.Max(s => s.SlotDate).DayNumber
+                        : -(long)(x.StartTime ?? x.CreateAt).Ticks / 864000000000L)
+                )
                 .ThenBy(x => x.CreateAt)
                 .Select(x => new ReservationListVM()
                 {
