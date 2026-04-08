@@ -835,7 +835,7 @@ namespace TASA.Services.ConferenceModule
             var ordersQuery = db.ConferencePaymentOrder
                 .AsNoTracking()
                 .Where(o => o.DeleteAt == null)
-                .Where(o => o.Items.All(i => i.Conference.ReservationStatus != ReservationStatus.Cancelled));
+                .Where(o => o.Items.Any(i => i.Conference.ReservationStatus != ReservationStatus.Cancelled));
 
             // 非總務：只看自己管理的會議室的訂單
             if (!isAccountant)

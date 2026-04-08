@@ -1023,19 +1023,40 @@ namespace TASA.Services
                 var roomIds = roomQuery.Select(x => x.Id).ToList();
                 Console.WriteLine($"   目前符合條件的會議室數量: {roomIds.Count}");
 
+                // 子時段數量（有子時段的房間）
+                var subSlotCounts = db.SysRoomPricePeriodSlot
+                    .AsNoTracking()
+                    .Where(s => roomIds.Contains(s.PricePeriod.RoomId) &&
+                                s.PricePeriod.IsEnabled &&
+                                s.PricePeriod.DeleteAt == null)
+                    .GroupBy(s => s.PricePeriod.RoomId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // 主時段數量（無子時段時的備援）
+                var mainPeriodCounts = db.SysRoomPricePeriod
+                    .AsNoTracking()
+                    .Where(p => roomIds.Contains(p.RoomId) && p.IsEnabled && p.DeleteAt == null)
+                    .GroupBy(p => p.RoomId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // 每間房間的已佔用時段數量
+                var occupiedCounts = db.ConferenceRoomSlot
+                    .AsNoTracking()
+                    .Where(s => roomIds.Contains(s.RoomId) &&
+                                s.SlotDate == dateOnly &&
+                                (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved))
+                    .GroupBy(s => s.RoomId)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
                 // 找出該日期「所有時段都被佔用」的會議室
                 var fullyOccupiedRoomIds = new HashSet<Guid>();
 
                 foreach (var roomId in roomIds)
                 {
-                    // 取得該會議室的開放時段數量
-                    var totalSlots = db.SysRoomPricePeriod
-                        .AsNoTracking()
-                        .Count(p =>
-                            p.RoomId == roomId &&
-                            p.IsEnabled &&
-                            p.DeleteAt == null
-                        );
+                    // 有子時段用子時段數，否則用主時段數
+                    var totalSlots = subSlotCounts.TryGetValue(roomId, out var sc) && sc > 0
+                        ? sc
+                        : mainPeriodCounts.GetValueOrDefault(roomId, 0);
 
                     if (totalSlots == 0)
                     {
@@ -1044,14 +1065,7 @@ namespace TASA.Services
                         continue;
                     }
 
-                    // 取得該日期已被預約/鎖定的時段數量
-                    var occupiedSlots = db.ConferenceRoomSlot
-                        .AsNoTracking()
-                        .Count(s =>
-                            s.RoomId == roomId &&
-                            s.SlotDate == dateOnly &&
-                            (s.SlotStatus == SlotStatus.Locked || s.SlotStatus == SlotStatus.Reserved)
-                        );
+                    var occupiedSlots = occupiedCounts.GetValueOrDefault(roomId, 0);
 
                     // 如果所有時段都被佔用,加入排除清單
                     if (occupiedSlots >= totalSlots)
@@ -1706,13 +1720,29 @@ namespace TASA.Services
                 .Select(x => new { x.Id, x.Name, x.Building, x.Floor })
                 .ToList();
 
-            // 取得每個會議室的時段數量
-            var roomPeriodCounts = db.SysRoomPricePeriod
+            // 取得每個會議室的時段數量（有子時段用子時段數，否則用主時段數）
+            var allRoomIds = rooms.Select(r => r.Id).ToList();
+
+            var weekSubSlotCounts = db.SysRoomPricePeriodSlot
                 .AsNoTracking()
-                .Where(x => x.IsEnabled && x.DeleteAt == null)
-                .Where(x => rooms.Select(r => r.Id).Contains(x.RoomId))
+                .Where(x => allRoomIds.Contains(x.PricePeriod.RoomId) &&
+                            x.PricePeriod.IsEnabled &&
+                            x.PricePeriod.DeleteAt == null)
+                .GroupBy(x => x.PricePeriod.RoomId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var weekMainPeriodCounts = db.SysRoomPricePeriod
+                .AsNoTracking()
+                .Where(x => x.IsEnabled && x.DeleteAt == null && allRoomIds.Contains(x.RoomId))
                 .GroupBy(x => x.RoomId)
                 .ToDictionary(g => g.Key, g => g.Count());
+
+            var roomPeriodCounts = allRoomIds.ToDictionary(
+                id => id,
+                id => weekSubSlotCounts.TryGetValue(id, out var sc) && sc > 0
+                    ? sc
+                    : weekMainPeriodCounts.GetValueOrDefault(id, 0)
+            );
 
             // 取得這週的預約
             var occupiedSlots = db.ConferenceRoomSlot

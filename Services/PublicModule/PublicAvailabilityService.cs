@@ -234,9 +234,10 @@ namespace TASA.Services.PublicModule
             var rooms = GetRoomQuery(departmentId, building).ToList();
             var roomIds = rooms.Select(r => r.Id).ToList();
 
-            // 取得時段設定
+            // 取得主時段（含子時段）
             var allPeriods = db.SysRoomPricePeriod
                 .AsNoTracking()
+                .Include(p => p.Slots)
                 .Where(p => roomIds.Contains(p.RoomId) && p.IsEnabled && p.DeleteAt == null)
                 .ToList();
 
@@ -270,6 +271,21 @@ namespace TASA.Services.PublicModule
 
                                 var roomOccupied = occupiedSlots.Where(s => s.RoomId == r.Id);
 
+                                // 有子時段 → 展開子時段；無子時段 → 用主時段
+                                var displaySlots = periods
+                                    .SelectMany(p => p.Slots.Any()
+                                        ? p.Slots.OrderBy(s => s.StartTime).Select(s => new SlotAvailabilityVM
+                                        {
+                                            Key = $"{s.StartTime:hh\\:mm\\:ss}-{s.EndTime:hh\\:mm\\:ss}",
+                                            Name = null,
+                                            StartTime = $"{s.StartTime:hh\\:mm}",
+                                            EndTime = $"{s.EndTime:hh\\:mm}",
+                                            Occupied = IsSlotOccupied(roomOccupied, s.StartTime, s.EndTime)
+                                        })
+                                        : new[] { ToSlotVM(p, IsSlotOccupied(roomOccupied, p.StartTime, p.EndTime)) }
+                                    )
+                                    .ToList();
+
                                 return new RoomAvailabilityVM
                                 {
                                     Id = r.Id,
@@ -277,9 +293,7 @@ namespace TASA.Services.PublicModule
                                     FullName = BuildFullName(r),
                                     Capacity = r.Capacity,
                                     ImagePath = r.Images.FirstOrDefault()?.ImagePath,
-                                    Slots = periods.Select(p =>
-                                        ToSlotVM(p, IsSlotOccupied(roomOccupied, p.StartTime, p.EndTime))
-                                    ).ToList()
+                                    Slots = displaySlots
                                 };
                             }).ToList()
                         }).ToList()
@@ -316,9 +330,10 @@ namespace TASA.Services.PublicModule
             var rooms = GetRoomQuery(departmentId, building).ToList();
             var roomIds = rooms.Select(r => r.Id).ToList();
 
-            // 取得時段設定
+            // 取得主時段（含子時段）
             var allPeriods = db.SysRoomPricePeriod
                 .AsNoTracking()
+                .Include(p => p.Slots)
                 .Where(p => roomIds.Contains(p.RoomId) && p.IsEnabled && p.DeleteAt == null)
                 .ToList();
 
@@ -358,9 +373,20 @@ namespace TASA.Services.PublicModule
                                         var dayOccupied = occupiedSlots
                                             .Where(s => s.RoomId == r.Id && s.SlotDate == date);
 
-                                        return periods.Select(p =>
-                                            ToSlotVM(p, IsSlotOccupied(dayOccupied, p.StartTime, p.EndTime))
-                                        ).ToList();
+                                        // 有子時段 → 展開子時段；無子時段 → 用主時段
+                                        return periods
+                                            .SelectMany(p => p.Slots.Any()
+                                                ? p.Slots.OrderBy(s => s.StartTime).Select(s => new SlotAvailabilityVM
+                                                {
+                                                    Key = $"{s.StartTime:hh\\:mm\\:ss}-{s.EndTime:hh\\:mm\\:ss}",
+                                                    Name = null,
+                                                    StartTime = $"{s.StartTime:hh\\:mm}",
+                                                    EndTime = $"{s.EndTime:hh\\:mm}",
+                                                    Occupied = IsSlotOccupied(dayOccupied, s.StartTime, s.EndTime)
+                                                })
+                                                : new[] { ToSlotVM(p, IsSlotOccupied(dayOccupied, p.StartTime, p.EndTime)) }
+                                            )
+                                            .ToList();
                                     }
                                 );
 
