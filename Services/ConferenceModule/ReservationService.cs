@@ -586,7 +586,8 @@ namespace TASA.Services.ConferenceModule
 
             var queryable = db.Conference
                 .AsNoTracking()
-                .WhereNotDeleted();
+                .WhereNotDeleted()
+                .Where(c => c.ReservationStatus != ReservationStatus.Cancelled);
 
             // ✅ Admin / 主任 可以看到所有預約
             if (isAdmin)
@@ -833,7 +834,8 @@ namespace TASA.Services.ConferenceModule
 
             var ordersQuery = db.ConferencePaymentOrder
                 .AsNoTracking()
-                .Where(o => o.DeleteAt == null);
+                .Where(o => o.DeleteAt == null)
+                .Where(o => o.Items.All(i => i.Conference.ReservationStatus != ReservationStatus.Cancelled));
 
             // 非總務：只看自己管理的會議室的訂單
             if (!isAccountant)
@@ -1772,42 +1774,36 @@ namespace TASA.Services.ConferenceModule
 
             var isApplicant = userId == conference.CreateBy;
 
-            // 取得操作者權限（管理員身份驗證用）
+            // 取得操作者權限
             var userPermissions = service.AuthRoleServices.GetUserPermissions(userId);
             var isPrivileged = userPermissions.Roles.Any(r =>
                 r == "ADMIN" || r == "ADMINN" || r == "DIRECTOR" || r == "ACCOUNTANT");
 
-            // 驗證管理員是否有權管理此會議室
-            void CheckAdminRoomPermission()
-            {
-                if (isPrivileged) return;
-                var roomIds = conference.ConferenceRoomSlots.Select(s => s.RoomId).ToList();
-                if (!roomIds.Any(r => userPermissions.ManagedRoomIds.Contains(r)))
-                    throw new HttpException("您沒有權限取消此會議室的預約");
-            }
+            var conferenceRoomIds = conference.ConferenceRoomSlots.Select(s => s.RoomId).ToList();
+            var isRoomManagerForThis = conferenceRoomIds.Any(r => userPermissions.ManagedRoomIds.Contains(r));
+
+            // admin / director / 或這間會議室的管理者 → 有權管理
+            var canManage = isPrivileged || isRoomManagerForThis;
 
             switch (conference.ReservationStatus)
             {
                 case ReservationStatus.PendingApproval:
-                    if (isApplicant)
+                    if (!canManage)
                     {
+                        if (!isApplicant)
+                            throw new HttpException("您沒有權限取消此會議室的預約");
                         // 申請人：只有所有審核人都還未動作才能取消
                         bool anyActed = conference.ApprovalHistory
                             .Any(h => h.Status != ApprovalStatus.Pending);
                         if (anyActed)
                             throw new HttpException("審核已開始，如需取消請聯繫管理人員");
                     }
-                    else
-                    {
-                        CheckAdminRoomPermission();
-                    }
                     break;
 
                 case ReservationStatus.PendingPayment:
                 case ReservationStatus.Confirmed:
-                    if (isApplicant)
+                    if (!canManage)
                         throw new HttpException("審核通過後僅管理者可取消預約");
-                    CheckAdminRoomPermission();
                     break;
 
                 case ReservationStatus.Rejected:

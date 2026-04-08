@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TASA.Extensions;
 using TASA.Models;
+using TASA.Models.Enums;
 using TASA.Program;
 
 namespace TASA.Services.ConferenceModule
@@ -44,6 +45,7 @@ namespace TASA.Services.ConferenceModule
             return db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
+                .Where(x => x.ReservationStatus != ReservationStatus.Cancelled)
                 // ✅ 防呆：只查詢 StartTime/EndTime 都有值的會議（舊的會議建立方式）
                 .Where(x => x.StartTime.HasValue && x.EndTime.HasValue)
                 .WhereIf(query.Start.HasValue, x => query.Start <= x.StartTime)
@@ -84,6 +86,7 @@ namespace TASA.Services.ConferenceModule
             return db.Conference
                 .AsNoTracking()
                 .WhereNotDeleted()
+                .Where(x => x.ReservationStatus != ReservationStatus.Cancelled)
                 // ✅ 防呆：只查詢 StartTime 有值的會議
                 .Where(x => x.StartTime.HasValue)
                 .Where(x => x.StartTime >= DateTime.Now && ConferencesIds.Contains(x.Id))

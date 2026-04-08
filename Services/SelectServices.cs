@@ -691,6 +691,7 @@ namespace TASA.Services
             var list = query.List ?? [];
             var conference =
                 from c in db.Conference.AsNoTracking().WhereNotDeleted()
+                    .Where(c => c.ReservationStatus != ReservationStatus.Cancelled)
                 join cu in db.ConferenceUser.AsNoTracking() on c.Id equals cu.ConferenceId
                 where start <= c.StartTime && c.StartTime <= end
                 select new
