@@ -523,10 +523,11 @@ namespace TASA.Services.AuthModule
 
                 if (!HashString.Verify(password, user.PasswordHash, user.PasswordSalt))
                 {
-                    // 密碼錯誤：遞增失敗次數
+                    // 密碼錯誤：只有院外一般使用者才套用帳號鎖定
+                    var isNormalUser = user.AuthRole.Any(r => r.Code == AuthUserModule.AuthRoleServices.Normal);
                     var lockoutAttempts = service.SysConfigService.GetPasswordLockoutAttempts();
                     var trackedUser = db.AuthUser.WhereNotDeleted().FirstOrDefault(x => x.Id == user.Id);
-                    if (trackedUser != null && lockoutAttempts > 0)
+                    if (trackedUser != null && lockoutAttempts > 0 && isNormalUser)
                     {
                         trackedUser.FailedLoginCount++;
                         if (trackedUser.FailedLoginCount >= lockoutAttempts)
@@ -623,11 +624,12 @@ namespace TASA.Services.AuthModule
             };
             _ = service.LogServices.LogAsync("login_success", JsonConvert.SerializeObject(successInfo), user.Id, user.DepartmentId);
 
-            // 計算密碼到期天數
+            // 計算密碼到期天數（只有院外一般使用者才套用）
             int? expiresInDays = null;
             string? forgetUrl = null;
+            var isExternalUser = user.AuthRole.Any(r => r.Code == AuthUserModule.AuthRoleServices.Normal);
             var expiryDays = service.SysConfigService.GetPasswordExpiryDays();
-            if (expiryDays > 0)
+            if (expiryDays > 0 && isExternalUser)
             {
                 var baseline = user.PasswordChangedAt ?? user.CreateAt;
                 var expireAt = baseline.AddDays(expiryDays);
