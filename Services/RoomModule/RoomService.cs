@@ -292,6 +292,14 @@ namespace TASA.Services.RoomModule
             // ✅ 停車券設定
             public bool EnableParkingTicket { get; set; }
             public decimal ParkingTicketPrice { get; set; }
+
+            // 付款聯絡資訊
+            public string? PaymentContactInfo { get; set; }
+
+            // 允許的付款方式
+            public bool AllowTransfer { get; set; }
+            public bool AllowCash { get; set; }
+            public bool AllowCostSharing { get; set; }
         }
 
         public record DepartmentInfoVM
@@ -334,6 +342,14 @@ namespace TASA.Services.RoomModule
             // ✅ 停車券設定
             public bool EnableParkingTicket { get; set; }
             public decimal ParkingTicketPrice { get; set; } = 100;
+
+            // 付款聯絡資訊
+            public string? PaymentContactInfo { get; set; }
+
+            // 允許的付款方式
+            public bool AllowTransfer { get; set; } = true;
+            public bool AllowCash { get; set; } = true;
+            public bool AllowCostSharing { get; set; } = true;
         }
 
         [Serializable]
@@ -430,6 +446,11 @@ namespace TASA.Services.RoomModule
                 // ✅ 停車券設定
                 EnableParkingTicket = room.EnableParkingTicket,
                 ParkingTicketPrice = room.ParkingTicketPrice,
+
+                PaymentContactInfo = room.PaymentContactInfo,
+                AllowTransfer = room.AllowTransfer,
+                AllowCash = room.AllowCash,
+                AllowCostSharing = room.AllowCostSharing,
 
                 PricingDetails = new List<PricingDetailVM>(),
 
@@ -791,6 +812,10 @@ namespace TASA.Services.RoomModule
                 PanoramaUrl = string.IsNullOrEmpty(vm.PanoramaBase64) ? null : SavePanorama(vm.PanoramaBase64),
                 EnableParkingTicket = vm.EnableParkingTicket,  // ✅ 停車券
                 ParkingTicketPrice = vm.ParkingTicketPrice,
+                PaymentContactInfo = string.IsNullOrWhiteSpace(vm.PaymentContactInfo) ? null : vm.PaymentContactInfo.Trim(),
+                AllowTransfer = vm.AllowTransfer,
+                AllowCash = vm.AllowCash,
+                AllowCostSharing = vm.AllowCostSharing,
                 Sequence = maxSequence + 1,  // ✅ 新會議室放最後
                 CreateAt = DateTime.Now,
                 CreateBy = userid!.Value
@@ -1053,6 +1078,10 @@ namespace TASA.Services.RoomModule
             // ✅ 更新停車券設定
             data.EnableParkingTicket = vm.EnableParkingTicket;
             data.ParkingTicketPrice = vm.ParkingTicketPrice;
+            data.PaymentContactInfo = string.IsNullOrWhiteSpace(vm.PaymentContactInfo) ? null : vm.PaymentContactInfo.Trim();
+            data.AllowTransfer = vm.AllowTransfer;
+            data.AllowCash = vm.AllowCash;
+            data.AllowCostSharing = vm.AllowCostSharing;
             
 
             // ===== 6. 更新圖片 (可選) =====

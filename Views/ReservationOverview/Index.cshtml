@@ -446,6 +446,16 @@
                             </div>
                         </div>
                     </div>
+                    <!-- 付款聯絡資訊 -->
+                    <div class="col-md-12" v-if="selectedItem.paymentContactInfo">
+                        <div class="alert alert-light border mb-0 py-2">
+                            <small class="text-muted">
+                                <i class="mdi mdi-information-outline me-1"></i>
+                                {{ selectedItem.paymentContactInfo }}
+                            </small>
+                        </div>
+                    </div>
+
                     <!-- ✅ 已上傳付款憑證 -->
                     <div class="col-md-12" v-if="selectedItem.paymentFilePath">
                         <div class="row">
@@ -570,7 +580,7 @@
                     </template>
                 <div>
                     <div class="col-12">
-                        <h5 class="d-flex align-items-center text-primary border-bottom">
+                        <h5 class="d-flex align-items-center text-primary border-bottom mb-3">
                             <span class="material-icons icons">label_important_outline</span>
                             狀態資訊
                         </h5>

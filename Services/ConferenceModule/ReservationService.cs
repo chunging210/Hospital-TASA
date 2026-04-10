@@ -371,6 +371,9 @@ namespace TASA.Services.ConferenceModule
             public string? CancelledByName { get; set; }
             public string? CancelledAt { get; set; }
             public string? CancelledReason { get; set; }
+
+            // 付款聯絡資訊（來自 SysRoom）
+            public string? PaymentContactInfo { get; set; }
         }
 
         public class ApprovalHistoryVM
@@ -2182,7 +2185,10 @@ namespace TASA.Services.ConferenceModule
                         DiscountAmount = h.DiscountAmount,
                         DiscountReason = h.DiscountReason
                     })
-                    .ToList()
+                    .ToList(),
+                PaymentContactInfo = conference.ConferenceRoomSlots
+                    .Select(s => s.Room != null ? s.Room.PaymentContactInfo : null)
+                    .FirstOrDefault(v => v != null)
             };
         }
 
@@ -2225,6 +2231,20 @@ namespace TASA.Services.ConferenceModule
             // ✅ 成本分攤必須填寫成本代碼
             if (vm.PaymentMethod == "cost-sharing" && string.IsNullOrWhiteSpace(vm.DepartmentCode))
                 throw new HttpException("選擇成本分攤時必須填寫成本代碼");
+
+            // ✅ 驗證付款方式是否符合會議室設定
+            {
+                var roomForPayment = db.SysRoom.AsNoTracking().FirstOrDefault(r => r.Id == vm.RoomId);
+                if (roomForPayment != null)
+                {
+                    if (vm.PaymentMethod == "transfer" && !roomForPayment.AllowTransfer)
+                        throw new HttpException("此會議室不支援銀行匯款付款");
+                    if (vm.PaymentMethod == "cash" && !roomForPayment.AllowCash)
+                        throw new HttpException("此會議室不支援現金繳費");
+                    if (vm.PaymentMethod == "cost-sharing" && !roomForPayment.AllowCostSharing)
+                        throw new HttpException("此會議室不支援成本分攤付款");
+                }
+            }
 
             // ✅ 判斷是跨日模式還是單日模式
             var isMultiDay = vm.StartDate.HasValue && vm.EndDate.HasValue;

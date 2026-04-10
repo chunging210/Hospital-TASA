@@ -166,6 +166,51 @@
 
                 </div>
 
+                <!-- 5. 匯款資訊設定 -->
+                <div class="setting-item">
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong class="text-primary">匯款資訊</strong>
+                            <small class="text-muted d-block mt-1">顯示於預約表單的匯款說明（留空則不顯示該欄位）</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">金融機構名稱</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="settings.transferBankName"
+                                   placeholder="例：合作金庫 石牌分行" style="max-width: 400px;">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">銀行代碼</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="settings.transferBankCode"
+                                   placeholder="例：006" style="max-width: 200px;">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">帳號</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="settings.transferAccount"
+                                   placeholder="例：1427713000733" style="max-width: 300px;">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">戶名</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="settings.transferAccountName"
+                                   placeholder="例：臺北榮民總醫院作業基金403專戶" style="max-width: 400px;">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">現金繳款說明</label>
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" v-model="settings.cashPaymentInfo"
+                                   placeholder="例：請至出納組繳款" style="max-width: 400px;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 操作按鈕 - 置中 -->
                 <div class="text-center mt-5">
                     <button type="button" @@click="saveSettings" class="btn btn-primary btn-lg px-5 me-3">

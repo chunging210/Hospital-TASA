@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-ChildItem 'c:\\\\Users\\\\davin.huang\\\\Desktop\\\\TASA\\\\Migrations' -Name | Sort-Object | Select-Object -Last 5\")",
+      "Read(//c/Users/davin.huang/.claude/projects/c--Users-davin-huang-Desktop-TASA/tool-results/**)",
+      "Read(//c/Users/davin.huang/Desktop/TASA/NR>=872 && NR<=920 {printf \"%d/t%s/**)",
+      "Read(//c/Users/davin.huang/Desktop/TASA/NR>=877 && NR<=900 {printf \"%d|%s/**)"
+    ]
+  }
+}

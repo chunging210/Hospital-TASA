@@ -60,11 +60,49 @@ window.$config = {
         };
 
         this.minAdvanceBookingDays = ref(7);
+        this.paymentInfo = reactive({
+            transferBankName: '',
+            transferBankCode: '',
+            transferAccount: '',
+            transferAccountName: '',
+            cashPaymentInfo: '',
+        });
+
+        // 根據會議室設定，過濾可用的付款方式
+        this.allowedPaymentMethods = computed(() => {
+            const room = this.selectedRoom?.value;
+            if (!room) return { transfer: true, cash: true, costSharing: true };
+            return {
+                transfer: room.AllowTransfer ?? true,
+                cash: room.AllowCash ?? true,
+                costSharing: room.AllowCostSharing ?? true,
+            };
+        });
 
         // 國定假日資料 (格式: { "2025-01-01": true, "2025-02-08": false } - true=假日, false=補班日)
         this.holidayDates = ref({});
 
         // 載入國定假日資料
+        this.loadSysConfig = async (departmentId) => {
+            try {
+                console.log('🔧 [loadSysConfig] departmentId =', departmentId);
+                const configRes = departmentId
+                    ? await global.api.sysconfig.getbydepartment({ departmentId })
+                    : await global.api.sysconfig.getall();
+                console.log('🔧 [loadSysConfig] TRANSFER_BANK_NAME =', configRes.data?.TRANSFER_BANK_NAME);
+                if (configRes.data) {
+                    this.minAdvanceBookingDays.value = parseInt(configRes.data.MIN_ADVANCE_BOOKING_DAYS) || 7;
+                    this.paymentInfo.transferBankName = configRes.data.TRANSFER_BANK_NAME || '';
+                    this.paymentInfo.transferBankCode = configRes.data.TRANSFER_BANK_CODE || '';
+                    this.paymentInfo.transferAccount = configRes.data.TRANSFER_ACCOUNT || '';
+                    this.paymentInfo.transferAccountName = configRes.data.TRANSFER_ACCOUNT_NAME || '';
+                    this.paymentInfo.cashPaymentInfo = configRes.data.CASH_PAYMENT_INFO || '';
+                }
+            } catch (err) {
+                console.error('載入系統設定失敗:', err);
+            }
+        };
+
         this.loadHolidays = async () => {
             const currentYear = new Date().getFullYear();
             const years = [currentYear, currentYear + 1];
@@ -2028,15 +2066,9 @@ window.$config = {
             await this.loadCurrentUser();
             await this.loadCostCenters();
 
-            // 載入系統設定（最早預約天數）
-            try {
-                const configRes = await global.api.sysconfig.getall();
-                if (configRes.data) {
-                    this.minAdvanceBookingDays.value = parseInt(configRes.data.MIN_ADVANCE_BOOKING_DAYS) || 7;
-                }
-            } catch (err) {
-                console.error('載入系統設定失敗:', err);
-            }
+            // 載入系統設定（最早預約天數 + 匯款資訊）
+            await this.loadSysConfig(this.form.departmentId);
+
 
             // 載入國定假日資料
             await this.loadHolidays();
@@ -2103,6 +2135,11 @@ window.$config = {
                 this.form.roomId = presetRoomId;
                 this.selectedRoom.value = this.rooms.value.find(r => r.Id === presetRoomId) || null;
 
+                // 依房間所屬分院載入系統設定
+                if (this.selectedRoom.value?.DepartmentId) {
+                    await this.loadSysConfig(this.selectedRoom.value.DepartmentId);
+                }
+
                 await this.updateTimeSlots();
                 await this.loadEquipmentByRoom();
 
@@ -2133,6 +2170,17 @@ window.$config = {
                     this.form.selectedSlots = [];
 
                     this.loadBuildingsByDepartment();
+                    this.loadSysConfig(departmentId);
+                }
+            );
+
+            // 依選到的會議室分院重新載入系統設定
+            watch(
+                () => this.selectedRoom.value,
+                async (room) => {
+                    if (room?.DepartmentId) {
+                        await this.loadSysConfig(room.DepartmentId);
+                    }
                 }
             );
 
@@ -2245,6 +2293,20 @@ window.$config = {
                 async (roomId) => {
                     if (roomId && this.form.startDate) {
                         this.selectedRoom.value = this.rooms.value.find(r => r.Id === roomId) || null;
+
+                        // 依房間所屬分院重新載入系統設定（匯款資訊等）
+                        await this.loadSysConfig(this.selectedRoom.value?.DepartmentId || this.form.departmentId);
+
+                        // 若目前選的付款方式不被此房間允許，清空
+                        const allowed = this.allowedPaymentMethods.value;
+                        if (
+                            (this.form.paymentMethod === 'transfer' && !allowed.transfer) ||
+                            (this.form.paymentMethod === 'cash' && !allowed.cash) ||
+                            (this.form.paymentMethod === 'cost-sharing' && !allowed.costSharing)
+                        ) {
+                            this.form.paymentMethod = '';
+                        }
+
                         // 清空舊資料
                         Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
                         Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);

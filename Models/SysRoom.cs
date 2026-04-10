@@ -140,6 +140,27 @@ public partial class SysRoom
     /// </summary>
     public int Sequence { get; set; } = 0;
 
+    /// <summary>
+    /// 付款聯絡資訊（如有問題請洽 XXX）
+    /// </summary>
+    [StringLength(500)]
+    public string? PaymentContactInfo { get; set; }
+
+    /// <summary>
+    /// 允許銀行匯款
+    /// </summary>
+    public bool AllowTransfer { get; set; } = true;
+
+    /// <summary>
+    /// 允許現金繳費
+    /// </summary>
+    public bool AllowCash { get; set; } = true;
+
+    /// <summary>
+    /// 允許成本分攤
+    /// </summary>
+    public bool AllowCostSharing { get; set; } = true;
+
     [InverseProperty("Room")]
     public virtual ICollection<SysRoomPricePeriod> SysRoomPricePeriod { get; set; } = new List<SysRoomPricePeriod>();
 

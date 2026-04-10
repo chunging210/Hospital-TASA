@@ -478,6 +478,8 @@ window.$config = {
                     cancelledAt: detail.CancelledAt || null,
                     cancelledReason: detail.CancelledReason || null,
 
+                    paymentContactInfo: detail.PaymentContactInfo || null,
+
                     openedFrom: this.activeTab.value
                 };
 

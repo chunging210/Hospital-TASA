@@ -59,12 +59,17 @@ namespace TASA.Services
         public record RoomSelectVM
         {
             public Guid Id { get; set; }
+            public Guid? DepartmentId { get; set; }
             public string Name { get; set; } = string.Empty;
             public PricingType PricingType { get; set; }
             public BookingSettings BookingSettings { get; set; }
             public string? AgreementPath { get; set; }  // ✅ 聲明書路徑
             public bool EnableParkingTicket { get; set; }  // ✅ 停車券功能
             public decimal ParkingTicketPrice { get; set; }  // ✅ 停車券單價
+            public bool AllowTransfer { get; set; }
+            public bool AllowCash { get; set; }
+            public bool AllowCostSharing { get; set; }
+            public string? PaymentContactInfo { get; set; }
         }
 
         public record RoomByFloorQueryVM
@@ -468,12 +473,17 @@ namespace TASA.Services
                 .Select(x => new RoomSelectVM
                 {
                     Id = x.Id,
+                    DepartmentId = x.DepartmentId,
                     Name = x.Name,
                     PricingType = x.PricingType,
                     BookingSettings = x.BookingSettings,
                     AgreementPath = x.AgreementPath,  // ✅ 聲明書路徑
                     EnableParkingTicket = x.EnableParkingTicket,  // ✅ 停車券功能
-                    ParkingTicketPrice = x.ParkingTicketPrice  // ✅ 停車券單價
+                    ParkingTicketPrice = x.ParkingTicketPrice,  // ✅ 停車券單價
+                    AllowTransfer = x.AllowTransfer,
+                    AllowCash = x.AllowCash,
+                    AllowCostSharing = x.AllowCostSharing,
+                    PaymentContactInfo = x.PaymentContactInfo
                 })
                 .ToList();
 

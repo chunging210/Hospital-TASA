@@ -338,6 +338,36 @@
                 </div>
             </div>
 
+            <!-- 允許的付款方式 -->
+            <div class="form-section">
+                <h6>付款方式</h6>
+                <div class="d-flex gap-4">
+                    <div class="form-check">
+                        <input v-model="room.vm.AllowTransfer" type="checkbox" class="form-check-input" id="allowTransfer">
+                        <label class="form-check-label" for="allowTransfer">銀行匯款</label>
+                    </div>
+                    <div class="form-check">
+                        <input v-model="room.vm.AllowCash" type="checkbox" class="form-check-input" id="allowCash">
+                        <label class="form-check-label" for="allowCash">現金繳費</label>
+                    </div>
+                    <div class="form-check">
+                        <input v-model="room.vm.AllowCostSharing" type="checkbox" class="form-check-input" id="allowCostSharing">
+                        <label class="form-check-label" for="allowCostSharing">成本分攤</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 付款聯絡資訊 -->
+            <div class="form-section">
+                <h6>付款聯絡資訊</h6>
+                <div class="mb-3">
+                    <label class="form-label form-label-custom">聯絡資訊</label>
+                    <input v-model="room.vm.PaymentContactInfo" type="text" class="form-control"
+                           placeholder="例：如有問題請洽總務組 02-2871-2121 分機 1234">
+                    <small class="text-muted">顯示於預約詳情頁面，讓使用者知道付款相關問題的聯絡窗口</small>
+                </div>
+            </div>
+
             <!-- 審核關卡設定區塊 -->
             <div class="form-section">
                 <div class="d-flex justify-content-between align-items-center mb-3">

@@ -37,6 +37,12 @@ namespace TASA.Services
             ["PASSWORD_EXPIRY_DAYS"] = "0",         // 0 = 停用
             ["PASSWORD_EXPIRY_WARNING_DAYS"] = "7",
             ["PASSWORD_HISTORY_COUNT"] = "3",       // 0 = 停用
+            // 匯款資訊
+            ["TRANSFER_BANK_NAME"] = "",
+            ["TRANSFER_BANK_CODE"] = "",
+            ["TRANSFER_ACCOUNT"] = "",
+            ["TRANSFER_ACCOUNT_NAME"] = "",
+            ["CASH_PAYMENT_INFO"] = "",
         };
 
         // ========== 統一的 Config 處理方法 ==========
@@ -391,6 +397,23 @@ namespace TASA.Services
             var v = GetConfigValue("PASSWORD_HISTORY_COUNT");
             return int.TryParse(v, out int n) ? n : 3;
         }
+
+        // ========== 6. 匯款資訊 ==========
+
+        public string GetTransferBankName(Guid? departmentId = null)
+            => GetConfigValue("TRANSFER_BANK_NAME", departmentId);
+
+        public string GetTransferBankCode(Guid? departmentId = null)
+            => GetConfigValue("TRANSFER_BANK_CODE", departmentId);
+
+        public string GetTransferAccount(Guid? departmentId = null)
+            => GetConfigValue("TRANSFER_ACCOUNT", departmentId);
+
+        public string GetTransferAccountName(Guid? departmentId = null)
+            => GetConfigValue("TRANSFER_ACCOUNT_NAME", departmentId);
+
+        public string GetCashPaymentInfo(Guid? departmentId = null)
+            => GetConfigValue("CASH_PAYMENT_INFO", departmentId);
 
     }
 }

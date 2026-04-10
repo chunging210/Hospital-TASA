@@ -19,6 +19,11 @@ const sysConfig = new function () {
         passwordExpiryDays: 0,
         passwordExpiryWarningDays: 7,
         passwordHistoryCount: 3,
+        transferBankName: '',
+        transferBankCode: '',
+        transferAccount: '',
+        transferAccountName: '',
+        cashPaymentInfo: '',
     });
 
     // 載入用戶資訊
@@ -84,6 +89,11 @@ const sysConfig = new function () {
                     this.settings.passwordExpiryDays = parseInt(data.PASSWORD_EXPIRY_DAYS ?? '0');
                     this.settings.passwordExpiryWarningDays = parseInt(data.PASSWORD_EXPIRY_WARNING_DAYS ?? '7');
                     this.settings.passwordHistoryCount = parseInt(data.PASSWORD_HISTORY_COUNT ?? '3');
+                    this.settings.transferBankName = data.TRANSFER_BANK_NAME || '';
+                    this.settings.transferBankCode = data.TRANSFER_BANK_CODE || '';
+                    this.settings.transferAccount = data.TRANSFER_ACCOUNT || '';
+                    this.settings.transferAccountName = data.TRANSFER_ACCOUNT_NAME || '';
+                    this.settings.cashPaymentInfo = data.CASH_PAYMENT_INFO || '';
                 }
             })
             .catch(error => {
@@ -123,7 +133,12 @@ const sysConfig = new function () {
         configs.push(
             { configKey: 'PAYMENT_DEADLINE_DAYS', configValue: this.settings.paymentDeadlineDays.toString() },
             { configKey: 'MIN_ADVANCE_BOOKING_DAYS', configValue: this.settings.minAdvanceBookingDays.toString() },
-            { configKey: 'MANAGER_EMAIL', configValue: this.settings.managerEmail }
+            { configKey: 'MANAGER_EMAIL', configValue: this.settings.managerEmail },
+            { configKey: 'TRANSFER_BANK_NAME', configValue: this.settings.transferBankName },
+            { configKey: 'TRANSFER_BANK_CODE', configValue: this.settings.transferBankCode },
+            { configKey: 'TRANSFER_ACCOUNT', configValue: this.settings.transferAccount },
+            { configKey: 'TRANSFER_ACCOUNT_NAME', configValue: this.settings.transferAccountName },
+            { configKey: 'CASH_PAYMENT_INFO', configValue: this.settings.cashPaymentInfo },
         );
 
         const targetName = departmentId ? this.departments.find(d => d.Id === departmentId)?.Name : '全局';
@@ -162,6 +177,11 @@ const sysConfig = new function () {
         this.settings.passwordExpiryDays = 0;
         this.settings.passwordExpiryWarningDays = 7;
         this.settings.passwordHistoryCount = 3;
+        this.settings.transferBankName = '';
+        this.settings.transferBankCode = '';
+        this.settings.transferAccount = '';
+        this.settings.transferAccountName = '';
+        this.settings.cashPaymentInfo = '';
 
         addAlert('已重設為預設值 (請記得儲存設定)', { type: 'info' });
     };

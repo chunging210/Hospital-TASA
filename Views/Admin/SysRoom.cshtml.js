@@ -27,6 +27,10 @@ class VM {
     EnableParkingTicket = false;  // ✅ 停車券功能
     ParkingTicketPrice = 100;     // ✅ 停車券單價
     Sequence = 0;                 // ✅ 排序順序
+    PaymentContactInfo = '';      // 付款聯絡資訊
+    AllowTransfer = true;         // 允許銀行匯款
+    AllowCash = true;             // 允許現金繳費
+    AllowCostSharing = true;      // 允許成本分攤
 }
 
 // ✅ Enum 定義（與後端對應）
@@ -706,6 +710,10 @@ const room = new function () {
                     this.vm.EnableParkingTicket = response.data.EnableParkingTicket || false;  // ✅ 停車券
                     this.vm.ParkingTicketPrice = response.data.ParkingTicketPrice || 100;
                     this.vm.Sequence = response.data.Sequence || 0;  // ✅ 排序順序
+                    this.vm.PaymentContactInfo = response.data.PaymentContactInfo || '';
+                    this.vm.AllowTransfer = response.data.AllowTransfer ?? true;
+                    this.vm.AllowCash = response.data.AllowCash ?? true;
+                    this.vm.AllowCostSharing = response.data.AllowCostSharing ?? true;
 
                     // ✅ 編輯時清空新上傳的聲明書
                     this.form.agreementBase64 = null;
@@ -856,6 +864,19 @@ const room = new function () {
             }
         }
 
+        // 驗證付款方式至少勾一個
+        if (!this.vm.AllowTransfer && !this.vm.AllowCash && !this.vm.AllowCostSharing) {
+            addAlert('請至少勾選一種付款方式', { type: 'danger' });
+            return;
+        }
+
+        // 驗證：內外皆可的會議室，外部人員必須有可用的付款方式（銀行匯款或現金繳費）
+        if (this.vm.BookingSettings === BookingSettings.InternalAndExternal &&
+            !this.vm.AllowTransfer && !this.vm.AllowCash) {
+            addAlert('租借設定為「內外皆可」時，至少須開放「銀行匯款」或「現金繳費」，否則外部人員無法付款', { type: 'danger' });
+            return;
+        }
+
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
         const capacity = Number(this.vm.Capacity ?? 0);
         const area = Number(this.vm.Area ?? 0);
@@ -889,7 +910,11 @@ const room = new function () {
             PanoramaUrl: this.vm.PanoramaUrl ?? null,
             EnableParkingTicket: this.vm.EnableParkingTicket,  // ✅ 停車券
             ParkingTicketPrice: this.vm.ParkingTicketPrice || 100,
-            Sequence: this.vm.Sequence || 0  // ✅ 排序順序
+            Sequence: this.vm.Sequence || 0,  // ✅ 排序順序
+            PaymentContactInfo: this.vm.PaymentContactInfo || null,
+            AllowTransfer: this.vm.AllowTransfer,
+            AllowCash: this.vm.AllowCash,
+            AllowCostSharing: this.vm.AllowCostSharing,
         };
 
         console.log('🔍 [SAVE normalized]', body);
