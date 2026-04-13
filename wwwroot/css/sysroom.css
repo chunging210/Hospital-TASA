@@ -216,7 +216,7 @@ body {
     justify-content: center;
     position: absolute;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) translateZ(0);
     border-radius: 50%;
     background: rgb(145 145 145 / 50%);
     color: white;
@@ -224,6 +224,8 @@ body {
     cursor: pointer;
     z-index: 10;
     line-height: 1;
+    will-change: transform;
+    isolation: isolate;
 }
 
 .carousel-btn.prev {
@@ -306,8 +308,6 @@ body {
 
 .icons {
     position: relative;
-    top: 3px;
-    margin: 0px;
 }
 
 /* ===== 房間特性區塊 ===== */

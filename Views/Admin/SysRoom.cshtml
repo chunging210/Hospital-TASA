@@ -80,11 +80,13 @@
 
                                 <!-- 導航按鈕 -->
                                 <button v-if="roomItem.Images && roomItem.Images.length > 1"
-                                    @@click="prevImage(roomItem.Id)" class="carousel-btn prev">
+                                    @@click.stop="prevImage(roomItem.Id)" class="carousel-btn prev"
+                                    style="z-index: 100; position: absolute;">
                                     &lt;
                                 </button>
                                 <button v-if="roomItem.Images && roomItem.Images.length > 1"
-                                    @@click="nextImage(roomItem.Id)" class="carousel-btn next">
+                                    @@click.stop="nextImage(roomItem.Id)" class="carousel-btn next"
+                                    style="z-index: 100; position: absolute;">
                                     &gt;
                                 </button>
                             </div>

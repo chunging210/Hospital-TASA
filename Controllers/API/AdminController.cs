@@ -108,6 +108,7 @@ namespace TASA.Controllers.API
         }
 
         [HttpPost("roominsert")]
+        [RequestSizeLimit(200_000_000)]
         public IActionResult RoomInsert(RoomService.InsertVM vm)
         {
             var id = service.RoomService.Insert(vm);
@@ -115,6 +116,7 @@ namespace TASA.Controllers.API
         }
 
         [HttpPost("roomupdate")]
+        [RequestSizeLimit(200_000_000)]
         public IActionResult RoomUpdate(RoomService.InsertVM vm)
         {
             service.RoomService.Update(vm);

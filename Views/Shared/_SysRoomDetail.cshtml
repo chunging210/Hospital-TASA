@@ -32,7 +32,7 @@
                                 <div class="detail-image-container">
                                     <!-- 有圖片的情況 -->
                                     <img v-if="hasDetailImages && currentDetailImage && !isDetailVideoFile(currentDetailImage)"
-                                         :key="detailRoomCarouselIndex" :src="currentDetailImage"
+                                         :key="'img-' + detailRoomCarouselIndex" :src="currentDetailImage"
                                          class="d-block w-100 h-100"
                                          :class="room.carouselDirection === 'next' ? 'carousel-next' : 'carousel-prev'"
                                          alt="會議室圖片">
@@ -40,7 +40,7 @@
                                     <!-- 有影片的情況 -->
                                     <video
                                         v-else-if="hasDetailImages && currentDetailImage && isDetailVideoFile(currentDetailImage)"
-                                        :key="detailRoomCarouselIndex" controls
+                                        :key="'video-' + detailRoomCarouselIndex" controls
                                         style="width: 100%; height: 100%; object-fit: contain; background: #000;"
                                         :class="room.carouselDirection === 'next' ? 'carousel-next' : 'carousel-prev'"
                                         @@play="room.stopCarousel()" @@pause="room.startCarousel()"
