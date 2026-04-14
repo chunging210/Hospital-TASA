@@ -1,6 +1,10 @@
-﻿@{
+﻿@inject TASA.Services.ServiceWrapper service
+@{
     Layout = "_Page";
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
+    var announcementConfigs = service.SysConfigService.GetAllConfigs(user?.DepartmentId);
+    var announcementTitle = announcementConfigs.GetValueOrDefault("ANNOUNCEMENT_TITLE", "");
+    var announcementContent = announcementConfigs.GetValueOrDefault("ANNOUNCEMENT_CONTENT", "");
 }
 
 @section head {
@@ -12,6 +16,38 @@
 }
 
 <partial name="_Navbar"></partial>
+
+@if (!string.IsNullOrWhiteSpace(announcementContent))
+{
+    <div id="announcement-banner" class="d-flex align-items-start gap-2 mb-3" role="alert"
+         style="display:none !important; border-left: 4px solid #36e4cd; border-radius: 6px; padding: 0.75rem 1rem;
+                background: linear-gradient(to right, rgba(54,228,205,0.12), rgba(59,118,225,0.06)); color: #1a3560;">
+        <span class="material-icons mt-1" style="font-size: 20px; background: linear-gradient(to bottom, #3b76e1, #36e4cd); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">campaign</span>
+        <div style="flex: 1;">
+            @if (!string.IsNullOrWhiteSpace(announcementTitle))
+            {
+                <strong>@announcementTitle</strong><span class="mx-2">—</span>
+            }
+            <span style="white-space: pre-wrap;">@announcementContent</span>
+        </div>
+        <button type="button" aria-label="關閉"
+                onclick="document.getElementById('announcement-banner').remove(); sessionStorage.setItem('announcement_dismissed', '1');"
+                style="background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0 0.25rem; color: #3b76e1; line-height: 1; opacity: 0.6;">&#x2715;</button>
+    </div>
+    <script>
+        (function () {
+            if (sessionStorage.getItem('announcement_dismissed') === '1') return;
+            document.addEventListener('DOMContentLoaded', function () {
+                var banner = document.getElementById('announcement-banner');
+                var pageContent = document.querySelector('.page-content');
+                if (!banner || !pageContent) return;
+                banner.style.removeProperty('display');
+                pageContent.insertBefore(banner, pageContent.firstChild);
+            });
+        })();
+    </script>
+}
+
 <section id="app">
     @RenderBody()
 </section>

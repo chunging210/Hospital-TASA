@@ -141,6 +141,11 @@ namespace TASA.Services.AuthUserModule
             {
                 throw new HttpException("此 Email 已被其他帳號使用");
             }
+            // 檢查 Email 是否與其他人的帳號(Account)衝突
+            if (!string.IsNullOrWhiteSpace(vm.Email) && db.AuthUser.WhereNotDeleted().Any(x => x.Account == vm.Email && x.Id != vm.Id))
+            {
+                throw new HttpException("此 Email 與其他使用者的帳號相同，無法使用");
+            }
             var data = db.AuthUser
                 .Include(x => x.AuthRole)
                 .WhereNotDeleted()

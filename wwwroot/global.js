@@ -206,6 +206,6 @@ if (document.querySelector('globalalert')) {
 if (document.querySelector('header')) {
     fn.getName = () => cookies.get('n');
     fn.getExp = () => cookies.get('e');
-    fn.logout = () => global.api.auth.logout().then(() => { location.href = '/api/auth/redirection'; });
+    fn.logout = () => global.api.auth.logout().then(() => { sessionStorage.removeItem('announcement_dismissed'); location.href = '/api/auth/redirection'; });
     createApp(navbar).mount("header");
 }

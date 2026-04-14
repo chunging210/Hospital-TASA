@@ -24,6 +24,8 @@ const sysConfig = new function () {
         transferAccount: '',
         transferAccountName: '',
         cashPaymentInfo: '',
+        announcementTitle: '',
+        announcementContent: '',
     });
 
     // 載入用戶資訊
@@ -94,6 +96,8 @@ const sysConfig = new function () {
                     this.settings.transferAccount = data.TRANSFER_ACCOUNT || '';
                     this.settings.transferAccountName = data.TRANSFER_ACCOUNT_NAME || '';
                     this.settings.cashPaymentInfo = data.CASH_PAYMENT_INFO || '';
+                    this.settings.announcementTitle = data.ANNOUNCEMENT_TITLE || '';
+                    this.settings.announcementContent = data.ANNOUNCEMENT_CONTENT || '';
                 }
             })
             .catch(error => {
@@ -117,7 +121,7 @@ const sysConfig = new function () {
             departmentId = this.departmentId.value;
         }
 
-        // 只有 Admin 在編輯全局設定時才能修改「是否開啟訪客註冊」和密碼安全政策
+        // 只有 Admin 在編輯全局設定時才能修改「是否開啟訪客註冊」、密碼安全政策
         if (this.isAdmin.value && this.selectedDepartmentId.value === null) {
             configs.push({ configKey: 'GUEST_REGISTRATION', configValue: this.settings.isRegistrationOpen.toString() });
             configs.push(
@@ -126,6 +130,14 @@ const sysConfig = new function () {
                 { configKey: 'PASSWORD_EXPIRY_DAYS', configValue: this.settings.passwordExpiryDays.toString() },
                 { configKey: 'PASSWORD_EXPIRY_WARNING_DAYS', configValue: this.settings.passwordExpiryWarningDays.toString() },
                 { configKey: 'PASSWORD_HISTORY_COUNT', configValue: this.settings.passwordHistoryCount.toString() },
+            );
+        }
+
+        // 公告：全院 Admin 和分院 Admin 都可以設定
+        if (this.isAdmin.value) {
+            configs.push(
+                { configKey: 'ANNOUNCEMENT_TITLE', configValue: this.settings.announcementTitle },
+                { configKey: 'ANNOUNCEMENT_CONTENT', configValue: this.settings.announcementContent },
             );
         }
 
@@ -182,6 +194,8 @@ const sysConfig = new function () {
         this.settings.transferAccount = '';
         this.settings.transferAccountName = '';
         this.settings.cashPaymentInfo = '';
+        this.settings.announcementTitle = '';
+        this.settings.announcementContent = '';
 
         addAlert('已重設為預設值 (請記得儲存設定)', { type: 'info' });
     };

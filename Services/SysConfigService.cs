@@ -43,6 +43,9 @@ namespace TASA.Services
             ["TRANSFER_ACCOUNT"] = "",
             ["TRANSFER_ACCOUNT_NAME"] = "",
             ["CASH_PAYMENT_INFO"] = "",
+            // 公告
+            ["ANNOUNCEMENT_TITLE"] = "",
+            ["ANNOUNCEMENT_CONTENT"] = "",
         };
 
         // ========== 統一的 Config 處理方法 ==========
@@ -414,6 +417,14 @@ namespace TASA.Services
 
         public string GetCashPaymentInfo(Guid? departmentId = null)
             => GetConfigValue("CASH_PAYMENT_INFO", departmentId);
+
+        // ========== 7. 公告 ==========
+
+        public string GetAnnouncementTitle()
+            => GetConfigValue("ANNOUNCEMENT_TITLE");
+
+        public string GetAnnouncementContent()
+            => GetConfigValue("ANNOUNCEMENT_CONTENT");
 
     }
 }
