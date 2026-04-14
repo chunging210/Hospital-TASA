@@ -44,3 +44,99 @@ td.slot-empty {
 .unitname-item:last-child { border-bottom: none; }
 
 .unitname-item:hover { background-color: #f8f9fa; }
+
+/* ===== 會議列表 RWD ===== */
+@media (max-width: 768px) {
+
+    /* 篩選區塊 input 字縮小（僅 conference 篩選列） */
+    .conference-filter .form-control,
+    .conference-filter .form-select,
+    .conference-filter .btn:not(.btn-primary):not(.btn-outline-secondary) {
+        font-size: 13px !important;
+    }
+
+    /* 進階篩選排成 1 欄 */
+    .conference-filter .row.g-2 > [class*="col-"] {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* ===== 以下全部縮限在 .conference-list-view 內，避免污染其他頁 ===== */
+
+    /* 隱藏表頭 */
+    .conference-list-view .table.table-hover thead {
+        display: none !important;
+    }
+
+    /* table 撐滿寬度 */
+    .conference-list-view .table.table-hover {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .conference-list-view .table.table-hover tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* 每列變成卡片 */
+    .conference-list-view .table.table-hover tbody tr {
+        display: block !important;
+        width: 100% !important;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+
+    .conference-list-view .table.table-hover tbody tr:hover {
+        background: #f8f9fa !important;
+    }
+
+    /* 每個 td 變成行 */
+    .conference-list-view .table.table-hover tbody td {
+        display: flex !important;
+        align-items: flex-start;
+        padding: 3px 0 !important;
+        border: none !important;
+        font-size: 13px;
+        max-width: 100% !important;
+    }
+
+    /* 第一個 td（會議名稱）特別大 */
+    .conference-list-view .table.table-hover tbody td:first-child {
+        font-size: 15px !important;
+        font-weight: 700;
+        color: #1a1a2e;
+        padding-bottom: 8px !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        margin-bottom: 4px;
+        display: block !important;
+    }
+
+    /* 各欄標籤 */
+    .conference-list-view .table.table-hover tbody td:nth-child(2)::before { content: "承辦："; color: #adb5bd; font-size: 12px; min-width: 42px; flex-shrink: 0; }
+    .conference-list-view .table.table-hover tbody td:nth-child(3)::before { content: "日期："; color: #adb5bd; font-size: 12px; min-width: 42px; flex-shrink: 0; }
+    .conference-list-view .table.table-hover tbody td:nth-child(4)::before { content: "地點："; color: #adb5bd; font-size: 12px; min-width: 42px; flex-shrink: 0; }
+    .conference-list-view .table.table-hover tbody td:nth-child(5)::before { content: "發起："; color: #adb5bd; font-size: 12px; min-width: 42px; flex-shrink: 0; }
+
+    .conference-list-view .table.table-hover tbody td:nth-child(3) {
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    /* tfoot 空資料列 */
+    .conference-list-view .table.table-hover tfoot tr {
+        display: block !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+
+    .conference-list-view .table.table-hover tfoot td {
+        display: block !important;
+        border: none !important;
+    }
+}

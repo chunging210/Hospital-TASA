@@ -297,7 +297,7 @@ body {
 }
 
 .action-buttons .btn {
-    width: 100%;
+    width: 50%;
     font-size: 20px;
     font-weight: 500;
     border-radius: 10px;
@@ -1981,4 +1981,367 @@ body {
 .sequence-buttons .btn:hover {
     background: rgba(255, 255, 255, 0.5);
     border-color: white;
+}
+
+/* ===== 手機版 RWD (≤768px) ===== */
+@media (max-width: 768px) {
+    /* 隱藏 2/3 欄切換按鈕 */
+    .view-toggle {
+        display: none !important;
+    }
+
+    /* 手機版篩選區 */
+    .calendar-filter-header {
+        margin: 0 !important;
+        padding: 10px 12px 12px !important;
+        background: #f8f9fa !important;
+        border-bottom: 1px solid #e9ecef !important;
+    }
+
+    .calendar-filter-mobile {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .calendar-filter-mobile .form-select {
+        font-size: 13px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1.5px solid #dee2e6;
+        background-color: #fff;
+        width: 100%;
+        color: #495057;
+        box-shadow: none;
+    }
+
+    .calendar-filter-mobile .form-select:focus {
+        border-color: #3b76e1;
+        box-shadow: 0 0 0 2px rgba(59,118,225,0.15);
+    }
+
+    /* 樓層佔左欄，搜尋按鈕佔右欄 */
+    .calendar-filter-mobile .floor-select {
+        grid-column: 1;
+    }
+
+    .calendar-filter-mobile .btn-primary {
+        grid-column: 2;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    /* 強制單欄 */
+    .room-grid,
+    .room-grid.room-grid-3 {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin: 6px;
+    }
+
+    /* card 改為 grid：左圖右文（僅 Calendar 頁，不影響 SysRoom 管理頁） */
+    .calendar-rooms .room-card {
+        display: grid !important;
+        grid-template-columns: 120px 1fr;
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "preview header"
+            "preview body";
+        height: 140px;
+        overflow: hidden;
+        border-radius: 10px;
+    }
+
+    .calendar-rooms .room-preview {
+        grid-area: preview;
+        height: 100% !important;
+    }
+
+    /* 隱藏輪播按鈕 */
+    .calendar-rooms .room-preview .carousel-btn,
+    .calendar-rooms .room-preview .image-indicators {
+        display: none !important;
+    }
+
+    /* 右上：名稱 + 大樓/樓層，移除漸層改白底 */
+    .calendar-rooms .room-card-header {
+        grid-area: header;
+        background: #fff !important;
+        color: #212529 !important;
+        text-align: left !important;
+        padding: 10px 10px 2px;
+    }
+
+    .calendar-rooms .room-name {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        color: #212529 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .calendar-rooms .room-info {
+        font-size: 12px !important;
+        color: #6c757d !important;
+        margin-top: 2px;
+    }
+
+    /* 右下：資訊 + 按鈕 */
+    .calendar-rooms .room-card-body {
+        grid-area: body;
+        background: #fff !important;
+        padding: 2px 10px 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* 人數/面積：一行顯示，隱藏標籤 */
+    .calendar-rooms .room-card .room-details {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0;
+        margin-bottom: 0 !important;
+    }
+
+    .calendar-rooms .room-card .detail-row {
+        display: flex !important;
+        flex-direction: row;
+        justify-content: flex-start !important;
+        border-bottom: none !important;
+        padding: 0 !important;
+        flex: 0 0 auto;
+    }
+
+    .calendar-rooms .room-card .detail-label {
+        display: none !important;
+    }
+
+    .calendar-rooms .room-card .detail-value {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        color: #6c757d !important;
+    }
+
+    .calendar-rooms .room-card .detail-row + .detail-row .detail-value::before {
+        content: ' · ';
+        color: #adb5bd;
+    }
+
+    /* 設備那行隱藏 */
+    .calendar-rooms .room-card .equipment-hover {
+        display: none !important;
+    }
+
+    /* ===== 智慧搜尋 Modal ===== */
+    #smartSearchModal .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        min-height: 100% !important;
+    }
+
+    #smartSearchModal .modal-content {
+        border-radius: 0 !important;
+        border: none !important;
+        max-height: 100vh;
+        overflow: hidden;
+    }
+
+    #smartSearchModal .modal-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 120px);
+    }
+
+    /* 標題縮小 */
+    #smartSearchModal .modal-title {
+        font-size: 15px !important;
+    }
+
+    #smartSearchModal .modal-body {
+        padding: 12px 14px !important;
+    }
+
+    /* 會議時間 + 人數 並排 */
+    #smartSearchModal .modal-body .row.mb-4 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px;
+        margin-bottom: 12px !important;
+    }
+
+    #smartSearchModal .modal-body .row.mb-4 > div {
+        padding: 0 !important;
+    }
+
+    /* 關鍵字 + 地點 並排 */
+    #smartSearchModal .modal-body .row.mb-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px;
+        margin-bottom: 8px !important;
+    }
+
+    #smartSearchModal .modal-body .row.mb-3 > div {
+        padding: 0 !important;
+    }
+
+    /* 設備需求並排 */
+    #smartSearchModal .modal-body .row.g-3 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px;
+    }
+
+    #smartSearchModal .modal-body .row.g-3 > div {
+        padding: 0 !important;
+    }
+
+    /* section 標題縮小 */
+    #smartSearchModal .section-title {
+        font-size: 12px !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* input 縮小 */
+    #smartSearchModal .form-control,
+    #smartSearchModal .form-select {
+        font-size: 13px !important;
+        padding: 6px 10px !important;
+    }
+
+    /* mb-4 間距縮小 */
+    #smartSearchModal .mb-4 {
+        margin-bottom: 10px !important;
+    }
+
+    /* footer 按鈕橫排，不撐滿 */
+    #smartSearchModal .modal-footer {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-end !important;
+        padding: 8px 12px !important;
+        gap: 6px;
+    }
+
+    #smartSearchModal .modal-footer .btn,
+    #smartSearchModal .modal-footer button {
+        display: inline-block !important;
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: unset !important;
+        font-size: 13px !important;
+        padding: 6px 16px !important;
+        border-radius: 8px !important;
+        margin: 0 !important;
+    }
+
+    /* ===== 分頁元件 ===== */
+    .pagination .page-link {
+        font-size: 12px !important;
+        padding: 4px 8px !important;
+    }
+
+    .pagination .page-link span {
+        font-size: 12px !important;
+    }
+
+    .page-select {
+        font-size: 12px !important;
+        padding: 1px 2px !important;
+    }
+
+    /* 立即預約按鈕縮小 */
+    .calendar-rooms .room-card .action-buttons {
+        margin-top: 2px !important;
+        display: flex !important;
+    }
+
+    .calendar-rooms .room-card .action-buttons .btn {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+        border-radius: 12px;
+        white-space: nowrap;
+    }
+
+    .calendar-rooms .room-card .action-buttons .btn .icons {
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    /* ===== SysRoom 管理頁 手機版 ===== */
+    /* 單欄、縮小圖片、按鈕排成一行 */
+    .room-grid:not(.calendar-rooms) {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .room-grid:not(.calendar-rooms) .room-card {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+
+    .room-grid:not(.calendar-rooms) .room-preview {
+        height: 180px !important;
+    }
+
+    .room-grid:not(.calendar-rooms) .room-card-header {
+        padding: 10px 12px;
+    }
+
+    .room-grid:not(.calendar-rooms) .room-card-header .room-name {
+        font-size: 15px !important;
+    }
+
+    .room-grid:not(.calendar-rooms) .room-card-header .room-info {
+        font-size: 12px !important;
+    }
+
+    /* 排序箭頭縮小 */
+    .room-grid:not(.calendar-rooms) .sequence-buttons .btn {
+        padding: 2px 6px !important;
+        font-size: 12px !important;
+    }
+
+    .room-grid:not(.calendar-rooms) .room-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        padding: 8px 12px 4px;
+    }
+
+    .room-grid:not(.calendar-rooms) .detail-row {
+        font-size: 12px;
+        border-bottom: none !important;
+        padding: 0 !important;
+    }
+
+    .room-grid:not(.calendar-rooms) .status-badge {
+        font-size: 12px !important;
+        padding: 2px 8px !important;
+    }
+
+    /* 操作按鈕橫排平分 */
+    .room-grid:not(.calendar-rooms) .action-buttons {
+        display: flex !important;
+        gap: 6px;
+        padding: 8px 12px 10px;
+    }
+
+    .room-grid:not(.calendar-rooms) .action-buttons .btn {
+        flex: 1;
+        font-size: 12px !important;
+        padding: 5px 4px !important;
+        white-space: nowrap;
+    }
+
+    .room-grid:not(.calendar-rooms) .action-buttons .btn .material-icons,
+    .room-grid:not(.calendar-rooms) .action-buttons .btn .icons {
+        font-size: 14px !important;
+    }
 }

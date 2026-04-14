@@ -649,3 +649,103 @@ tr.batch-row-disabled:hover td {
     display: block;
     margin: auto;
 }
+
+/* ===== 手機版 RWD ===== */
+@media (max-width: 768px) {
+    /* 整頁 base font-size，讓子元素繼承 */
+    .page-content {
+        font-size: 13px !important;
+    }
+
+    /* 標題 */
+    .page-content h4 { font-size: 16px !important; }
+    .page-content h5 { font-size: 14px !important; }
+    .page-content h6 { font-size: 13px !important; }
+
+    /* label */
+    .col-form-label { font-size: 13px !important; margin-bottom: 2px !important; }
+
+    /* input / select */
+    .form-control,
+    .form-select { font-size: 13px !important; }
+
+    /* form-floating 保留 padding 才能正確浮起 */
+    .form-floating .form-control,
+    .form-floating .form-select {
+        font-size: 13px !important;
+        padding: 1rem 0.75rem 0.25rem !important;
+        height: calc(3rem + 2px) !important;
+    }
+
+    .form-floating textarea.form-control {
+        height: auto !important;
+        min-height: 80px !important;
+        padding-top: 1.5rem !important;
+    }
+
+    .form-floating > label {
+        font-size: 12px !important;
+        padding: 0.75rem !important;
+    }
+
+    /* 開始/結束日期並排 */
+    .row.g-3.align-items-end > .col-sm-12.col-xl-3 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    /* 與會地點 4個下拉 2x2 */
+    .col-sm-12.col-xl-10 .row > div {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+
+    /* badge */
+    .badge { font-size: 11px !important; padding: 3px 7px !important; }
+
+    /* 按鈕 */
+    .page-content .btn { font-size: 13px !important; padding: 6px 12px !important; }
+
+    /* 後續作業、折扣說明等說明文字 */
+    .page-content p,
+    .page-content li,
+    .page-content small,
+    .page-content .text-muted { font-size: 12px !important; }
+
+    /* 付款方式卡片 */
+    .payment-method { padding: 10px 12px !important; }
+
+    /* mb 縮小 */
+    .mb-3 { margin-bottom: 8px !important; }
+    .mb-4 { margin-bottom: 12px !important; }
+
+    /* 折扣說明折疊 */
+    .parking-discount-details {
+        background: #f0f7ff;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .parking-discount-details summary {
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: #3b76e1;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .parking-discount-details summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .parking-discount-details ul {
+        margin: 6px 0 0 0;
+        padding-left: 16px;
+        color: #555;
+        line-height: 1.7;
+    }
+}

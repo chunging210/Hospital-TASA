@@ -43,7 +43,7 @@
                 </div>
 
                 <!-- ✅ 修改帳號日誌 - 簡化版表格 -->
-                <table v-if="loginlog.selectedTab.value === 'user_update'" class="table table-hover">
+                <table v-if="loginlog.selectedTab.value === 'user_update'" class="table table-hover loginlog-table">
                     <caption>修改帳號日誌列表</caption>
                     <thead>
                         <tr class="table-light">
@@ -63,7 +63,7 @@
                 </table>
 
                 <!-- 預約日誌 -->
-                <table v-else-if="loginlog.selectedTab.value === 'reservation_'" class="table table-hover">
+                <table v-else-if="loginlog.selectedTab.value === 'reservation_'" class="table table-hover loginlog-table">
                     <caption>預約日誌列表</caption>
                     <thead>
                         <tr class="table-light">
@@ -85,7 +85,7 @@
                 </table>
 
                 <!-- ✅ 登入/登出日誌 / 新增帳號日誌 - 完整表格 -->
-                <table v-else class="table table-hover">
+                <table v-else class="table table-hover loginlog-table">
                     <caption>日誌列表</caption>
                     <thead>
                         <tr class="table-light">

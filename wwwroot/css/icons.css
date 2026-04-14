@@ -59,3 +59,18 @@
         font-size: 24px;
     }
 }
+
+@media (max-width: 575.98px) {
+    .icon-text-container .text {
+        font-size: 15px;
+    }
+
+    .icon-text-container .material-icons {
+        font-size: 18px;
+    }
+
+    /* Navbar 頁面標題 icon */
+    .title-icons {
+        font-size: 22px;
+    }
+}

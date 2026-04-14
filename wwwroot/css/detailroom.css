@@ -87,3 +87,250 @@
         font-size: 14px;
     }
 }
+
+@media (max-width: 768px) {
+    /* Modal 全螢幕 */
+    .room-detail-modal .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .room-detail-modal .modal-content {
+        height: 100vh;
+        border-radius: 0 !important;
+        border: none !important;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .room-detail-modal .modal-body {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    /* header 固定在最上方，不隨內容捲動 */
+    .room-detail-modal .modal-header {
+        position: sticky !important;
+        top: 0;
+        z-index: 10;
+        background: #3b76e1;
+        flex-shrink: 0;
+    }
+
+    /* X 按鈕白色 */
+    .room-detail-modal .modal-header .btn-close {
+        filter: invert(1) brightness(2);
+    }
+
+    /* Header 縮小 */
+    .room-detail-modal .modal-header {
+        padding: 10px 14px;
+    }
+
+    .room-detail-modal .modal-title {
+        font-size: 16px !important;
+    }
+
+    /* 圖片/環景切換按鈕縮小 */
+    .room-detail-modal .detail-image-column .btn-sm {
+        font-size: 11px !important;
+        padding: 2px 8px !important;
+        line-height: 1.4;
+    }
+
+    .room-detail-modal .detail-image-column .btn-sm .material-icons {
+        font-size: 12px !important;
+    }
+
+    /* 圖片區縮小 */
+    .detail-image-container {
+        height: 220px !important;
+    }
+
+    .room-image-carousel {
+        height: 220px !important;
+    }
+
+    #panorama-viewer {
+        height: 220px !important;
+    }
+
+    /* 說明框：縮成緊湊一塊 */
+    .description-wrapper {
+        min-height: unset !important;
+        height: auto !important;
+        padding: 8px 12px !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px;
+        background: #f8f9fa;
+    }
+
+    .room-feature-content .info-label {
+        font-size: 12px !important;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 2px !important;
+    }
+
+    .description-content {
+        min-height: unset !important;
+        height: auto !important;
+        max-height: 60px;
+        overflow-y: auto;
+        font-size: 13px !important;
+        line-height: 1.5;
+    }
+
+    /* info-grid 改成單欄清單 */
+    .info-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0 !important;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .info-item {
+        padding: 10px 14px !important;
+        border-radius: 0 !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        background: #fff !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 10px !important;
+        text-align: left !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .info-item:last-child {
+        border-bottom: none !important;
+    }
+
+    /* icon 改成小圓點 */
+    .info-item .info-icon {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 15px !important;
+        flex-shrink: 0 !important;
+        margin-bottom: 0 !important;
+        border-radius: 50% !important;
+    }
+
+    .info-item .info-icon .icons {
+        font-size: 15px !important;
+    }
+
+    /* 標籤在左，數值靠右 */
+    .info-item > div:not(.info-icon) {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        justify-content: space-between;
+        flex: 1;
+    }
+
+    .info-label {
+        font-size: 13px !important;
+        color: #6c757d !important;
+        margin: 0 !important;
+        font-weight: 400 !important;
+    }
+
+    .info-value {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #212529 !important;
+        margin: 0 !important;
+        text-align: right;
+    }
+
+    /* ===== 今日時程 ===== */
+    /* table 每格字縮小 */
+    .schedule-section .table th,
+    .schedule-section .table td {
+        font-size: 12px !important;
+        padding: 6px 8px !important;
+        vertical-align: middle;
+    }
+
+    /* 狀態 badge 縮小 */
+    .schedule-section .badge {
+        font-size: 11px !important;
+        padding: 3px 6px !important;
+    }
+
+    /* ===== 收費標準 ===== */
+    /* header 隱藏（標籤改用 ::before 顯示在數字前） */
+    .pricing-header {
+        display: none !important;
+    }
+
+    /* 每個收費 row 改成卡片 */
+    .pricing-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        grid-template-rows: auto auto !important;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 10px 12px !important;
+        margin-bottom: 8px;
+        border-bottom: none !important;
+        gap: 2px 8px;
+        align-items: start;
+    }
+
+    /* 名稱時間佔滿第一行 */
+    .pricing-row > div:first-child {
+        grid-column: 1 / -1;
+        margin-bottom: 6px;
+    }
+
+    .pricing-name {
+        font-size: 14px !important;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .pricing-time {
+        font-size: 12px !important;
+        color: #adb5bd;
+    }
+
+    /* 平日/假日/場佈 各佔一格，加標籤 */
+    .pricing-row > div:nth-child(2)::before { content: "平日"; display: block; font-size: 11px; color: #adb5bd; }
+    .pricing-row > div:nth-child(3)::before { content: "假日"; display: block; font-size: 11px; color: #adb5bd; }
+    .pricing-row > div:nth-child(4)::before { content: "場佈"; display: block; font-size: 11px; color: #adb5bd; }
+
+    .pricing-price {
+        font-size: 13px !important;
+        font-weight: 600;
+        text-align: left !important;
+    }
+
+    /* 子區間 badge 縮小 */
+    .pricing-section .badge {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+    }
+
+    /* Tab 文字縮小 */
+    .room-detail-modal .nav-tabs .nav-link {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+
+    .room-detail-modal .nav-tabs .nav-link .icons {
+        font-size: 14px;
+    }
+
+    /* modal body padding 縮小 */
+    .room-detail-modal .modal-body {
+        padding: 10px;
+    }
+}

@@ -4,15 +4,13 @@
 <div class="page-content" v-cloak>
     <div class="container-fluid vstack gap-3">
         <div class="card">
-            <div class="card-header mx-4 mt-3">
-                <div class="row align-items-center">
-                    <!-- Title -->
+            <div class="card-header mx-4 mt-3 calendar-filter-header">
+                <!-- 桌機版：原本橫排 -->
+                <div class="row align-items-center d-none d-md-flex">
                     <div class="col-auto text-branding align-middle">
                         <span class="material-icons">meeting_room</span>
                         會議室總覽
                     </div>
-
-                    <!-- ✅ 只有全院管理者才能選擇分院 -->
                     <div v-if="isGlobalAdmin" class="col-auto">
                         <select class="form-select" v-model="selectedDepartment" style="min-width: 180px;">
                             <option :value="null">請選擇分院...</option>
@@ -21,45 +19,55 @@
                             </option>
                         </select>
                     </div>
-
-                    <!-- 大樓下拉 -->
                     <div class="col-auto">
-                        <select class="form-select" v-model="selectedBuilding" :key="selectedDepartment"
-                                style="min-width: 180px;">
+                        <select class="form-select" v-model="selectedBuilding" :key="selectedDepartment" style="min-width: 180px;">
                             <option value="">請選擇大樓...</option>
                             <option v-for="b in buildings" :key="b.Building" :value="b.Building">
                                 {{ b.Building }}
                             </option>
                         </select>
                     </div>
-
-                    <!-- 樓層下拉 -->
                     <div class="col-auto">
-                        <select class="form-select" v-model="selectedFloor" :disabled="!selectedBuilding"
-                                style="min-width: 180px;">
+                        <select class="form-select" v-model="selectedFloor" :disabled="!selectedBuilding" style="min-width: 180px;">
                             <option value="">請選擇樓層...</option>
                             <option v-for="f in floorOptions" :key="f" :value="f">
                                 {{ f }}
                             </option>
                         </select>
                     </div>
-
                     <div class="col-auto ms-auto d-flex align-items-center gap-2">
                         <div class="view-toggle" v-if="!isSearchMode">
-                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 2 }"
-                                @@click="gridColumns = 2" title="一行顯示 2 個">
-                                2
-                            </button>
-                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 3 }"
-                                @@click="gridColumns = 3" title="一行顯示 3 個">
-                                3
-                            </button>
+                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 2 }" @@click="gridColumns = 2">2</button>
+                            <button type="button" class="toggle-btn" :class="{ active: gridColumns === 3 }" @@click="gridColumns = 3">3</button>
                         </div>
-                        <button type="button" class="btn btn-primary font-size-20" data-bs-toggle="modal"
-                                data-bs-target="#smartSearchModal">
-                            智慧搜尋
-                        </button>
+                        <button type="button" class="btn btn-primary font-size-20" data-bs-toggle="modal" data-bs-target="#smartSearchModal">智慧搜尋</button>
                     </div>
+                </div>
+
+                <!-- 手機版：垂直緊湊排列 -->
+                <div class="d-md-none calendar-filter-mobile">
+                    <div v-if="isGlobalAdmin">
+                        <select class="form-select" v-model="selectedDepartment">
+                            <option :value="null">請選擇分院...</option>
+                            <option v-for="dept in departments" :key="dept.Id" :value="dept.Id">{{ dept.Name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select class="form-select" v-model="selectedBuilding" :key="selectedDepartment">
+                            <option value="">請選擇大樓...</option>
+                            <option v-for="b in buildings" :key="b.Building" :value="b.Building">{{ b.Building }}</option>
+                        </select>
+                    </div>
+                    <div class="floor-select">
+                        <select class="form-select" v-model="selectedFloor" :disabled="!selectedBuilding">
+                            <option value="">請選擇樓層...</option>
+                            <option v-for="f in floorOptions" :key="f" :value="f">{{ f }}</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#smartSearchModal">
+                        <span class="material-icons" style="font-size:16px;vertical-align:middle;">search</span>
+                        智慧搜尋
+                    </button>
                 </div>
             </div>
 
@@ -126,8 +134,8 @@
                     </div>
                 </div>
 
-                <div v-else class="room-grid" :class="{ 'room-grid-3': gridColumns === 3 }">
-                    <div v-for="item in room.list" :key="item.Id" class="room-card">
+                <div v-else class="room-grid calendar-rooms" :class="{ 'room-grid-3': gridColumns === 3 }">
+                    <div v-for="item in room.list" :key="item.Id" class="room-card" @@click="room.openDetail(item.Id)" style="cursor:pointer;">
 
                         <div class="room-card-header">
                             <div class="room-name">{{ item.Name }}</div>
@@ -188,9 +196,8 @@
                             </div>
 
                             <div class="action-buttons mt-3">
-                                <button class="btn btn-view btn-outline-primary"
-                                    @@click.stop="room.openDetail(item.Id)">
-                                    <span class="material-icons icons">visibility</span>
+                                <button class="btn btn-outline-secondary btn-detail" @@click.stop="room.openDetail(item.Id)">
+                                    <span class="material-icons icons">info</span>
                                     了解更多
                                 </button>
                                 <button class="btn btn-edit btn-outline-primary" @@click.stop="room.goReserve(item)">

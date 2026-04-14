@@ -1,0 +1,153 @@
+/* ===== 通用表格 RWD：手機版卡片樣式 ===== */
+@media (max-width: 768px) {
+
+    /* table 本身變成 block，撐滿寬度 */
+    .table.table-hover,
+    .table.table-bordered {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* 隱藏表頭 */
+    .table.table-hover thead,
+    .table.table-bordered thead {
+        display: none !important;
+    }
+
+    /* tbody 撐滿 */
+    .table.table-hover tbody,
+    .table.table-bordered tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    /* 每列變成卡片 */
+    .table.table-hover tbody tr,
+    .table.table-bordered tbody tr {
+        display: block !important;
+        width: 100% !important;
+        background: #fff;
+        border: 1px solid #e9ecef !important;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+
+    /* hover 效果 */
+    .table.table-hover tbody tr:hover {
+        background: #f8f9fa !important;
+    }
+
+    /* 第一個 td（通常是名稱/標題）：大字加粗 */
+    .table.table-hover tbody td:first-child,
+    .table.table-bordered tbody td:first-child {
+        display: block !important;
+        font-size: 15px !important;
+        font-weight: 700;
+        color: #1a1a2e;
+        padding: 0 0 8px 0 !important;
+        border: none !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        margin-bottom: 6px;
+    }
+
+    /* 其他 td：每格單獨一行，label 靠左值靠右 */
+    .table.table-hover tbody td,
+    .table.table-bordered tbody td {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 0 !important;
+        border: none !important;
+        font-size: 13px;
+        color: #495057;
+        gap: 8px;
+    }
+
+    /* 操作欄（通常最後一格）：按鈕靠左排 */
+    .table.table-hover tbody td:last-child,
+    .table.table-bordered tbody td:last-child {
+        padding-top: 8px !important;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-start;
+    }
+
+    /* tfoot 空資料列 */
+    .table.table-hover tfoot tr,
+    .table.table-bordered tfoot tr {
+        display: block !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+    }
+
+    .table.table-hover tfoot td,
+    .table.table-bordered tfoot td {
+        display: block !important;
+        border: none !important;
+    }
+
+    /* ===== 各頁面 ::before 標籤 ===== */
+
+    /* 預約管理 Admin/Reservation */
+    .reservation-table td:nth-child(2)::before  { content: "預約單號"; }
+    .reservation-table td:nth-child(3)::before  { content: "申請人"; }
+    .reservation-table td:nth-child(4)::before  { content: "日期"; }
+    .reservation-table td:nth-child(5)::before  { content: "會議室"; }
+    .reservation-table td:nth-child(6)::before  { content: "金額"; }
+    .reservation-table td:nth-child(7)::before  { content: "審核進度"; }
+
+    /* 使用者管理 Admin/AuthUser */
+    .authuser-table td:nth-child(2)::before  { content: "部門"; }
+    .authuser-table td:nth-child(3)::before  { content: "姓名"; }
+    .authuser-table td:nth-child(4)::before  { content: "Email"; }
+    .authuser-table td:nth-child(5)::before  { content: "狀態"; }
+    .authuser-table td:nth-child(6)::before  { content: "建立日期"; }
+
+    /* 登入記錄 Admin/LoginLog */
+    .loginlog-table td:nth-child(2)::before  { content: "使用者"; }
+    .loginlog-table td:nth-child(3)::before  { content: "動作"; }
+    .loginlog-table td:nth-child(4)::before  { content: "IP"; }
+    .loginlog-table td:nth-child(5)::before  { content: "裝置"; }
+
+    /* 成本中心 Admin/CostCenterManager */
+    .costcenter-table td:nth-child(2)::before  { content: "成本代碼"; }
+    .costcenter-table td:nth-child(3)::before  { content: "主管"; }
+    .costcenter-table td:nth-child(4)::before  { content: "信箱"; }
+    .costcenter-table td:nth-child(5)::before  { content: "建立時間"; }
+
+    /* 假日設定 Admin/Holiday */
+    .holiday-table td:nth-child(2)::before  { content: "星期"; }
+    .holiday-table td:nth-child(3)::before  { content: "名稱"; }
+    .holiday-table td:nth-child(4)::before  { content: "類型"; }
+    .holiday-table td:nth-child(5)::before  { content: "狀態"; }
+
+    /* 設備管理 Admin/Equipment */
+    .equipment-table td:nth-child(2)::before  { content: "類型"; }
+    .equipment-table td:nth-child(3)::before  { content: "型號"; }
+    .equipment-table td:nth-child(4)::before  { content: "大樓/會議室"; }
+    .equipment-table td:nth-child(5)::before  { content: "租借金額"; }
+    .equipment-table td:nth-child(6)::before  { content: "建立日期"; }
+
+    /* 部門管理 Admin/SysDepartment */
+    .department-table td:nth-child(2)::before  { content: "啟用"; }
+    .department-table td:nth-child(3)::before  { content: "建立日期"; }
+
+    /* ::before 共用樣式 */
+    .reservation-table td::before,
+    .authuser-table td::before,
+    .loginlog-table td::before,
+    .costcenter-table td::before,
+    .holiday-table td::before,
+    .equipment-table td::before,
+    .department-table td::before {
+        color: #adb5bd;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}

@@ -2,7 +2,7 @@
 <div class="page-content" v-cloak>
     <div class="container-fluid vstack gap-3">
         <div class="card">
-            <div class="card-header mx-4 mt-3">
+            <div class="card-header conference-filter mx-4 mt-3">
                 <!-- 主列：標題 + 日期 + 關鍵字 + 進階篩選按鈕（同一排） -->
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <div class="text-branding d-flex align-items-center flex-shrink-0">
@@ -134,7 +134,7 @@
                     </div>
 
                     <!-- ==================== 列表視圖 ==================== -->
-                    <div v-show="conference.viewMode.value === 'list' && !conference.calendarLoading.value">
+                    <div v-show="conference.viewMode.value === 'list' && !conference.calendarLoading.value" class="conference-list-view">
                         <table class="table table-hover table-sm">
                             <thead class="table-light">
                                 <tr>

@@ -38,7 +38,7 @@
                                     </div>
                                     <div class="feed-item-list">
                                         <form>
-                                            <div class="mb-3 row align-items-top">
+                                            <div class="mb-3 row align-items-top d-none d-md-flex">
                                                 <div class="col-sm-12 col-xl-auto pe-0">
                                                     <label class="col-form-label pe-3">會議類型</label>
                                                 </div>
@@ -231,7 +231,7 @@
                                 </li>
 
                                 <!-- 2. 與會人員 -->
-                                <li class="checkout-item">
+                                <li class="checkout-item d-none d-md-flex">
                                     <div class="avatar checkout-icon p-1">
                                         <div class="avatar-title rounded-circle bg-primary">
                                             <span class="material-icons room-icons">groups</span>
@@ -632,7 +632,8 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="border-start border-primary border-3 ps-3" style="background: #f8f9fa;">
+                                                <!-- 桌機版：原本樣式 -->
+                                                <div class="border-start border-primary border-3 ps-3 d-none d-md-block" style="background: #f8f9fa;">
                                                     <div class="text-primary fw-bold mb-2">
                                                         <i class="bx bx-purchase-tag me-1"></i>折扣說明
                                                     </div>
@@ -641,6 +642,20 @@
                                                         <li>優惠券限活動當日使用</li>
                                                         <li>不得要求折換現金或抵扣租金</li>
                                                     </ul>
+                                                </div>
+                                                <!-- 手機版：折疊提示 -->
+                                                <div class="d-md-none">
+                                                    <details class="parking-discount-details">
+                                                        <summary>
+                                                            <span class="material-icons" style="font-size:14px;vertical-align:middle;color:#3b76e1;">info</span>
+                                                            折扣說明
+                                                        </summary>
+                                                        <ul>
+                                                            <li>實付金額達 <strong>NT$50,000（含）</strong>以上，提供 <strong>半價停車優惠券 30 張</strong></li>
+                                                            <li>優惠券限活動當日使用</li>
+                                                            <li>不得折換現金或抵扣租金</li>
+                                                        </ul>
+                                                    </details>
                                                 </div>
                                             </div>
                                         </div>
