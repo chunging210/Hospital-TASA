@@ -474,6 +474,227 @@
         width: 3rem;
         height: 3rem;
     }
+
+    /* ===== RWD ===== */
+    @@media (max-width: 768px) {
+        .availability-container {
+            padding: 10px;
+        }
+
+        /* Header */
+        .main-header {
+            padding: 14px 16px 12px;
+        }
+
+        .main-header h3 {
+            font-size: 20px;
+        }
+
+        .header-icon {
+            font-size: 26px;
+        }
+
+        /* Filter bar 改成垂直排列 */
+        .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px 16px;
+        }
+
+        .filter-bar label {
+            font-size: 13px;
+            margin-bottom: 3px;
+        }
+
+        .filter-bar .form-select,
+        .filter-bar .form-control {
+            font-size: 15px;
+            padding: 8px 12px;
+            width: 100% !important;
+        }
+
+        /* 視圖切換 + 導航靠左，全寬 */
+        .nav-controls {
+            margin-left: 0;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .view-toggle button {
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .nav-btn {
+            width: 38px;
+            height: 38px;
+        }
+
+        .nav-btn .material-icons {
+            font-size: 20px;
+        }
+
+        .nav-title {
+            font-size: 14px;
+            min-width: 0;
+            flex: 1;
+            text-align: center;
+        }
+
+        /* Legend */
+        .legend-bar {
+            padding: 8px 16px;
+            gap: 12px;
+        }
+
+        .legend-item {
+            font-size: 13px;
+            gap: 6px;
+        }
+
+        .legend-swatch {
+            width: 28px;
+            height: 12px;
+        }
+
+        .legend-tip {
+            font-size: 12px;
+        }
+
+        /* Main body */
+        .main-body {
+            padding: 12px 10px 20px;
+        }
+
+        /* Building header */
+        .building-hdr {
+            font-size: 16px;
+            padding: 10px 14px;
+        }
+
+        .building-badge {
+            font-size: 13px;
+            padding: 2px 10px;
+        }
+
+        /* Day view: 會議室欄縮小 */
+        .room-label-col,
+        .room-label {
+            width: 90px;
+            min-width: 90px;
+            padding: 8px 8px;
+        }
+
+        .room-label-col {
+            font-size: 13px;
+        }
+
+        .room-label .rname {
+            font-size: 13px;
+        }
+
+        .room-label .rcap {
+            font-size: 12px;
+        }
+
+        .time-col {
+            font-size: 12px;
+            padding: 6px 0;
+        }
+
+        /* 整個 day view 水平捲動 */
+        .building-block .time-header,
+        .building-block .room-row {
+            min-width: max-content;
+        }
+
+        .building-block > div:not(.building-hdr) {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Week view: 會議室欄縮小 */
+        .week-room-col,
+        .week-room-label {
+            width: 72px;
+            min-width: 72px;
+            flex-shrink: 0;
+            padding: 8px 4px;
+        }
+
+        .week-room-col {
+            font-size: 12px;
+        }
+
+        .week-room-label .rname {
+            font-size: 12px;
+        }
+
+        .week-room-label .rcap {
+            font-size: 11px;
+        }
+
+        /* 關鍵：header 日期欄 和 body 日期格 用相同固定寬度 */
+        .week-day-col,
+        .week-day-cell {
+            flex: 0 0 80px;
+            width: 80px;
+            min-width: 80px;
+            padding: 8px 4px;
+            box-sizing: border-box;
+        }
+
+        .week-day-col {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .week-day-cols {
+            display: flex;
+            flex: none;
+        }
+
+        .week-slot-chip {
+            font-size: 11px;
+            padding: 2px 3px;
+        }
+
+        .week-empty {
+            font-size: 12px;
+        }
+
+        /* Week view 整體水平捲動 */
+        .building-block > div:not(.building-hdr) {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* header 跟 row 同最小寬度，讓捲動同步 */
+        .week-header,
+        .week-row {
+            display: flex;
+            min-width: max-content;
+        }
+
+        /* No data */
+        .no-data {
+            padding: 40px 16px;
+        }
+
+        .no-data .material-icons {
+            font-size: 48px;
+        }
+
+        .no-data h5 {
+            font-size: 18px;
+        }
+
+        .no-data p {
+            font-size: 14px;
+        }
+    }
 </style>
 }
 

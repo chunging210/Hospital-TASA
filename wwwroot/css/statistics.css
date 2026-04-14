@@ -162,3 +162,28 @@ canvas {
     border-bottom: 1px solid #f8f9fa;
     vertical-align: middle;
 }
+
+/* ===== RWD 補強 ===== */
+@media (max-width: 768px) {
+    /* KPI 數字縮小 */
+    .stat-kpi-value {
+        font-size: 1.7rem;
+    }
+
+    /* KPI 項目間的分隔線在手機拿掉，改成上下排列 */
+    .stat-kpi-item + .stat-kpi-item {
+        border-left: none;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    /* 統計圖表加水平滾動 */
+    .stats-section canvas {
+        min-width: 300px;
+    }
+
+    /* 下載按鈕縮小 */
+    .stats-dl-btn {
+        font-size: 0.75rem;
+        padding: 3px 8px;
+    }
+}

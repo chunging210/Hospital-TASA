@@ -207,3 +207,280 @@ File: Main Css File
 .fc-timegrid-slot {
     height: 50px !important;
 }
+
+/* ===== Navbar RWD 補強 ===== */
+@media (max-width: 992px) {
+    /* 展開後的選單項目 */
+    .topnav-menu .dropdown-menu {
+        position: static !important;
+        float: none;
+        box-shadow: none;
+        border: none;
+        background: rgba(0, 0, 0, 0.04);
+        padding-left: 16px;
+    }
+
+    /* 漢堡展開後的列表排列 */
+    #topnav-menu-content .navbar-nav {
+        width: 100%;
+    }
+
+    #topnav-menu-content .nav-item {
+        width: 100%;
+    }
+
+    /* 頂端 header 文字不要換行 */
+    .navbar-header .page-title {
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 576px) {
+    /* 隱藏代理人提示完整文字，只留 icon */
+    .navbar-header .page-title {
+        display: none;
+    }
+
+    /* 使用者名稱縮小 */
+    .btn.header-item h6 {
+        font-size: 0.8rem;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* ===== 頁面內容 RWD 通用補強 ===== */
+
+/* 平板 (≤992px) */
+@media (max-width: 992px) {
+    /* card header 篩選列換行後加間距 */
+    .card-header .row {
+        gap: 8px 0;
+    }
+
+    /* 智慧搜尋按鈕不要太寬 */
+    .font-size-20 {
+        font-size: 1rem !important;
+    }
+}
+
+/* 手機 (≤768px) */
+@media (max-width: 768px) {
+    /* 頁面標題縮小 */
+    .text-branding {
+        font-size: 0.95rem;
+    }
+
+    /* card-header 右側空白欄位隱藏（避免撐高） */
+    .card-header .df-box01 {
+        display: none !important;
+    }
+
+    /* card header 篩選列，所有欄位全寬 */
+    .card-header .row > .col-auto,
+    .card-header .row > [class*="col-xl"],
+    .card-header .row > [class*="col-lg"],
+    .card-header .row > [class*="col-sm"] {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    /* ms-auto 在手機取消靠右（已全寬就不需要） */
+    .card-header .row > .col-auto.ms-auto,
+    .card-header .row > [class*="col-"].ms-auto {
+        margin-left: 0 !important;
+    }
+
+    /* 所有 table 容器加水平滾動 */
+    .table-responsive,
+    .card-body > .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* table 字體縮小 */
+    .table td,
+    .table th {
+        font-size: 0.82rem;
+        padding: 6px 8px !important;
+    }
+
+    /* 沒包 table-responsive 的 table 直接加 overflow */
+    .card-body table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* 操作按鈕在手機縮小 */
+    .table .btn-sm {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+
+    /* d-flex gap 的按鈕組縮小 */
+    .table .d-flex.gap-2 {
+        gap: 4px !important;
+    }
+
+    /* 系統設定頁 col-md-3 / col-md-9 在手機全寬 */
+    .setting-item .col-md-3,
+    .setting-item .col-md-9 {
+        width: 100%;
+        max-width: 100%;
+        flex: 0 0 100%;
+    }
+
+    /* setting-item 標題與控制項間距 */
+    .setting-item .col-md-3 {
+        margin-bottom: 8px;
+    }
+
+    /* calendar header 的 view-toggle 按鈕組 */
+    .view-toggle {
+        flex-shrink: 0;
+    }
+
+    /* input-group 日期範圍在手機換行 */
+    .input-group .form-control[type="date"] {
+        min-width: 0 !important;
+        flex: 1;
+    }
+
+    /* 報表 table 固定寬度放到 table-responsive 裡滾動 */
+    .table[style*="min-width"] {
+        min-width: 600px !important;
+    }
+
+    /* badge 通用縮小 */
+    .badge {
+        font-size: 0.75rem !important;
+        padding: 0.3em 0.6em !important;
+    }
+
+    /* page-content padding 縮小 */
+    body[data-layout=horizontal] .page-content {
+        padding: 12px 4px 0 4px !important;
+    }
+
+    /* card-header padding 縮小 */
+    .card-header.mx-4 {
+        margin-left: 0.5rem !important;
+        margin-right: 0.5rem !important;
+        margin-top: 0.25rem !important;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    .card-header {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 48px;
+    }
+
+    /* card-body padding 縮小 */
+    .card-body {
+        padding: 0.75rem !important;
+    }
+
+    /* Navbar 展開選單項目縮小 */
+    .topnav .navbar-nav .nav-link {
+        font-size: 0.85rem !important;
+        padding: 0.6rem 1rem !important;
+    }
+
+    .topnav .navbar-nav .nav-link .material-icons {
+        font-size: 18px !important;
+    }
+
+    .topnav .dropdown-item {
+        font-size: 0.85rem !important;
+        padding: 0.4rem 1rem !important;
+    }
+
+    /* Navbar logo box 內縮 */
+    .navbar-brand-box {
+        padding: 0 0.5rem !important;
+    }
+
+    /* Navbar 漢堡按鈕縮小 */
+    .navbar-header .btn.header-item.px-3 {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* Navbar 使用者名稱縮小 */
+    .navbar-header .btn.header-item h6 {
+        font-size: 0.8rem !important;
+        margin: 0;
+    }
+
+    /* 個人資料頁：隱藏左側 timeline icon，釋放橫向空間 */
+    .activity-checkout .checkout-icon {
+        display: none !important;
+    }
+
+    /* 個人資料頁：移除 checkout-item 左側 padding（給 icon 留的位置） */
+    .activity-checkout .checkout-item {
+        padding-left: 0 !important;
+        border-left: none !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* 個人資料頁：feed-item-list 不需縮排 */
+    .activity-checkout .feed-item-list {
+        margin-left: 0 !important;
+    }
+
+    /* 個人資料頁：每個欄位間距壓小 */
+    .activity-checkout .checkout-item .row.mb-4 {
+        margin-bottom: 6px !important;
+    }
+
+    /* 個人資料頁：label 字縮小 */
+    .activity-checkout .col-md-2.col-form-label {
+        padding-bottom: 2px;
+        padding-top: 0;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    /* 個人資料頁：input 高度縮小 */
+    .activity-checkout .form-control,
+    .activity-checkout .form-select {
+        padding: 6px 10px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* 個人資料頁：checkout ol 縮小 */
+    .activity-checkout.mb-0.px-4.mt-3 {
+        padding: 0 !important;
+        margin-top: 0.5rem !important;
+    }
+
+    /* 個人資料頁：底部按鈕全寬並列 */
+    .border-1.border-top.px-5 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .border-1.border-top.px-5 .btn {
+        flex: 1;
+        font-size: 0.9rem !important;
+        padding: 6px 12px !important;
+        margin-top: 8px !important;
+        margin-bottom: 4px !important;
+    }
+}

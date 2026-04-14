@@ -60,3 +60,30 @@
 .pricing-price.setup {
     color: #546e7a;
 }
+
+/* ===== RWD 補強 ===== */
+@media (max-width: 768px) {
+    /* 收費 Grid 在手機改成 2 欄 */
+    .pricing-header,
+    .pricing-row {
+        grid-template-columns: 2fr 1fr 1fr;
+    }
+
+    /* 場佈欄位在手機隱藏（空間不夠）*/
+    .pricing-header .pricing-col-label:last-child,
+    .pricing-row .pricing-price.setup {
+        display: none;
+    }
+
+    .pricing-name {
+        font-size: 14px;
+    }
+
+    .pricing-time {
+        font-size: 12px;
+    }
+
+    .pricing-price {
+        font-size: 14px;
+    }
+}

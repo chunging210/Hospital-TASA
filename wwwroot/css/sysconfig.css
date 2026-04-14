@@ -135,3 +135,32 @@
 .card-body {
     background: white;
 }
+
+/* ===== RWD 補強 ===== */
+@media (max-width: 768px) {
+    /* card-body padding 縮小 */
+    .card-body.p-5 {
+        padding: 1rem !important;
+    }
+
+    /* 設定項目間距縮小 */
+    .setting-item {
+        padding: 1.25rem 0;
+    }
+
+    /* 分院選擇器全寬 */
+    .card-header .col-xl-auto.ms-auto {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+
+    .card-header select {
+        width: 100%;
+    }
+
+    /* 大按鈕縮小 */
+    .btn-lg {
+        padding: 0.6rem 1.5rem;
+        width: 100%;
+    }
+}

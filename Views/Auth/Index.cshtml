@@ -20,6 +20,114 @@
         .auth-page .text-center.mb-3 { margin-bottom: 0.4rem !important; }
         .auth-page .mb-3 { margin-bottom: 0.5rem !important; }
         .auth-page .mt-4.text-center { margin-top: 0.5rem !important; }
+
+        @@media (max-width: 576px) {
+            /* input 高度縮小，padding 置中 */
+            .form-floating-custom .form-control,
+            .form-floating .form-control,
+            .form-floating .form-select {
+                height: 48px !important;
+                min-height: 48px !important;
+                padding-top: 12px !important;
+                padding-bottom: 12px !important;
+                font-size: 0.9rem !important;
+            }
+
+            /* label 預設置中顯示（空白時當作 placeholder） */
+            .form-floating-custom > label,
+            .form-floating > label {
+                top: 60% !important;
+                transform: translateY(-50%) !important;
+                font-size: 0.9rem !important;
+                opacity: 1 !important;
+                padding-top: 0 !important;
+                transition: none !important;
+            }
+
+            /* 有輸入或 focus 時隱藏 label */
+            .form-floating-custom .form-control:not(:placeholder-shown) ~ label,
+            .form-floating .form-control:not(:placeholder-shown) ~ label,
+            .form-floating .form-select:not([value=""]) ~ label,
+            .form-floating-custom .form-control:focus ~ label,
+            .form-floating .form-control:focus ~ label {
+                display: none !important;
+            }
+
+            /* 補回 form-floating-custom 輸入框邊框 */
+            .form-floating-custom .form-control,
+            .form-floating-custom .form-select {
+                border: 1px solid #ced4da !important;
+                border-radius: 8px !important;
+            }
+
+            /* 說明文字縮小 */
+            .form-text,
+            .form-text.text-muted {
+                font-size: 0.72rem !important;
+                line-height: 1.4 !important;
+            }
+
+            /* 註冊 modal 按鈕並排、統一高度 */
+            #guestRegisterModal .modal-footer {
+                flex-direction: row !important;
+                gap: 8px;
+                padding: 0.6rem 1rem;
+            }
+
+            #guestRegisterModal .modal-footer > * {
+                flex: 1;
+                height: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
+                padding: 0 0.5rem !important;
+                font-size: 0.9rem !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border-radius: 8px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* 覆蓋 createroom.css 造成的 modal-footer column 排列 */
+            #guestRegisterModal .modal-footer {
+                flex-direction: row !important;
+            }
+
+            #guestRegisterModal .modal-footer .btn {
+                width: auto !important;
+                margin-bottom: 0 !important;
+            }
+
+            /* 登入頁 登入/註冊 按鈕縮小 */
+            .auth-page .row.g-2.mb-3 .btn-branding,
+            .auth-page .row.g-2.mb-3 .btn {
+                height: 40px !important;
+                padding: 0 !important;
+                font-size: 0.9rem !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                border-radius: 8px !important;
+            }
+
+            /* icon 縮小並置中 */
+            .form-floating-custom .form-floating-icon .material-icons {
+                font-size: 20px !important;
+            }
+
+            /* modal 間距縮小 */
+            #guestRegisterModal .modal-body {
+                padding: 0.75rem 1rem;
+            }
+
+            #guestRegisterModal .mb-3 {
+                margin-bottom: 0.5rem !important;
+            }
+
+            #guestRegisterModal .mb-2 {
+                margin-bottom: 0.35rem !important;
+            }
+        }
     </style>
 }
 
@@ -244,8 +352,7 @@
 
                         <div class="form-text text-muted mb-3">
                             <span class="material-icons" style="font-size: 16px; vertical-align: middle;">info</span>
-                            未選擇分院將註冊為一般會員；<br>
-                            若您為院內職員，請選擇所屬分院。
+                            未選擇分院將註冊為一般會員；若您為院內職員，請選擇所屬分院。
                         </div>
 
                         <!-- 部門 -->
@@ -260,8 +367,9 @@
 
                         <!-- 驗證碼 -->
                         <div class="mb-3">
-                            <label class="form-label">驗證碼</label>
-                            <div class="d-flex align-items-center gap-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label class="form-label mb-0">驗證碼</label>
+                                <div class="d-flex align-items-center gap-2">
                                 <img :src="registerCaptchaSrc"
                                      alt="驗證碼"
                                      style="height: 40px; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer;"
@@ -270,6 +378,7 @@
                                 <button type="button" class="btn btn-outline-secondary btn-sm" @@click="refreshRegisterCaptcha">
                                     <span class="material-icons" style="font-size: 18px; vertical-align: middle;">refresh</span>
                                 </button>
+                                </div>
                             </div>
                             <input type="text"
                                    class="form-control mt-2"

@@ -435,7 +435,7 @@ tr.batch-row-disabled:hover td {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 120px;
+    /* max-width: 120px; */
 }
 
 .step-meta {
@@ -518,6 +518,74 @@ tr.batch-row-disabled:hover td {
 
     #bookingDrawer .form-label.text-secondary {
         margin-bottom: 4px;
+    }
+}
+
+/* ===== RWD 補強 ===== */
+
+/* 平板 (≤992px) */
+@media (max-width: 992px) {
+    /* 篩選列換行後各欄全寬 */
+    .card-header .row > [class*="col-xl"],
+    .card-header .row > [class*="col-lg"] {
+        width: 100%;
+    }
+
+    /* offcanvas 預約詳情全寬 */
+    #bookingDrawer {
+        width: 100% !important;
+    }
+}
+
+/* 手機 (≤768px) */
+@media (max-width: 768px) {
+    /* table 水平捲動 */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* table 文字縮小，防止太擠 */
+    .table td,
+    .table th {
+        font-size: 0.8rem;
+        padding: 6px 8px !important;
+        white-space: nowrap;
+    }
+
+    /* badge 縮小 */
+    .badge {
+        font-size: 0.75rem !important;
+        padding: 0.3em 0.6em !important;
+    }
+
+    /* 操作按鈕縮小 */
+    .table .btn-sm {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+
+    /* 審核步驟在手機縮小 step 寬度 */
+    .step {
+        width: 100px;
+    }
+
+    .step-name {
+        font-size: 0.75rem;
+    }
+
+    .step-status {
+        font-size: 0.7rem;
+    }
+
+    .step-reviewer {
+        max-width: 90px;
+        font-size: 0.68rem;
+    }
+
+    /* 搜尋框在手機全寬 */
+    .search-box {
+        width: 100%;
     }
 }
 
