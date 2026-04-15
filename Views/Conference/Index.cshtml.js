@@ -1,6 +1,7 @@
 // Conference
 import global from '/global.js';
 const { ref, reactive, onMounted, watch, computed } = Vue;
+const debounce = (fn, delay = 300) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
 
 let conferencepageRef = null;
 
@@ -54,7 +55,7 @@ export const deptSearch = new function () {
             });
     };
 
-    this.filter = () => {
+    this.filter = debounce(() => {
         const kw = this.keyword.value.trim().toLowerCase();
         if (!kw) {
             copy(this.filtered, this.all);
@@ -63,7 +64,7 @@ export const deptSearch = new function () {
                 c.code.toLowerCase().includes(kw) || c.name.toLowerCase().includes(kw)
             ));
         }
-    };
+    }, 200);
 
     this.select = (item) => {
         this.keyword.value = `${item.code} - ${item.name}`;
@@ -401,18 +402,18 @@ window.$config = {
         this.deptSearch = deptSearch;
         this.conferencepage = ref(null);
 
-        watch(() => conference.query.keyword, () => {
+        watch(() => conference.query.keyword, debounce(() => {
             conference.onFilterChange();
-        });
+        }));
 
 
-        watch(() => conference.query.Start, () => {
+        watch(() => conference.query.Start, debounce(() => {
             conference.onFilterChange();
-        });
+        }, 500));
 
-        watch(() => conference.query.End, () => {
+        watch(() => conference.query.End, debounce(() => {
             conference.onFilterChange();
-        });
+        }, 500));
 
         onMounted(() => {
             me.getVM();

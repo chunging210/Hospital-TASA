@@ -26,6 +26,11 @@ namespace TASA.Services.ReportModule
             public string BookingNo { get; set; } = "";        // 預約單號
             public string ConferenceName { get; set; } = "";
             public string DateRange { get; set; } = "";        // 日期（合併顯示）
+            public TimeOnly? MinStartTime { get; set; }        // 最早開始時間（排序 / 格式化用）
+            public TimeOnly? MaxEndTime { get; set; }          // 最晚結束時間
+            public string TimeRange => MinStartTime.HasValue && MaxEndTime.HasValue
+                ? $"{MinStartTime.Value:HH:mm} ~ {MaxEndTime.Value:HH:mm}"
+                : "-";
             public string RoomName { get; set; } = "";
             public int TotalAmount { get; set; }
             public string PaymentMethodText { get; set; } = "";
@@ -100,7 +105,8 @@ namespace TASA.Services.ReportModule
                 q = q.Where(c => c.ConferenceRoomSlots.Any(s => s.RoomId == query.RoomId.Value));
             }
 
-            return q.OrderByDescending(c => c.CreateAt)
+            return q.OrderBy(c => c.ConferenceRoomSlots.Min(s => s.SlotDate))
+                .ThenBy(c => c.ConferenceRoomSlots.Min(s => s.StartTime))
                 .Select(c => new ReportItemVM
                 {
                     Id = c.Id,
@@ -112,6 +118,8 @@ namespace TASA.Services.ReportModule
                             : c.ConferenceRoomSlots.Min(s => s.SlotDate).ToString("yyyy/MM/dd") + " ~ " +
                               c.ConferenceRoomSlots.Max(s => s.SlotDate).ToString("yyyy/MM/dd"))
                         : "-",
+                    MinStartTime = c.ConferenceRoomSlots.Any() ? (TimeOnly?)c.ConferenceRoomSlots.Min(s => s.StartTime) : null,
+                    MaxEndTime = c.ConferenceRoomSlots.Any() ? (TimeOnly?)c.ConferenceRoomSlots.Max(s => s.EndTime) : null,
                     RoomName = c.ConferenceRoomSlots
                         .Select(s => s.Room != null ? s.Room.Name : "-")
                         .FirstOrDefault() ?? "-",
@@ -143,7 +151,7 @@ namespace TASA.Services.ReportModule
 
             // 解析要匯出的欄位
             var columns = string.IsNullOrEmpty(query.Columns)
-                ? new HashSet<string> { "bookingNo", "borrowingUnit", "conferenceName", "dateRange", "roomName", "paymentMethod", "attendees", "amount" }
+                ? new HashSet<string> { "bookingNo", "borrowingUnit", "conferenceName", "dateRange", "timeRange", "roomName", "paymentMethod", "attendees", "amount" }
                 : new HashSet<string>(query.Columns.Split(','));
 
             using var workbook = new XLWorkbook();
@@ -158,6 +166,7 @@ namespace TASA.Services.ReportModule
             if (columns.Contains("borrowingUnit")) worksheet.Cell(1, col++).Value = "借用單位";
             if (columns.Contains("conferenceName")) worksheet.Cell(1, col++).Value = "會議名稱";
             if (columns.Contains("dateRange")) worksheet.Cell(1, col++).Value = "會議日期";
+            if (columns.Contains("timeRange")) worksheet.Cell(1, col++).Value = "會議時間";
             if (columns.Contains("roomName")) worksheet.Cell(1, col++).Value = "會議室";
             if (columns.Contains("paymentMethod")) worksheet.Cell(1, col++).Value = "繳款方式";
             if (columns.Contains("attendees")) { attendeesCol = col; worksheet.Cell(1, col++).Value = "人數"; }
@@ -180,6 +189,7 @@ namespace TASA.Services.ReportModule
                 if (columns.Contains("borrowingUnit")) worksheet.Cell(row, col++).Value = data[i].BorrowingUnitName;
                 if (columns.Contains("conferenceName")) worksheet.Cell(row, col++).Value = data[i].ConferenceName;
                 if (columns.Contains("dateRange")) worksheet.Cell(row, col++).Value = data[i].DateRange;
+                if (columns.Contains("timeRange")) worksheet.Cell(row, col++).Value = data[i].TimeRange;
                 if (columns.Contains("roomName")) worksheet.Cell(row, col++).Value = data[i].RoomName;
                 if (columns.Contains("paymentMethod")) worksheet.Cell(row, col++).Value = data[i].PaymentMethodText;
                 if (columns.Contains("attendees")) worksheet.Cell(row, col++).Value = data[i].ExpectedAttendees?.ToString() ?? "-";

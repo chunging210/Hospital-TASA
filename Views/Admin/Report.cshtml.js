@@ -31,6 +31,7 @@ const report = new function () {
         borrowingUnit: true,
         conferenceName: true,
         dateRange: true,
+        timeRange: true,
         roomName: true,
         paymentMethod: true,
         attendees: true,
@@ -122,6 +123,7 @@ const report = new function () {
         if (this.exportColumns.borrowingUnit && this.query.paymentMethod === 'cost-sharing') cols.push('borrowingUnit');
         if (this.exportColumns.conferenceName) cols.push('conferenceName');
         if (this.exportColumns.dateRange) cols.push('dateRange');
+        if (this.exportColumns.timeRange) cols.push('timeRange');
         if (this.exportColumns.roomName) cols.push('roomName');
         if (this.exportColumns.paymentMethod) cols.push('paymentMethod');
         if (this.exportColumns.attendees) cols.push('attendees');

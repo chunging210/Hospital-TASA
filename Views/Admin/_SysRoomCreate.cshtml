@@ -124,7 +124,7 @@
                             <div class="time-picker-group">
                                 <select v-model="slot.StartHour" class="form-select-sm time-hour"
                                         @@change="room.onParentTimeChange(slot)">
-                                    <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                    <option v-for="h in hours" :key="h" :value="h">{{ h }}</option>
                                 </select>
                                 <span class="time-colon">:</span>
                                 <select v-model="slot.StartMin" class="form-select-sm time-min"
@@ -137,7 +137,7 @@
                             <div class="time-picker-group">
                                 <select v-model="slot.EndHour" class="form-select-sm time-hour"
                                         @@change="room.onParentTimeChange(slot)">
-                                    <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                    <option v-for="h in hours" :key="h" :value="h">{{ h }}</option>
                                 </select>
                                 <span class="time-colon">:</span>
                                 <select v-model="slot.EndMin" class="form-select-sm time-min"
@@ -200,7 +200,7 @@
                             <div class="d-flex align-items-center gap-2">
                                 <div class="time-picker-group">
                                     <select v-model="slot.pendingSubSlot.StartHour" class="form-select-sm time-hour">
-                                        <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                        <option v-for="h in hours" :key="h" :value="h">{{ h }}</option>
                                     </select>
                                     <span class="time-colon">:</span>
                                     <select v-model="slot.pendingSubSlot.StartMin" class="form-select-sm time-min">
@@ -211,7 +211,7 @@
                                 <span class="text-muted">—</span>
                                 <div class="time-picker-group">
                                     <select v-model="slot.pendingSubSlot.EndHour" class="form-select-sm time-hour">
-                                        <option v-for="h in 24" :key="h-1" :value="String(h-1).padStart(2,'0')">{{ String(h-1).padStart(2,'0') }}</option>
+                                        <option v-for="h in hours" :key="h" :value="h">{{ h }}</option>
                                     </select>
                                     <span class="time-colon">:</span>
                                     <select v-model="slot.pendingSubSlot.EndMin" class="form-select-sm time-min">
@@ -244,23 +244,27 @@
                         上傳圖片/影片
                         <span class="text-muted small">(選填，可多個)</span>
                     </label>
-                    <div class="file-upload-area"
-                         :class="{ 'has-file': room.mediaFiles.length > 0 }"
-                         @@click="room.triggerMediaUpload()"
-                         @@dragover.prevent
-                         @@drop.prevent="room.handleMediaDrop($event)">
-
-                        <!-- 未上傳狀態 -->
-                        <div v-if="room.mediaFiles.length === 0" class="upload-placeholder">
+                    <label v-if="room.mediaFiles.length === 0"
+                           for="mediaUpload"
+                           class="file-upload-area"
+                           @@dragover.prevent
+                           @@drop.prevent="room.handleMediaDrop($event)"
+                           style="cursor:pointer">
+                        <div class="upload-placeholder">
                             <i class="bx bx-cloud-upload" style="font-size: 48px;"></i>
                             <p class="mb-1">點擊上傳或拖曳檔案至此</p>
                             <small class="text-muted">支援圖片及影片格式，單檔上限 150MB</small>
                         </div>
+                    </label>
+                    <div v-else
+                         class="file-upload-area has-file"
+                         @@dragover.prevent
+                         @@drop.prevent="room.handleMediaDrop($event)">
 
                         <!-- 已上傳檔案列表 -->
-                        <div v-else class="uploaded-files-list" @@click.stop>
+                        <div class="uploaded-files-list" @@click.stop>
                             <div v-for="media in room.mediaFiles" :key="media.Id" class="uploaded-file-item">
-                                <img v-if="media.type === 'image'" :src="media.src" class="media-thumb">
+                                <img v-if="media.type === 'image'" :src="media.src" class="media-thumb" loading="lazy">
                                 <video v-else class="media-thumb"><source :src="media.src"></video>
                                 <div class="file-info">
                                     <strong>{{ media.name || '媒體檔案' }}</strong>
@@ -277,7 +281,7 @@
                             </button>
                         </div>
                     </div>
-                    <input type="file" id="mediaUpload" accept="image/*,video/*" multiple
+                    <input type="file" id="mediaUpload" accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.mp4,.mov,.avi,.mkv,.webm,.m4v" multiple
                            @@change="room.handleMediaUpload" style="display: none;">
                 </div>
             </div>
@@ -423,7 +427,7 @@
                            placeholder="搜尋使用者姓名或 Email...">
 
                     <div class="approver-list" style="max-height: 200px; overflow-y: auto;">
-                        <div v-for="user in approvalChain.filteredApprovers.value" :key="user.Id"
+                        <div v-for="user in approvalChain.filteredApprovers.value.slice(0, 30)" :key="user.Id"
                              class="approver-item p-2 border-bottom hover-bg-light" style="cursor: pointer;"
                              @@click="approvalChain.selectApprover(user)">
                             <div>
@@ -435,6 +439,9 @@
 
                         <div v-if="approvalChain.filteredApprovers.value.length === 0" class="p-3 text-center text-muted">
                             查無可選的審核人
+                        </div>
+                        <div v-else-if="approvalChain.filteredApprovers.value.length > 30" class="p-2 text-center text-muted small">
+                            顯示前 30 筆，請輸入關鍵字縮小範圍
                         </div>
                     </div>
                 </div>

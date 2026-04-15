@@ -1,6 +1,7 @@
 ﻿// Admin/SysRoom
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch } = Vue;
+const debounce = (fn, delay = 300) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
 
 let currentUser = null;
 const isAdmin = ref(false);  // ✅ 改用 ref
@@ -111,6 +112,13 @@ const isVideoFile = (filePath) => {
     const videoExtensions = ['.mp4', '.webm', '.ogv', '.mov', '.avi', '.mkv'];
     return videoExtensions.some(ext => filePath.toLowerCase().endsWith(ext));
 };
+
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+});
 
 // ✅ 生成 30 分鐘間隔的時間選項 (00:00, 00:30, 01:00, ..., 23:30)
 const timeOptions = [];
@@ -686,6 +694,7 @@ const room = new function () {
     this.vm = reactive(new VM());
 
     this.getVM = (Id) => {
+        this.mediaFiles.filter(m => m.isPending).forEach(m => URL.revokeObjectURL(m.src));
         this.mediaFiles.splice(0);
         this.timeSlots.splice(0);
 
@@ -719,34 +728,30 @@ const room = new function () {
                     this.form.agreementBase64 = null;
                     this.form.agreementFileName = null;
 
-                    // ✅ 1. 先載入員工列表
-                    await manager.getList(this.vm.DepartmentId);
+                    // 並行載入：員工列表、審核關卡、可用審核人
+                    await Promise.all([
+                        manager.getList(this.vm.DepartmentId),
+                        approvalChain.loadLevels(response.data.Id),
+                        approvalChain.loadAvailableApprovers(response.data.Id)
+                    ]);
 
-                    // ✅ 2. 等員工列表載入完成後,再設定已選擇的管理者
+                    // 員工列表載入完成後設定管理者
                     if (response.data.Manager) {
-                        // ✅ 從員工列表中找到對應的管理者(確保資料一致)
                         const managerFromList = manager.list.find(
                             u => u.Id === response.data.Manager.Id
                         );
-
                         if (managerFromList) {
-                            // ✅ 如果在列表中找到,用列表的資料
                             manager.selectedManager.value = managerFromList;
-                            console.log('✅ [編輯] 從列表中找到管理者:', managerFromList.Name);
                         } else {
-                            // ✅ 找不到的話,用 API 回傳的資料
                             manager.selectedManager.value = {
                                 Id: response.data.Manager.Id,
                                 Name: response.data.Manager.Name,
                                 Email: response.data.Manager.Email,
                                 RoleDisplay: response.data.Manager.RoleDisplay || '員工'
                             };
-                            console.log('⚠️ [編輯] 管理者不在列表中,使用 API 資料');
                         }
                     } else {
-                        // ✅ 沒有管理者,確保清空
                         manager.clearSelection();
-                        console.log('✅ [編輯] 無管理者');
                     }
 
                     // ✅ 處理圖片
@@ -768,10 +773,6 @@ const room = new function () {
                             this.timeSlots.push(this.createPeriodSlot(p));
                         });
                     }
-
-                    // ✅ 載入審核關卡
-                    await approvalChain.loadLevels(response.data.Id);
-                    await approvalChain.loadAvailableApprovers(response.data.Id);
 
                     if (this.offcanvas) {
                         this.offcanvas.show();
@@ -877,6 +878,15 @@ const room = new function () {
             return;
         }
 
+        // 將暫存的 blob URL 轉成 base64（不 revoke，留給 getVM/removeMedia 處理）
+        const resolvedMedia = await Promise.all(
+            this.mediaFiles.map(async (m) => {
+                if (!m.isPending) return m;
+                const b64 = await fileToBase64(m.file);
+                return { ...m, src: b64 };
+            })
+        );
+
         // ✅【關鍵】數字欄位正規化（避免 uint / decimal 爆炸）
         const capacity = Number(this.vm.Capacity ?? 0);
         const area = Number(this.vm.Area ?? 0);
@@ -897,7 +907,7 @@ const room = new function () {
             BookingSettings: this.vm.BookingSettings,
             DepartmentId: this.vm.DepartmentId,
             ManagerId: manager.selectedManager.value?.Id ?? this.vm.ManagerId,
-            Images: this.mediaFiles.map((m, idx) => ({
+            Images: resolvedMedia.map((m, idx) => ({
                 type: m.type,
                 src: m.src,
                 fileSize: m.src?.length ?? 0,
@@ -1095,18 +1105,14 @@ const room = new function () {
         if (!files || files.length === 0) return;
 
         Array.from(files).forEach(file => {
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                this.mediaFiles.push({
-                    Id: Date.now() + Math.random(),
-                    type: file.type.startsWith('image/') ? 'image' : 'video',
-                    src: e.target.result,
-                    name: file.name
-                });
-            };
-
-            reader.readAsDataURL(file);
+            this.mediaFiles.push({
+                Id: Date.now() + Math.random(),
+                type: file.type.startsWith('image/') ? 'image' : 'video',
+                src: URL.createObjectURL(file),
+                name: file.name,
+                file,
+                isPending: true
+            });
         });
 
         event.target.value = '';
@@ -1118,22 +1124,22 @@ const room = new function () {
 
         Array.from(files).forEach(file => {
             if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.mediaFiles.push({
-                    Id: Date.now() + Math.random(),
-                    type: file.type.startsWith('image/') ? 'image' : 'video',
-                    src: e.target.result,
-                    name: file.name
-                });
-            };
-            reader.readAsDataURL(file);
+            this.mediaFiles.push({
+                Id: Date.now() + Math.random(),
+                type: file.type.startsWith('image/') ? 'image' : 'video',
+                src: URL.createObjectURL(file),
+                name: file.name,
+                file,
+                isPending: true
+            });
         });
     };
 
     this.removeMedia = (Id) => {
         const index = this.mediaFiles.findIndex(m => m.Id === Id);
         if (index > -1) {
+            const item = this.mediaFiles[index];
+            if (item.isPending) URL.revokeObjectURL(item.src);
             this.mediaFiles.splice(index, 1);
         }
     }
@@ -1259,6 +1265,7 @@ window.$config = {
         this.roompage = ref(null);
         this.timeSlots = room.timeSlots;
         this.timeOptions = timeOptions;  // ✅ 30 分鐘間隔的時間選項
+        this.hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));  // ['00'..'23']
         this.mediaFiles = room.mediaFiles;
         // this.hourlySlots = room.hourlySlots;
         this.detailRoom = room.detailRoom;
@@ -1357,9 +1364,9 @@ window.$config = {
                     }
                 });
             }
-            watch(() => room.query.keyword, () => {
+            watch(() => room.query.keyword, debounce(() => {
                 room.getList(1);
-            });
+            }));
 
             // ✅ 監聯分院變更（新增/編輯共用）
             watch(() => room.vm.DepartmentId, (newDeptId, oldDeptId) => {

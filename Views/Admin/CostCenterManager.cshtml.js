@@ -1,6 +1,7 @@
 // Views/Admin/CostCenterManager.cshtml.js
 import global from '/global.js';
 const { reactive, ref, onMounted, watch } = Vue;
+const debounce = (fn, delay = 300) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
 
 class VM {
     Id = null;
@@ -192,9 +193,9 @@ window.$config = {
         this.userDepartmentId = userDepartmentId;
         this.userDepartmentName = userDepartmentName;
 
-        watch(() => query.keyword, () => {
+        watch(() => query.keyword, debounce(() => {
             manager.getList();
-        });
+        }));
 
         onMounted(async () => {
             // 1️⃣ 載入使用者資訊

@@ -1,4 +1,5 @@
-﻿using Microsoft.Net.Http.Headers;
+﻿using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Net.Http.Headers;
 
 namespace TASA.Program
 {
@@ -11,6 +12,10 @@ namespace TASA.Program
         /// </summary>
         public StaticFileCacheControl()
         {
+            var provider = new FileExtensionContentTypeProvider();
+            provider.Mappings[".ftl"] = "text/plain";
+            ContentTypeProvider = provider;
+
             OnPrepareResponse = sfrc =>
             {
                 if (fileExtensions.Any(x => sfrc.File.Name.EndsWith(x)))

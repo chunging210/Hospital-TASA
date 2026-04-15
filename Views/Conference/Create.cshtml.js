@@ -85,11 +85,9 @@ window.$config = {
         // 載入國定假日資料
         this.loadSysConfig = async (departmentId) => {
             try {
-                console.log('🔧 [loadSysConfig] departmentId =', departmentId);
                 const configRes = departmentId
                     ? await global.api.sysconfig.getbydepartment({ departmentId })
                     : await global.api.sysconfig.getall();
-                console.log('🔧 [loadSysConfig] TRANSFER_BANK_NAME =', configRes.data?.TRANSFER_BANK_NAME);
                 if (configRes.data) {
                     this.minAdvanceBookingDays.value = parseInt(configRes.data.MIN_ADVANCE_BOOKING_DAYS) || 7;
                     this.paymentInfo.transferBankName = configRes.data.TRANSFER_BANK_NAME || '';
@@ -107,22 +105,24 @@ window.$config = {
             const currentYear = new Date().getFullYear();
             const years = [currentYear, currentYear + 1];
 
-            for (const year of years) {
-                try {
-                    const res = await global.api.holiday.list(year);
-                    if (res.data) {
-                        res.data.forEach(h => {
-                            if (h.IsEnabled) {
-                                // IsWorkday=true 表示補班日(用平日價), IsWorkday=false 表示假日(用假日價)
-                                this.holidayDates.value[h.Date] = !h.IsWorkday;
-                            }
-                        });
-                    }
-                } catch (err) {
-                    console.warn(`載入 ${year} 年假日資料失敗:`, err);
+            const results = await Promise.all(
+                years.map(year =>
+                    global.api.holiday.list(year).catch(err => {
+                        console.warn(`載入 ${year} 年假日資料失敗:`, err);
+                        return { data: null };
+                    })
+                )
+            );
+
+            results.forEach(res => {
+                if (res.data) {
+                    res.data.forEach(h => {
+                        if (h.IsEnabled) {
+                            this.holidayDates.value[h.Date] = !h.IsWorkday;
+                        }
+                    });
                 }
-            }
-            console.log('✅ 已載入國定假日:', Object.keys(this.holidayDates.value).length, '筆');
+            });
         };
 
         // 檢查日期是否為假日 (包含國定假日和週六日)
@@ -444,7 +444,6 @@ window.$config = {
         };
 
         this.closeAgreementPDF = () => {
-            console.log('🔴 關閉 PDF 彈窗');
             this.showAgreementPDF.value = false;
             this.canConfirmAgreement.value = false;
         };
@@ -452,18 +451,15 @@ window.$config = {
 
         /* ====== PDF 載入完成 ====== */
         this.onPDFLoaded = () => {
-            console.log('✅ PDF 載入完成');
         };
 
         this.onPdfIframeLoaded = () => {
-            console.log('📄 PDF iframe 載入完成');
 
             // ✅ 延遲發送重置訊息,確保 PDF.js 初始化完成
             setTimeout(() => {
                 const iframe = this.$refs.pdfIframe;
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'RESET_SCROLL' }, '*');
-                    console.log('📨 已發送 RESET_SCROLL 訊息');
                 }
             }, 800);
         };
@@ -476,7 +472,6 @@ window.$config = {
                 return;
             }
 
-            console.log('✅ 確認已閱讀');
             this.hasReadAgreement.value = true;
             this.showAgreementPDF.value = false;
             addAlert('已確認閱讀使用聲明書', { type: 'success' });
@@ -622,13 +617,6 @@ window.$config = {
                     this.form.departmentId = this.currentUser.value.DepartmentId;
                 }
 
-                console.log('✅ 使用者資訊載入完成:', {
-                    name: this.currentUser.value.Name,
-                    isAdmin: this.isAdmin.value,
-                    isInternalStaff: this.isInternalStaff.value,
-                    departmentId: this.currentUser.value.DepartmentId,
-                    departmentName: this.currentUser.value.DepartmentName
-                });
 
             } catch (err) {
                 console.error('❌ 無法取得使用者資訊:', err);
@@ -646,7 +634,6 @@ window.$config = {
                     name: e.Name,
                     price: e.RentalPrice
                 }));
-                console.log('✅ 小型攤位載入完成:', this.availableSmallBooths.value);
             } catch (err) {
                 console.error('❌ 載入小型攤位失敗:', err);
                 this.availableSmallBooths.value = [];
@@ -1026,16 +1013,12 @@ window.$config = {
         this.loadBuildingsByDepartment = () => {
             const payload = {};
 
-            // ✅ 如果有選擇分院,傳給後端
             if (this.form.departmentId) {
                 payload.departmentId = this.form.departmentId;
             }
 
-            console.log('📤 [ConferenceCreate - loadBuildingsByDepartment] payload:', payload);
-
-            global.api.select.buildingsbydepartment({ body: payload })
+            return global.api.select.buildingsbydepartment({ body: payload })
                 .then(res => {
-                    console.log('✅ 大樓列表:', res.data);
                     this.buildings.value = res.data || [];
                 })
                 .catch(() => {
@@ -1045,9 +1028,9 @@ window.$config = {
 
         /* ====== 載入樓層 ====== */
         this.loadFloorsByBuilding = (building) => {
-            if (!building) return;
+            if (!building) return Promise.resolve();
 
-            global.api.select.floorsbybuilding({
+            return global.api.select.floorsbybuilding({
                 body: { building: building }
             })
                 .then(res => {
@@ -1078,7 +1061,6 @@ window.$config = {
                     }
                 });
                 this.rooms.value = res.data || [];
-                console.log('✅ 成功載入會議室:', this.rooms.value);
             } catch (error) {
                 console.error('❌ 失敗:', error);
             }
@@ -1106,7 +1088,6 @@ window.$config = {
                     excludeConferenceId: this.isEditMode.value ? this.editingReservationId.value : null
                 };
 
-                console.log('📤 發送請求:', JSON.stringify(body));
                 const res = await global.api.select.equipmentbyroom({ body });
 
                 let allData = [];
@@ -1144,8 +1125,6 @@ window.$config = {
 
                 // 小型攤位已在 loadSmallBooths 載入，這裡不處理
 
-                console.log('✅ 設備:', this.availableEquipment.value);
-                console.log('✅ 攤位:', this.availableBooths.value);
 
                 this.form.selectedEquipment = this.form.selectedEquipment.filter(id => {
                     const equipment = this.availableEquipment.value.find(e => e.id === id);
@@ -1550,7 +1529,6 @@ window.$config = {
             // ✅ 單日模式：同步更新 timeSlots（供費用計算和顯示使用）
             if (!this.isMultiDay.value && this.form.startDate) {
                 this.timeSlots.value = this.slotsByDate[this.form.startDate] || [];
-                console.log('✅ 單日模式：同步 timeSlots', this.timeSlots.value.length, '個時段');
             }
         };
 
@@ -1778,14 +1756,12 @@ window.$config = {
         /* ====== 載入預約資料(編輯模式) ====== */
         this.loadReservationData = async (reservationNo) => {
             try {
-                console.log('🔄 載入預約資料:', reservationNo);
 
                 const res = await global.api.reservations.detail({
                     body: { reservationNo: reservationNo }
                 });
 
                 const data = res.data;
-                console.log('✅ 預約資料:', data);
 
                 this.form.name = data.ConferenceName || '';
                 this.form.content = data.Description || '';
@@ -1801,7 +1777,6 @@ window.$config = {
                 this.form.departmentCode = data.DepartmentCode || '';
 
                 if (data.Attachments && Array.isArray(data.Attachments)) {
-                    console.log('📎 載入附件:', data.Attachments);
 
                     const agenda = data.Attachments.find(a => a.Type === 1);
                     if (agenda) {
@@ -1812,7 +1787,6 @@ window.$config = {
                             id: agenda.Id,
                             isExisting: true
                         };
-                        console.log('✅ 議程表:', this.agendaFile.value);
                     }
 
                     const documents = data.Attachments.filter(a => a.Type === 2);
@@ -1824,27 +1798,27 @@ window.$config = {
                             id: doc.Id,
                             isExisting: true
                         }));
-                        console.log('✅ 會議文件:', this.documentFiles.value);
                     }
                 }
 
                 this.form.departmentId = data.DepartmentId;
                 await this.loadBuildingsByDepartment();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.building = data.Building;
-                this.loadFloorsByBuilding(data.Building);
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await this.loadFloorsByBuilding(data.Building);
 
                 this.form.floor = data.Floor;
                 await this.loadRoomsByFloor();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.roomId = data.RoomId;
                 this.selectedRoom.value = this.rooms.value.find(r => r.Id === data.RoomId) || null;
 
+                // 依房間所屬分院載入系統設定（匯款資訊等）
+                if (this.selectedRoom.value?.DepartmentId) {
+                    await this.loadSysConfig(this.selectedRoom.value.DepartmentId);
+                }
+
                 await this.updateTimeSlots();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 // 處理時段資料 - 支援新舊格式，同步到 selectedSlotsByDate
                 if (data.SlotInfos && Array.isArray(data.SlotInfos)) {
@@ -1865,7 +1839,6 @@ window.$config = {
                     for (const [dateStr, slots] of Object.entries(slotsByDateMap)) {
                         this.selectedSlotsByDate[dateStr] = slots;
                     }
-                    console.log('✅ 已載入時段 (新格式):', slotsByDateMap);
                 } else if (data.SlotKeys && Array.isArray(data.SlotKeys)) {
                     // 舊格式：只有 key，預設為一般使用，歸到 startDate
                     const slots = data.SlotKeys.map(key => ({
@@ -1873,11 +1846,9 @@ window.$config = {
                         isSetup: false
                     }));
                     this.selectedSlotsByDate[this.form.startDate] = slots;
-                    console.log('✅ 已載入時段 (舊格式):', slots);
                 }
 
                 await this.loadEquipmentByRoom();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 if (data.EquipmentIds && Array.isArray(data.EquipmentIds)) {
                     this.form.selectedEquipment = [...data.EquipmentIds];
@@ -1886,7 +1857,6 @@ window.$config = {
                     this.form.selectedBooths = [...data.BoothIds];
                 }
 
-                console.log('✅ 預約資料載入完成');
 
             } catch (err) {
                 console.error('❌ 載入預約資料失敗:', err);
@@ -1908,36 +1878,28 @@ window.$config = {
             // ✅ 關閉確認彈窗
             this.showConfirmModal.value = false;
 
-            const attachments = [];
+            let attachments = [];
 
             try {
+                const toConvert = [];
+
                 if (this.agendaFile.value) {
-                    const base64 = await this.fileToBase64(this.agendaFile.value);
-                    attachments.push({
-                        Type: 1,
-                        FileName: this.agendaFile.value.name,
-                        Base64Data: base64
-                    });
+                    toConvert.push({ file: this.agendaFile.value, Type: 1 });
                 }
-
                 for (const file of this.documentFiles.value) {
-                    const base64 = await this.fileToBase64(file);
-                    attachments.push({
-                        Type: 2,
-                        FileName: file.name,
-                        Base64Data: base64
-                    });
+                    toConvert.push({ file, Type: 2 });
+                }
+                if (this.discountProofFile.value) {
+                    toConvert.push({ file: this.discountProofFile.value, Type: 3 });
                 }
 
-                // ✅ 優惠證明 (Type: 3)
-                if (this.discountProofFile.value) {
-                    const base64 = await this.fileToBase64(this.discountProofFile.value);
-                    attachments.push({
-                        Type: 3,
-                        FileName: this.discountProofFile.value.name,
-                        Base64Data: base64
-                    });
-                }
+                attachments = await Promise.all(
+                    toConvert.map(async ({ file, Type }) => ({
+                        Type,
+                        FileName: file.name,
+                        Base64Data: await this.fileToBase64(file)
+                    }))
+                );
             } catch (err) {
                 console.error('❌ 檔案轉換失敗:', err);
                 addAlert('檔案處理失敗,請重試', { type: 'danger' });
@@ -2046,7 +2008,6 @@ window.$config = {
                     successMsg = '預約已送出，請等待管理者審核！';
                 }
 
-                console.log('%c✅ 操作成功!', 'color: #00aa00; font-weight: bold; font-size: 14px;');
                 addAlert(successMsg, { type: 'success' });
 
                 setTimeout(() => {
@@ -2108,7 +2069,6 @@ window.$config = {
             }
 
             if (editId) {
-                console.log('📝 進入編輯模式');
                 this.isEditMode.value = true;
                 this.editingReservationId.value = editId;
                 await this.loadReservationData(editId);
@@ -2117,20 +2077,16 @@ window.$config = {
                 if (presetDate) {
                     this.form.startDate = presetDate;
                     this.form.endDate = presetDate;
-                    console.log('✅ 自動帶入搜尋日期:', presetDate);
                 }
 
                 this.form.departmentId = presetDepartmentId;
                 await this.loadBuildingsByDepartment();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.building = presetBuilding;
-                this.loadFloorsByBuilding(presetBuilding);
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await this.loadFloorsByBuilding(presetBuilding);
 
                 this.form.floor = presetFloor;
                 await this.loadRoomsByFloor();
-                await new Promise(resolve => setTimeout(resolve, 300));
 
                 this.form.roomId = presetRoomId;
                 this.selectedRoom.value = this.rooms.value.find(r => r.Id === presetRoomId) || null;
@@ -2142,8 +2098,6 @@ window.$config = {
 
                 await this.updateTimeSlots();
                 await this.loadEquipmentByRoom();
-
-                console.log('✅ 自動選好會議室', this.selectedRoom.value);
             } else if (!this.isGlobalAdmin.value && this.form.departmentId) {
                 await this.loadBuildingsByDepartment(this.form.departmentId);
             }
@@ -2171,16 +2125,6 @@ window.$config = {
 
                     this.loadBuildingsByDepartment();
                     this.loadSysConfig(departmentId);
-                }
-            );
-
-            // 依選到的會議室分院重新載入系統設定
-            watch(
-                () => this.selectedRoom.value,
-                async (room) => {
-                    if (room?.DepartmentId) {
-                        await this.loadSysConfig(room.DepartmentId);
-                    }
                 }
             );
 
@@ -2220,29 +2164,17 @@ window.$config = {
                 }
             );
 
-            watch(
-                () => this.form.roomId,
-                (roomId) => {
-                    if (!roomId) return;
-                    console.log('🔄 roomId changed:', roomId);
-                    this.loadEquipmentByRoom();
-                    this.updateTimeSlots();
-                }
-            );
-
             // 監聽 selectedSlotsByDate 的變化（統一處理單日和跨日）
             watch(
-                () => JSON.stringify(this.selectedSlotsByDate),
-                (newVal, oldVal) => {
+                () => this.selectedSlotsByDate,
+                () => {
                     if (this.form.roomId && this.form.startDate && this.hasAnySelectedSlots.value) {
-                        console.log('🔄 時段變更,重新檢查設備可用性');
-
                         this.form.selectedEquipment = [];
                         this.form.selectedBooths = [];
-
                         this.loadEquipmentByRoom();
                     }
-                }
+                },
+                { deep: true }
             );
 
             // ✅ 日期範圍變更時，重新載入時段（統一處理單日/多日）
@@ -2287,39 +2219,44 @@ window.$config = {
                 { deep: true }
             );
 
-            // ✅ 會議室變更時，重新載入時段
+            // ✅ 會議室變更時，重新載入設備、系統設定、時段
             watch(
                 () => this.form.roomId,
                 async (roomId) => {
-                    if (roomId && this.form.startDate) {
-                        this.selectedRoom.value = this.rooms.value.find(r => r.Id === roomId) || null;
+                    if (!roomId) return;
 
-                        // 依房間所屬分院重新載入系統設定（匯款資訊等）
-                        await this.loadSysConfig(this.selectedRoom.value?.DepartmentId || this.form.departmentId);
+                    this.selectedRoom.value = this.rooms.value.find(r => r.Id === roomId) || null;
 
-                        // 若目前選的付款方式不被此房間允許，清空
-                        const allowed = this.allowedPaymentMethods.value;
-                        if (
-                            (this.form.paymentMethod === 'transfer' && !allowed.transfer) ||
-                            (this.form.paymentMethod === 'cash' && !allowed.cash) ||
-                            (this.form.paymentMethod === 'cost-sharing' && !allowed.costSharing)
-                        ) {
-                            this.form.paymentMethod = '';
-                        }
+                    // 依房間所屬分院重新載入系統設定（匯款資訊等）
+                    await this.loadSysConfig(this.selectedRoom.value?.DepartmentId || this.form.departmentId);
 
-                        // 清空舊資料
-                        Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
-                        Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
-                        Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
-                        Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
-                        this.form.selectedSlots = [];
-                        this.timeSlots.value = [];
-                        await this.loadAllDateSlots();
+                    // 若目前選的付款方式不被此房間允許，清空
+                    const allowed = this.allowedPaymentMethods.value;
+                    if (
+                        (this.form.paymentMethod === 'transfer' && !allowed.transfer) ||
+                        (this.form.paymentMethod === 'cash' && !allowed.cash) ||
+                        (this.form.paymentMethod === 'cost-sharing' && !allowed.costSharing)
+                    ) {
+                        this.form.paymentMethod = '';
+                    }
 
-                        // ✅ 單日模式：同步更新 timeSlots
-                        if (!this.isMultiDay.value && this.form.startDate) {
-                            this.timeSlots.value = this.slotsByDate[this.form.startDate] || [];
-                        }
+                    // 載入設備清單
+                    this.loadEquipmentByRoom();
+
+                    if (!this.form.startDate) return;
+
+                    // 清空舊資料
+                    Object.keys(this.slotsByDate).forEach(key => delete this.slotsByDate[key]);
+                    Object.keys(this.selectedSlotsByDate).forEach(key => delete this.selectedSlotsByDate[key]);
+                    Object.keys(this.loadingSlots).forEach(key => delete this.loadingSlots[key]);
+                    Object.keys(this.middleDayErrors).forEach(key => delete this.middleDayErrors[key]);
+                    this.form.selectedSlots = [];
+                    this.timeSlots.value = [];
+                    await this.loadAllDateSlots();
+
+                    // ✅ 單日模式：同步更新 timeSlots
+                    if (!this.isMultiDay.value && this.form.startDate) {
+                        this.timeSlots.value = this.slotsByDate[this.form.startDate] || [];
                     }
                 }
             );
@@ -2327,7 +2264,6 @@ window.$config = {
             window.addEventListener('message', (event) => {
                 if (event.data?.type === 'PDF_REACHED_BOTTOM') {
                     this.canConfirmAgreement.value = true;
-                    console.log('✅ PDF 已滑到底');
                 }
             });
         });

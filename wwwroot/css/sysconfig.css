@@ -53,7 +53,7 @@
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .custom-range::-webkit-slider-thumb:hover {
@@ -76,7 +76,7 @@
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .custom-range::-moz-range-thumb:hover {
@@ -114,16 +114,22 @@
     font-size: 1rem;
 }
 
+.btn-primary {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-outline-secondary:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
-    transition: all 0.2s ease;
 }
 
 /* 上下間距調整 */

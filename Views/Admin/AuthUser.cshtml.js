@@ -1,6 +1,7 @@
 ﻿// Admin/AuthUser.cshtml
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch } = Vue;
+const debounce = (fn, delay = 300) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
 
 class VM {
     Id = null;
@@ -208,9 +209,9 @@ window.$config = {
             return true;
         }));
 
-        watch(() => authuser.query.keyword, () => {
+        watch(() => authuser.query.keyword, debounce(() => {
             authuser.getList(1);
-        });
+        }));
 
         const unitFilterDropdown = this.unitFilterDropdown;
         onMounted(() => {

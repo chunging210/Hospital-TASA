@@ -729,7 +729,7 @@ namespace TASA.Services.AuthModule
         public string RedirectUrl(ClaimsPrincipal? user)
         {
             var authUser = UserClaimsService.ToAuthUser(user?.Claims);
-            return authUser != null ? "/Auth/Profiles" : "/";
+            return authUser != null ? "/calendar" : "/";
         }
     }
 }

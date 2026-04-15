@@ -207,7 +207,7 @@ tr.batch-row-disabled:hover td {
 #payTopBarNormal,
 #payTopBarSelect,
 #payBottomBar {
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
 }
 
 /* ===== 表單樣式優化 ===== */

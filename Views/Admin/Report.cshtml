@@ -42,13 +42,14 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover table-sm align-middle"
-                           style="table-layout: fixed; min-width: 800px;">
+                           style="table-layout: fixed; min-width: 960px;">
                         <caption>會議報表（已收款）</caption>
                         <colgroup>
                             <col style="width: 45px;">
                             <col style="width: 95px;">
                             <col v-if="report.query.paymentMethod === 'cost-sharing'" style="width: 90px;">
                             <col style="width: 180px;">
+                            <col style="width: 105px;">
                             <col style="width: 105px;">
                             <col style="width: 110px;">
                             <col style="width: 80px;">
@@ -73,6 +74,10 @@
                                 <th class="text-nowrap">
                                     <input type="checkbox" v-model="report.exportColumns.dateRange"
                                            class="form-check-input me-1" title="匯出此欄位">會議日期
+                                </th>
+                                <th class="text-nowrap">
+                                    <input type="checkbox" v-model="report.exportColumns.timeRange"
+                                           class="form-check-input me-1" title="匯出此欄位">會議時間
                                 </th>
                                 <th class="text-nowrap">
                                     <input type="checkbox" v-model="report.exportColumns.roomName"
@@ -100,6 +105,7 @@
                                     item.BorrowingUnitName }}</td>
                                     <td class="text-start" style="word-break: break-all;">{{ item.ConferenceName }}</td>
                                     <td class="text-center" style="white-space: pre-line;">{{ item.DateRange.replace(' ~ ', '\n~ ') }}</td>
+                                    <td class="text-center text-nowrap">{{ item.TimeRange }}</td>
                                     <td>{{ item.RoomName }}</td>
                                     <td class="text-nowrap">{{ item.PaymentMethodText }}</td>
                                     <td>{{ item.ExpectedAttendees || '-' }}</td>
@@ -110,7 +116,7 @@
                             </tbody>
                             <tfoot>
                                 <tr v-if="report.list.length === 0">
-                                    <td :colspan="report.query.paymentMethod === 'cost-sharing' ? 9 : 8"
+                                    <td :colspan="report.query.paymentMethod === 'cost-sharing' ? 10 : 9"
                                         class="text-center text-muted">查無資料</td>
                                 </tr>
                                 <tr v-else class="fw-bold border-top border-2">
@@ -120,6 +126,7 @@
                                         <td v-if="report.query.paymentMethod !== 'cost-sharing'" class="text-nowrap">共 {{
                                             report.summary.totalCount }} 筆</td>
                                             <td v-if="report.query.paymentMethod === 'cost-sharing'"></td>
+                                            <td></td>
                                             <td></td>
                                             <td></td>
                                             <td></td>

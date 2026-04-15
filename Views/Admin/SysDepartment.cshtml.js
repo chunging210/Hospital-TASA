@@ -1,6 +1,7 @@
 ﻿// Admin/SysDepartment
 import global from '/global.js';
 const { ref, reactive, onMounted, computed, watch } = Vue;
+const debounce = (fn, delay = 300) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
 
 class VM {
     Id = null;
@@ -81,9 +82,9 @@ window.$config = {
         this.department = department;
         this.departmentoffcanvas = ref(null);
 
-        watch(() => department.query.keyword, () => {
+        watch(() => department.query.keyword, debounce(() => {
             department.getList();
-        });
+        }));
 
         onMounted(() => {
             department.getTree();
