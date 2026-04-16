@@ -6,6 +6,12 @@ using TASA.Services.ConferenceModule;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 允許大檔案上傳（影片）
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2GB
+});
+
 var connectionString = builder.Configuration.GetConnectionString("dbconnection");
 
 // ✅ 1. 先註冊 HttpContextAccessor

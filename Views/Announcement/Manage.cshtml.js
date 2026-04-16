@@ -231,9 +231,75 @@ window.$config = {
             });
         };
 
+        // ── 導覽影片 ──────────────────────────────────────────
+        const buildingVideoUrl = ref(null);
+        const videoUploading = ref(false);
+        const videoProgress = ref(0);
+        const videoProgressLabel = ref('');
+
+        const loadBuildingVideo = async () => {
+            const res = await fetch('/api/announcement/buildingvideo').then(r => r.json());
+            buildingVideoUrl.value = res.url || null;
+        };
+
+        const formatBytes = (bytes) => {
+            if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+            if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+            return (bytes / 1024).toFixed(0) + ' KB';
+        };
+
+        const uploadBuildingVideo = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            e.target.value = '';
+
+            videoUploading.value = true;
+            videoProgress.value = 0;
+            videoProgressLabel.value = `0 / ${formatBytes(file.size)}`;
+
+            const fd = new FormData();
+            fd.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/announcement/uploadbuildingvideo');
+
+            xhr.upload.addEventListener('progress', (ev) => {
+                if (!ev.lengthComputable) return;
+                const pct = Math.round((ev.loaded / ev.total) * 100);
+                videoProgress.value = pct;
+                videoProgressLabel.value = `${formatBytes(ev.loaded)} / ${formatBytes(ev.total)}`;
+            });
+
+            xhr.addEventListener('load', () => {
+                videoUploading.value = false;
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    buildingVideoUrl.value = data.url;
+                    addAlert('影片上傳成功', { type: 'success' });
+                } else {
+                    addAlert('上傳失敗，請重試', { type: 'danger' });
+                }
+            });
+
+            xhr.addEventListener('error', () => {
+                videoUploading.value = false;
+                addAlert('上傳失敗，請確認網路連線', { type: 'danger' });
+            });
+
+            xhr.send(fd);
+        };
+
+        const deleteBuildingVideo = async () => {
+            if (!confirm('確定刪除導覽影片？')) return;
+            await fetch('/api/announcement/deletebuildingvideo', { method: 'POST' });
+            buildingVideoUrl.value = null;
+            addAlert('已刪除', { type: 'success' });
+        };
+
         onMounted(() => {
             loadList();
             loadLinks().then(() => initSortable());
+            loadBuildingVideo();
         });
 
         return {
@@ -243,6 +309,8 @@ window.$config = {
             uploadFile, removePending, deleteAttachment,
             openLinkCreate, openLinkEdit, saveLink, deleteLink,
             fileIcon,
+            buildingVideoUrl, videoUploading, videoProgress, videoProgressLabel,
+            uploadBuildingVideo, deleteBuildingVideo,
         };
     }
 };

@@ -23,7 +23,8 @@
     line-height: 1;
     display: inline-block;
     vertical-align: middle;
-    font-size: 24px;
+    font-size: 20px;
+    font-weight: 500;
 }
 
 .material-icons {

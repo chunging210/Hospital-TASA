@@ -4,12 +4,31 @@
         <!-- 公告列表 -->
         <div class="card border-0 shadow-sm">
             <div class="card-header mx-4 mt-3">
-                <div class="d-flex align-items-center">
+                <div class="text-branding d-flex align-items-center">
                     <span class="material-icons me-2">campaign</span>
-                    <span class="text-branding">公告區</span>
+                    公告區
                 </div>
             </div>
             <div class="card-body p-4">
+
+                <!-- 導覽影片 -->
+                <div v-if="buildingVideoUrl" class="mb-4">
+                    <div class="border rounded overflow-hidden">
+                        <div class="d-flex align-items-center px-3 py-2 bg-light"
+                             style="cursor:pointer;" @@click="showVideo = !showVideo">
+                            <span class="material-icons me-2 text-primary" style="font-size:20px;">videocam</span>
+                            <span class="fw-semibold flex-grow-1">大樓導覽影片</span>
+                            <span class="material-icons text-muted" style="font-size:18px;transition:transform .2s;"
+                                  :style="showVideo ? 'transform:rotate(90deg)' : ''">chevron_right</span>
+                        </div>
+                        <div v-show="showVideo" class="border-top">
+                            <video :src="buildingVideoUrl" controls controlsList="nodownload"
+                                   style="width:100%;display:block;background:#000;"
+                                   @@contextmenu.prevent>
+                            </video>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- 載入中 -->
                 <div v-if="loading" class="text-center py-5">

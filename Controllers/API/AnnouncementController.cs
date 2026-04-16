@@ -169,6 +169,42 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
+        // ─── 大樓導覽影片 ──────────────────────────────────────
+
+        /// <summary>
+        /// 取得大樓導覽影片 URL
+        /// </summary>
+        [HttpGet("buildingvideo")]
+        public IActionResult GetBuildingVideo()
+        {
+            return Ok(new { url = service.AnnouncementService.GetBuildingVideoUrl() });
+        }
+
+        /// <summary>
+        /// 上傳 / 替換大樓導覽影片
+        /// </summary>
+        [HttpPost("uploadbuildingvideo")]
+        [DisableRequestSizeLimit]
+        [RequestFormLimits(MultipartBodyLengthLimit = long.MaxValue)]
+        public async Task<IActionResult> UploadBuildingVideo(IFormFile file)
+        {
+            if (!IsAdmin) return Forbid();
+            if (file == null || file.Length == 0) return BadRequest("請選擇影片檔案");
+            var url = await service.AnnouncementService.UploadBuildingVideo(file);
+            return Ok(new { url });
+        }
+
+        /// <summary>
+        /// 刪除大樓導覽影片
+        /// </summary>
+        [HttpPost("deletebuildingvideo")]
+        public IActionResult DeleteBuildingVideo()
+        {
+            if (!IsAdmin) return Forbid();
+            service.AnnouncementService.DeleteBuildingVideo();
+            return Ok();
+        }
+
         public record IdVM { public Guid Id { get; set; } }
     }
 }

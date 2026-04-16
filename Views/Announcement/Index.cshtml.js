@@ -9,6 +9,7 @@ window.$config = {
         const list = reactive([]);
         const quickLinks = reactive([]);
         const expanded = reactive({});
+        const buildingVideoUrl = ref(null);
 
         const pinnedList = computed(() => list.filter(x => x.IsPinned));
         const normalList = computed(() => list.filter(x => !x.IsPinned));
@@ -20,12 +21,14 @@ window.$config = {
 
         const load = async () => {
             loading.value = true;
-            const [listRes, linkRes] = await Promise.all([
+            const [listRes, linkRes, videoRes] = await Promise.all([
                 fetch('/api/announcement/list').then(r => r.json()),
                 fetch('/api/announcement/quicklinks').then(r => r.json()),
+                fetch('/api/announcement/buildingvideo').then(r => r.json()),
             ]);
             copy(list, listRes);
             copy(quickLinks, linkRes);
+            buildingVideoUrl.value = videoRes.url || null;
             // 將 IsDefaultExpanded = true 的公告預設展開
             listRes.forEach(item => {
                 if (item.IsDefaultExpanded) expanded[item.Id] = true;
@@ -49,6 +52,8 @@ window.$config = {
             load();
         });
 
-        return { loading, list, quickLinks, pinnedList, normalList, expanded, toggle, fileIcon };
+        const showVideo = ref(false);
+
+        return { loading, list, quickLinks, pinnedList, normalList, expanded, toggle, fileIcon, buildingVideoUrl, showVideo };
     }
 };

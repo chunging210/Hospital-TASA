@@ -31,13 +31,21 @@
                             超連結
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1"
+                           :class="{ active: tab === 'video' }"
+                           @@click.prevent="tab = 'video'" href="#">
+                            <span class="material-icons" style="font-size:18px;">videocam</span>
+                            導覽影片
+                        </a>
+                    </li>
                 </ul>
                 <div class="pb-2">
                     <button v-if="tab === 'announcement'" class="btn btn-primary btn-sm" @@click="openCreate">
                         <span class="material-icons" style="font-size:16px;vertical-align:middle;">add</span>
                         新增公告
                     </button>
-                    <button v-else class="btn btn-primary btn-sm" @@click="openLinkCreate">
+                    <button v-else-if="tab === 'quicklink'" class="btn btn-primary btn-sm" @@click="openLinkCreate">
                         <span class="material-icons" style="font-size:16px;vertical-align:middle;">add</span>
                         新增連結
                     </button>
@@ -141,6 +149,68 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- ══════════ 導覽影片 ══════════ -->
+                <div v-show="tab === 'video'">
+
+                    <!-- 有影片：播放器 + 操作列 -->
+                    <div v-if="buildingVideoUrl" class="border rounded overflow-hidden mb-3">
+                        <div class="bg-black">
+                            <video :src="buildingVideoUrl" controls controlsList="nodownload"
+                                   style="width:100%;display:block;max-height:600px;"
+                                   @@contextmenu.prevent>
+                            </video>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2 border-top bg-white">
+                            <span class="small text-muted">
+                                <span class="material-icons align-middle me-1" style="font-size:15px;">info</span>
+                                支援 MP4 / MOV / WebM
+                            </span>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-danger btn-sm" @@click="deleteBuildingVideo" :disabled="videoUploading">
+                                    <span class="material-icons" style="font-size:15px;vertical-align:middle;">delete</span>
+                                    刪除
+                                </button>
+                                <label class="btn btn-primary btn-sm mb-0" :class="{ disabled: videoUploading }">
+                                    <span class="material-icons" style="font-size:15px;vertical-align:middle;">upload</span>
+                                    替換影片
+                                    <input type="file" accept=".mp4,.mov,.webm" style="display:none"
+                                           @@change="uploadBuildingVideo" :disabled="videoUploading">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 無影片：上傳區 -->
+                    <div v-else class="border rounded p-5 text-center mb-3" style="border-style:dashed !important;">
+                        <span class="material-icons text-muted mb-2 d-block" style="font-size:40px;opacity:.5;">video_file</span>
+                        <p class="fw-semibold mb-1">尚未上傳大樓導覽影片</p>
+                        <p class="text-muted small mb-3">支援 MP4 / MOV / WebM</p>
+                        <label class="btn btn-primary" :class="{ disabled: videoUploading }">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">upload</span>
+                            選擇影片上傳
+                            <input type="file" accept=".mp4,.mov,.webm" style="display:none"
+                                   @@change="uploadBuildingVideo" :disabled="videoUploading">
+                        </label>
+                    </div>
+
+                    <!-- 上傳進度 -->
+                    <div v-if="videoUploading" class="border rounded p-3 bg-light">
+                        <div class="d-flex justify-content-between small fw-semibold mb-2">
+                            <span>
+                                <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
+                                上傳中，請勿關閉此頁面…
+                            </span>
+                            <span class="text-primary">{{ videoProgress }}%</span>
+                        </div>
+                        <div class="progress mb-2" style="height:10px;border-radius:6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                 :style="{ width: videoProgress + '%' }"></div>
+                        </div>
+                        <div class="text-muted small text-end">{{ videoProgressLabel }}</div>
+                    </div>
+
                 </div>
 
             </div>

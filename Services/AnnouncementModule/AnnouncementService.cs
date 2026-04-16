@@ -309,6 +309,67 @@ namespace TASA.Services.AnnouncementModule
 
         #endregion
 
+        #region 大樓導覽影片
+
+        private static readonly string[] AllowedVideoExtensions = [".mp4", ".mov", ".webm"];
+        private const string BuildingVideoFileName = "building-intro";
+        private string BuildingVideoDir => Path.Combine(env.WebRootPath, "uploads", "videos");
+
+        /// <summary>
+        /// 取得大樓導覽影片 URL（不存在回傳 null）
+        /// </summary>
+        public string GetBuildingVideoUrl()
+        {
+            foreach (var ext in AllowedVideoExtensions)
+            {
+                var path = Path.Combine(BuildingVideoDir, BuildingVideoFileName + ext);
+                if (File.Exists(path))
+                    return $"/uploads/videos/{BuildingVideoFileName}{ext}";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 上傳 / 替換大樓導覽影片（串流寫入，不限大小）
+        /// </summary>
+        public async Task<string> UploadBuildingVideo(IFormFile file)
+        {
+            var ext = Path.GetExtension(file.FileName).ToLower();
+            if (!AllowedVideoExtensions.Contains(ext))
+                throw new HttpException("僅支援 MP4、MOV、WebM 格式");
+
+            Directory.CreateDirectory(BuildingVideoDir);
+
+            // 刪除舊的影片（不管副檔名）
+            foreach (var oldExt in AllowedVideoExtensions)
+            {
+                var old = Path.Combine(BuildingVideoDir, BuildingVideoFileName + oldExt);
+                if (File.Exists(old)) File.Delete(old);
+            }
+
+            var savePath = Path.Combine(BuildingVideoDir, BuildingVideoFileName + ext);
+            using (var stream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920))
+                await file.CopyToAsync(stream);
+
+            _ = service.LogServices.LogAsync("building_video_upload", file.FileName);
+            return $"/uploads/videos/{BuildingVideoFileName}{ext}";
+        }
+
+        /// <summary>
+        /// 刪除大樓導覽影片
+        /// </summary>
+        public void DeleteBuildingVideo()
+        {
+            foreach (var ext in AllowedVideoExtensions)
+            {
+                var path = Path.Combine(BuildingVideoDir, BuildingVideoFileName + ext);
+                if (File.Exists(path)) File.Delete(path);
+            }
+            _ = service.LogServices.LogAsync("building_video_delete", "");
+        }
+
+        #endregion
+
         #region 超連結 CRUD
 
         public List<QuickLinkVM> GetQuickLinks()
