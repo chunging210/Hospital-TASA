@@ -35,13 +35,13 @@
                     您是 <strong>{{delegateInfo.ManagerName}}</strong> 的代理人，期限至 {{delegateInfo.EndDate}}
                 </span>
             </div>
-            <div class="dropdown d-inline-block">
-                <div class="btn header-item user text-start icon-text-container" data-bs-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">
+            <div class="dropdown d-inline-block" :class="{ show: showDropdown }">
+                <div class="btn header-item user text-start icon-text-container"
+                    @@click.stop="toggleDropdown">
                     <img class="rounded-circle header-profile-user" src="/images/avatar.jpg" alt="Header Avatar">
                     <h6 class="mb-0">歡迎, {{name}}</h6>
                 </div>
-                <div class="dropdown-menu dropdown-menu-end">
+                <div class="dropdown-menu dropdown-menu-end" :class="{ show: showDropdown }">
                     <a href="/auth/profiles" class="dropdown-item">個人資料</a>
                     <div class="dropdown-divider"></div>
                     <div @@click="logout" class="dropdown-item icon-text-container" role="button">
@@ -174,6 +174,21 @@
                                 </div>
                             </li>
                         }
+                        <li class="nav-item dropdown">
+                            <a href=# class="nav-link icon-text-container dropdown-toggle" role="button"
+                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="material-icons">campaign</span>
+                                <span class="text">公告區</span>
+                                <div class="arrow-down"></div>
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
+                                <a href="/announcement" class="dropdown-item" target="_blank">公告列表</a>
+                                @if (user?.IsAdmin == true || user?.IsDirector == true)
+                                {
+                                    <a href="/announcement/manage" class="dropdown-item">公告管理</a>
+                                }
+                            </div>
+                        </li>
                     </ul>
                 </div>
             </nav>

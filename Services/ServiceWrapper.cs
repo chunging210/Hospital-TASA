@@ -11,6 +11,7 @@ using TASA.Services.HolidayModule;
 using TASA.Services.ReportModule;
 using TASA.Services.CostCenterModule;
 using TASA.Services.StatisticsModule;
+using TASA.Services.AnnouncementModule;
 using TASA.Services;
 
 namespace TASA.Services
@@ -51,7 +52,8 @@ namespace TASA.Services
         Lazy<HolidayService> holidayService,
         Lazy<ReportService> reportService,
         Lazy<CostCenterManagerService> costCenterManagerService,
-        Lazy<StatisticsService> statisticsService
+        Lazy<StatisticsService> statisticsService,
+        Lazy<AnnouncementService> announcementService
 
     )
     {
@@ -99,6 +101,8 @@ namespace TASA.Services
         public CostCenterManagerService CostCenterManagerService => costCenterManagerService.Value;
 
         public StatisticsService StatisticsService => statisticsService.Value;
+
+        public AnnouncementService AnnouncementService => announcementService.Value;
 
     }
 }

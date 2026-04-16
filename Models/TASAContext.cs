@@ -128,6 +128,12 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<CostCenterManager> CostCenterManager { get; set; }
 
+    public virtual DbSet<Announcement> Announcement { get; set; }
+
+    public virtual DbSet<AnnouncementAttachment> AnnouncementAttachment { get; set; }
+
+    public virtual DbSet<QuickLink> QuickLink { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -163,6 +169,9 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.ConferenceApprovalHistoryConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.SysHolidayConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.CostCenterManagerConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.AnnouncementConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.AnnouncementAttachmentConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.QuickLinkConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

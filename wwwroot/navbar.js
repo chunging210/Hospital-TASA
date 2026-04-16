@@ -16,6 +16,16 @@ export default {
         this.name = ref(fn.getName());
         this.countdown = ref('00:00');
         this.delegateInfo = ref(null);
+        this.showDropdown = ref(false);
+
+        this.toggleDropdown = () => {
+            this.showDropdown.value = !this.showDropdown.value;
+        };
+
+        // 點外部關閉
+        document.addEventListener('click', () => {
+            this.showDropdown.value = false;
+        });
 
         // 取得代理人資訊
         const loadDelegateInfo = async () => {
@@ -51,9 +61,5 @@ export default {
         }, 250);
 
         this.logout = fn.logout;
-
-        //this.lang = ref(htmlLang.get());
-        //this.SUPPORT_LOCALES = SUPPORT_LOCALES;
-        //this.setLang = htmlLang.set;
     }
 }

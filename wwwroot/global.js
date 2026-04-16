@@ -1,4 +1,5 @@
 ﻿import 'vue';
+// import 'bootstrap';
 import '/js/extensions.js'
 import apiMethods, { GET, POST, PUT, PATCH, DELETE } from '/js/apiMethods.js';
 import globalalert from '/js/components/globalalert.js';
