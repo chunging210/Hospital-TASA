@@ -152,8 +152,10 @@
 
                             <video
                                 v-else-if="item.Images && item.Images.length > 0 && room.isVideoFile(item.Images[item._imgIndex || 0])"
+                                :key="'card-video-' + item.Id + '-' + (item._imgIndex || 0)"
                                 controls autoplay muted
-                                style="width: 100%; height: 100%; object-fit: cover; background: #000; display: block;">
+                                style="width: 100%; height: 100%; object-fit: cover; background: #000; display: block;"
+                                @@click.stop>
                                 <source :src="item.Images[item._imgIndex || 0]" type="video/mp4">
                                 你的瀏覽器不支援視訊播放
                             </video>
@@ -196,7 +198,7 @@
                             </div>
 
                             <div class="action-buttons mt-3">
-                                <button class="btn btn-outline-secondary btn-detail" @@click.stop="room.openDetail(item.Id)">
+                                <button class="btn btn-outline-primary btn-detail" @@click.stop="room.openDetail(item.Id)">
                                     <span class="material-icons icons">info</span>
                                     了解更多
                                 </button>

@@ -416,7 +416,7 @@ body {
 
 .info-item {
     background: #f8f9fa;
-    padding: 4px;
+    /* padding: 4px; */
     border-radius: 6px;
     text-align: center;
 }
