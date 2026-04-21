@@ -2940,5 +2940,108 @@ namespace TASA.Services.ConferenceModule
                 }
             }
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  繳款入帳通知單（三聯單）
+        // ─────────────────────────────────────────────────────────────────────
+
+        public class PaymentSlipItemVM
+        {
+            public string ConferenceName { get; set; } = string.Empty;
+            public string OrganizerUnit { get; set; } = string.Empty;
+            public int RoomCost { get; set; }
+            public List<string> RoomNames { get; set; } = new();
+        }
+
+        public class PaymentSlipVM
+        {
+            public Guid OrderId { get; set; }
+            public string OrderShortId { get; set; } = string.Empty;
+            public string IssuedYear { get; set; } = string.Empty;
+            public string IssuedMonth { get; set; } = string.Empty;
+            public string IssuedDay { get; set; } = string.Empty;
+            public List<PaymentSlipItemVM> Items { get; set; } = new();
+            public int TotalRoomCost { get; set; }
+            public int TaxAmount { get; set; }
+            public int TotalAmount { get; set; }
+            /// <summary>日期範圍，民國年，如 114/04/20 或 114/04/20 ~ 114/04/22</summary>
+            public string SlotDateText { get; set; } = string.Empty;
+            /// <summary>所有訂單合計時段數</summary>
+            public int TotalSlots { get; set; }
+        }
+
+        /// <summary>
+        /// 取得繳款通知單資料（以 orderId 為準，orderId 對應 ConferencePaymentOrder）。
+        /// </summary>
+        public PaymentSlipVM? GetPaymentSlipData(Guid orderId)
+        {
+            var order = db.ConferencePaymentOrder
+                .AsNoTracking()
+                .Where(o => o.Id == orderId &&
+                            o.DeleteAt == null &&
+                            (o.Status == Models.Enums.PaymentOrderStatus.PendingSlip ||
+                             o.Status == Models.Enums.PaymentOrderStatus.PendingVerification))
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Conference)
+                        .ThenInclude(c => c!.ConferenceRoomSlots)
+                            .ThenInclude(s => s.Room)
+                .FirstOrDefault();
+
+            if (order == null) return null;
+
+            var today = DateTime.Now;
+            var rocYear = today.Year - 1911;
+
+            var items = order.Items
+                .Where(i => i.Conference != null)
+                .Select(i => new PaymentSlipItemVM
+                {
+                    ConferenceName = i.Conference!.Name,
+                    OrganizerUnit  = i.Conference.OrganizerUnit ?? string.Empty,
+                    RoomCost       = i.Conference.RoomCost,
+                    RoomNames      = i.Conference.ConferenceRoomSlots
+                                        .Select(s => s.Room.Name)
+                                        .Distinct()
+                                        .ToList()
+                })
+                .ToList();
+
+            var totalRoomCost = items.Sum(i => i.RoomCost);
+            var taxAmount     = (int)Math.Round(totalRoomCost * 0.05m);
+
+            // 彙整所有時段資訊
+            var allSlots = order.Items
+                .Where(i => i.Conference != null)
+                .SelectMany(i => i.Conference!.ConferenceRoomSlots)
+                .ToList();
+            var totalSlots = allSlots.Count;
+            var slotDateText = string.Empty;
+            if (allSlots.Any())
+            {
+                string FormatRoc(DateOnly d) => $"{d.Year - 1911}/{d.Month:D2}/{d.Day:D2}";
+                var distinctDates = allSlots
+                    .Select(s => s.SlotDate)
+                    .Distinct()
+                    .OrderBy(d => d)
+                    .Select(d => FormatRoc(d))
+                    .ToList();
+                slotDateText = string.Join("、", distinctDates);
+            }
+
+            return new PaymentSlipVM
+            {
+                OrderId      = order.Id,
+                OrderShortId = order.Id.ToString("N").ToUpperInvariant()[..8],
+                IssuedYear   = rocYear.ToString(),
+                IssuedMonth  = today.Month.ToString(),
+                IssuedDay    = today.Day.ToString(),
+                Items        = items,
+                TotalRoomCost = totalRoomCost,
+                TaxAmount    = taxAmount,
+                TotalAmount  = totalRoomCost + taxAmount,
+                SlotDateText  = slotDateText,
+                TotalSlots    = totalSlots
+            };
+        }
     }
 }

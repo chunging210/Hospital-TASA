@@ -8,6 +8,9 @@
       "Bash(sed -n '191,195p' c:/Users/davin.huang/Desktop/TASA/wwwroot/css/app.min.css)",
       "Bash(sed -n '1788,1800p' c:/Users/davin.huang/Desktop/TASA/wwwroot/css/app.min.css)",
       "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\davin.huang\\Desktop"
     ]
   }
 }

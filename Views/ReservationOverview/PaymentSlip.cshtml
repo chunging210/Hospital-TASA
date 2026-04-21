@@ -1,0 +1,291 @@
+@model TASA.Services.ConferenceModule.ReservationService.PaymentSlipVM
+@{
+    Layout = null;
+
+    string[] ToDigits(int amount)
+    {
+        var s = amount.ToString().PadLeft(9, ' ');
+        var cells = new string[9];
+        for (int i = 0; i < 9; i++)
+            cells[i] = s[i] == ' ' ? "" : s[i].ToString();
+        return cells;
+    }
+
+    var taxDigits        = ToDigits(Model.TaxAmount);
+    var totalDigits      = ToDigits(Model.TotalAmount);
+    var roomCostDigits   = ToDigits(Model.TotalRoomCost);
+    var roomNotes        = string.Join("、", Model.Items.SelectMany(i => i.RoomNames).Distinct());
+    var organizerUnits   = string.Join("、", Model.Items.Select(i => i.OrganizerUnit).Distinct());
+    int blankRows        = 1;
+}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<title>繳款入帳通知單</title>
+<style>
+  @@page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "標楷體", "DFKai-SB", "Microsoft JhengHei", serif;
+    background: #d0d0d0;
+  }
+
+  /* 列印時隱藏按鈕 */
+  @@media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .paper { box-shadow: none; }
+  }
+
+  .no-print {
+    text-align: center;
+    padding: 12px 0 8px;
+    background: #d0d0d0;
+  }
+  .no-print button {
+    background: #1a5276; color: #fff; border: none;
+    padding: 8px 26px; font-size: 13px; border-radius: 4px;
+    cursor: pointer; font-family: "Microsoft JhengHei", sans-serif;
+  }
+  .no-print p {
+    font-size: 11px; color: #444; margin-top: 4px;
+    font-family: "Microsoft JhengHei", sans-serif;
+  }
+
+  /* A4 精確容器 */
+  .paper {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    padding: 6mm 8mm;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 12px rgba(0,0,0,.25);
+  }
+
+  /* 三聯等高分配 */
+  .slip-outer {
+    flex: 1;
+    display: flex;
+    border: 1.5px solid #333;
+    overflow: hidden;
+  }
+
+  /* 裁切線固定高度 */
+  .cut-line {
+    flex-shrink: 0;
+    height: 4mm;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    color: #888;
+    border-left: 1.5px solid #333;
+    border-right: 1.5px solid #333;
+  }
+  .cut-line span { flex: 1; border-top: 1px dashed #bbb; }
+
+  /* 聯主體 */
+  .slip-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2mm 3mm 2mm 3mm;
+    min-width: 0;
+  }
+
+  /* 右側直排欄 */
+  .copy-col {
+    width: 40px;
+    flex-shrink: 0;
+    border-left: 1.5px solid #333;
+    display: flex;
+    flex-direction: row;
+  }
+  .copy-strip-left, .copy-strip-right {
+    flex: 1;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    white-space: nowrap;
+    padding: 4px 1px 3px;
+  }
+  .copy-strip-right { padding-top: 38%; }
+
+  /* 表頭區 */
+  .binding-line {
+    text-align: center; font-size: 9px; color: #888;
+    border-top: 1.5px dotted #aaa; padding-top: 1px;
+    letter-spacing: 2px; margin-bottom: 0;
+  }
+  .institution {
+    text-align: center; font-size: 17px; font-weight: bold;
+    letter-spacing: 2px; line-height: 1.25;
+  }
+  .title-pay {
+    text-align: center; font-size: 13px; font-weight: bold;
+    letter-spacing: 10px; line-height: 1.2;
+  }
+  .title-sub {
+    text-align: center; font-size: 11px; font-weight: bold;
+    text-decoration: underline; letter-spacing: 3px; line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .meta-row {
+    display: flex; justify-content: space-between;
+    align-items: flex-end; font-size: 10px; margin-bottom: 2px;
+  }
+  .ul { display: inline-block; border-bottom: 1px solid #333; min-width: 18px; }
+
+  /* 表格 */
+  .table-wrap { flex: 1; display: flex; flex-direction: column; }
+  .main-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 10px; table-layout: fixed;
+    flex: 1;
+  }
+  .main-table th,
+  .main-table td {
+    border: 1px solid #333;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0 1px;
+  }
+  .main-table th {
+    background: #f0f0f0; font-weight: bold; font-size: 9.5px;
+    height: 18px;
+  }
+  .main-table tbody { height: 100%; }
+  .main-table .row-data { height: 25%; }
+  .main-table .row-data td { }
+
+  .col-summary { width: 80px; }
+  .col-unit    { width: 60px; }
+  .col-digit   { width: 18px; }
+  .td-left { text-align: left !important; padding-left: 4px !important; }
+  .td-ellipsis { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 0; }
+
+  /* 簽名列 */
+  .footer-sig {
+    display: flex; justify-content: space-between;
+    font-size: 10px; padding: 2px 2px 0;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print">
+  <button onclick="window.print()">列印 / 儲存為 PDF</button>
+  <p>建議：紙張 A4、縮放 100%、取消頁首頁尾</p>
+</div>
+
+<div class="paper">
+
+@for (int copyNo = 1; copyNo <= 3; copyNo++)
+{
+    string stripLeft, stripRight;
+    if (copyNo == 1) {
+        stripLeft  = "第一聯：承辦單位留存備查";
+        stripRight = "繳款後請出納另開統一收據";
+    } else if (copyNo == 2) {
+        stripLeft  = "第二聯：繳款單位持向出納繳款";
+        stripRight = "繳款後請出納另開統一收據";
+    } else {
+        stripLeft  = "第三聯：繳款後請出納另開統一收據";
+        stripRight = "承辦單位留存備查";
+    }
+
+    <div class="slip-outer">
+      <div class="slip-main">
+        <div class="binding-line">…………裝　訂　線…………</div>
+        <div class="institution">臺北榮民總醫院</div>
+        <div class="title-pay">繳　款</div>
+        <div class="title-sub">入帳通知單</div>
+        <div class="meta-row">
+          <span>填單日期<span class="ul">@Model.IssuedYear</span>年<span class="ul">@Model.IssuedMonth</span>月<span class="ul">@Model.IssuedDay</span>日</span>
+          <span>編號<span class="ul" style="min-width:50px;">@Model.OrderShortId</span></span>
+        </div>
+
+        <div class="table-wrap">
+        <table class="main-table">
+          <colgroup>
+            <col class="col-summary"><col class="col-unit">
+            <col class="col-digit"><col class="col-digit"><col class="col-digit"><col class="col-digit">
+            <col class="col-digit"><col class="col-digit"><col class="col-digit"><col class="col-digit">
+            <col class="col-digit"><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">繳 款 摘 要</th>
+              <th rowspan="2">繳 款 單 位</th>
+              <th colspan="9">繳　　款　　金　　額</th>
+              <th rowspan="2">備　　注</th>
+            </tr>
+            <tr>
+              <th class="col-digit">億</th><th class="col-digit">千</th>
+              <th class="col-digit">百</th><th class="col-digit">十</th>
+              <th class="col-digit">萬</th><th class="col-digit">千</th>
+              <th class="col-digit">百</th><th class="col-digit">十</th>
+              <th class="col-digit">元</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-data">
+              <td class="td-left">會議室場地租金</td>
+              <td class="td-left" style="font-size:9px;">@organizerUnits</td>
+              @foreach (var d in roomCostDigits) { <td>@d</td> }
+              <td class="td-left td-ellipsis" style="font-size:9px;" title="@roomNotes">@roomNotes</td>
+            </tr>
+            <tr class="row-data">
+              <td class="td-left">5%營業稅額</td><td></td>
+              @foreach (var d in taxDigits) { <td>@d</td> }
+              <td></td>
+            </tr>
+            <tr class="row-data"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            <tr class="row-data">
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+              <td class="td-left" style="font-size:9px;">
+                @if (!string.IsNullOrEmpty(Model.SlotDateText)) {
+                    <div style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">日期：@Model.SlotDateText</div>
+                }
+                <div>共計 @Model.TotalSlots 個時段</div>
+              </td>
+            </tr>
+            <tr class="row-data">
+              <td colspan="2" style="font-weight:bold;letter-spacing:4px;">合　計</td>
+              @foreach (var d in totalDigits) { <td>@d</td> }
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+
+        <div class="footer-sig">
+          <span>承辦單位主管：<span class="ul" style="min-width:100px;">&nbsp;</span></span>
+          <span>承辦：<span class="ul" style="min-width:100px;">&nbsp;</span></span>
+        </div>
+      </div>
+
+      <div class="copy-col">
+        <div class="copy-strip-left">@stripLeft</div>
+        <div class="copy-strip-right">@stripRight</div>
+      </div>
+    </div>
+
+    if (copyNo < 3) {
+        <div class="cut-line"><span></span>✂ 裁　切　線<span></span></div>
+    }
+}
+
+</div>
+</body>
+</html>

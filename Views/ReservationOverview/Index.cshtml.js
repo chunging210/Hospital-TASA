@@ -67,6 +67,11 @@ window.$config = {
             transferNote: ''
         });
 
+        /* ========= ✅ 三聯單草稿 ========= */
+        this.myDraftOrders = ref([]);
+        this.batchSlipLoading = ref(false);
+        this.singleSlipLoading = ref(false);
+
         /* ========= 計算屬性 ========= */
         this.filteredAllReservations = computed(() => {
             return this.allReservations.value;  // ✅ 不篩選,直接回傳
@@ -138,6 +143,11 @@ window.$config = {
             if (this.selectedForBatch.value.length === 0) return null;
             return this.isCounterPayment(this.selectedForBatch.value[0].paymentMethod)
                 ? 'counter' : 'transfer';
+        });
+
+        this.batchAllCash = computed(() => {
+            return this.selectedForBatch.value.length > 0 &&
+                   this.selectedForBatch.value.every(s => s.paymentMethod === 'cash');
         });
 
         this.getUserFriendlyStatus = (item) => {
@@ -599,11 +609,64 @@ window.$config = {
             this.selectedForBatch.value = [];
         };
 
+        // ── 下載單筆繳費通知單（先建草稿 order 再開新分頁）──
+        this.downloadSingleSlip = async (item) => {
+            if (!item) return;
+            this.singleSlipLoading.value = true;
+            try {
+                const res = await global.api.payment.createDraft({ body: { ConferenceIds: [item.id] } });
+                window.open(`/ReservationOverview/PaymentSlip?orderId=${res.data.orderId}`, '_blank');
+            } catch (e) {
+                addAlert(e?.response?.data?.message || '產生通知單失敗', { type: 'danger' });
+            } finally {
+                this.singleSlipLoading.value = false;
+            }
+        };
+
+        // ── 下載合併繳費通知單（先建草稿 order 再開新分頁）──
+        this.downloadBatchSlip = async () => {
+            if (this.selectedForBatch.value.length === 0) return;
+            this.batchSlipLoading.value = true;
+            try {
+                const ids = this.selectedForBatch.value.map(s => s.id);
+                const res = await global.api.payment.createDraft({ body: { ConferenceIds: ids } });
+                window.open(`/ReservationOverview/PaymentSlip?orderId=${res.data.orderId}`, '_blank');
+            } catch (e) {
+                addAlert(e?.response?.data?.message || '產生通知單失敗', { type: 'danger' });
+            } finally {
+                this.batchSlipLoading.value = false;
+            }
+        };
+
+        // ── 載入草稿清單 ──
+        this.loadMyDraftOrders = async () => {
+            try {
+                const res = await global.api.payment.myDrafts();
+                this.myDraftOrders.value = res.data;
+            } catch { /* 靜默失敗，不影響主流程 */ }
+        };
+
+        // ── 將草稿 order 的預約載入 selectedForBatch ──
+        this.loadDraftOrder = (draft) => {
+            // 找到 personalReservations 中對應的項目
+            const matched = draft.items
+                .map(di => this.personalReservations.value.find(r => r.id === di.conferenceId))
+                .filter(Boolean);
+            if (matched.length === 0) {
+                addAlert('找不到對應的預約，可能狀態已變更', { type: 'warning' });
+                return;
+            }
+            this.selectedForBatch.value = matched;
+            addAlert(`已載入 ${matched.length} 筆預約`, { type: 'success' });
+        };
+
         this.openBatchPayDrawer = () => {
             if (this.selectedForBatch.value.length === 0) {
                 addAlert('請先勾選要付款的預約', { type: 'warning' });
                 return;
             }
+            // 每次開啟都重新載入草稿清單
+            this.loadMyDraftOrders();
             // 預填金額（匯款模式）
             if (this.batchPayMode.value === 'transfer') {
                 this.batchPayForm.amount = this.batchTotalAmount.value;

@@ -30,6 +30,29 @@ namespace TASA.Services.ConferenceModule
             public IFormFile? ScreenshotFile { get; set; }     // 匯款截圖
         }
 
+        public class CreateDraftOrderVM
+        {
+            public List<Guid> ConferenceIds { get; set; } = new();
+        }
+
+        public class DraftOrderItemDTO
+        {
+            public Guid ConferenceId { get; set; }
+            public string ConferenceName { get; set; } = string.Empty;
+            public string OrganizerUnit { get; set; } = string.Empty;
+            public string ReservationDate { get; set; } = string.Empty;
+            public int Amount { get; set; }
+        }
+
+        public class DraftOrderDTO
+        {
+            public Guid OrderId { get; set; }
+            public string OrderShortId { get; set; } = string.Empty;
+            public string CreatedAt { get; set; } = string.Empty;
+            public int TotalAmount { get; set; }
+            public List<DraftOrderItemDTO> Items { get; set; } = new();
+        }
+
         public class ApprovePaymentVM
         {
             public Guid OrderId { get; set; }
@@ -303,6 +326,95 @@ namespace TASA.Services.ConferenceModule
             // 寄送通知給每個預約人
             foreach (var item in order.Items)
                 service.ConferenceMail.PaymentApproved(item.ConferenceId);
+        }
+
+        /// <summary>
+        /// 建立草稿付款訂單（三聯單產生時呼叫，尚未上傳憑證）
+        /// </summary>
+        public async Task<Guid> CreateDraftPaymentOrder(CreateDraftOrderVM vm)
+        {
+            var userId = service.UserClaimsService.Me()?.Id
+                ?? throw new HttpException("無法取得使用者資訊");
+
+            if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
+                throw new HttpException("沒有選擇任何預約");
+
+            var conferences = await db.Conference
+                .Where(c => vm.ConferenceIds.Contains(c.Id) &&
+                            c.ReservationStatus == ReservationStatus.PendingPayment)
+                .ToListAsync();
+
+            if (conferences.Count != vm.ConferenceIds.Count)
+                throw new HttpException("部分預約不在待繳費狀態，請重新確認");
+
+            var orderId = Guid.NewGuid();
+            db.ConferencePaymentOrder.Add(new ConferencePaymentOrder
+            {
+                Id = orderId,
+                PaymentMethod = conferences.FirstOrDefault()?.PaymentMethod ?? "",
+                Status = PaymentOrderStatus.PendingSlip,
+                UploadedAt = DateTime.Now,
+                UploadedBy = userId,
+                CreateAt = DateTime.Now,
+                CreateBy = userId
+            });
+
+            foreach (var conf in conferences)
+            {
+                db.ConferencePaymentOrderItem.Add(new ConferencePaymentOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = orderId,
+                    ConferenceId = conf.Id,
+                    CreateAt = DateTime.Now
+                });
+            }
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new HttpException($"儲存失敗：{ex.InnerException?.Message ?? ex.Message}");
+            }
+            return orderId;
+        }
+
+        /// <summary>
+        /// 取得目前使用者的待上傳通知單列表（PendingSlip 狀態）
+        /// </summary>
+        public async Task<List<DraftOrderDTO>> GetMyDraftOrders()
+        {
+            var userId = service.UserClaimsService.Me()?.Id
+                ?? throw new HttpException("無法取得使用者資訊");
+
+            var orders = await db.ConferencePaymentOrder
+                .Where(o => o.CreateBy == userId &&
+                            o.Status == PaymentOrderStatus.PendingSlip &&
+                            o.DeleteAt == null)
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Conference)
+                        .ThenInclude(c => c.ConferenceRoomSlots)
+                .OrderByDescending(o => o.CreateAt)
+                .ToListAsync();
+
+            return orders.Select(o => new DraftOrderDTO
+            {
+                OrderId = o.Id,
+                OrderShortId = o.Id.ToString("N").ToUpperInvariant()[..8],
+                CreatedAt = o.CreateAt.ToString("yyyy/MM/dd HH:mm"),
+                TotalAmount = o.Items.Sum(i => i.Conference?.TotalAmount ?? 0),
+                Items = o.Items.Select(i => new DraftOrderItemDTO
+                {
+                    ConferenceId = i.ConferenceId,
+                    ConferenceName = i.Conference?.Name ?? "",
+                    OrganizerUnit = i.Conference?.OrganizerUnit ?? "",
+                    ReservationDate = i.Conference?.ConferenceRoomSlots
+                        .OrderBy(s => s.SlotDate).FirstOrDefault()?.SlotDate.ToString("yyyy/MM/dd") ?? "",
+                    Amount = i.Conference?.TotalAmount ?? 0
+                }).ToList()
+            }).ToList();
         }
 
         /// <summary>

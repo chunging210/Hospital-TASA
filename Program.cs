@@ -43,6 +43,21 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 app.UseInfrastructure();
+
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Content-Security-Policy", 
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdnjs.cloudflare.com fonts.googleapis.com; " +
+        "font-src 'self' fonts.gstatic.com cdnjs.cloudflare.com; " +
+        "img-src 'self' data: blob:;");
+    await next();
+});
+
 app.UseStaticFiles();
 // MVC
 app.MapControllerRoute(name: "default", pattern: "{controller=Auth}/{action=Index}");

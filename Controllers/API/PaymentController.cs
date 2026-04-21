@@ -68,6 +68,26 @@ namespace TASA.Controllers.API
         }
 
         /// <summary>
+        /// 建立草稿付款訂單（下載三聯單時呼叫）
+        /// </summary>
+        [HttpPost("create-draft")]
+        public async Task<IActionResult> CreateDraft([FromBody] CreateDraftOrderVM vm)
+        {
+            var orderId = await service.PaymentService.CreateDraftPaymentOrder(vm);
+            return Ok(new { orderId });
+        }
+
+        /// <summary>
+        /// 取得目前使用者的待上傳通知單列表
+        /// </summary>
+        [HttpGet("my-drafts")]
+        public async Task<IActionResult> MyDrafts()
+        {
+            var drafts = await service.PaymentService.GetMyDraftOrders();
+            return Ok(drafts);
+        }
+
+        /// <summary>
         /// 批准付款憑證
         /// </summary>
         [HttpPost("approve")]

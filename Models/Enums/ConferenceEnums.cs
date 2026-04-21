@@ -102,6 +102,9 @@ namespace TASA.Models.Enums
     /// </summary>
     public enum PaymentOrderStatus : byte
     {
+        /// <summary>待上傳 - 三聯單已產生,尚未上傳付款憑證</summary>
+        PendingSlip = 0,
+
         /// <summary>待查帳 - 已上傳憑證,等待審核</summary>
         PendingVerification = 1,
 

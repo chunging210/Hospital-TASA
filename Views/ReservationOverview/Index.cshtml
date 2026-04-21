@@ -145,12 +145,19 @@
                                         <!-- ✅ 批次付款工具列 -->
                                         <div v-if="selectedForBatch.length > 0" class="d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded">
                                             <span class="text-secondary">已選 {{ selectedForBatch.length }} 筆，合計 NT${{ batchTotalAmount.toLocaleString() }}</span>
-                                            <button class="btn btn-sm btn-primary ms-auto" @@click="openBatchPayDrawer()">
-                                                付款
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary" @@click="clearBatchSelection()">
-                                                取消選取
-                                            </button>
+                                            <div class="d-flex align-items-center gap-2 ms-auto">
+                                                <button v-if="batchAllCash" class="btn btn-sm btn-outline-success" @@click="downloadBatchSlip()" :disabled="batchSlipLoading">
+                                                    <i class="mdi mdi-file-download-outline me-1"></i>
+                                                    <span v-if="batchSlipLoading">產生中...</span>
+                                                    <span v-else>下載合併繳費通知單</span>
+                                                </button>
+                                                <button class="btn btn-sm btn-primary" @@click="openBatchPayDrawer()">
+                                                    付款
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" @@click="clearBatchSelection()">
+                                                    取消選取
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="table-responsive">
                                             <table class="table align-middle table-nowrap mb-0 table-hover">
@@ -244,10 +251,19 @@
             </div>
 
             <!-- ✅ 個人操作按鈕區（個人預約） -->
-            <div v-if="activeTab === 'personal' && canCancel(selectedItem)" class="">
+            <div v-if="activeTab === 'personal' && (canCancel(selectedItem) || selectedItem?.approvalStatus === '待繳費')" class="">
 
                 <!-- 按鈕區 -->
                 <div class="d-flex flex-wrap gap-2">
+                    <!-- 下載繳費通知單按鈕（待繳費狀態） -->
+                    <button v-if="selectedItem?.approvalStatus === '待繳費' && selectedItem?.paymentMethod === 'cash'"
+                            class="btn btn-outline-success"
+                            :disabled="singleSlipLoading"
+                            @@click="downloadSingleSlip(selectedItem)">
+                        <i class="mdi mdi-file-download-outline me-1"></i>
+                        <span v-if="singleSlipLoading">產生中...</span>
+                        <span v-else>下載繳費通知單</span>
+                    </button>
                     <!-- 取消預約按鈕 -->
                     <button type="button" class="btn btn-outline-danger" v-if="canCancel(selectedItem)"
                         @@click="confirmCancel(selectedItem)">
@@ -672,6 +688,29 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
+            <!-- ✅ 我的待上傳通知單 -->
+            <div v-if="myDraftOrders.length > 0" class="mb-4">
+                <h6 class="text-secondary border-bottom pb-1 mb-2">
+                    <i class="mdi mdi-file-clock-outline me-1"></i>我的待上傳通知單
+                </h6>
+                <div v-for="draft in myDraftOrders" :key="draft.orderId"
+                     class="border rounded p-2 mb-2" style="font-size:13px;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold">編號 {{ draft.orderShortId }}</span>
+                        <span class="text-muted" style="font-size:11px;">{{ draft.createdAt }}</span>
+                    </div>
+                    <div v-for="item in draft.items" :key="item.conferenceId" class="text-muted ps-1" style="font-size:12px;">
+                        ・{{ item.conferenceName }}（{{ item.organizerUnit }}）NT${{ item.amount.toLocaleString() }}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="fw-bold">合計 NT${{ draft.totalAmount.toLocaleString() }}</span>
+                        <button class="btn btn-sm btn-outline-primary" @@click="loadDraftOrder(draft)">
+                            載入此批次繳費
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- 已選預約清單 -->
             <div class="mb-4">
                 <h6 class="text-secondary mb-2">已選預約（{{ selectedForBatch.length }} 筆）</h6>

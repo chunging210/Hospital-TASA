@@ -13,3 +13,6 @@
 
 # Publish Profiles user 檔
 *.pubxml.user
+
+# SonarQube
+.sonarqube/

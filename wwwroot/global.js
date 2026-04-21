@@ -102,7 +102,9 @@ const global = new function () {
             uploadcounter: POST,
             transfer: POST,
             approve: POST,
-            reject: POST
+            reject: POST,
+            createDraft: { method: POST, path: 'create-draft' },
+            myDrafts: { method: GET, path: 'my-drafts' },
         }),
         conferencetemplate: apiMethods('/api/conferencetemplate', {
             list: GET,
