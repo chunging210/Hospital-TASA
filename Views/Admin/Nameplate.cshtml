@@ -1,0 +1,167 @@
+<div class="page-content" v-cloak>
+    <div class="container-fluid vstack gap-3">
+        <div class="card">
+            <div class="card-header mx-4 mt-3">
+                <div class="row align-items-center">
+                    <div class="col-auto text-branding align-middle">
+                        <span class="material-icons">tablet</span> 桌牌管理
+                    </div>
+                    <div class="col-auto">
+                        <div class="search-box">
+                            <div class="position-relative">
+                                <input type="text" class="form-control" v-model="query.keyword"
+                                       @@keyup.enter="getList" placeholder="搜尋名稱、IP...">
+                                <span class="material-icons search-icon">search</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <select v-model="query.deviceType" @@change="getList" class="form-select" style="min-width:120px;">
+                            <option value="">全部類型</option>
+                            <option value="0">分配器</option>
+                            <option value="1">桌牌</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select v-model="query.isEnabled" @@change="getList" class="form-select" style="min-width:100px;">
+                            <option value="">全部狀態</option>
+                            <option value="true">啟用</option>
+                            <option value="false">停用</option>
+                        </select>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <button class="btn btn-primary" @@click="openModal()">
+                            <span class="material-icons align-middle" style="font-size:18px;">add</span> 新增
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table align-middle table-nowrap mb-0 table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>類型</th>
+                                <th>名稱</th>
+                                <th>Host (IP)</th>
+                                <th>Port</th>
+                                <th>MAC</th>
+                                <th>關聯分配器</th>
+                                <th>狀態</th>
+                                <th style="width:100px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="loading">
+                                <td colspan="9" class="text-center text-muted py-3">載入中...</td>
+                            </tr>
+                            <tr v-else-if="list.length === 0">
+                                <td colspan="9" class="text-center text-muted py-3">無資料</td>
+                            </tr>
+                            <tr v-for="item in list" :key="item.Id">
+                                <td>
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span class="rounded-circle d-inline-block" :style="item.DeviceType === 0 ? 'width:8px;height:8px;background:#0d6efd;' : 'width:8px;height:8px;background:#0dcaf0;'"></span>
+                                        {{ item.DeviceTypeName }}
+                                    </span>
+                                </td>
+                                <td>{{ item.Name }}</td>
+                                <td>{{ item.Host || '-' }}</td>
+                                <td>{{ item.Port ?? '-' }}</td>
+                                <td>{{ item.Mac || '-' }}</td>
+                                <td>{{ item.DistributorName || '-' }}</td>
+                                <td>
+                                    <span v-if="item.IsEnabled" class="material-icons text-success" style="font-size:20px;" title="啟用">check_circle</span>
+                                    <span v-else class="material-icons text-secondary" style="font-size:20px;" title="停用">cancel</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1" @@click="openModal(item.Id)">編輯</button>
+                                    <button class="btn btn-sm btn-outline-danger" @@click="deleteItem(item.Id)">刪除</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <page ref="nameplatepage" :per-page="20" :per-page-option="[20,50]" @@reload="getList"></page>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div class="modal fade" id="nameplateModal" tabindex="-1" ref="nameplateModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">{{ form.Id ? '編輯' : '新增' }}桌牌裝置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-4 mt-3">
+                    <form>
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">類型 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-select" v-model.number="form.DeviceType">
+                                    <option :value="0">分配器</option>
+                                    <option :value="1">桌牌</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">名稱 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="form.Name" placeholder="裝置名稱">
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">Host (IP)</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="form.Host" placeholder="192.168.1.100">
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">Port</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" v-model.number="form.Port" placeholder="8080">
+                            </div>
+                        </div>
+                        <div class="row mb-4" v-if="form.DeviceType === 1">
+                            <label class="col-sm-3 col-form-label">MAC 位址</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="form.Mac" placeholder="AA:BB:CC:DD:EE:FF">
+                            </div>
+                        </div>
+                        <div class="row mb-4" v-if="form.DeviceType === 1">
+                            <label class="col-sm-3 col-form-label">關聯分配器</label>
+                            <div class="col-sm-9">
+                                <select class="form-select" v-model="form.DistributorId">
+                                    <option :value="null">-- 不指定 --</option>
+                                    <option v-for="d in distributorOptions" :key="d.Id" :value="d.Id">{{ d.Name }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <label class="col-sm-3 col-form-label">狀態</label>
+                            <div class="col-sm-9 d-flex align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" v-model="form.IsEnabled" id="switchEnabled">
+                                    <label class="form-check-label" for="switchEnabled">啟用</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" @@click="save()" :disabled="saving">
+                        {{ saving ? '儲存中...' : '儲存' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section script {
+    <script type="module" src="~/Views/Admin/Nameplate.cshtml.js" asp-append-version="true"></script>
+}

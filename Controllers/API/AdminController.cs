@@ -2,9 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using TASA.Services;
+using TASA.Services.AuthModule;
 using TASA.Services.AuthUserModule;
 using TASA.Services.DepartmentModule;
 using TASA.Services.EquipmentModule;
+using TASA.Services.NameplateModule;
 using TASA.Services.RoomModule;
 using TASA.Services.CostCenterModule;
 using TASA.Services.StatisticsModule;
@@ -15,6 +17,11 @@ namespace TASA.Controllers.API
     [Authorize, ApiController, Route("api/[controller]")]
     public class AdminController(ServiceWrapper service) : ControllerBase
     {
+        private bool CanManageNameplate()
+        {
+            var user = UserClaimsService.ToAuthUser(User.Claims);
+            return user?.IsGlobalAdmin == true || user?.DepartmentName?.Contains("台北") == true;
+        }
         [HttpGet("userlist")]
         public IActionResult UserList([FromQuery] BaseQueryVM query)
         {
@@ -191,6 +198,50 @@ namespace TASA.Controllers.API
         {
             service.EquipmentService.Delete(id);
             return Ok();
+        }
+
+        /* --- 桌牌管理 --- */
+
+        [HttpGet("nameplatelist")]
+        public IActionResult NameplateList([FromQuery] string? keyword, [FromQuery] byte? deviceType, [FromQuery] bool? isEnabled)
+        {
+            return Ok(service.NameplateService.List(keyword, deviceType, isEnabled).ToPage(Request, Response));
+        }
+
+        [HttpGet("nameplatedetail")]
+        public IActionResult NameplateDetail(Guid id)
+        {
+            return Ok(service.NameplateService.Detail(id));
+        }
+
+        [HttpPost("nameplateinsert")]
+        public IActionResult NameplateInsert([FromBody] NameplateService.DetailVM vm)
+        {
+            if (!CanManageNameplate()) return Forbid();
+            service.NameplateService.Insert(vm);
+            return Ok();
+        }
+
+        [HttpPost("nameplateupdate")]
+        public IActionResult NameplateUpdate([FromBody] NameplateService.DetailVM vm)
+        {
+            if (!CanManageNameplate()) return Forbid();
+            service.NameplateService.Update(vm);
+            return Ok();
+        }
+
+        [HttpDelete("nameplatedelete")]
+        public IActionResult NameplateDelete(Guid id)
+        {
+            if (!CanManageNameplate()) return Forbid();
+            service.NameplateService.Delete(id);
+            return Ok();
+        }
+
+        [HttpGet("nameplateoptions")]
+        public IActionResult NameplateOptions()
+        {
+            return Ok(service.NameplateService.DistributorOptions());
         }
 
         [HttpPost("loginloglist")]

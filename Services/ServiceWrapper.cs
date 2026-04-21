@@ -12,6 +12,7 @@ using TASA.Services.ReportModule;
 using TASA.Services.CostCenterModule;
 using TASA.Services.StatisticsModule;
 using TASA.Services.AnnouncementModule;
+using TASA.Services.NameplateModule;
 using TASA.Services;
 
 namespace TASA.Services
@@ -53,7 +54,8 @@ namespace TASA.Services
         Lazy<ReportService> reportService,
         Lazy<CostCenterManagerService> costCenterManagerService,
         Lazy<StatisticsService> statisticsService,
-        Lazy<AnnouncementService> announcementService
+        Lazy<AnnouncementService> announcementService,
+        Lazy<NameplateService> nameplateService
 
     )
     {
@@ -103,6 +105,8 @@ namespace TASA.Services
         public StatisticsService StatisticsService => statisticsService.Value;
 
         public AnnouncementService AnnouncementService => announcementService.Value;
+
+        public NameplateService NameplateService => nameplateService.Value;
 
     }
 }

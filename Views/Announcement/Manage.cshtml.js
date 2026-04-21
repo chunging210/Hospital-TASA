@@ -274,7 +274,7 @@ window.$config = {
                 videoUploading.value = false;
                 if (xhr.status === 200) {
                     const data = JSON.parse(xhr.responseText);
-                    buildingVideoUrl.value = data.url;
+                    buildingVideoUrl.value = data.url + '?t=' + Date.now();
                     addAlert('影片上傳成功', { type: 'success' });
                 } else {
                     addAlert('上傳失敗，請重試', { type: 'danger' });

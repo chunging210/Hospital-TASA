@@ -134,6 +134,7 @@ public partial class TASAContext : DbContext
 
     public virtual DbSet<QuickLink> QuickLink { get; set; }
 
+    public virtual DbSet<SysNameplate> SysNameplate { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -172,6 +173,7 @@ public partial class TASAContext : DbContext
         modelBuilder.ApplyConfiguration(new Configurations.AnnouncementConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.AnnouncementAttachmentConfiguration());
         modelBuilder.ApplyConfiguration(new Configurations.QuickLinkConfiguration());
+        modelBuilder.ApplyConfiguration(new Configurations.SysNameplateConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

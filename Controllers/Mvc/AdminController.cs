@@ -1,9 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TASA.Services.AuthModule;
 
 namespace TASA.Controllers.Mvc
 {
     public class AdminController : Controller
     {
+        private bool CanManageNameplate()
+        {
+            var user = UserClaimsService.ToAuthUser(User.Claims);
+            return user?.IsGlobalAdmin == true || user?.DepartmentName?.Contains("台北") == true;
+        }
         public IActionResult AuthUser()
         {
             return View();
@@ -60,6 +66,18 @@ namespace TASA.Controllers.Mvc
         }
 
         public IActionResult Statistics()
+        {
+            return View();
+        }
+
+        public IActionResult Nameplate()
+        {
+            if (!CanManageNameplate()) return Forbid();
+            return View();
+        }
+
+        [Route("admin/nameplate-rental")]
+        public IActionResult NameplateRental()
         {
             return View();
         }

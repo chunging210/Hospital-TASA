@@ -128,6 +128,14 @@ const global = new function () {
             delete: DELETE,
         }),
 
+        nameplate: apiMethods('/api/admin', {
+            nameplatelist:    GET,
+            nameplatedetail:  GET,
+            nameplateinsert:  POST,
+            nameplateupdate:  POST,
+            nameplatedelete:  DELETE,
+            nameplateoptions: GET,
+        }),
         admin: apiMethods('/api/admin', {
             userlist: GET,
             userdetail: GET,

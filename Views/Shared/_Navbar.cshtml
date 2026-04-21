@@ -2,6 +2,7 @@
 @{
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
     var isGlobalAdmin = user?.IsGlobalAdmin == true;  // 全院管理者（Admin 角色 + DepartmentId == null）
+    var canManageNameplate = isGlobalAdmin || (user?.DepartmentName?.Contains("台北") == true);
 }
 
 <header v-cloak v-if="name" class="ishorizontal-topbar">
@@ -123,6 +124,12 @@
                                 </a>
                                 <div class="dropdown-menu" aria-labelledby="topnav-dashboard">
                                     <a href="/admin/equipment" class="dropdown-item">設備管理</a>
+                                    <div class="dropdown-divider"></div>
+                                    @if (canManageNameplate)
+                                    {
+                                        <a href="/admin/nameplate" class="dropdown-item">桌牌管理</a>
+                                    }
+                                    <a href="/admin/nameplate-rental" class="dropdown-item">桌牌租借</a>
                                 </div>
                             </li>
                         }
