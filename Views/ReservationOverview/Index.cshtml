@@ -509,16 +509,13 @@
 
                     <!-- ✅ 折扣資訊 -->
                     <div class="col-md-12" v-if="selectedItem.discountAmount">
-                        <div class="alert alert-success py-2 px-3">
-                            <div class="d-flex align-items-center">
-                                <i class="mdi mdi-sale me-2"></i>
-                                <div>
-                                    <strong>已享有折扣：NT${{ selectedItem.discountAmount?.toLocaleString() }}</strong>
-                                    <span v-if="selectedItem.discountReason" class="ms-2 text-muted">
-                                        （{{ selectedItem.discountReason }}）
-                                    </span>
-                                </div>
-                            </div>
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2 rounded"
+                             style="background:#f0faf4; border-left:3px solid #28a745;">
+                            <span class="text-secondary font-size-18">
+                                <i class="mdi mdi-sale me-1"></i>折扣金額
+                                <span v-if="selectedItem.discountReason" class="ms-1 text-muted">（{{ selectedItem.discountReason }}）</span>
+                            </span>
+                            <span class="fw-bold text-success">- NT${{ selectedItem.discountAmount?.toLocaleString() }}</span>
                         </div>
                     </div>
 

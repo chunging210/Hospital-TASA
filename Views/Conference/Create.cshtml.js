@@ -2012,7 +2012,7 @@ window.$config = {
 
                 setTimeout(() => {
                     window.location.href = '/reservationoverview';
-                }, 1500);
+                }, 800);
             } catch (err) {
                 const errorMsg = this.isEditMode.value ? '更新預約失敗' : '新增預約失敗';
                 console.error('%c❌ 操作失敗!', 'color: #aa0000; font-weight: bold; font-size: 14px;');
