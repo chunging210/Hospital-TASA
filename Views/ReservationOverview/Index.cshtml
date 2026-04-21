@@ -733,8 +733,11 @@
                     </tbody>
                     <tfoot class="table-light fw-bold">
                         <tr>
-                            <td colspan="3" class="text-end">合計</td>
-                            <td class="text-end">NT${{ batchTotalAmount.toLocaleString() }}</td>
+                            <td colspan="3" class="text-end">
+                                合計
+                                <span v-if="batchPayMode === 'counter'" class="text-muted fw-normal ms-1" style="font-size:13px;">（含5%營業稅 NT${{ batchTaxAmount.toLocaleString() }}）</span>
+                            </td>
+                            <td class="text-end">NT${{ batchPayMode === 'counter' ? batchGrandTotal.toLocaleString() : batchTotalAmount.toLocaleString() }}</td>
                         </tr>
                     </tfoot>
                 </table>

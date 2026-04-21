@@ -139,6 +139,14 @@ window.$config = {
             return this.selectedForBatch.value.reduce((sum, s) => sum + (s.amount || 0), 0);
         });
 
+        this.batchTaxAmount = computed(() => {
+            return Math.round(this.batchTotalAmount.value * 0.05);
+        });
+
+        this.batchGrandTotal = computed(() => {
+            return this.batchTotalAmount.value + this.batchTaxAmount.value;
+        });
+
         this.batchPayMode = computed(() => {
             if (this.selectedForBatch.value.length === 0) return null;
             return this.isCounterPayment(this.selectedForBatch.value[0].paymentMethod)
