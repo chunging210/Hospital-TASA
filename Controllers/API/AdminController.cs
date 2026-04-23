@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using TASA.Services;
 using TASA.Services.AuthModule;
@@ -55,7 +56,7 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
-        public record UserIdVM { public Guid UserId { get; set; } }
+        public record UserIdVM { [JsonRequired] public Guid UserId { get; set; } }
 
         [HttpPost("userunlock")]
         public IActionResult UserUnlock([FromBody] UserIdVM vm)
@@ -137,7 +138,7 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
-        public record RoomMoveVM { public Guid Id { get; set; } }
+        public record RoomMoveVM { [JsonRequired] public Guid Id { get; set; } }
 
         [HttpPost("roommoveup")]
         public IActionResult RoomMoveUp([FromBody] RoomMoveVM vm)

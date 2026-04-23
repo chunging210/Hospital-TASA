@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -324,12 +325,12 @@ namespace TASA.Services.RoomModule
             public string? Building { get; set; }
             public string? Floor { get; set; }
             public string? Description { get; set; }
-            public uint Capacity { get; set; }
-            public decimal Area { get; set; }
-            public RoomStatus Status { get; set; }  // ✅ Enum
-            public PricingType PricingType { get; set; }  // ✅ Enum
-            public bool IsEnabled { get; set; }
-            public BookingSettings BookingSettings { get; set; }  // ✅ Enum
+            [JsonRequired] public uint Capacity { get; set; }
+            [JsonRequired] public decimal Area { get; set; }
+            [JsonRequired] public RoomStatus Status { get; set; }  // ✅ Enum
+            [JsonRequired] public PricingType PricingType { get; set; }  // ✅ Enum
+            [JsonRequired] public bool IsEnabled { get; set; }
+            [JsonRequired] public BookingSettings BookingSettings { get; set; }  // ✅ Enum
             public Guid? DepartmentId { get; set; }
             public List<RoomImageInput>? Images { get; set; }  // ✅ 保留完整物件
             public List<PricingDetailVM>? PricingDetails { get; set; }
@@ -340,8 +341,8 @@ namespace TASA.Services.RoomModule
             public string? PanoramaUrl { get; set; }        // 全景圖現有路徑（null=移除）
 
             // ✅ 停車券設定
-            public bool EnableParkingTicket { get; set; }
-            public decimal ParkingTicketPrice { get; set; } = 100;
+            [JsonRequired] public bool EnableParkingTicket { get; set; }
+            [JsonRequired] public decimal ParkingTicketPrice { get; set; } = 100;
 
             // 付款聯絡資訊
             public string? PaymentContactInfo { get; set; }

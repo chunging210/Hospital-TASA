@@ -7,7 +7,11 @@
       "Read(//c/Users/davin.huang/Desktop/TASA/NR>=877 && NR<=900 {printf \"%d|%s/**)",
       "Bash(sed -n '191,195p' c:/Users/davin.huang/Desktop/TASA/wwwroot/css/app.min.css)",
       "Bash(sed -n '1788,1800p' c:/Users/davin.huang/Desktop/TASA/wwwroot/css/app.min.css)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(curl -s \"http://localhost:9000/api/issues/search?componentKeys=TASA&issueStatuses=OPEN,CONFIRMED&ps=10\")",
+      "Bash(curl -v \"http://localhost:9000/api/issues/search?componentKeys=TASA&issueStatuses=OPEN,CONFIRMED&ps=5\")",
+      "Bash(curl -s -u \"admin:admin\" \"http://localhost:9000/api/issues/search?componentKeys=TASA&issueStatuses=OPEN,CONFIRMED&ps=5\")",
+      "Bash(curl -v -u \"admin:admin\" \"http://localhost:9000/api/issues/search?componentKeys=TASA&issueStatuses=OPEN,CONFIRMED&ps=5\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\davin.huang\\Desktop"

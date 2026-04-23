@@ -106,7 +106,7 @@ namespace TASA.Services.AuthModule
 
         public record ForgetVM
         {
-            public Guid Id { get; set; }
+            [Required]public Guid Id { get; set; }
             [Required(ErrorMessage = "密碼是必要項")]
             public string Password { get; set; } = string.Empty;
         }

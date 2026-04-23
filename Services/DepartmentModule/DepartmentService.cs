@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -32,7 +33,7 @@ namespace TASA.Services.DepartmentModule
             public Guid? Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public Guid? Parent { get; set; }
-            public bool IsEnabled { get; set; }
+            [JsonRequired] public bool IsEnabled { get; set; }
         }
         public DetailVM? Detail(Guid id)
         {

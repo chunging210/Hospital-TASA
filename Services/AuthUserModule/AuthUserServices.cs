@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -64,7 +65,7 @@ namespace TASA.Services.AuthUserModule
             public Guid? DepartmentId { get; set; }
             public string? UnitName { get; set; }  // 部門
             public IEnumerable<Guid> Role { get; set; } = [];
-            public bool IsEnabled { get; set; }
+            [Required]public bool IsEnabled { get; set; }
         }
         public DetailVM? Detail(Guid id)
         {
@@ -244,7 +245,7 @@ namespace TASA.Services.AuthUserModule
 
         public record RejectUserVM
         {
-            public Guid UserId { get; set; }
+            [Required]public Guid UserId { get; set; }
             public string Reason { get; set; } = string.Empty;
         }
 

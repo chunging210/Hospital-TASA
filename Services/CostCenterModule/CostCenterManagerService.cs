@@ -1,5 +1,6 @@
 // Services/CostCenterModule/CostCenterManagerService.cs
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Models;
 using TASA.Program;
 
@@ -25,8 +26,8 @@ namespace TASA.Services.CostCenterModule
         {
             public Guid? Id { get; set; }
             public string CostCenterCode { get; set; } = string.Empty;
-            public Guid DepartmentId { get; set; }
-            public Guid ManagerId { get; set; }
+            [JsonRequired] public Guid DepartmentId { get; set; }
+            [JsonRequired] public Guid ManagerId { get; set; }
         }
 
         public class QueryVM : BaseQueryVM

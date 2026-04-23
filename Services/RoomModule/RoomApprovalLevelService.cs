@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Models;
 using TASA.Program;
 
@@ -20,7 +21,7 @@ namespace TASA.Services.RoomModule
 
         public record SaveApprovalLevelsVM
         {
-            public Guid RoomId { get; set; }
+            [JsonRequired] public Guid RoomId { get; set; }
             public List<ApproverItemVM> Approvers { get; set; } = new();
         }
 

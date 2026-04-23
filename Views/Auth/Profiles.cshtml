@@ -5,21 +5,21 @@
     var user = TASA.Services.AuthModule.UserClaimsService.ToAuthUser(Context.User.Claims);
     // 從資料庫取得使用者的 UnitName（避免需要重新登入）
     var userUnitName = user?.Id != null
-        ? db.AuthUser.AsNoTracking().IgnoreQueryFilters().Where(u => u.Id == user.Id.Value).Select(u => u.UnitName).FirstOrDefault()
+        ? await db.AuthUser.AsNoTracking().IgnoreQueryFilters().Where(u => u.Id == user.Id.Value).Select(u => u.UnitName).FirstOrDefaultAsync()
         : null;
     // 檢查是否為會議室管理者或審核流程中的審核人
     var isApprover = user?.Id != null && (
         // 會議室管理者
-        db.SysRoom
+        await db.SysRoom
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Any(r => r.ManagerId == user.Id.Value && r.IsEnabled && r.DeleteAt == null)
+            .AnyAsync(r => r.ManagerId == user.Id.Value && r.IsEnabled && r.DeleteAt == null)
         ||
         // 審核流程中的審核人
-        db.SysRoomApprovalLevel
+        await db.SysRoomApprovalLevel
             .AsNoTracking()
             .IgnoreQueryFilters()
-            .Any(a => a.ApproverId == user.Id.Value && a.DeleteAt == null)
+            .AnyAsync(a => a.ApproverId == user.Id.Value && a.DeleteAt == null)
     );
 }
 <input type="hidden" id="userDepartmentId" value="@user?.DepartmentId" />

@@ -1,5 +1,6 @@
 #nullable disable
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -26,7 +27,7 @@ public class NameplateService(TASAContext db, ServiceWrapper service) : IService
     public record DetailVM
     {
         public Guid? Id { get; set; }
-        public byte DeviceType { get; set; }
+        [JsonRequired] public byte DeviceType { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Host { get; set; }
         public int? Port { get; set; }

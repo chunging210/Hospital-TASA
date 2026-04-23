@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -19,9 +20,9 @@ namespace TASA.Services.DelegateModule
 
         public record SaveDelegateVM
         {
-            public Guid DelegateUserId { get; set; }
-            public DateOnly StartDate { get; set; }
-            public DateOnly EndDate { get; set; }
+            [JsonRequired] public Guid DelegateUserId { get; set; }
+            [JsonRequired] public DateOnly StartDate { get; set; }
+            [JsonRequired] public DateOnly EndDate { get; set; }
         }
 
         /// <summary>

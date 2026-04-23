@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Models.Enums;
@@ -80,17 +81,17 @@ namespace TASA.Services
 
         public record RoomSlotQueryVM
         {
-            public Guid RoomId { get; init; }
-            public DateOnly Date { get; init; }
+            [Required]public Guid RoomId { get; init; }
+            [Required]public DateOnly Date { get; init; }
             public string? ExcludeConferenceId { get; set; }
             public string? DepartmentCode { get; set; }
         }
 
         public record RoomSlotRangeQueryVM
         {
-            public Guid RoomId { get; init; }
-            public DateOnly StartDate { get; init; }
-            public DateOnly EndDate { get; init; }
+            [Required]public Guid RoomId { get; init; }
+            [Required]public DateOnly StartDate { get; init; }
+            [Required]public DateOnly EndDate { get; init; }
             public string? DepartmentCode { get; set; }
         }
 
@@ -118,7 +119,7 @@ namespace TASA.Services
 
         public record FloorsByBuildingQueryVM
         {
-            public Guid DepartmentId { get; init; }
+            [Required]public Guid DepartmentId { get; init; }
             public string Building { get; init; } = string.Empty;
         }
 
@@ -132,7 +133,7 @@ namespace TASA.Services
 
         public record RoomTodayScheduleQueryVM
         {
-            public Guid RoomId { get; set; }
+            [Required]public Guid RoomId { get; set; }
         }
 
         private class RawSlot
@@ -680,7 +681,7 @@ namespace TASA.Services
 
         public record UserScheduleVM
         {
-            public record QueryVM(DateTime ScheduleDate, Guid? DepartmentId, bool? Contains, Guid[]? List, string Keyword);
+            public record QueryVM([Required]DateTime ScheduleDate, Guid? DepartmentId, bool? Contains, Guid[]? List, string Keyword);
             public record BusyTimeVM
             {
                 public DateTime? StartTime { get; set; }
@@ -1460,7 +1461,7 @@ namespace TASA.Services
         public record CalendarQueryVM
         {
             public string ViewType { get; set; } = "day";
-            public DateOnly Date { get; set; }
+            [Required]public DateOnly Date { get; set; }
             public string? Building { get; set; }
             public Guid? RoomId { get; set; }
             public string? DepartmentCode { get; set; }

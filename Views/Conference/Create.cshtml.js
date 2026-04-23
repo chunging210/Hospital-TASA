@@ -183,7 +183,7 @@ window.$config = {
 
             while (current <= end) {
                 dates.push(current.toISOString().split('T')[0]);
-                current.setDate(current.getDate() + 1);
+                current = new Date(current.getFullYear(), current.getMonth(), current.getDate() + 1);
             }
             return dates;
         });
@@ -348,7 +348,7 @@ window.$config = {
                 let cur = new Date(start);
                 while (cur <= actualEnd) {
                     dates.push(fmt(cur));
-                    cur.setDate(cur.getDate() + 1);
+                    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
                 }
             } else if (type === 'weekly') {
                 if (!this.form.recurrenceDaysOfWeek.length) return [];
@@ -357,7 +357,7 @@ window.$config = {
                     if (this.form.recurrenceDaysOfWeek.includes(cur.getDay())) {
                         dates.push(fmt(cur));
                     }
-                    cur.setDate(cur.getDate() + 1);
+                    cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
                 }
             } else if (type === 'monthly') {
                 const targetDay = this.form.recurrenceDayOfMonth || 1;
@@ -369,7 +369,7 @@ window.$config = {
                     if (targetDate >= start && targetDate <= actualEnd) {
                         dates.push(fmt(targetDate));
                     }
-                    cur.setMonth(cur.getMonth() + 1);
+                    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
                 }
             }
 
@@ -459,7 +459,7 @@ window.$config = {
             setTimeout(() => {
                 const iframe = this.$refs.pdfIframe;
                 if (iframe && iframe.contentWindow) {
-                    iframe.contentWindow.postMessage({ type: 'RESET_SCROLL' }, '*');
+                    iframe.contentWindow.postMessage({ type: 'RESET_SCROLL' }, window.location.origin);
                 }
             }, 800);
         };
@@ -2262,6 +2262,7 @@ window.$config = {
             );
 
             window.addEventListener('message', (event) => {
+                if (event.origin !== window.location.origin) return;
                 if (event.data?.type === 'PDF_REACHED_BOTTOM') {
                     this.canConfirmAgreement.value = true;
                 }

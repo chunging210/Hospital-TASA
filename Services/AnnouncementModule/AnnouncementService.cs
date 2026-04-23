@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Models;
 using TASA.Program;
 
@@ -38,9 +39,9 @@ namespace TASA.Services.AnnouncementModule
             public Guid? Id { get; set; }
             public string Title { get; set; }
             public string Content { get; set; }
-            public bool IsPinned { get; set; }
-            public bool IsDefaultExpanded { get; set; }
-            public bool IsActive { get; set; }
+            [JsonRequired] public bool IsPinned { get; set; }
+            [JsonRequired] public bool IsDefaultExpanded { get; set; }
+            [JsonRequired] public bool IsActive { get; set; }
             public string EndDate { get; set; }
             public List<AttachmentVM> Attachments { get; set; } = [];
         }
@@ -59,7 +60,7 @@ namespace TASA.Services.AnnouncementModule
             public Guid? Id { get; set; }
             public string Title { get; set; }
             public string Url { get; set; }
-            public int SortOrder { get; set; }
+            [JsonRequired] public int SortOrder { get; set; }
         }
 
         #endregion
@@ -248,7 +249,7 @@ namespace TASA.Services.AnnouncementModule
         /// </summary>
         public async Task<AttachmentVM> UploadAttachment(Guid announcementId, IFormFile file)
         {
-            var announcement = db.Announcement.FirstOrDefault(a => a.Id == announcementId && a.DeleteAt == null)
+            var announcement = await db.Announcement.FirstOrDefaultAsync(a => a.Id == announcementId && a.DeleteAt == null)
                 ?? throw new HttpException("找不到該公告");
 
             var ext = Path.GetExtension(file.FileName).ToLower();
@@ -279,7 +280,7 @@ namespace TASA.Services.AnnouncementModule
             };
 
             db.AnnouncementAttachment.Add(attachment);
-            db.SaveChanges();
+            await db.SaveChangesAsync();
 
             return new AttachmentVM
             {

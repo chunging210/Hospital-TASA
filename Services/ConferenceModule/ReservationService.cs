@@ -176,7 +176,7 @@ namespace TASA.Services.ConferenceModule
 
         public class ApproveVM
         {
-            public Guid ConferenceId { get; set; }
+            [Required]public Guid ConferenceId { get; set; }
             public int? DiscountAmount { get; set; }
             public string? DiscountReason { get; set; }
             public DateTime? PaymentDeadline { get; set; }  // 自訂繳費期限（沒填則用 DB 設定）
@@ -230,7 +230,7 @@ namespace TASA.Services.ConferenceModule
 
         public class RejectVM
         {
-            public Guid ConferenceId { get; set; }
+            [Required]public Guid ConferenceId { get; set; }
             public string? Reason { get; set; }
         }
 
@@ -400,7 +400,7 @@ namespace TASA.Services.ConferenceModule
 
         public class CancelReservationVM
         {
-            public Guid ReservationId { get; set; }
+            [Required]public Guid ReservationId { get; set; }
             public string? Reason { get; set; }
         }
 
@@ -412,7 +412,7 @@ namespace TASA.Services.ConferenceModule
 
         public class DeleteReservationVM
         {
-            public Guid ReservationId { get; set; }
+            [Required]public Guid ReservationId { get; set; }
         }
 
         /// <summary>

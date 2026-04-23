@@ -62,4 +62,4 @@ app.UseStaticFiles();
 // MVC
 app.MapControllerRoute(name: "default", pattern: "{controller=Auth}/{action=Index}");
 
-app.Run();
+await app.RunAsync();

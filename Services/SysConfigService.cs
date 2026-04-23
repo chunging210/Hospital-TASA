@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -10,7 +11,7 @@ namespace TASA.Services
 
         public class ToggleRequest
         {
-            public bool IsOpen { get; set; }
+            [JsonRequired] public bool IsOpen { get; set; }
         }
 
         public class ConfigItem

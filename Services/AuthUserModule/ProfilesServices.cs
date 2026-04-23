@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -54,7 +55,7 @@ namespace TASA.Services.AuthUserModule
 
         public record DetailVM
         {
-            public Guid Id { get; set; }
+            [Required]public Guid Id { get; set; }
             public string Name { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public string? Password { get; set; }

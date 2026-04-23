@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Models;
 using TASA.Program;
@@ -55,12 +56,12 @@ namespace TASA.Services.ConferenceModule
 
         public class ApprovePaymentVM
         {
-            public Guid OrderId { get; set; }
+            [JsonRequired] public Guid OrderId { get; set; }
         }
 
         public class RejectPaymentVM
         {
-            public Guid OrderId { get; set; }
+            [JsonRequired] public Guid OrderId { get; set; }
             public string Reason { get; set; } = string.Empty;
         }
 

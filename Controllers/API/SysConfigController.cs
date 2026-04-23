@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 using TASA.Extensions;
 using TASA.Program;
 using TASA.Services;
@@ -189,6 +190,6 @@ namespace TASA.Controllers.API
     public class DeleteDepartmentConfigDto
     {
         public string ConfigKey { get; set; }
-        public Guid DepartmentId { get; set; }
+        [JsonRequired] public Guid DepartmentId { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 using TASA.Services;
 using TASA.Services.AnnouncementModule;
 using TASA.Services.AuthModule;
@@ -205,6 +206,6 @@ namespace TASA.Controllers.API
             return Ok();
         }
 
-        public record IdVM { public Guid Id { get; set; } }
+        public record IdVM { [JsonRequired] public Guid Id { get; set; } }
     }
 }

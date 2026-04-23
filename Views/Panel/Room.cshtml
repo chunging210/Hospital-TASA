@@ -6,7 +6,7 @@
     Layout = "";
     var start = DateTime.Now.Date.ToUniversalTime();
     var end = start.AddDays(1);
-    var data = db.Conference
+    var data = await db.Conference
         .AsNoTracking()
         .WhereNotDeleted()
         .WhereEnabled()
@@ -25,7 +25,7 @@
             EndTime = x.EndTime!.Value.ToLocalTime(),
             x.Status
         })
-        .ToList();
+        .ToListAsync();
     var notstartdata = data.Where(x => x.Status == 1);
     var startdata = data.Where(x => x.Status == 3);
     var enddata = data.Where(x => x.Status == 4);

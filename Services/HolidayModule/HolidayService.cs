@@ -304,8 +304,8 @@ namespace TASA.Services.HolidayModule
                     var date = new DateOnly(y, m, d);
 
                     // 檢查是否已存在
-                    var existing = db.SysHoliday
-                        .FirstOrDefault(h => h.Date == date && h.DeleteAt == null);
+                    var existing = await db.SysHoliday
+                        .FirstOrDefaultAsync(h => h.Date == date && h.DeleteAt == null);
 
                     // 判斷是否為補班日 (isHoliday = false 但有 description)
                     var isWorkday = !item.isHoliday;
@@ -337,7 +337,7 @@ namespace TASA.Services.HolidayModule
                     }
                 }
 
-                db.SaveChanges();
+                await db.SaveChangesAsync();
 
                 var message = $"同步完成：新增 {added} 筆，更新 {updated} 筆";
                 _ = service.LogServices.LogAsync("holiday_sync", $"{year} 年 - {message}");
