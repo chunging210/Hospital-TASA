@@ -8,11 +8,11 @@
 }
 
 @section head {
-    @await RenderSectionAsync("head", false)
+    @RenderSection("head", false)
 }
 
 @section script {
-    @await RenderSectionAsync("script", false)
+    @RenderSection("script", false)
 }
 
 <partial name="_Navbar"></partial>
