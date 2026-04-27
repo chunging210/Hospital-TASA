@@ -1060,10 +1060,13 @@ namespace TASA.Services.ConferenceModule
 
                 result.SuccessCount++;
                 result.CreatedIds.Add(conferenceId);
+            }
 
-                // 只對第一筆寄送通知，避免大量寄信
-                if (result.SuccessCount == 1)
-                    service.ConferenceMail.ReservationCreated(conferenceId);
+            // 全部建立完成後，寄一封摘要通知（含總筆數）
+            if (result.CreatedIds.Count > 0)
+            {
+                try { service.ConferenceMail.ReservationCreated(result.CreatedIds[0], result.SuccessCount); }
+                catch { /* 寄信失敗不影響建立結果 */ }
             }
 
             _ = service.LogServices.LogAsync("reservation_recurring",
@@ -1431,7 +1434,8 @@ namespace TASA.Services.ConferenceModule
                     JsonConvert.SerializeObject(new { ActionDescription = $"{approverName1}審核通過:{conference.Name}（全部{conference.TotalApprovalLevels}關），折扣:{conference.DiscountAmount ?? 0}" }), reviewedBy, null);
 
                 // 寄送審核通過通知給申請人
-                service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
+                try { service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason); }
+                catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "ReservationApproved", Error = ex.Message }), reviewedBy, null); }
             }
             else
             {
@@ -1448,7 +1452,8 @@ namespace TASA.Services.ConferenceModule
 
                 if (nextApproval != null)
                 {
-                    service.ConferenceMail.NotifyNextApprover(vm.ConferenceId, nextApproval.ApproverId, nextLevel + 1, conference.TotalApprovalLevels);
+                    try { service.ConferenceMail.NotifyNextApprover(vm.ConferenceId, nextApproval.ApproverId, nextLevel + 1, conference.TotalApprovalLevels); }
+                    catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "NotifyNextApprover", Error = ex.Message }), reviewedBy, null); }
                 }
             }
         }
@@ -1573,7 +1578,8 @@ namespace TASA.Services.ConferenceModule
                 JsonConvert.SerializeObject(new { ActionDescription = $"{finalApproverName}決行通過（第{nextLevel}關，跳過剩餘{remainingApprovals.Count}關）:{conference.Name}" }), reviewedBy, null);
 
             // 寄送審核通過通知給申請人
-            service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason);
+            try { service.ConferenceMail.ReservationApproved(vm.ConferenceId, conference.DiscountAmount, conference.DiscountReason); }
+            catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "ReservationApproved(FastTrack)", Error = ex.Message }), reviewedBy, null); }
         }
 
         /// <summary>
@@ -1645,7 +1651,8 @@ namespace TASA.Services.ConferenceModule
                 JsonConvert.SerializeObject(new { ActionDescription = $"{rejecterName}審核拒絕（第{nextLevel}/{conference.TotalApprovalLevels}關）:{conference.Name}，原因:{vm.Reason}" }), reviewedBy, null);
 
             // 寄送審核拒絕通知
-            service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason);
+            try { service.ConferenceMail.ReservationRejected(vm.ConferenceId, vm.Reason); }
+            catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "ReservationRejected", Error = ex.Message }), reviewedBy, null); }
         }
 
         public BulkResultVM BulkApproveReservation(BulkApproveVM vm, Guid reviewedBy)
@@ -1884,7 +1891,8 @@ namespace TASA.Services.ConferenceModule
                     JsonConvert.SerializeObject(new { ActionDescription = $"{adminName}（管理員）取消預約:{conference.Name}" }), userId, null);
 
                 // 通知預約者預約已被管理員取消
-                service.ConferenceMail.ReservationCancelledByAdmin(conferenceId, adminName);
+                try { service.ConferenceMail.ReservationCancelledByAdmin(conferenceId, adminName); }
+                catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "ReservationCancelledByAdmin", Error = ex.Message }), userId, null); }
             }
             else
             {
@@ -1896,7 +1904,8 @@ namespace TASA.Services.ConferenceModule
             // 如果已繳費，通知總務退費
             if (hasPaid)
             {
-                service.ConferenceMail.RefundNotify(conferenceId, daysUntilReservation);
+                try { service.ConferenceMail.RefundNotify(conferenceId, daysUntilReservation); }
+                catch (Exception ex) { _ = service.LogServices.LogAsync("email_error", JsonConvert.SerializeObject(new { Action = "RefundNotify", Error = ex.Message }), userId, null); }
             }
         }
 

@@ -67,7 +67,7 @@ namespace TASA.Services.MailModule
         /// 1. 寄給預約者：通知預約內容並請等待審核
         /// 2. 寄給會議室管理者：通知有新預約需要審核
         /// </summary>
-        public void ReservationCreated(Guid conferenceId, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
+        public void ReservationCreated(Guid conferenceId, int totalCount = 1, [CallerFilePath] string className = "", [CallerMemberName] string functionName = "")
         {
             Console.WriteLine($"📧 [ReservationCreated] 開始處理，ConferenceId: {conferenceId}");
 
@@ -125,7 +125,8 @@ namespace TASA.Services.MailModule
                     roomName,
                     slotDate,
                     slotTime,
-                    reservation.TotalAmount
+                    reservation.TotalAmount,
+                    totalCount
                 );
                 userMail.To.Add(applicantEmail);
 
@@ -230,12 +231,18 @@ namespace TASA.Services.MailModule
             string roomName,
             string slotDate,
             string slotTime,
-            int totalAmount)
+            int totalAmount,
+            int totalCount = 1)
         {
+            var recurringNote = totalCount > 1
+                ? $"<p style='color:#1a73e8;'><strong>📅 此次共建立 {totalCount} 筆循環預約，以下顯示第一筆資訊，其餘日期請至系統查詢。</strong></p>"
+                : "";
+
             return $@"
 <h3>親愛的 {applicantName} 您好：</h3>
 
 <p>您的會議室預約申請已成功送出，目前正在等待審核。</p>
+{recurringNote}
 
 <h4>預約資訊</h4>
 <table style='border-collapse: collapse; width: 100%; max-width: 500px;'>
