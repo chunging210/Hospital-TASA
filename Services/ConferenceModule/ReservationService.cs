@@ -293,7 +293,7 @@ namespace TASA.Services.ConferenceModule
             public string? DiscountProofPath { get; set; }
             public string? DiscountProofName { get; set; }
 
-            // ✅ 合併付款用
+            // ✅ 付款用
             public Guid? ManagerId { get; set; }
 
             // ✅ 多階層審核欄位
@@ -2123,7 +2123,7 @@ namespace TASA.Services.ConferenceModule
                 })
                 .ToList();
 
-            // 取得最新的付款訂單（新合併付款系統）
+            // 取得最新的付款訂單（新付款系統）
             var latestOrder = db.ConferencePaymentOrderItem
                 .Where(i => i.ConferenceId == conference.Id && i.Order.DeleteAt == null)
                 .OrderByDescending(i => i.Order.UploadedAt)

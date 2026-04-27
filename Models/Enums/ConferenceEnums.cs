@@ -98,7 +98,7 @@ namespace TASA.Models.Enums
     }
 
     /// <summary>
-    /// 合併付款訂單狀態 (ConferencePaymentOrder.Status)
+    /// 付款訂單狀態 (ConferencePaymentOrder.Status)
     /// </summary>
     public enum PaymentOrderStatus : byte
     {

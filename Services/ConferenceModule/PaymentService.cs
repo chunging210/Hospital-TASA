@@ -66,7 +66,7 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// ✅ 上傳臨櫃付款憑證（建立合併付款訂單）
+        /// ✅ 上傳臨櫃付款憑證（建立付款訂單）
         /// </summary>
         public async Task<Guid> UploadCounterProof(UploadCounterVM vm)
         {
@@ -105,7 +105,7 @@ namespace TASA.Services.ConferenceModule
             using (var stream = new FileStream(Path.Combine(_uploadPath, mainFileName), FileMode.Create))
                 await mainFile.CopyToAsync(stream);
 
-            // 建立合併付款訂單
+            // 建立付款訂單
             var orderId = Guid.NewGuid();
             var order = new ConferencePaymentOrder
             {
@@ -168,7 +168,7 @@ namespace TASA.Services.ConferenceModule
         }
 
         /// <summary>
-        /// ✅ 提交匯款資訊（建立合併付款訂單）
+        /// ✅ 提交匯款資訊（建立付款訂單）
         /// </summary>
         public async Task<Guid> SubmitTransferInfo(TransferPaymentVM vm)
         {
@@ -229,7 +229,7 @@ namespace TASA.Services.ConferenceModule
                 screenshotName = vm.ScreenshotFile.FileName;
             }
 
-            // 建立合併付款訂單
+            // 建立付款訂單
             var orderId = Guid.NewGuid();
             var order = new ConferencePaymentOrder
             {
