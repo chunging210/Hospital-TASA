@@ -11,6 +11,9 @@ namespace TASA.Controllers.API
     [Authorize, ApiController, Route("api/[controller]")]
     public class PaymentController(ServiceWrapper service) : ControllerBase
     {
+        private Guid CurrentUserId =>
+            Guid.Parse(HttpContext.User.FindFirst("id")!.Value);
+
         /// <summary>
         /// 上傳臨櫃付款憑證
         /// </summary>
@@ -93,6 +96,8 @@ namespace TASA.Controllers.API
         [HttpPost("approve")]
         public async Task<IActionResult> Approve([FromBody] ApprovePaymentVM vm)
         {
+            if (!service.AuthRoleServices.CanApprovePayment(CurrentUserId))
+                return Forbid();
             await service.PaymentService.ApprovePayment(vm);
             return Ok();
         }
@@ -103,6 +108,8 @@ namespace TASA.Controllers.API
         [HttpPost("reject")]
         public async Task<IActionResult> Reject([FromBody] RejectPaymentVM vm)
         {
+            if (!service.AuthRoleServices.CanApprovePayment(CurrentUserId))
+                return Forbid();
             await service.PaymentService.RejectPayment(vm);
             return Ok();
         }

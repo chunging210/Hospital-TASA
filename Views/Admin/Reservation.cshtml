@@ -109,7 +109,7 @@
                         <div class="d-flex align-items-center gap-2 mb-2">
                             <span class="text-primary fw-semibold">已選取 {{ reservation.selectedIds.length }} 筆（成本分攤）</span>
                             <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#bulkApproveModal"
-                                    @@click="reservation.bulkVm.discountType = 'none'; reservation.bulkVm.discountReason = ''; reservation.bulkVm.paymentDeadline = ''">
+                                    @@click="reservation.bulkVm.discountType = 'percent'; reservation.bulkVm.discountPercent = 25; reservation.bulkVm.discountReason = ''; reservation.bulkVm.paymentDeadline = ''">
                                 <span class="material-icons" style="font-size:16px;vertical-align:middle;">done_all</span>
                                 批量核准
                             </button>
@@ -725,10 +725,20 @@
                         </label>
                         <textarea class="form-control" v-model="reservation.bulkVm.discountReason" rows="2"></textarea>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label">繳費期限</label>
-                        <input type="date" class="form-control" v-model="reservation.bulkVm.paymentDeadline" :min="reservation.today">
-                        <div class="form-text">不填則使用系統預設期限</div>
+                    <!-- 部門分組金額預覽 -->
+                    <div v-if="reservation.bulkVm.discountType !== 'none'" class="col-12">
+                        <div class="border rounded p-2 bg-light small">
+                            <div v-for="g in reservation.bulkPricing.value.groups" :key="g.label"
+                                 class="d-flex justify-content-between py-1 border-bottom">
+                                <span class="text-muted">{{ g.label }}</span>
+                                <span>
+                                    NT${{ g.total.toLocaleString() }}
+                                    <span class="text-danger mx-1">－ NT${{ g.discount.toLocaleString() }}</span>
+                                    ＝ <strong>NT${{ g.final.toLocaleString() }}</strong>
+                                </span>
+                            </div>
+                            <div class="text-muted pt-2" style="font-size:0.8em;">各部門分別計算折扣，各自收款</div>
+                        </div>
                     </div>
                 </div>
             </div>

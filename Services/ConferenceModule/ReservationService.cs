@@ -1653,33 +1653,58 @@ namespace TASA.Services.ConferenceModule
             if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
                 throw new HttpException("請選擇至少一筆預約");
 
-            // 一次批量載入所有 conference（含 Include），避免 N 次個別查詢
-            var conferences = db.Conference
-                .Include(c => c.ConferenceRoomSlots)
-                .Include(c => c.ConferenceEquipments)
-                .Include(c => c.ApprovalHistory)
-                .Where(c => vm.ConferenceIds.Contains(c.Id) && !c.DeleteAt.HasValue)
-                .ToDictionary(c => c.Id);
+            // 百分比折扣：按部門加總後再算折扣，最後一筆吸收四捨五入誤差
+            var conferenceDiscounts = new Dictionary<Guid, int?>();
+            if (vm.DiscountType == "percent" && vm.DiscountPercent.HasValue)
+            {
+                var confs = db.Conference
+                    .AsNoTracking()
+                    .Where(c => vm.ConferenceIds.Contains(c.Id) && !c.DeleteAt.HasValue && c.CurrentApprovalLevel == 0)
+                    .Select(c => new { c.Id, c.DepartmentCode, c.TotalAmount })
+                    .ToList();
+
+                foreach (var group in confs.GroupBy(c => c.DepartmentCode ?? ""))
+                {
+                    var items = group.ToList();
+                    var deptDiscount = (int)Math.Round(group.Sum(c => c.TotalAmount) * vm.DiscountPercent.Value / 100.0, MidpointRounding.AwayFromZero);
+                    var assigned = 0;
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        int confDiscount = (i < items.Count - 1)
+                            ? (int)Math.Round(items[i].TotalAmount * vm.DiscountPercent.Value / 100.0, MidpointRounding.AwayFromZero)
+                            : deptDiscount - assigned;
+                        assigned += confDiscount;
+                        conferenceDiscounts[items[i].Id] = confDiscount > 0 ? confDiscount : (int?)null;
+                    }
+                }
+            }
 
             var result = new BulkResultVM();
 
             foreach (var id in vm.ConferenceIds)
             {
+                using var transaction = db.Database.BeginTransaction();
                 try
                 {
-                    if (!conferences.TryGetValue(id, out var conference))
-                        throw new HttpException("會議不存在");
+                    var conference = db.Conference
+                        .Include(c => c.ConferenceRoomSlots)
+                        .Include(c => c.ConferenceEquipments)
+                        .Include(c => c.ApprovalHistory)
+                        .FirstOrDefault(c => c.Id == id && !c.DeleteAt.HasValue)
+                        ?? throw new HttpException("會議不存在");
 
                     var isFirstLevel = conference.CurrentApprovalLevel == 0;
 
-                    int? discountAmount = isFirstLevel ? vm.DiscountType switch
-                    {
-                        "percent" when vm.DiscountPercent.HasValue =>
-                            (int)Math.Round(conference.TotalAmount * vm.DiscountPercent.Value / 100.0),
-                        "free" => conference.TotalAmount,
-                        "amount" => vm.DiscountAmount,
-                        _ => null
-                    } : null;
+                    int? discountAmount = isFirstLevel
+                        ? conferenceDiscounts.TryGetValue(id, out var preCalc)
+                            ? preCalc
+                            : vm.DiscountType switch
+                            {
+                                "free" => conference.TotalAmount,
+                                "amount" => vm.DiscountAmount,
+                                _ => null
+                            }
+                        : null;
 
                     ApproveReservationCore(conference, new ApproveVM
                     {
@@ -1688,10 +1713,14 @@ namespace TASA.Services.ConferenceModule
                         DiscountReason = isFirstLevel ? vm.DiscountReason : null,
                         PaymentDeadline = isFirstLevel ? vm.PaymentDeadline : null
                     }, reviewedBy);
+
+                    transaction.Commit();
                     result.Success++;
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
+                    db.ChangeTracker.Clear();
                     result.Failed++;
                     result.Errors.Add($"{id}: {ex.Message}");
                 }
@@ -1705,32 +1734,33 @@ namespace TASA.Services.ConferenceModule
             if (vm.ConferenceIds == null || vm.ConferenceIds.Count == 0)
                 throw new HttpException("請選擇至少一筆預約");
 
-            // 一次批量載入所有 conference（含 Include），避免 N 次個別查詢
-            var conferences = db.Conference
-                .Include(c => c.ConferenceRoomSlots)
-                .Include(c => c.ConferenceEquipments)
-                .Include(c => c.ApprovalHistory)
-                .Where(c => vm.ConferenceIds.Contains(c.Id) && !c.DeleteAt.HasValue)
-                .ToDictionary(c => c.Id);
-
             var result = new BulkResultVM();
 
             foreach (var id in vm.ConferenceIds)
             {
+                using var transaction = db.Database.BeginTransaction();
                 try
                 {
-                    if (!conferences.TryGetValue(id, out var conference))
-                        throw new HttpException("會議不存在");
+                    var conference = db.Conference
+                        .Include(c => c.ConferenceRoomSlots)
+                        .Include(c => c.ConferenceEquipments)
+                        .Include(c => c.ApprovalHistory)
+                        .FirstOrDefault(c => c.Id == id && !c.DeleteAt.HasValue)
+                        ?? throw new HttpException("會議不存在");
 
                     RejectReservationCore(conference, new RejectVM
                     {
                         ConferenceId = id,
                         Reason = vm.Reason
                     }, reviewedBy);
+
+                    transaction.Commit();
                     result.Success++;
                 }
                 catch (Exception ex)
                 {
+                    transaction.Rollback();
+                    db.ChangeTracker.Clear();
                     result.Failed++;
                     result.Errors.Add($"{id}: {ex.Message}");
                 }

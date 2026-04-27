@@ -133,14 +133,17 @@ namespace TASA.Services.DelegateModule
             // 取得會議室名稱（包含直接管理的 + 審核流程中負責的）
             var roomNames = GetManagedRoomNames(userId.Value);
 
-            service.PasswordMail.DelegateAssigned(
-                delegateUser.Email,
-                delegateUser.Name,
-                manager?.Name ?? "管理者",
-                vm.StartDate,
-                vm.EndDate,
-                roomNames
-            );
+            if (!string.IsNullOrEmpty(delegateUser.Email))
+            {
+                service.PasswordMail.DelegateAssigned(
+                    delegateUser.Email,
+                    delegateUser.Name,
+                    manager?.Name ?? "管理者",
+                    vm.StartDate,
+                    vm.EndDate,
+                    roomNames
+                );
+            }
         }
 
         /// <summary>

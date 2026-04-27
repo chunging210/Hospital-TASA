@@ -135,6 +135,9 @@ namespace TASA.Services.ConferenceModule
                 if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
 
+                if (conference.PaymentStatus == PaymentStatus.PendingVerification)
+                    throw new HttpException($"預約單 {reservationNo} 已有待審核的付款單，請勿重複上傳");
+
                 db.ConferencePaymentOrderItem.Add(new ConferencePaymentOrderItem
                 {
                     Id = Guid.NewGuid(),
@@ -180,6 +183,19 @@ namespace TASA.Services.ConferenceModule
 
             if (vm.ReservationIds == null || vm.ReservationIds.Count == 0)
                 throw new HttpException("沒有選擇任何預約");
+
+            // 驗證金額必須等於所選預約的應繳總額
+            var expectedTotal = 0;
+            foreach (var reservationId in vm.ReservationIds)
+            {
+                var amount = await db.Conference
+                    .Where(c => c.Id.ToString().StartsWith(reservationId) && !c.DeleteAt.HasValue)
+                    .Select(c => (int?)c.TotalAmount)
+                    .FirstOrDefaultAsync();
+                expectedTotal += amount ?? 0;
+            }
+            if (vm.Amount != expectedTotal)
+                throw new HttpException($"金額不符，應繳總額為 {expectedTotal} 元");
 
             // 確保上傳目錄存在
             if (!Directory.Exists(_uploadPath))
@@ -244,6 +260,9 @@ namespace TASA.Services.ConferenceModule
 
                 if (conference.ReservationStatus != ReservationStatus.PendingPayment)
                     throw new HttpException($"預約單 {reservationNo} 不在待繳費狀態");
+
+                if (conference.PaymentStatus == PaymentStatus.PendingVerification)
+                    throw new HttpException($"預約單 {reservationNo} 已有待審核的付款單，請勿重複上傳");
 
                 db.ConferencePaymentOrderItem.Add(new ConferencePaymentOrderItem
                 {

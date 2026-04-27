@@ -125,7 +125,7 @@ const reservation = new function () {
 
     // ========= 批量表單 =========
     this.bulkVm = reactive({
-        discountType: 'none',
+        discountType: 'percent',
         discountPercent: 25,
         discountAmount: 0,
         discountReason: '',
@@ -135,17 +135,35 @@ const reservation = new function () {
     this.bulkRejectVm = reactive({ reason: '' });
 
     this.bulkPricing = computed(() => {
-        // 使用 selectedItems 計算，支援跨頁選取
-        const base = this.selectedItems.reduce((sum, x) => sum + (x.totalAmount || 0), 0);
-        let discount = 0;
-        if (this.bulkVm.discountType === 'percent') {
-            discount = Math.round(base * (this.bulkVm.discountPercent / 100));
-        } else if (this.bulkVm.discountType === 'amount') {
-            discount = this.bulkVm.discountAmount * this.selectedIds.length;
-        } else if (this.bulkVm.discountType === 'free') {
-            discount = base;
-        }
-        return { base, discount, final: Math.max(0, base - discount) };
+        // 按部門代碼分組
+        const groupMap = {};
+        this.selectedItems.forEach(x => {
+            const key = x.departmentCode || '__other__';
+            const deptInfo = deptSearch.all.find(d => d.code === x.departmentCode);
+            const label = deptInfo ? `${deptInfo.name}` : (x.organizerUnit || x.departmentCode || '未分類');
+            if (!groupMap[key]) groupMap[key] = { label, items: [], total: 0 };
+            groupMap[key].items.push(x);
+            groupMap[key].total += (x.totalAmount || 0);
+        });
+
+        const base = Object.values(groupMap).reduce((sum, g) => sum + g.total, 0);
+        let totalDiscount = 0;
+
+        // 每個部門加總後再算折扣（四捨五入在部門層級，與後端一致）
+        const groups = Object.values(groupMap).map(g => {
+            let discount = 0;
+            if (this.bulkVm.discountType === 'percent') {
+                discount = Math.round(g.total * (this.bulkVm.discountPercent / 100));
+            } else if (this.bulkVm.discountType === 'amount') {
+                discount = this.bulkVm.discountAmount * g.items.length;
+            } else if (this.bulkVm.discountType === 'free') {
+                discount = g.total;
+            }
+            totalDiscount += discount;
+            return { label: g.label, total: g.total, discount, final: Math.max(0, g.total - discount) };
+        });
+
+        return { base, discount: totalDiscount, final: Math.max(0, base - totalDiscount), groups };
     });
 
     // ========= 計數 =========
