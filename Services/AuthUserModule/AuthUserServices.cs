@@ -179,7 +179,7 @@ namespace TASA.Services.AuthUserModule
                     .Where(r => newRoleIds.Contains(r.Id))
                     .Select(r => r.Code)
                     .ToHashSet();
-                var managementRoles = new[] { AuthRoleServices.Staff, AuthRoleServices.Admin, AuthRoleServices.Director };
+                var managementRoles = new[] { AuthRoleServices.Staff, AuthRoleServices.Admin, AuthRoleServices.Director, AuthRoleServices.Accountant };
                 var hadManagementRole = oldRoleCodes.Any(c => managementRoles.Contains(c));
                 var willHaveManagementRole = newRoleCodes.Any(c => managementRoles.Contains(c));
                 if (hadManagementRole && !willHaveManagementRole)

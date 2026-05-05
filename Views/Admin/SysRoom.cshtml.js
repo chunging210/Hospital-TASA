@@ -903,6 +903,7 @@ const room = new function () {
             Area: isNaN(area) ? 0 : area,
 
             Status: this.vm.Status ?? RoomStatus.Available,
+            IsEnabled: this.vm.IsEnabled ?? true,
             PricingType: this.vm.PricingType,
             BookingSettings: this.vm.BookingSettings,
             DepartmentId: this.vm.DepartmentId,
